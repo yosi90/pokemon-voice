@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const COLORS = ['red', 'blue', 'yellow', 'green', 'pink', 'ice'];
 
 export function DelibirdMode({ active, onWin, onClose }) {
   const [opened, setOpened] = useState(null);
+  const closeTimerRef = useRef(null);
   const gifts = useMemo(() => {
     const winner = Math.floor(Math.random() * 18);
     return Array.from({ length: 18 }, (_, index) => ({
@@ -19,13 +20,22 @@ export function DelibirdMode({ active, onWin, onClose }) {
     }));
   }, [active]);
 
+  useEffect(() => {
+    if (!active) return undefined;
+    setOpened(null);
+    return () => {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    };
+  }, [active]);
+
   if (!active) return null;
 
   const openGift = gift => {
     if (opened !== null) return;
     setOpened(gift.id);
     if (gift.winner) onWin();
-    window.setTimeout(onClose, gift.winner ? 1800 : 950);
+    closeTimerRef.current = window.setTimeout(onClose, gift.winner ? 1850 : 1200);
   };
 
   return (

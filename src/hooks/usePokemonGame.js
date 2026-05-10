@@ -252,7 +252,8 @@ export function usePokemonGame() {
       clearSpecialEffects();
     }
     if (special.revealEffect === SPECIAL_REVEALS.DELIBIRD_GIFT) {
-      setDelibirdMode(true);
+      setDelibirdMode(false);
+      window.setTimeout(() => setDelibirdMode(true), 0);
       return;
     }
     enqueueSpecialEffect({

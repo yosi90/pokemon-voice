@@ -24,6 +24,12 @@ const TIER_CLASS = {
     MasterBall: 'masterball'
 };
 
+const PUBLIC_BASE = import.meta.env?.BASE_URL || './';
+
+function publicAsset(path) {
+    return `${PUBLIC_BASE}${path.replace(/^\/+/, '')}`;
+}
+
 
 // ====== Persistencia ======
 const STORAGE_KEY = 'pokevoice-achievements-v1';
@@ -196,10 +202,10 @@ function renderDrawer() {
         <div>
           <div class="title">${a?.title || e.id}</div>
           <div class="desc">${a?.desc || ''}</div>
-          <div class="date">${when.toLocaleString()}</div>
+        <div class="date">${when.toLocaleString()}</div>
         </div>
         <div class="acv-ach__stamp" aria-label="Logro obtenido">
-          <img src="/assets/images/ash-thumbs-up.png" alt="" loading="lazy">
+          <img src="${publicAsset('assets/images/ash-thumbs-up.png')}" alt="" loading="lazy">
         </div>
       </div>`;
     }).join('');

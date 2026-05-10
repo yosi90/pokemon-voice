@@ -4,7 +4,8 @@ import { getPokemonSpecial } from '../lib/pokemonSpecials.js';
 
 function PokemonBallCard({ pokemon, discovered, revealing, registerRef, onReplayCry, sleepMode }) {
   const name = pokemon.name.replace(/-/g, ' ');
-  const artSrc = sleepMode && pokemon.id === 39 ? '/assets/images/jigglypuff.png' : ART_URL(pokemon.id);
+  const angryJigglypuffSrc = `${import.meta.env.BASE_URL}assets/images/jigglypuff.png`;
+  const artSrc = sleepMode && pokemon.id === 39 ? angryJigglypuffSrc : ART_URL(pokemon.id);
   const special = getPokemonSpecial(pokemon.id);
   const className = [
     'pokemon-card',

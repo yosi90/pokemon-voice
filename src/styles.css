@@ -1979,12 +1979,42 @@ main {
 
 .delibird-gift.is-dud {
   pointer-events: none;
-  animation: delibirdDudPop 780ms ease-out both;
+  background:
+    radial-gradient(circle, #fff7ba 0 12%, #fb923c 13% 26%, #ef4444 27% 42%, transparent 43%),
+    conic-gradient(from 8deg, transparent 0 8%, #fff7ba 9% 13%, transparent 14% 22%, #fb923c 23% 28%, transparent 29% 42%, #ef4444 43% 48%, transparent 49% 100%);
+  border-color: transparent;
+  box-shadow: 0 0 32px rgba(251, 146, 60, .85), 0 0 70px rgba(239, 68, 68, .45);
+  animation: delibirdDudPop 1120ms ease-out both;
+}
+
+.delibird-gift.is-dud::before,
+.delibird-gift.is-dud::after {
+  left: -95%;
+  top: -95%;
+  width: 290%;
+  height: 290%;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 16deg, transparent 0 6%, rgba(255, 247, 186, .95) 7% 10%, transparent 11% 18%, rgba(251, 146, 60, .88) 19% 23%, transparent 24% 39%, rgba(239, 68, 68, .78) 40% 44%, transparent 45% 100%);
+  animation: delibirdBlastRays 1120ms ease-out both;
+}
+
+.delibird-gift.is-dud::after {
+  transform: rotate(24deg);
+  animation-delay: 80ms;
+}
+
+.delibird-gift.is-dud span {
+  display: none;
 }
 
 .delibird-gift.is-winner {
   pointer-events: none;
   animation: delibirdWinner 1700ms ease-out both;
+}
+
+.delibird-mode--opened .delibird-snow {
+  animation: delibirdSnowExit 1050ms ease-out both;
 }
 
 .delibird-mode--opened .delibird-gift:not(.is-dud):not(.is-winner) {
@@ -2659,6 +2689,17 @@ main {
   to { background-position: 0 120px, 0 90px, 0 140px, 0 80px, 0 110px; }
 }
 
+@keyframes delibirdSnowExit {
+  0% {
+    opacity: 1;
+    background-position: 0 -20px, 0 -60px, 0 -30px, 0 -80px, 0 -40px;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0 160px, 0 130px, 0 180px, 0 120px, 0 150px;
+  }
+}
+
 @keyframes delibirdGiftFloat {
   0%, 100% { transform: translateY(0) rotate(var(--gift-rotate)); }
   50% { transform: translateY(-12px) rotate(var(--gift-rotate-alt)); }
@@ -2666,8 +2707,16 @@ main {
 
 @keyframes delibirdDudPop {
   0% { opacity: 1; transform: rotate(var(--gift-rotate)) scale(1); filter: none; }
-  42% { opacity: 1; transform: rotate(18deg) scale(1.35); filter: brightness(1.8); }
-  100% { opacity: 0; transform: rotate(-24deg) scale(.2); filter: blur(3px); }
+  20% { opacity: 1; transform: rotate(-10deg) scale(.86); filter: brightness(1.2); }
+  42% { opacity: 1; transform: rotate(18deg) scale(1.55); filter: brightness(2); }
+  72% { opacity: .82; transform: rotate(-24deg) scale(2.05); filter: blur(.5px); }
+  100% { opacity: 0; transform: rotate(-42deg) scale(2.65); filter: blur(4px); }
+}
+
+@keyframes delibirdBlastRays {
+  0% { opacity: 0; transform: rotate(0deg) scale(.3); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(55deg) scale(1.35); }
 }
 
 @keyframes delibirdWinner {
