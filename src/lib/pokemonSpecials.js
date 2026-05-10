@@ -4,16 +4,30 @@ export const SPECIAL_REVEALS = {
   SQUIRTLE_SPLASH: 'squirtle-water-splash',
   JIGGLYPUFF_SLEEP: 'jigglypuff-sleep-wave',
   GENGAR: 'gengar-scare',
+  AUDINO_HEAL: 'audino-heal',
+  CASTFORM_WEATHER: 'castform-weather',
+  CELEBI_REWIND: 'celebi-rewind',
+  DELIBIRD_GIFT: 'delibird-gift',
+  GIMMIGHOUL_COIN: 'gimmighoul-coin',
+  KLEFKI_KEYS: 'klefki-keys',
+  LUCARIO_AURA: 'lucario-aura',
   MISSINGNO_GLITCH: 'missingno-glitch',
   MEOWTH_COIN: 'meowth-coin',
   PETAL_BURST: 'petal-burst',
   PSYDUCK_THINK: 'psyduck-think',
+  PALAFIN_HERO: 'palafin-hero',
+  ROTOM_POSSESS: 'rotom-possess',
+  SHUCKLE_JUICE: 'shuckle-juice',
   STARTER_BUBBLES: 'starter-bubbles',
   STARTER_FEATHER: 'starter-feather',
   STARTER_FIRE: 'starter-fire-burst',
   STARTER_SPRINT: 'starter-sprint',
   STARTER_WATER: 'starter-water-burst',
   SNORLAX_NAP: 'snorlax-nap',
+  SUDOWOODO_DODGE: 'sudowoodo-dodge',
+  UNOWN_MESSAGE: 'unown-message',
+  WOBBUFFET_REPLY: 'wobbuffet-reply',
+  ZOROARK_ILLUSION: 'zoroark-illusion',
 };
 
 export const SPECIAL_TIMING = {
@@ -32,6 +46,19 @@ const MASTER_BALL_IDS = new Set([
   800, 801, 802, 807, 808, 809,
   888, 889, 890, 891, 892, 893, 894, 895, 896, 897, 898, 905,
   1001, 1002, 1003, 1004, 1007, 1008, 1009, 1010,
+]);
+
+const ULTRA_BALL_IDS = new Set([
+  147, 148, 149,
+  246, 247, 248,
+  371, 372, 373,
+  374, 375, 376,
+  443, 444, 445,
+  633, 634, 635,
+  704, 705, 706,
+  782, 783, 784,
+  885, 886, 887,
+  996, 997, 998,
 ]);
 
 const PHASE_TWO_STARTERS = [
@@ -149,6 +176,104 @@ const SPECIAL_RULES = [
     timing: SPECIAL_TIMING.BEFORE_REVEAL,
     durationMs: 1150,
   },
+  {
+    key: 'sudowoodo-water-reaction',
+    ids: [185],
+    className: 'special-sudowoodo',
+    revealEffect: SPECIAL_REVEALS.SUDOWOODO_DODGE,
+    durationMs: 1800,
+  },
+  {
+    key: 'unown-secret-letters',
+    ids: [201],
+    className: 'special-unown',
+    revealEffect: SPECIAL_REVEALS.UNOWN_MESSAGE,
+    persistentKey: 'unownLetters',
+    durationMs: 2600,
+  },
+  {
+    key: 'wobbuffet-reply',
+    ids: [202],
+    className: 'special-wobbuffet',
+  },
+  {
+    key: 'shuckle-ferment',
+    ids: [213],
+    className: 'special-shuckle',
+  },
+  {
+    key: 'delibird-present',
+    ids: [225],
+    className: 'special-delibird',
+    revealEffect: SPECIAL_REVEALS.DELIBIRD_GIFT,
+    durationMs: 4200,
+  },
+  {
+    key: 'celebi-time-rewind',
+    ids: [251],
+    className: 'special-celebi',
+    revealEffect: SPECIAL_REVEALS.CELEBI_REWIND,
+    durationMs: 2200,
+  },
+  {
+    key: 'castform-weather',
+    ids: [351],
+    className: 'special-castform',
+    revealEffect: SPECIAL_REVEALS.CASTFORM_WEATHER,
+    durationMs: 2600,
+  },
+  {
+    key: 'rotom-possess-ui',
+    ids: [479],
+    className: 'special-rotom',
+    revealEffect: SPECIAL_REVEALS.ROTOM_POSSESS,
+    durationMs: 2400,
+  },
+  {
+    key: 'lucario-aura',
+    ids: [448],
+    className: 'special-lucario',
+    revealEffect: SPECIAL_REVEALS.LUCARIO_AURA,
+    durationMs: 1900,
+  },
+  {
+    key: 'audino-heal',
+    ids: [531],
+    className: 'special-audino',
+    revealEffect: SPECIAL_REVEALS.AUDINO_HEAL,
+    durationMs: 1900,
+  },
+  {
+    key: 'zoroark-illusion',
+    ids: [570, 571],
+    className: 'special-zoroark',
+    revealEffect: SPECIAL_REVEALS.ZOROARK_ILLUSION,
+    timing: SPECIAL_TIMING.BEFORE_REVEAL,
+    durationMs: 1300,
+  },
+  {
+    key: 'klefki-keys',
+    ids: [707],
+    className: 'special-klefki',
+    revealEffect: SPECIAL_REVEALS.KLEFKI_KEYS,
+    durationMs: 2600,
+  },
+  {
+    key: 'gimmighoul-hidden-coin',
+    ids: [999],
+    className: 'special-gimmighoul',
+    revealEffect: SPECIAL_REVEALS.GIMMIGHOUL_COIN,
+    persistentKey: 'gimmighoulCoins',
+    durationMs: 5200,
+  },
+  {
+    key: 'palafin-hero-return',
+    ids: [964],
+    className: 'special-palafin',
+    revealEffect: SPECIAL_REVEALS.PALAFIN_HERO,
+    persistentKey: 'palafinPending',
+    durationMs: 2200,
+  },
   ...PHASE_TWO_STARTERS,
 ];
 
@@ -159,6 +284,20 @@ const SECRET_COMMANDS = [
     aliases: ['missingno', 'missing no', 'missing-no', 'missing.no'],
     revealEffect: SPECIAL_REVEALS.MISSINGNO_GLITCH,
     durationMs: 1800,
+  },
+  {
+    key: 'water-command',
+    secretCommand: 'agua',
+    aliases: ['agua', 'water'],
+    revealEffect: SPECIAL_REVEALS.SUDOWOODO_DODGE,
+    durationMs: 1800,
+  },
+  {
+    key: 'tea-command',
+    secretCommand: 'te',
+    aliases: ['te', 'té', 'tea'],
+    revealEffect: SPECIAL_REVEALS.KLEFKI_KEYS,
+    durationMs: 1600,
   },
 ];
 
@@ -175,7 +314,7 @@ export function matchSecretCommand(raw) {
 
 export function getPokemonSpecial(id) {
   const classes = [];
-  let ballVariant = MASTER_BALL_IDS.has(id) ? 'master' : 'poke';
+  let ballVariant = MASTER_BALL_IDS.has(id) ? 'master' : ULTRA_BALL_IDS.has(id) ? 'ultra' : 'poke';
   let revealEffect = null;
   let timing = SPECIAL_TIMING.AFTER_REVEAL;
   let durationMs = 1400;

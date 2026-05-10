@@ -25,7 +25,9 @@ function EmberBurst({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--ember-burst">
-        <span /><span /><span /><span /><span />
+        <div className="inferno-floor" />
+        <span /><span /><span /><span /><span /><span />
+        <span /><span /><span /><span /><span /><span />
       </div>
     </TimedEffect>
   );
@@ -45,7 +47,9 @@ function StarterFireBurst({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--starter-fire-burst">
+        <div className="inferno-floor" />
         <span /><span /><span /><span /><span /><span />
+        <span /><span /><span /><span />
       </div>
     </TimedEffect>
   );
@@ -55,6 +59,7 @@ function WaterSplash({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--water-splash">
+        <div className="waterfall-sheet" />
         <span /><span /><span /><span /><span />
       </div>
     </TimedEffect>
@@ -65,6 +70,7 @@ function StarterWaterBurst({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--starter-water-burst">
+        <div className="waterfall-sheet" />
         <span /><span /><span /><span /><span /><span />
       </div>
     </TimedEffect>
@@ -129,6 +135,182 @@ function MeowthCoin({ effect, onDone, onCoinCollect }) {
   );
 }
 
+function SudowoodoDodge({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--sudowoodo-dodge">
+        <div className="sudowoodo-rain" />
+        <img
+          src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/185.png"
+          alt=""
+        />
+        <span>!</span>
+        <div className="sudowoodo-wave" />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function UnownMessage({ effect, onDone }) {
+  const text = effect.message || 'VOICE';
+  const letters = text.toLowerCase().split('');
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--unown-message">
+        {letters.map((letter, index) => (
+          letter === ' '
+            ? <span key={`space-${index}`} className="unown-space" />
+            : (
+              <img
+                key={`${letter}-${index}`}
+                src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/201-${letter}.png`}
+                alt={letter}
+              />
+            )
+        ))}
+      </div>
+    </TimedEffect>
+  );
+}
+
+function WobbuffetReply({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--wobbuffet-reply">WOBBUFFET!</div>
+    </TimedEffect>
+  );
+}
+
+function ShuckleJuice({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--shuckle-juice">
+        <span />
+        <span />
+        <span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function DelibirdGift({ effect, onDone }) {
+  const items = ['★', '❄', '🍓', '?'];
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <button className="effect effect--delibird-gift" type="button" onClick={() => onDone(effect.key)}>
+        <span>REGALO</span>
+        {items.map((item, index) => <i key={index}>{item}</i>)}
+      </button>
+    </TimedEffect>
+  );
+}
+
+function CelebiRewind({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--celebi-rewind">
+        <span>TIME</span>
+        <span>REWIND</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function CastformWeather({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--castform-weather">
+        <span>☀</span><span>☔</span><span>❄</span><span>☁</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function RotomPossess({ effect, onDone }) {
+  useEffect(() => {
+    document.body.classList.add('rotom-possessed');
+    return () => document.body.classList.remove('rotom-possessed');
+  }, []);
+
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--rotom-possess">
+        <span>ROTOM</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function LucarioAura({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--lucario-aura">
+        <span />
+        <span />
+        <span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function AudinoHeal({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--audino-heal">
+        <span>+</span><span>+</span><span>+</span><span>+</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function ZoroarkIllusion({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--zoroark-illusion">
+        <span>???</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function KlefkiKeys({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--klefki-keys">
+        <span>⚿</span><span>⚿</span><span>⚿</span><span>⚿</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function GimmighoulCoin({ effect, onDone, onGimmighoulCoinCollect }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <button
+        className="effect effect--gimmighoul-coin"
+        type="button"
+        aria-label="Recoger moneda de Gimmighoul"
+        onClick={() => {
+          onGimmighoulCoinCollect();
+          onDone(effect.key);
+        }}
+      >
+        G
+      </button>
+    </TimedEffect>
+  );
+}
+
+function PalafinHero({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--palafin-hero">
+        <span>HERO</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
 function PsyduckThink({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
@@ -168,13 +350,23 @@ function MissingNoGlitch({ effect, onDone }) {
   );
 }
 
-function SpecialEffect({ effect, onDone, onCoinCollect }) {
+function SpecialEffect({ effect, onDone, onCoinCollect, onGimmighoulCoinCollect }) {
   if (effect.type === 'gengar-scare') {
     return <GengarScare active onDone={() => onDone(effect.key)} />;
   }
+  if (effect.type === 'audino-heal') return <AudinoHeal effect={effect} onDone={onDone} />;
   if (effect.type === 'bulbasaur-leaf-burst') return <LeafBurst effect={effect} onDone={onDone} />;
+  if (effect.type === 'castform-weather') return <CastformWeather effect={effect} onDone={onDone} />;
+  if (effect.type === 'celebi-rewind') return <CelebiRewind effect={effect} onDone={onDone} />;
   if (effect.type === 'charmander-ember-burst') return <EmberBurst effect={effect} onDone={onDone} />;
+  if (effect.type === 'delibird-gift') return <DelibirdGift effect={effect} onDone={onDone} />;
+  if (effect.type === 'gimmighoul-coin') return <GimmighoulCoin effect={effect} onDone={onDone} onGimmighoulCoinCollect={onGimmighoulCoinCollect} />;
+  if (effect.type === 'klefki-keys') return <KlefkiKeys effect={effect} onDone={onDone} />;
+  if (effect.type === 'lucario-aura') return <LucarioAura effect={effect} onDone={onDone} />;
   if (effect.type === 'petal-burst') return <PetalBurst effect={effect} onDone={onDone} />;
+  if (effect.type === 'palafin-hero') return <PalafinHero effect={effect} onDone={onDone} />;
+  if (effect.type === 'rotom-possess') return <RotomPossess effect={effect} onDone={onDone} />;
+  if (effect.type === 'shuckle-juice') return <ShuckleJuice effect={effect} onDone={onDone} />;
   if (effect.type === 'squirtle-water-splash') return <WaterSplash effect={effect} onDone={onDone} />;
   if (effect.type === 'starter-bubbles') return <StarterBubbles effect={effect} onDone={onDone} />;
   if (effect.type === 'starter-feather') return <StarterFeather effect={effect} onDone={onDone} />;
@@ -186,19 +378,31 @@ function SpecialEffect({ effect, onDone, onCoinCollect }) {
   if (effect.type === 'missingno-glitch') return <MissingNoGlitch effect={effect} onDone={onDone} />;
   if (effect.type === 'psyduck-think') return <PsyduckThink effect={effect} onDone={onDone} />;
   if (effect.type === 'snorlax-nap') return <SnorlaxNap effect={effect} onDone={onDone} />;
+  if (effect.type === 'sudowoodo-dodge') return <SudowoodoDodge effect={effect} onDone={onDone} />;
+  if (effect.type === 'unown-message') return <UnownMessage effect={effect} onDone={onDone} />;
+  if (effect.type === 'wobbuffet-reply') return <WobbuffetReply effect={effect} onDone={onDone} />;
+  if (effect.type === 'zoroark-illusion') return <ZoroarkIllusion effect={effect} onDone={onDone} />;
   return null;
 }
 
-export function SpecialEffectsLayer({ effects, easterEggState, onCoinCollect, onEffectDone }) {
+export function SpecialEffectsLayer({ effects, easterEggState, onCoinCollect, onGimmighoulCoinCollect, onEffectDone }) {
   const hasCoinCounter = (easterEggState?.meowthCoins || 0) > 0;
-  if (!effects.length && !hasCoinCounter) return null;
+  const hasGimmighoulCounter = (easterEggState?.gimmighoulCoins || 0) > 0;
+  if (!effects.length && !hasCoinCounter && !hasGimmighoulCounter) return null;
 
   return (
     <div className="special-effects-layer">
       {effects.map(effect => (
-        <SpecialEffect key={effect.key} effect={effect} onDone={onEffectDone} onCoinCollect={onCoinCollect} />
+        <SpecialEffect
+          key={effect.key}
+          effect={effect}
+          onDone={onEffectDone}
+          onCoinCollect={onCoinCollect}
+          onGimmighoulCoinCollect={onGimmighoulCoinCollect}
+        />
       ))}
       {hasCoinCounter && <div className="meowth-coin-counter">₽ {easterEggState.meowthCoins}</div>}
+      {hasGimmighoulCounter && <div className="gimmighoul-coin-counter">G {easterEggState.gimmighoulCoins}</div>}
     </div>
   );
 }

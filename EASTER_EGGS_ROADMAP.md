@@ -54,20 +54,20 @@ Este documento marca el plan de implementación por fases. La regla general es m
 
 ## Fase 3 - Interacciones reactivas
 
-- [ ] Sudowoodo: reacciona a `agua` o Pokémon de agua.
-- [ ] Unown: letras flotantes y mensajes secretos acumulados.
-- [ ] Wobbuffet: respuesta en fallos de voz.
-- [ ] Shuckle: fermentación y zumo tras tiempo.
-- [ ] Delibird: regalo con resultado aleatorio.
-- [ ] Celebi: rewind visual de una carta ya descubierta.
-- [ ] Castform: clima temporal de página.
-- [ ] Rotom: posesión breve de un elemento UI.
-- [ ] Lucario: aura solo cuando el micro esté activo.
-- [ ] Audino: limpia/estabiliza efectos activos.
-- [ ] Zorua/Zoroark: falsa revelación y cambio posterior.
-- [ ] Klefki: llaves y sonido al abrir zonas.
-- [ ] Gimmighoul: moneda escondida y contador secreto.
-- [ ] Palafin: retorno heroico tras descubrir otro Pokémon.
+- [x] Sudowoodo: reacciona a `agua` o Pokémon de agua.
+- [x] Unown: letras flotantes y mensajes secretos acumulados.
+- [x] Wobbuffet: respuesta en fallos de voz.
+- [x] Shuckle: fermentación y zumo tras tiempo.
+- [x] Delibird: regalo con resultado aleatorio.
+- [x] Celebi: rewind visual de una carta ya descubierta.
+- [x] Castform: clima temporal de página.
+- [x] Rotom: posesión breve de un elemento UI.
+- [x] Lucario: aura solo cuando el micro esté activo.
+- [x] Audino: limpia/estabiliza efectos activos.
+- [x] Zorua/Zoroark: falsa revelación y cambio posterior.
+- [x] Klefki: llaves y sonido al abrir zonas.
+- [x] Gimmighoul: moneda escondida y contador secreto.
+- [x] Palafin: retorno heroico tras descubrir otro Pokémon.
 
 ## Fase 4 - Spooky y set pieces
 

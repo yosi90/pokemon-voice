@@ -280,6 +280,13 @@ async function evaluate(eventType, meta) {
     }
 }
 
+async function unlockById(id) {
+    ensureUI();
+    const achievement = ACHIEVEMENTS.find(a => a.id === id);
+    if (!achievement) return false;
+    return maybeUnlock(achievement, { id }, engine.ctx);
+}
+
 // ====== API pública esperada por tu app ======
 export const ACV = {
     // Inicia una nueva run (reinicia contadores/rachas/sets efímeros, carga persistido una vez)
@@ -327,6 +334,10 @@ export const ACV = {
         engine.registerFail();
         if (token !== _runToken) return;
         await evaluate('fail', {});
+    },
+
+    async unlock(id) {
+        return unlockById(id);
     },
 
     // Borra TODO lo persistido (por si quieres un botón "reset global")

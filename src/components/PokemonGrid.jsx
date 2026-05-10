@@ -2,8 +2,9 @@ import { ART_URL } from '../../scripts/utils.js';
 import { formatDex } from '../lib/pokemon.js';
 import { getPokemonSpecial } from '../lib/pokemonSpecials.js';
 
-function PokemonBallCard({ pokemon, discovered, revealing, registerRef }) {
+function PokemonBallCard({ pokemon, discovered, revealing, registerRef, onReplayCry, sleepMode }) {
   const name = pokemon.name.replace(/-/g, ' ');
+  const artSrc = sleepMode && pokemon.id === 39 ? '/assets/images/jigglypuff.png' : ART_URL(pokemon.id);
   const special = getPokemonSpecial(pokemon.id);
   const className = [
     'pokemon-card',
@@ -11,6 +12,14 @@ function PokemonBallCard({ pokemon, discovered, revealing, registerRef }) {
     revealing ? 'revealing' : '',
     special.className,
   ].filter(Boolean).join(' ');
+  const replayCry = () => {
+    if (discovered) onReplayCry(pokemon.id);
+  };
+  const handleKeyDown = event => {
+    if (!discovered || (event.key !== 'Enter' && event.key !== ' ')) return;
+    event.preventDefault();
+    replayCry();
+  };
 
   return (
     <article
@@ -20,7 +29,15 @@ function PokemonBallCard({ pokemon, discovered, revealing, registerRef }) {
       data-ball={special.ballVariant}
     >
       <div className="pokemon-stage">
-        <div className="pokemon-ball-card" aria-label={discovered ? name : formatDex(pokemon.id)}>
+        <div
+          className="pokemon-ball-card"
+          aria-label={discovered ? `${name}, reproducir sonido` : formatDex(pokemon.id)}
+          role={discovered ? 'button' : undefined}
+          tabIndex={discovered ? 0 : undefined}
+          title={discovered ? `Reproducir cry de ${name}` : undefined}
+          onClick={replayCry}
+          onKeyDown={handleKeyDown}
+        >
           <div className="ball-shell ball-shell--top" />
           <div className="ball-shell ball-shell--bottom" />
           <div className="ball-band" />
@@ -33,8 +50,8 @@ function PokemonBallCard({ pokemon, discovered, revealing, registerRef }) {
           <div className="reveal-glow" />
           {discovered && (
             <img
-              className="pokemon-art"
-              src={ART_URL(pokemon.id)}
+              className={`pokemon-art ${sleepMode && pokemon.id === 39 ? 'pokemon-art--sleep-mode' : ''}`}
+              src={artSrc}
               alt={name}
               loading="lazy"
               decoding="async"
@@ -49,7 +66,7 @@ function PokemonBallCard({ pokemon, discovered, revealing, registerRef }) {
   );
 }
 
-export function PokemonGrid({ list, guessed, lastRevealedId, cardRefs }) {
+export function PokemonGrid({ list, guessed, lastRevealedId, cardRefs, onReplayCry, sleepMode }) {
   const registerRef = (id, node) => {
     if (node) cardRefs.current.set(id, node);
     else cardRefs.current.delete(id);
@@ -65,6 +82,8 @@ export function PokemonGrid({ list, guessed, lastRevealedId, cardRefs }) {
             discovered={guessed.has(pokemon.id)}
             revealing={lastRevealedId === pokemon.id}
             registerRef={registerRef}
+            onReplayCry={onReplayCry}
+            sleepMode={sleepMode}
           />
         ))}
       </div>

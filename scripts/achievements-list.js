@@ -1,6 +1,15 @@
 // ------- Definición de logros -------
 // Nota: todos cuentan dentro de la run actual. Se desbloquean y guardan con fecha.
 export const ACHIEVEMENTS = [{
+        id: 'delibird-gift-claim',
+        title: 'El regalo de Delibird',
+        desc: 'Encuentra el regalo bueno durante el modo Delibird.',
+        tier: 'Superball',
+        scope: 'run',
+        event: 'manual',
+        check: (m) => m?.id === 'delibird-gift-claim',
+    },
+    {
         id: 'fast-3in20',
         title: 'Más rápido que Gary',
         desc: 'Haz 3 aciertos seguidos en los primeros 20 s.',

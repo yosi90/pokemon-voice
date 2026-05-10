@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Dock } from './components/Dock.jsx';
+import { DelibirdMode } from './components/DelibirdMode.jsx';
 import { AchievementsDrawer, ModesDrawer } from './components/Drawers.jsx';
 import { PokemonGrid } from './components/PokemonGrid.jsx';
+import { PsyduckMode } from './components/PsyduckMode.jsx';
+import { SleepMode } from './components/SleepMode.jsx';
 import { SpecialEffectsLayer } from './components/SpecialEffectsLayer.jsx';
 import { TimedModal } from './components/TimedModal.jsx';
 import { Toast } from './components/Toast.jsx';
@@ -88,6 +91,8 @@ export default function App() {
           guessed={game.guessed}
           lastRevealedId={game.lastRevealedId}
           cardRefs={game.cardRefs}
+          onReplayCry={game.replayPokemonCry}
+          sleepMode={game.sleepMode}
         />
       )}
       <AchievementsDrawer />
@@ -105,7 +110,18 @@ export default function App() {
           ...current,
           meowthCoins: (current.meowthCoins || 0) + 1,
         }))}
+        onGimmighoulCoinCollect={() => game.updateEasterEggState(current => ({
+          ...current,
+          gimmighoulCoins: (current.gimmighoulCoins || 0) + 1,
+        }))}
         onEffectDone={game.dismissSpecialEffect}
+      />
+      <PsyduckMode active={game.psyduckMode} onDisable={() => game.setPsyduckMode(false)} />
+      <SleepMode active={game.sleepMode} onWake={() => game.setSleepMode(false)} />
+      <DelibirdMode
+        active={game.delibirdMode}
+        onWin={() => ACV.unlock?.('delibird-gift-claim')}
+        onClose={() => game.setDelibirdMode(false)}
       />
       <div id="acv-toast-container" aria-live="polite" aria-atomic="true" />
       <Toast toast={game.toast} />

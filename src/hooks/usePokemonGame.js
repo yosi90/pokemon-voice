@@ -33,6 +33,9 @@ export function usePokemonGame() {
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [specialEffects, setSpecialEffects] = useState([]);
   const [easterEggState, setEasterEggState] = useState(readEasterEggState);
+  const [psyduckMode, setPsyduckMode] = useState(false);
+  const [sleepMode, setSleepMode] = useState(false);
+  const [delibirdMode, setDelibirdMode] = useState(false);
   const [navIndex, setNavIndex] = useState({ guessed: -1, remaining: -1 });
   const [timer, setTimer] = useState(null);
   const [timedResults, setTimedResults] = useState(null);
@@ -235,18 +238,47 @@ export function usePokemonGame() {
     });
   }, []);
 
+  const hasDiscovered = useCallback(id => guessedRef.current.has(id), []);
+
   const runSpecialReveal = useCallback(async (special, id, timing) => {
     if (!special.revealEffect || special.timing !== timing) return;
+    if (special.revealEffect === SPECIAL_REVEALS.PSYDUCK_THINK) {
+      setPsyduckMode(true);
+    }
+    if (special.revealEffect === SPECIAL_REVEALS.JIGGLYPUFF_SLEEP) {
+      setSleepMode(true);
+    }
+    if (special.revealEffect === SPECIAL_REVEALS.AUDINO_HEAL) {
+      clearSpecialEffects();
+    }
+    if (special.revealEffect === SPECIAL_REVEALS.DELIBIRD_GIFT) {
+      setDelibirdMode(true);
+      return;
+    }
     enqueueSpecialEffect({
       type: special.revealEffect,
       id,
       durationMs: special.durationMs,
+      message: special.revealEffect === SPECIAL_REVEALS.UNOWN_MESSAGE
+        ? 'SECRETO DESCUBIERTO'
+        : undefined,
     });
     if (special.revealEffect === SPECIAL_REVEALS.GENGAR) {
       playGengarScareTone();
       await sleep(780);
     }
-  }, [enqueueSpecialEffect]);
+  }, [clearSpecialEffects, easterEggState.unownLetters, enqueueSpecialEffect]);
+
+  const replayPokemonCry = useCallback(async id => {
+    if (!guessedRef.current.has(id)) return;
+    await primeAudio();
+    const special = getPokemonSpecial(id);
+    await runSpecialReveal(special, id, SPECIAL_TIMING.BEFORE_REVEAL);
+    setLastRevealedId(id);
+    playRevealAudio(id);
+    await runSpecialReveal(special, id, SPECIAL_TIMING.AFTER_REVEAL);
+    window.setTimeout(() => setLastRevealedId(current => current === id ? null : current), 1400);
+  }, [playRevealAudio, runSpecialReveal]);
 
   const revealPokemon = useCallback(async (id, source) => {
     const firstTime = !guessedRef.current.has(id);
@@ -275,12 +307,32 @@ export function usePokemonGame() {
     } catch (error) {
       console.warn('No se pudieron evaluar los logros:', error);
     }
+    if (id === 201) {
+      updateEasterEggState(current => ({
+        ...current,
+        unownLetters: `${current.unownLetters || ''}${String.fromCharCode(65 + ((current.unownLetters || '').length % 26))}`.slice(-16),
+      }));
+    }
+    if (id === 964) {
+      updateEasterEggState(current => ({ ...current, palafinPending: true }));
+    } else if (easterEggState.palafinPending && guessedRef.current.has(964)) {
+      updateEasterEggState(current => ({ ...current, palafinPending: false }));
+      enqueueSpecialEffect({ type: SPECIAL_REVEALS.PALAFIN_HERO, id: 964, durationMs: 2200 });
+    }
     return true;
-  }, [allPokemon, playRevealAudio, runSpecialReveal, scrollToPokemon]);
+  }, [allPokemon, easterEggState.palafinPending, enqueueSpecialEffect, playRevealAudio, runSpecialReveal, scrollToPokemon, updateEasterEggState]);
 
   const guess = useCallback(async (raw, { fromSpeech = false } = {}) => {
     const secret = matchSecretCommand(raw);
     if (secret) {
+      if (secret.secretCommand === 'agua' && !hasDiscovered(185)) {
+        showToast('Sudowoodo aún no está mirando.', 'info');
+        setGuessText('');
+        return true;
+      }
+      if (secret.secretCommand === 'agua') {
+        playRevealAudio(185);
+      }
       enqueueSpecialEffect({
         type: secret.revealEffect,
         id: secret.id,
@@ -305,6 +357,9 @@ export function usePokemonGame() {
       if (didReveal) revealed += 1;
       if (result.sequence.length > 1) await sleep(180);
     }
+    if (fromSpeech && hasDiscovered(448)) {
+      enqueueSpecialEffect({ type: SPECIAL_REVEALS.LUCARIO_AURA, id: 448, durationMs: 1900 });
+    }
 
     setGuessText('');
     if (result.sequence.length === 1) {
@@ -314,7 +369,7 @@ export function usePokemonGame() {
       showToast(revealed ? `${raw}: ${revealed} forma(s) revelada(s)` : `Ya estaban descubiertas: ${raw}`, revealed ? 'ok' : 'info');
     }
     return true;
-  }, [enqueueSpecialEffect, revealPokemon, showToast, tryGuessTranscript]);
+  }, [enqueueSpecialEffect, hasDiscovered, revealPokemon, showToast, tryGuessTranscript]);
 
   const handleGuessSubmit = useCallback(event => {
     event.preventDefault();
@@ -351,6 +406,9 @@ export function usePokemonGame() {
     saveGuessed(next);
     runDiscoveredRef.current.clear();
     clearSpecialEffects();
+    setPsyduckMode(false);
+    setSleepMode(false);
+    setDelibirdMode(false);
     setEasterEggState(resetEasterEggState());
     ACV.resetAllPersistent({ restartRun: true, durationSec: null });
     setTimer(null);
@@ -367,6 +425,9 @@ export function usePokemonGame() {
     saveGuessed(next);
     runDiscoveredRef.current.clear();
     clearSpecialEffects();
+    setPsyduckMode(false);
+    setSleepMode(false);
+    setDelibirdMode(false);
     setEasterEggState(resetEasterEggState());
     ACV.resetAllPersistent({ restartRun: true, durationSec: 120 });
     const startedAt = Date.now();
@@ -391,6 +452,7 @@ export function usePokemonGame() {
     cardRefs,
     cardSize,
     closeTimedResults,
+    delibirdMode,
     dismissSpecialEffect,
     enableAudio,
     easterEggState,
@@ -402,12 +464,17 @@ export function usePokemonGame() {
     lastRevealedId,
     loadingError,
     navigateCards,
+    psyduckMode,
     remaining,
+    replayPokemonCry,
     resetProgress,
     score,
     selectedGens,
+    sleepMode,
     setCardSize,
+    setDelibirdMode,
     setGuessText,
+    setSleepMode,
     showToast,
     specialEffects,
     startTimed,
@@ -418,5 +485,6 @@ export function usePokemonGame() {
     toggleGen,
     tryGuessTranscript,
     updateEasterEggState,
+    setPsyduckMode,
   };
 }
