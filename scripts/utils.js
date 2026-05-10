@@ -50,6 +50,7 @@ export const esAliases = new Map([
   ['aegislash','aegislash'], ['egislash','aegislash'], ['eijislash','aegislash'], ['eigislas','aegislash'], ['eislas','aegislash'], ['eghislash','aegislash'],
   ['charizar','charizard'], ['charisard','charizard'],
   ['gyarados','gyarados'], ['llarados','gyarados'],
+  ['dito', 'ditto'], ['dido', 'ditto'], ['ditto', 'ditto'],
 ]);
 
 // -------- Rutas/constantes --------

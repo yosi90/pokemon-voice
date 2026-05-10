@@ -4,8 +4,15 @@ export const SPECIAL_REVEALS = {
   SQUIRTLE_SPLASH: 'squirtle-water-splash',
   JIGGLYPUFF_SLEEP: 'jigglypuff-sleep-wave',
   GENGAR: 'gengar-scare',
+  MISSINGNO_GLITCH: 'missingno-glitch',
   MEOWTH_COIN: 'meowth-coin',
+  PETAL_BURST: 'petal-burst',
   PSYDUCK_THINK: 'psyduck-think',
+  STARTER_BUBBLES: 'starter-bubbles',
+  STARTER_FEATHER: 'starter-feather',
+  STARTER_FIRE: 'starter-fire-burst',
+  STARTER_SPRINT: 'starter-sprint',
+  STARTER_WATER: 'starter-water-burst',
   SNORLAX_NAP: 'snorlax-nap',
 };
 
@@ -26,6 +33,33 @@ const MASTER_BALL_IDS = new Set([
   888, 889, 890, 891, 892, 893, 894, 895, 896, 897, 898, 905,
   1001, 1002, 1003, 1004, 1007, 1008, 1009, 1010,
 ]);
+
+const PHASE_TWO_STARTERS = [
+  { key: 'chikorita-petals', ids: [152], className: 'special-chikorita', revealEffect: SPECIAL_REVEALS.PETAL_BURST, localEffects: ['petals'], durationMs: 2200 },
+  { key: 'cyndaquil-ignition', ids: [155], className: 'special-cyndaquil', revealEffect: SPECIAL_REVEALS.STARTER_FIRE, localEffects: ['back-flame'], durationMs: 1900 },
+  { key: 'totodile-bite', ids: [158], className: 'special-totodile', localEffects: ['bite'] },
+  { key: 'treecko-climb', ids: [252], className: 'special-treecko', revealEffect: SPECIAL_REVEALS.PETAL_BURST, localEffects: ['climb'], durationMs: 1800 },
+  { key: 'torchic-feather', ids: [255], className: 'special-torchic', revealEffect: SPECIAL_REVEALS.STARTER_FIRE, localEffects: ['feather'], durationMs: 1900 },
+  { key: 'mudkip-mud', ids: [258], className: 'special-mudkip', revealEffect: SPECIAL_REVEALS.STARTER_WATER, localEffects: ['mud'], durationMs: 2100 },
+  { key: 'turtwig-sapling', ids: [387], className: 'special-turtwig', revealEffect: SPECIAL_REVEALS.PETAL_BURST, localEffects: ['sapling'], durationMs: 2200 },
+  { key: 'chimchar-flip', ids: [390], className: 'special-chimchar', revealEffect: SPECIAL_REVEALS.STARTER_FIRE, localEffects: ['fire-trail'], durationMs: 1900 },
+  { key: 'piplup-slide', ids: [393], className: 'special-piplup', revealEffect: SPECIAL_REVEALS.STARTER_WATER, localEffects: ['ice'], durationMs: 1800 },
+  { key: 'snivy-pose', ids: [495], className: 'special-snivy', revealEffect: SPECIAL_REVEALS.PETAL_BURST, localEffects: ['pose-leaf'], durationMs: 1900 },
+  { key: 'tepig-smoke', ids: [498], className: 'special-tepig', revealEffect: SPECIAL_REVEALS.STARTER_FIRE, localEffects: ['smoke'], durationMs: 1800 },
+  { key: 'oshawott-slash', ids: [501], className: 'special-oshawott', revealEffect: SPECIAL_REVEALS.STARTER_WATER, localEffects: ['shell-slash'], durationMs: 1800 },
+  { key: 'chespin-spikes', ids: [650], className: 'special-chespin', revealEffect: SPECIAL_REVEALS.PETAL_BURST, localEffects: ['spikes'], durationMs: 1900 },
+  { key: 'fennekin-magic', ids: [653], className: 'special-fennekin', revealEffect: SPECIAL_REVEALS.STARTER_FIRE, localEffects: ['magic-flame'], durationMs: 1900 },
+  { key: 'froakie-ninja', ids: [656], className: 'special-froakie', revealEffect: SPECIAL_REVEALS.STARTER_BUBBLES, localEffects: ['ninja'], durationMs: 1800 },
+  { key: 'rowlet-feather', ids: [722], className: 'special-rowlet', revealEffect: SPECIAL_REVEALS.STARTER_FEATHER, localEffects: ['owl'], durationMs: 1900 },
+  { key: 'litten-furball', ids: [725], className: 'special-litten', revealEffect: SPECIAL_REVEALS.STARTER_FIRE, localEffects: ['furball'], durationMs: 1800 },
+  { key: 'popplio-circus', ids: [728], className: 'special-popplio', revealEffect: SPECIAL_REVEALS.STARTER_BUBBLES, localEffects: ['circus'], durationMs: 2100 },
+  { key: 'grookey-drum', ids: [810], className: 'special-grookey', revealEffect: SPECIAL_REVEALS.PETAL_BURST, localEffects: ['drum'], durationMs: 1700 },
+  { key: 'scorbunny-sprint', ids: [813], className: 'special-scorbunny', revealEffect: SPECIAL_REVEALS.STARTER_SPRINT, localEffects: ['sprint'], durationMs: 1800 },
+  { key: 'sobble-fade', ids: [816], className: 'special-sobble', revealEffect: SPECIAL_REVEALS.STARTER_WATER, localEffects: ['invisible'], durationMs: 1900 },
+  { key: 'sprigatito-pollen', ids: [906], className: 'special-sprigatito', revealEffect: SPECIAL_REVEALS.PETAL_BURST, localEffects: ['pollen'], durationMs: 2100 },
+  { key: 'fuecoco-chomp', ids: [909], className: 'special-fuecoco', revealEffect: SPECIAL_REVEALS.STARTER_FIRE, localEffects: ['chomp'], durationMs: 1800 },
+  { key: 'quaxly-groom', ids: [912], className: 'special-quaxly', revealEffect: SPECIAL_REVEALS.STARTER_WATER, localEffects: ['groom'], durationMs: 1800 },
+];
 
 const SPECIAL_RULES = [
   {
@@ -94,7 +128,6 @@ const SPECIAL_RULES = [
     ids: [132],
     className: 'special-ditto',
     hoverEffect: 'melt',
-    localEffects: ['ditto-face'],
   },
   {
     key: 'pikachu-restless',
@@ -116,9 +149,18 @@ const SPECIAL_RULES = [
     timing: SPECIAL_TIMING.BEFORE_REVEAL,
     durationMs: 1150,
   },
+  ...PHASE_TWO_STARTERS,
 ];
 
-const SECRET_COMMANDS = [];
+const SECRET_COMMANDS = [
+  {
+    key: 'missingno-secret',
+    secretCommand: 'missingno',
+    aliases: ['missingno', 'missing no', 'missing-no', 'missing.no'],
+    revealEffect: SPECIAL_REVEALS.MISSINGNO_GLITCH,
+    durationMs: 1800,
+  },
+];
 
 export function getSpecialRules() {
   return SPECIAL_RULES.map(rule => ({ ...rule }));
@@ -127,7 +169,8 @@ export function getSpecialRules() {
 export function matchSecretCommand(raw) {
   const q = String(raw || '').trim().toLowerCase();
   if (!q) return null;
-  return SECRET_COMMANDS.find(command => command.secretCommand === q) || null;
+  const compact = q.replace(/[\s.\-_]/g, '');
+  return SECRET_COMMANDS.find(command => command.secretCommand === compact || command.aliases?.includes(q) || command.aliases?.includes(compact)) || null;
 }
 
 export function getPokemonSpecial(id) {

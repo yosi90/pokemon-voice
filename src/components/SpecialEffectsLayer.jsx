@@ -14,7 +14,8 @@ function LeafBurst({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--leaf-burst">
-        <span /><span /><span /><span /><span /><span />
+        <span /><span /><span /><span /><span /><span /><span />
+        <span /><span /><span /><span /><span /><span /><span />
       </div>
     </TimedEffect>
   );
@@ -30,11 +31,71 @@ function EmberBurst({ effect, onDone }) {
   );
 }
 
+function PetalBurst({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--petal-burst">
+        <span /><span /><span /><span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function StarterFireBurst({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--starter-fire-burst">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
 function WaterSplash({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--water-splash">
         <span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function StarterWaterBurst({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--starter-water-burst">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function StarterBubbles({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--starter-bubbles">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function StarterFeather({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--starter-feather">
+        <span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function StarterSprint({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--starter-sprint">
+        <span /><span /><span /><span />
       </div>
     </TimedEffect>
   );
@@ -89,15 +150,40 @@ function SnorlaxNap({ effect, onDone }) {
   );
 }
 
+function MissingNoGlitch({ effect, onDone }) {
+  useEffect(() => {
+    document.body.classList.add('missingno-active');
+    return () => document.body.classList.remove('missingno-active');
+  }, []);
+
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--missingno-glitch">
+        <div className="missingno-block" />
+        <span>MISSINGNO</span>
+        <span>#$%? 000</span>
+        <span>▓▒░▓▒░</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
 function SpecialEffect({ effect, onDone, onCoinCollect }) {
   if (effect.type === 'gengar-scare') {
     return <GengarScare active onDone={() => onDone(effect.key)} />;
   }
   if (effect.type === 'bulbasaur-leaf-burst') return <LeafBurst effect={effect} onDone={onDone} />;
   if (effect.type === 'charmander-ember-burst') return <EmberBurst effect={effect} onDone={onDone} />;
+  if (effect.type === 'petal-burst') return <PetalBurst effect={effect} onDone={onDone} />;
   if (effect.type === 'squirtle-water-splash') return <WaterSplash effect={effect} onDone={onDone} />;
+  if (effect.type === 'starter-bubbles') return <StarterBubbles effect={effect} onDone={onDone} />;
+  if (effect.type === 'starter-feather') return <StarterFeather effect={effect} onDone={onDone} />;
+  if (effect.type === 'starter-fire-burst') return <StarterFireBurst effect={effect} onDone={onDone} />;
+  if (effect.type === 'starter-sprint') return <StarterSprint effect={effect} onDone={onDone} />;
+  if (effect.type === 'starter-water-burst') return <StarterWaterBurst effect={effect} onDone={onDone} />;
   if (effect.type === 'jigglypuff-sleep-wave') return <SleepWave effect={effect} onDone={onDone} />;
   if (effect.type === 'meowth-coin') return <MeowthCoin effect={effect} onDone={onDone} onCoinCollect={onCoinCollect} />;
+  if (effect.type === 'missingno-glitch') return <MissingNoGlitch effect={effect} onDone={onDone} />;
   if (effect.type === 'psyduck-think') return <PsyduckThink effect={effect} onDone={onDone} />;
   if (effect.type === 'snorlax-nap') return <SnorlaxNap effect={effect} onDone={onDone} />;
   return null;
