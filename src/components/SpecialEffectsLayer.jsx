@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GengarScare } from './GengarScare.jsx';
 
 function TimedEffect({ effect, onDone, children }) {
@@ -259,6 +259,7 @@ function LucarioAura({ effect, onDone }) {
         <span />
         <span />
         <span />
+        <i aria-hidden="true" />
       </div>
     </TimedEffect>
   );
@@ -295,14 +296,23 @@ function KlefkiKeys({ effect, onDone }) {
 }
 
 function GimmighoulCoin({ effect, onDone, onGimmighoulCoinCollect }) {
+  const [position] = useState(() => ({
+    left: `${8 + Math.round(Math.random() * 84)}vw`,
+    top: `${18 + Math.round(Math.random() * 62)}vh`,
+  }));
+
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <button
         className="effect effect--gimmighoul-coin"
         type="button"
+        style={{
+          '--coin-left': position.left,
+          '--coin-top': position.top,
+        }}
         aria-label="Recoger moneda de Gimmighoul"
-        onClick={() => {
-          onGimmighoulCoinCollect();
+        onClick={async () => {
+          await onGimmighoulCoinCollect();
           onDone(effect.key);
         }}
       >
@@ -317,6 +327,254 @@ function PalafinHero({ effect, onDone }) {
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--palafin-hero">
         <span>HERO</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function SpiritombSouls({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--spiritomb-souls">
+        <strong>108</strong>
+        {Array.from({ length: 18 }, (_, index) => <span key={index} />)}
+      </div>
+    </TimedEffect>
+  );
+}
+
+function DarkraiNightmare({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--darkrai-nightmare">
+        <span />
+        <span />
+        <strong>DARKRAI</strong>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function MimikyuBlackout({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--mimikyu-blackout">
+        <span>PIKA?</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function ChandelureShadows({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--chandelure-shadows">
+        <span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function MiloticTide({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--milotic-tide">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function GarchompDash({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--garchomp-dash">
+        <span />
+        <i />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function ArceusDivine({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--arceus-divine">
+        {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
+        <span>ARCEUS</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function XerneasBloom({ effect, onDone }) {
+  useEffect(() => {
+    document.body.classList.add('xerneas-bloom-active');
+    return () => document.body.classList.remove('xerneas-bloom-active');
+  }, []);
+
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--xerneas-bloom">
+        <span /><span /><span /><span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function YveltalDrain({ effect, onDone }) {
+  useEffect(() => {
+    document.body.classList.add('yveltal-drain-active');
+    return () => document.body.classList.remove('yveltal-drain-active');
+  }, []);
+
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--yveltal-drain">
+        <span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function AuraBalance({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--aura-balance">
+        <span>LIFE</span>
+        <i />
+        <span>DEATH</span>
+      </div>
+    </TimedEffect>
+  );
+}
+
+function NecrozmaPrism({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--necrozma-prism">
+        <span /><span /><span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function EternatusDynamax({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--eternatus-dynamax">
+        <span />
+        <i />
+        <i />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function GenesectScan({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--genesect-scan">
+        <span />
+        <i />
+        <i />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function WoolooRoll({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--wooloo-roll"><span /></div>
+    </TimedEffect>
+  );
+}
+
+function CramorantSpit({ effect, onDone }) {
+  const items = ['?', '★', '!', '魚'];
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--cramorant-spit">
+        {items.map((item, index) => <span key={index}>{item}</span>)}
+      </div>
+    </TimedEffect>
+  );
+}
+
+function TeaTime({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--tea-time">
+        <span />
+        <i />
+        <i />
+        <i />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function AlcremieFrosting({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--alcremie-frosting">
+        {Array.from({ length: 10 }, (_, index) => <span key={index} />)}
+      </div>
+    </TimedEffect>
+  );
+}
+
+function DragapultDreepy({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--dragapult-dreepy">
+        <span /><span /><span />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function TandemausMultiply({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--tandemaus-multiply">
+        {Array.from({ length: 8 }, (_, index) => <span key={index} />)}
+      </div>
+    </TimedEffect>
+  );
+}
+
+function FidoughBake({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--fidough-bake">
+        <span />
+        <i />
+        <i />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function TinkatonHammer({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--tinkaton-hammer">
+        <span />
+        <i />
+      </div>
+    </TimedEffect>
+  );
+}
+
+function KingambitBoss({ effect, onDone }) {
+  return (
+    <TimedEffect effect={effect} onDone={onDone}>
+      <div className="effect effect--kingambit-boss">
+        <span>KINGAMBIT</span>
+        <i />
+        <i />
       </div>
     </TimedEffect>
   );
@@ -365,19 +623,35 @@ function SpecialEffect({ effect, onDone, onCoinCollect, onGimmighoulCoinCollect 
   if (effect.type === 'gengar-scare') {
     return <GengarScare active onDone={() => onDone(effect.key)} />;
   }
+  if (effect.type === 'arceus-divine') return <ArceusDivine effect={effect} onDone={onDone} />;
+  if (effect.type === 'aura-balance') return <AuraBalance effect={effect} onDone={onDone} />;
+  if (effect.type === 'alcremie-frosting') return <AlcremieFrosting effect={effect} onDone={onDone} />;
   if (effect.type === 'audino-heal') return <AudinoHeal effect={effect} onDone={onDone} />;
   if (effect.type === 'bulbasaur-leaf-burst') return <LeafBurst effect={effect} onDone={onDone} />;
   if (effect.type === 'castform-weather') return <CastformWeather effect={effect} onDone={onDone} />;
+  if (effect.type === 'chandelure-shadows') return <ChandelureShadows effect={effect} onDone={onDone} />;
   if (effect.type === 'celebi-rewind') return <CelebiRewind effect={effect} onDone={onDone} />;
   if (effect.type === 'charmander-ember-burst') return <EmberBurst effect={effect} onDone={onDone} />;
+  if (effect.type === 'cramorant-spit') return <CramorantSpit effect={effect} onDone={onDone} />;
+  if (effect.type === 'darkrai-nightmare') return <DarkraiNightmare effect={effect} onDone={onDone} />;
   if (effect.type === 'delibird-gift') return <DelibirdGift effect={effect} onDone={onDone} />;
+  if (effect.type === 'dragapult-dreepy') return <DragapultDreepy effect={effect} onDone={onDone} />;
+  if (effect.type === 'eternatus-dynamax') return <EternatusDynamax effect={effect} onDone={onDone} />;
+  if (effect.type === 'fidough-bake') return <FidoughBake effect={effect} onDone={onDone} />;
+  if (effect.type === 'garchomp-dash') return <GarchompDash effect={effect} onDone={onDone} />;
+  if (effect.type === 'genesect-scan') return <GenesectScan effect={effect} onDone={onDone} />;
   if (effect.type === 'gimmighoul-coin') return <GimmighoulCoin effect={effect} onDone={onDone} onGimmighoulCoinCollect={onGimmighoulCoinCollect} />;
+  if (effect.type === 'kingambit-boss') return <KingambitBoss effect={effect} onDone={onDone} />;
   if (effect.type === 'klefki-keys') return <KlefkiKeys effect={effect} onDone={onDone} />;
   if (effect.type === 'lucario-aura') return <LucarioAura effect={effect} onDone={onDone} />;
+  if (effect.type === 'milotic-tide') return <MiloticTide effect={effect} onDone={onDone} />;
+  if (effect.type === 'mimikyu-blackout') return <MimikyuBlackout effect={effect} onDone={onDone} />;
   if (effect.type === 'petal-burst') return <PetalBurst effect={effect} onDone={onDone} />;
+  if (effect.type === 'necrozma-prism') return <NecrozmaPrism effect={effect} onDone={onDone} />;
   if (effect.type === 'palafin-hero') return <PalafinHero effect={effect} onDone={onDone} />;
   if (effect.type === 'rotom-possess') return <RotomPossess effect={effect} onDone={onDone} />;
   if (effect.type === 'shuckle-juice') return <ShuckleJuice effect={effect} onDone={onDone} />;
+  if (effect.type === 'spiritomb-souls') return <SpiritombSouls effect={effect} onDone={onDone} />;
   if (effect.type === 'squirtle-water-splash') return <WaterSplash effect={effect} onDone={onDone} />;
   if (effect.type === 'starter-bubbles') return <StarterBubbles effect={effect} onDone={onDone} />;
   if (effect.type === 'starter-feather') return <StarterFeather effect={effect} onDone={onDone} />;
@@ -390,8 +664,14 @@ function SpecialEffect({ effect, onDone, onCoinCollect, onGimmighoulCoinCollect 
   if (effect.type === 'psyduck-think') return <PsyduckThink effect={effect} onDone={onDone} />;
   if (effect.type === 'snorlax-nap') return <SnorlaxNap effect={effect} onDone={onDone} />;
   if (effect.type === 'sudowoodo-dodge') return <SudowoodoDodge effect={effect} onDone={onDone} />;
+  if (effect.type === 'tandemaus-multiply') return <TandemausMultiply effect={effect} onDone={onDone} />;
+  if (effect.type === 'tea-time') return <TeaTime effect={effect} onDone={onDone} />;
+  if (effect.type === 'tinkaton-hammer') return <TinkatonHammer effect={effect} onDone={onDone} />;
   if (effect.type === 'unown-message') return <UnownMessage effect={effect} onDone={onDone} />;
   if (effect.type === 'wobbuffet-reply') return <WobbuffetReply effect={effect} onDone={onDone} />;
+  if (effect.type === 'wooloo-roll') return <WoolooRoll effect={effect} onDone={onDone} />;
+  if (effect.type === 'xerneas-bloom') return <XerneasBloom effect={effect} onDone={onDone} />;
+  if (effect.type === 'yveltal-drain') return <YveltalDrain effect={effect} onDone={onDone} />;
   if (effect.type === 'zoroark-illusion') return <ZoroarkIllusion effect={effect} onDone={onDone} />;
   return null;
 }

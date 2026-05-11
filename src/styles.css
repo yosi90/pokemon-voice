@@ -948,6 +948,286 @@ main {
   filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .44)) drop-shadow(0 0 14px rgba(48, 190, 255, .2));
 }
 
+.pokemon-card.special-shedinja.revealing .pokemon-ball-card,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:hover,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:focus-visible {
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .44)) drop-shadow(0 0 22px rgba(206, 185, 255, .38));
+}
+
+.pokemon-card.special-shedinja.revealing .local-effect--hollow-halo,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:hover .local-effect--hollow-halo,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:focus-visible .local-effect--hollow-halo {
+  opacity: 1;
+  inset: -14%;
+  border: 2px solid rgba(222, 202, 255, .72);
+  background:
+    radial-gradient(circle at center, transparent 0 31%, rgba(18, 15, 28, .58) 32% 36%, transparent 37%),
+    conic-gradient(from 0deg, transparent 0 13%, rgba(216, 193, 255, .68) 14% 16%, transparent 17% 34%, rgba(255, 255, 255, .38) 35% 37%, transparent 38% 100%);
+  filter: drop-shadow(0 0 14px rgba(184, 151, 255, .42));
+  animation: hollowHalo 1800ms ease-out both;
+}
+
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:hover .pokemon-art,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:focus-visible .pokemon-art {
+  opacity: .72;
+  filter: drop-shadow(0 18px 14px rgba(0, 0, 0, .5)) grayscale(.28) contrast(1.18);
+}
+
+.pokemon-card.special-sableye.revealing .local-effect--gems,
+.pokemon-card.special-sableye.discovered .pokemon-ball-card:hover .local-effect--gems,
+.pokemon-card.special-sableye.discovered .pokemon-ball-card:focus-visible .local-effect--gems {
+  opacity: 1;
+  inset: -8%;
+  background:
+    radial-gradient(circle at 25% 30%, #f0abfc 0 4%, transparent 5%),
+    radial-gradient(circle at 72% 28%, #67e8f9 0 4%, transparent 5%),
+    radial-gradient(circle at 38% 76%, #fef08a 0 4%, transparent 5%),
+    radial-gradient(circle at 70% 72%, #c084fc 0 5%, transparent 6%);
+  filter: drop-shadow(0 0 9px rgba(216, 180, 254, .72));
+  animation: gemScatter 1800ms ease-out both;
+}
+
+.pokemon-card.special-mawile.revealing .local-effect--jaw,
+.pokemon-card.special-mawile.discovered .pokemon-ball-card:hover .local-effect--jaw,
+.pokemon-card.special-mawile.discovered .pokemon-ball-card:focus-visible .local-effect--jaw {
+  opacity: 1;
+  inset: auto auto -12% 50%;
+  width: 62%;
+  height: 42%;
+  transform: translateX(-50%);
+  border-radius: 0 0 50% 50%;
+  background:
+    linear-gradient(135deg, transparent 0 18%, #f8fafc 19% 26%, transparent 27% 38%, #f8fafc 39% 46%, transparent 47% 100%),
+    linear-gradient(225deg, transparent 0 18%, #f8fafc 19% 26%, transparent 27% 38%, #f8fafc 39% 46%, transparent 47% 100%),
+    linear-gradient(180deg, #171014 0%, #050505 100%);
+  border: 3px solid #111;
+  box-shadow: 0 -8px 16px rgba(0, 0, 0, .34);
+  animation: mawileBite 1700ms ease-out both;
+}
+
+.pokemon-card.special-drifloon.revealing .local-effect--string-shadow,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:hover .local-effect--string-shadow,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:focus-visible .local-effect--string-shadow {
+  opacity: 1;
+  inset: -10% 0 -18%;
+  background:
+    linear-gradient(90deg, transparent 0 49%, rgba(170, 140, 220, .7) 50% 51%, transparent 52% 100%),
+    radial-gradient(ellipse at 50% 93%, rgba(0, 0, 0, .42), transparent 34%);
+  animation: drifloonTether 1900ms ease-out both;
+}
+
+.pokemon-card.special-drifloon.revealing .pokemon-ball-card,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:hover,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:focus-visible {
+  animation: drifloonFloat 1900ms ease-in-out both;
+}
+
+.pokemon-card.special-spiritomb.revealing .local-effect--soul-ring,
+.pokemon-card.special-spiritomb.discovered .pokemon-ball-card:hover .local-effect--soul-ring,
+.pokemon-card.special-spiritomb.discovered .pokemon-ball-card:focus-visible .local-effect--soul-ring {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 42%, rgba(126, 34, 206, .36) 43% 48%, transparent 49%),
+    conic-gradient(from 12deg, rgba(190, 116, 255, .72) 0 2%, transparent 3% 9%, rgba(45, 212, 191, .55) 10% 12%, transparent 13% 100%);
+  filter: drop-shadow(0 0 16px rgba(168, 85, 247, .5));
+  animation: spiritombLocalSpin 2600ms linear both;
+}
+
+.pokemon-card.special-mimikyu.revealing .local-effect--false-pika,
+.pokemon-card.special-mimikyu.discovered .pokemon-ball-card:hover .local-effect--false-pika,
+.pokemon-card.special-mimikyu.discovered .pokemon-ball-card:focus-visible .local-effect--false-pika {
+  opacity: 1;
+}
+
+.local-effect--false-pika::before {
+  content: "Pika?";
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  transform: translateX(-50%) rotate(-6deg);
+  padding: 5px 7px;
+  border: 2px solid #111;
+  border-radius: 8px;
+  background: #facc15;
+  color: #111;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 8px;
+  text-shadow: none;
+  animation: falsePikaTwitch 1500ms steps(2, end) both;
+}
+
+.pokemon-card.special-litwick.revealing .local-effect--blue-flame,
+.pokemon-card.special-litwick.discovered .pokemon-ball-card:hover .local-effect--blue-flame,
+.pokemon-card.special-litwick.discovered .pokemon-ball-card:focus-visible .local-effect--blue-flame,
+.pokemon-card.special-chandelure.revealing .local-effect--chandelier-flames,
+.pokemon-card.special-chandelure.discovered .pokemon-ball-card:hover .local-effect--chandelier-flames,
+.pokemon-card.special-chandelure.discovered .pokemon-ball-card:focus-visible .local-effect--chandelier-flames {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(125, 211, 252, .95) 0 7%, rgba(147, 51, 234, .72) 8% 15%, transparent 16%),
+    radial-gradient(ellipse at 27% 35%, rgba(192, 132, 252, .75) 0 6%, transparent 7%),
+    radial-gradient(ellipse at 73% 35%, rgba(125, 211, 252, .72) 0 6%, transparent 7%);
+  filter: drop-shadow(0 0 18px rgba(147, 51, 234, .7));
+  animation: ghostFlame 1700ms ease-out both;
+}
+
+.pokemon-card.special-milotic.revealing .local-effect--scales,
+.pokemon-card.special-milotic.discovered .pokemon-ball-card:hover .local-effect--scales,
+.pokemon-card.special-milotic.discovered .pokemon-ball-card:focus-visible .local-effect--scales {
+  opacity: 1;
+  inset: -14%;
+  background:
+    radial-gradient(ellipse at 25% 32%, rgba(192, 244, 255, .86) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 54% 20%, rgba(255, 214, 244, .82) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 78% 44%, rgba(134, 239, 172, .74) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 42% 72%, rgba(125, 218, 255, .78) 0 6%, transparent 7%);
+  filter: drop-shadow(0 0 12px rgba(125, 218, 255, .58));
+  animation: miloticScaleShimmer 2400ms ease-out both;
+}
+
+.pokemon-card.special-garchomp.revealing .local-effect--speed-cut,
+.pokemon-card.special-garchomp.discovered .pokemon-ball-card:hover .local-effect--speed-cut,
+.pokemon-card.special-garchomp.discovered .pokemon-ball-card:focus-visible .local-effect--speed-cut {
+  opacity: 1;
+  inset: -24%;
+  background:
+    linear-gradient(110deg, transparent 0 34%, rgba(255, 255, 255, .9) 35% 38%, transparent 39%),
+    linear-gradient(110deg, transparent 0 52%, rgba(96, 165, 250, .72) 53% 55%, transparent 56%);
+  filter: drop-shadow(0 0 12px rgba(96, 165, 250, .62));
+  animation: garchompCutLocal 1500ms ease-out both;
+}
+
+.pokemon-card.special-arceus.revealing .local-effect--creation-ring,
+.pokemon-card.special-arceus.discovered .pokemon-ball-card:hover .local-effect--creation-ring,
+.pokemon-card.special-arceus.discovered .pokemon-ball-card:focus-visible .local-effect--creation-ring {
+  opacity: 1;
+  inset: -16%;
+  border: 2px solid rgba(255, 239, 164, .76);
+  background:
+    radial-gradient(circle, transparent 0 42%, rgba(255, 239, 164, .32) 43% 47%, transparent 48%),
+    conic-gradient(from 0deg, rgba(255, 239, 164, .86) 0 3%, transparent 4% 12%, rgba(255, 255, 255, .6) 13% 15%, transparent 16% 100%);
+  filter: drop-shadow(0 0 16px rgba(255, 239, 164, .58));
+  animation: arceusRingLocal 3000ms linear both;
+}
+
+.pokemon-card.special-necrozma.revealing .local-effect--prism,
+.pokemon-card.special-necrozma.discovered .pokemon-ball-card:hover .local-effect--prism,
+.pokemon-card.special-necrozma.discovered .pokemon-ball-card:focus-visible .local-effect--prism {
+  opacity: 1;
+  inset: -12%;
+  background:
+    conic-gradient(from 16deg, rgba(239, 68, 68, .74), rgba(59, 130, 246, .74), rgba(34, 197, 94, .74), rgba(234, 179, 8, .74), rgba(239, 68, 68, .74));
+  clip-path: polygon(50% 0, 90% 25%, 80% 78%, 50% 100%, 20% 78%, 10% 25%);
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, .42));
+  animation: prismFlashLocal 2400ms steps(2, end) both;
+}
+
+.pokemon-card.special-eternatus.revealing .local-effect--dynamax-core,
+.pokemon-card.special-eternatus.discovered .pokemon-ball-card:hover .local-effect--dynamax-core,
+.pokemon-card.special-eternatus.discovered .pokemon-ball-card:focus-visible .local-effect--dynamax-core {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(circle at center, rgba(248, 113, 113, .84) 0 10%, rgba(147, 51, 234, .58) 11% 22%, transparent 23%),
+    conic-gradient(from 0deg, transparent 0 9%, rgba(248, 113, 113, .7) 10% 12%, transparent 13% 38%, rgba(147, 51, 234, .62) 39% 42%, transparent 43% 100%);
+  filter: drop-shadow(0 0 18px rgba(248, 113, 113, .7));
+  animation: dynamaxPulseLocal 2600ms ease-out both;
+}
+
+.pokemon-card.special-genesect.revealing .local-effect--scanner,
+.pokemon-card.special-genesect.discovered .pokemon-ball-card:hover .local-effect--scanner,
+.pokemon-card.special-genesect.discovered .pokemon-ball-card:focus-visible .local-effect--scanner {
+  opacity: 1;
+  inset: -10%;
+  background:
+    linear-gradient(180deg, transparent 0 44%, rgba(239, 68, 68, .82) 45% 49%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent 0 12px, rgba(239, 68, 68, .16) 13px 14px);
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, .72));
+  animation: genesectScanLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-wooloo.revealing .local-effect--wool,
+.pokemon-card.special-wooloo.discovered .pokemon-ball-card:hover .local-effect--wool,
+.pokemon-card.special-wooloo.discovered .pokemon-ball-card:focus-visible .local-effect--wool {
+  opacity: 1;
+  inset: -12%;
+  background:
+    radial-gradient(circle at 28% 30%, rgba(255, 255, 255, .9) 0 9%, transparent 10%),
+    radial-gradient(circle at 64% 28%, rgba(255, 255, 255, .86) 0 10%, transparent 11%),
+    radial-gradient(circle at 50% 64%, rgba(255, 255, 255, .82) 0 12%, transparent 13%);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, .52));
+  animation: woolooPuffLocal 2100ms ease-out both;
+}
+
+.pokemon-card.special-cramorant.revealing .local-effect--gulp,
+.pokemon-card.special-cramorant.discovered .pokemon-ball-card:hover .local-effect--gulp,
+.pokemon-card.special-cramorant.discovered .pokemon-ball-card:focus-visible .local-effect--gulp {
+  opacity: 1;
+  inset: -10%;
+  background: radial-gradient(ellipse at 50% 28%, rgba(96, 165, 250, .78) 0 12%, transparent 13%);
+  animation: cramorantGulpLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-tea.revealing .local-effect--steam,
+.pokemon-card.special-tea.discovered .pokemon-ball-card:hover .local-effect--steam,
+.pokemon-card.special-tea.discovered .pokemon-ball-card:focus-visible .local-effect--steam {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(ellipse at 42% 18%, rgba(255, 255, 255, .62), transparent 16%),
+    radial-gradient(ellipse at 58% 8%, rgba(255, 255, 255, .48), transparent 14%);
+  animation: teaSteamLocal 2300ms ease-out both;
+}
+
+.pokemon-card.special-alcremie.revealing .local-effect--frosting,
+.pokemon-card.special-alcremie.discovered .pokemon-ball-card:hover .local-effect--frosting,
+.pokemon-card.special-alcremie.discovered .pokemon-ball-card:focus-visible .local-effect--frosting {
+  opacity: 1;
+  inset: -12%;
+  background:
+    radial-gradient(circle at 30% 28%, #fbcfe8 0 7%, transparent 8%),
+    radial-gradient(circle at 68% 34%, #fde68a 0 6%, transparent 7%),
+    radial-gradient(circle at 48% 70%, #bfdbfe 0 7%, transparent 8%);
+  animation: frostingPopLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-dragapult.revealing .local-effect--missiles,
+.pokemon-card.special-dragapult.discovered .pokemon-ball-card:hover .local-effect--missiles,
+.pokemon-card.special-dragapult.discovered .pokemon-ball-card:focus-visible .local-effect--missiles {
+  opacity: 1;
+  inset: -24%;
+  background:
+    linear-gradient(90deg, transparent 0 16%, rgba(34, 197, 94, .78) 17% 22%, transparent 23%),
+    linear-gradient(90deg, transparent 0 60%, rgba(34, 197, 94, .72) 61% 66%, transparent 67%);
+  animation: dragapultMissileLocal 2100ms ease-out both;
+}
+
+.pokemon-card.special-fidough.revealing .local-effect--bread-puff,
+.pokemon-card.special-fidough.discovered .pokemon-ball-card:hover .local-effect--bread-puff,
+.pokemon-card.special-fidough.discovered .pokemon-ball-card:focus-visible .local-effect--bread-puff {
+  opacity: 1;
+  inset: -10%;
+  background:
+    radial-gradient(circle at 30% 64%, rgba(254, 215, 170, .82) 0 10%, transparent 11%),
+    radial-gradient(circle at 68% 62%, rgba(253, 186, 116, .72) 0 10%, transparent 11%);
+  animation: fidoughPuffLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-tinkaton.revealing .local-effect--hammer,
+.pokemon-card.special-tinkaton.discovered .pokemon-ball-card:hover .local-effect--hammer,
+.pokemon-card.special-tinkaton.discovered .pokemon-ball-card:focus-visible .local-effect--hammer {
+  opacity: 1;
+  inset: -20%;
+  background:
+    linear-gradient(110deg, transparent 0 44%, #9ca3af 45% 51%, transparent 52%),
+    radial-gradient(ellipse at 68% 26%, rgba(156, 163, 175, .9) 0 14%, transparent 15%);
+  filter: drop-shadow(0 0 12px rgba(156, 163, 175, .7));
+  animation: tinkatonHammerLocal 2300ms ease-out both;
+}
+
 .pokemon-card.special-pikachu:not(.discovered) .pokemon-ball-card {
   animation: pikachuRestless 3.2s ease-in-out infinite;
 }
@@ -2489,6 +2769,32 @@ main {
   inset: 0;
 }
 
+.effect--spiritomb-souls,
+.effect--darkrai-nightmare,
+.effect--mimikyu-blackout,
+.effect--chandelure-shadows,
+.effect--milotic-tide,
+.effect--garchomp-dash,
+.effect--arceus-divine,
+.effect--xerneas-bloom,
+.effect--yveltal-drain,
+.effect--aura-balance,
+.effect--necrozma-prism,
+.effect--eternatus-dynamax,
+.effect--genesect-scan,
+.effect--wooloo-roll,
+.effect--cramorant-spit,
+.effect--tea-time,
+.effect--alcremie-frosting,
+.effect--dragapult-dreepy,
+.effect--tandemaus-multiply,
+.effect--fidough-bake,
+.effect--tinkaton-hammer,
+.effect--kingambit-boss {
+  inset: 0;
+  pointer-events: none;
+}
+
 .effect--castform-weather span {
   position: fixed;
   font-size: clamp(22px, 4.8vw, 52px);
@@ -2513,6 +2819,605 @@ main {
 .effect--castform-weather span:nth-child(10) { left: 90vw; top: 78vh; animation-delay: 340ms; }
 .effect--castform-weather span:nth-child(11) { left: 4vw; top: 82vh; animation-delay: 210ms; }
 .effect--castform-weather span:nth-child(12) { left: 58vw; top: 84vh; animation-delay: 30ms; }
+
+.effect--spiritomb-souls {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, rgba(88, 28, 135, .22), transparent 58%);
+}
+
+.effect--spiritomb-souls strong {
+  color: rgba(221, 214, 254, .88);
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(26px, 6vw, 72px);
+  text-shadow: 0 0 18px rgba(168, 85, 247, .78), 0 0 34px rgba(45, 212, 191, .42);
+  animation: spiritombPulse 2600ms ease-out both;
+}
+
+.effect--spiritomb-souls span {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(216, 180, 254, .84);
+  box-shadow: 0 0 14px rgba(168, 85, 247, .8);
+  animation: spiritombSoul 2600ms ease-out both;
+}
+
+.effect--spiritomb-souls span:nth-child(2) { --x: -38vw; --y: -28vh; animation-delay: 0ms; }
+.effect--spiritomb-souls span:nth-child(3) { --x: -24vw; --y: -42vh; animation-delay: 70ms; }
+.effect--spiritomb-souls span:nth-child(4) { --x: -8vw; --y: -34vh; animation-delay: 140ms; }
+.effect--spiritomb-souls span:nth-child(5) { --x: 14vw; --y: -38vh; animation-delay: 40ms; }
+.effect--spiritomb-souls span:nth-child(6) { --x: 32vw; --y: -24vh; animation-delay: 110ms; }
+.effect--spiritomb-souls span:nth-child(7) { --x: 40vw; --y: 0; animation-delay: 200ms; }
+.effect--spiritomb-souls span:nth-child(8) { --x: 30vw; --y: 28vh; animation-delay: 260ms; }
+.effect--spiritomb-souls span:nth-child(9) { --x: 10vw; --y: 38vh; animation-delay: 90ms; }
+.effect--spiritomb-souls span:nth-child(10) { --x: -12vw; --y: 34vh; animation-delay: 180ms; }
+.effect--spiritomb-souls span:nth-child(11) { --x: -32vw; --y: 20vh; animation-delay: 20ms; }
+.effect--spiritomb-souls span:nth-child(12) { --x: -42vw; --y: -2vh; animation-delay: 230ms; }
+.effect--spiritomb-souls span:nth-child(13) { --x: 2vw; --y: -48vh; animation-delay: 300ms; }
+.effect--spiritomb-souls span:nth-child(14) { --x: 46vw; --y: -12vh; animation-delay: 360ms; }
+.effect--spiritomb-souls span:nth-child(15) { --x: 42vw; --y: 34vh; animation-delay: 430ms; }
+.effect--spiritomb-souls span:nth-child(16) { --x: -46vw; --y: 36vh; animation-delay: 500ms; }
+.effect--spiritomb-souls span:nth-child(17) { --x: -4vw; --y: 48vh; animation-delay: 570ms; }
+.effect--spiritomb-souls span:nth-child(18) { --x: 24vw; --y: 46vh; animation-delay: 640ms; }
+.effect--spiritomb-souls span:nth-child(19) { --x: -26vw; --y: -50vh; animation-delay: 710ms; }
+
+.effect--darkrai-nightmare {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(30, 27, 75, .62), transparent 40%),
+    linear-gradient(180deg, rgba(2, 6, 23, .72), rgba(88, 28, 135, .34), rgba(2, 6, 23, .78));
+  animation: darkraiNightmare 1900ms ease-out both;
+}
+
+.effect--darkrai-nightmare span {
+  position: fixed;
+  width: min(56vw, 520px);
+  height: min(22vw, 210px);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(15, 23, 42, .9), transparent 66%);
+  filter: blur(12px);
+  animation: nightmareDrift 1900ms ease-out both;
+}
+
+.effect--darkrai-nightmare span:nth-child(1) { left: 5vw; top: 20vh; }
+.effect--darkrai-nightmare span:nth-child(2) { right: 4vw; bottom: 18vh; animation-delay: 180ms; }
+
+.effect--darkrai-nightmare strong {
+  color: rgba(248, 250, 252, .88);
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(18px, 4vw, 52px);
+  letter-spacing: 0;
+  text-shadow: 0 0 18px rgba(147, 51, 234, .88), 0 0 30px rgba(248, 113, 113, .45);
+  animation: nightmareText 1900ms ease-out both;
+}
+
+.effect--mimikyu-blackout {
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .72);
+  animation: mimikyuBlackout 1500ms steps(2, end) both;
+}
+
+.effect--mimikyu-blackout span {
+  color: var(--yellow);
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(22px, 6vw, 74px);
+  text-shadow: 3px 0 0 #111, -3px 0 0 #111, 0 0 20px rgba(255, 207, 33, .7);
+  transform: rotate(-7deg);
+}
+
+.effect--chandelure-shadows {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(147, 51, 234, .24), transparent 20%),
+    radial-gradient(circle at 80% 28%, rgba(56, 189, 248, .18), transparent 22%),
+    radial-gradient(circle at 50% 76%, rgba(0, 0, 0, .58), transparent 42%);
+  animation: chandelureRoom 2400ms ease-out both;
+}
+
+.effect--chandelure-shadows span {
+  position: fixed;
+  width: 16px;
+  height: 42px;
+  border-radius: 50% 50% 44% 44%;
+  background: radial-gradient(ellipse at 50% 20%, #e0f2fe 0 18%, #60a5fa 19% 42%, #7e22ce 43% 100%);
+  box-shadow: 0 0 22px rgba(147, 51, 234, .8), 0 0 42px rgba(56, 189, 248, .38);
+  animation: chandelureFlame 2400ms ease-out both;
+}
+
+.effect--chandelure-shadows span:nth-child(1) { left: 18vw; top: 18vh; animation-delay: 0ms; }
+.effect--chandelure-shadows span:nth-child(2) { left: 78vw; top: 16vh; animation-delay: 140ms; }
+.effect--chandelure-shadows span:nth-child(3) { left: 31vw; top: 70vh; animation-delay: 260ms; }
+.effect--chandelure-shadows span:nth-child(4) { left: 66vw; top: 68vh; animation-delay: 80ms; }
+
+.effect--milotic-tide {
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(125, 218, 255, .24), transparent 42%),
+    linear-gradient(180deg, transparent 0 55%, rgba(20, 184, 166, .22) 72%, rgba(14, 116, 144, .34) 100%);
+  animation: miloticTideGlow 2400ms ease-out both;
+}
+
+.effect--milotic-tide span {
+  position: fixed;
+  bottom: 8vh;
+  width: 22vw;
+  max-width: 280px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(192, 244, 255, .76), transparent);
+  filter: drop-shadow(0 0 14px rgba(125, 218, 255, .58));
+  animation: miloticWave 2400ms ease-out both;
+}
+
+.effect--milotic-tide span:nth-child(1) { left: -12vw; animation-delay: 0ms; }
+.effect--milotic-tide span:nth-child(2) { left: 10vw; bottom: 17vh; animation-delay: 120ms; }
+.effect--milotic-tide span:nth-child(3) { left: 34vw; bottom: 11vh; animation-delay: 60ms; }
+.effect--milotic-tide span:nth-child(4) { left: 56vw; bottom: 20vh; animation-delay: 180ms; }
+.effect--milotic-tide span:nth-child(5) { left: 76vw; bottom: 9vh; animation-delay: 90ms; }
+.effect--milotic-tide span:nth-child(6) { left: 88vw; bottom: 16vh; animation-delay: 240ms; }
+
+.effect--garchomp-dash {
+  overflow: hidden;
+}
+
+.effect--garchomp-dash span {
+  position: fixed;
+  left: -40vw;
+  top: 45vh;
+  width: 46vw;
+  max-width: 620px;
+  height: clamp(36px, 7vw, 92px);
+  clip-path: polygon(0 38%, 84% 0, 100% 50%, 84% 100%, 0 62%);
+  background: linear-gradient(90deg, transparent, rgba(147, 197, 253, .62), rgba(255, 255, 255, .94));
+  filter: drop-shadow(0 0 18px rgba(96, 165, 250, .76));
+  animation: garchompDash 1500ms cubic-bezier(.16, .9, .1, 1) both;
+}
+
+.effect--garchomp-dash i {
+  position: fixed;
+  left: -22vw;
+  top: 49vh;
+  width: 16vw;
+  max-width: 220px;
+  height: clamp(52px, 10vw, 130px);
+  clip-path: polygon(0 50%, 58% 0, 100% 50%, 58% 100%);
+  background: linear-gradient(135deg, #1e3a8a, #60a5fa 48%, #facc15 50%, #dc2626 58%, #1e293b);
+  filter: drop-shadow(0 18px 20px rgba(0, 0, 0, .42));
+  animation: garchompDash 1500ms cubic-bezier(.16, .9, .1, 1) both;
+}
+
+.effect--arceus-divine {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, rgba(255, 249, 196, .24), transparent 54%);
+}
+
+.effect--arceus-divine span {
+  color: #fff7ba;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(22px, 5vw, 62px);
+  text-shadow: 0 0 18px rgba(255, 239, 164, .92), 0 0 34px rgba(255, 255, 255, .54);
+  animation: arceusTitle 3000ms ease-out both;
+}
+
+.effect--arceus-divine i {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: min(9vw, 86px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 4px solid #111;
+  background:
+    linear-gradient(180deg, #ef4444 0 47%, #111 48% 54%, #f8fafc 55% 100%);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .8), 0 0 18px rgba(255, 239, 164, .58);
+  animation: arceusOrbit 3000ms ease-out both;
+}
+
+.effect--arceus-divine i:nth-child(1) { --a: 0deg; }
+.effect--arceus-divine i:nth-child(2) { --a: 36deg; }
+.effect--arceus-divine i:nth-child(3) { --a: 72deg; }
+.effect--arceus-divine i:nth-child(4) { --a: 108deg; }
+.effect--arceus-divine i:nth-child(5) { --a: 144deg; }
+.effect--arceus-divine i:nth-child(6) { --a: 180deg; }
+.effect--arceus-divine i:nth-child(7) { --a: 216deg; }
+.effect--arceus-divine i:nth-child(8) { --a: 252deg; }
+.effect--arceus-divine i:nth-child(9) { --a: 288deg; }
+.effect--arceus-divine i:nth-child(10) { --a: 324deg; }
+
+.xerneas-bloom-active .dock,
+.xerneas-bloom-active .secondary-menu,
+.xerneas-bloom-active .pokemon-card.discovered {
+  filter: saturate(1.2) brightness(1.08);
+}
+
+.effect--xerneas-bloom {
+  background: radial-gradient(circle at center, rgba(134, 239, 172, .22), transparent 58%);
+}
+
+.effect--xerneas-bloom span {
+  position: fixed;
+  width: 34px;
+  height: 24px;
+  border-radius: 70% 30% 70% 30%;
+  background: linear-gradient(135deg, #bbf7d0, #22c55e);
+  filter: drop-shadow(0 0 14px rgba(134, 239, 172, .72));
+  animation: xerneasPetal 2600ms ease-out both;
+}
+
+.effect--xerneas-bloom span:nth-child(1) { left: 10vw; top: 74vh; --x: 24vw; --y: -44vh; animation-delay: 0ms; }
+.effect--xerneas-bloom span:nth-child(2) { left: 28vw; top: 82vh; --x: -16vw; --y: -42vh; animation-delay: 120ms; }
+.effect--xerneas-bloom span:nth-child(3) { left: 44vw; top: 78vh; --x: 20vw; --y: -50vh; animation-delay: 60ms; }
+.effect--xerneas-bloom span:nth-child(4) { left: 64vw; top: 84vh; --x: -12vw; --y: -46vh; animation-delay: 180ms; }
+.effect--xerneas-bloom span:nth-child(5) { left: 82vw; top: 72vh; --x: -30vw; --y: -38vh; animation-delay: 90ms; }
+.effect--xerneas-bloom span:nth-child(6) { left: 18vw; top: 92vh; --x: 8vw; --y: -62vh; animation-delay: 240ms; }
+.effect--xerneas-bloom span:nth-child(7) { left: 52vw; top: 94vh; --x: -18vw; --y: -58vh; animation-delay: 300ms; }
+.effect--xerneas-bloom span:nth-child(8) { left: 74vw; top: 90vh; --x: 10vw; --y: -56vh; animation-delay: 150ms; }
+
+.yveltal-drain-active .grid,
+.yveltal-drain-active .dock,
+.yveltal-drain-active .secondary-menu {
+  filter: saturate(.45) brightness(.8) contrast(1.1);
+}
+
+.effect--yveltal-drain {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, rgba(127, 29, 29, .34), transparent 58%);
+  animation: yveltalDrainRoom 2400ms ease-out both;
+}
+
+.effect--yveltal-drain span {
+  position: fixed;
+  width: 32vw;
+  max-width: 420px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, .9), transparent);
+  filter: drop-shadow(0 0 16px rgba(239, 68, 68, .78));
+  animation: yveltalAbsorb 2400ms ease-out both;
+}
+
+.effect--yveltal-drain span:nth-child(1) { left: 8vw; top: 22vh; --r: 22deg; }
+.effect--yveltal-drain span:nth-child(2) { right: 8vw; top: 64vh; --r: -18deg; animation-delay: 130ms; }
+.effect--yveltal-drain span:nth-child(3) { left: 32vw; top: 78vh; --r: 8deg; animation-delay: 240ms; }
+
+.effect--aura-balance {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 28px;
+  padding: 0 9vw;
+  background:
+    linear-gradient(90deg, rgba(22, 163, 74, .24), transparent 46%, transparent 54%, rgba(127, 29, 29, .28)),
+    radial-gradient(circle at center, rgba(255, 255, 255, .24), transparent 38%);
+  font-family: "Press Start 2P", Inter, sans-serif;
+  color: #f8fafc;
+  text-shadow: 0 0 18px rgba(255, 255, 255, .68);
+  animation: auraBalanceRoom 2800ms ease-out both;
+}
+
+.effect--aura-balance span {
+  font-size: clamp(16px, 4vw, 46px);
+}
+
+.effect--aura-balance i {
+  width: min(26vw, 260px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 0deg, rgba(34, 197, 94, .88), rgba(255, 255, 255, .82), rgba(185, 28, 28, .88), rgba(255, 255, 255, .82), rgba(34, 197, 94, .88));
+  box-shadow: 0 0 30px rgba(255, 255, 255, .48);
+  animation: auraBalanceCore 2800ms ease-out both;
+}
+
+.effect--necrozma-prism {
+  background: rgba(2, 6, 23, .5);
+  mix-blend-mode: screen;
+  animation: necrozmaAberration 2400ms steps(2, end) both;
+}
+
+.effect--necrozma-prism span {
+  position: fixed;
+  width: 26vw;
+  max-width: 360px;
+  height: 40vh;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  opacity: .74;
+  background: linear-gradient(160deg, rgba(239, 68, 68, .64), rgba(59, 130, 246, .58), rgba(34, 197, 94, .5));
+  filter: blur(.4px) drop-shadow(0 0 18px rgba(255, 255, 255, .3));
+  animation: necrozmaPrism 2400ms ease-out both;
+}
+
+.effect--necrozma-prism span:nth-child(1) { left: 8vw; top: 10vh; animation-delay: 0ms; }
+.effect--necrozma-prism span:nth-child(2) { left: 33vw; top: 4vh; animation-delay: 80ms; }
+.effect--necrozma-prism span:nth-child(3) { left: 60vw; top: 12vh; animation-delay: 160ms; }
+.effect--necrozma-prism span:nth-child(4) { left: 20vw; top: 46vh; animation-delay: 220ms; }
+.effect--necrozma-prism span:nth-child(5) { left: 68vw; top: 48vh; animation-delay: 120ms; }
+
+.effect--eternatus-dynamax {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at center, rgba(248, 113, 113, .28), transparent 40%),
+    linear-gradient(180deg, rgba(88, 28, 135, .28), rgba(127, 29, 29, .34));
+  animation: eternatusRoom 2600ms ease-out both;
+}
+
+.effect--eternatus-dynamax span {
+  width: min(34vw, 340px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(248, 113, 113, .92) 0 16%, rgba(147, 51, 234, .62) 17% 42%, transparent 43%);
+  box-shadow: 0 0 48px rgba(248, 113, 113, .7);
+  animation: eternatusCore 2600ms ease-out both;
+}
+
+.effect--eternatus-dynamax i {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: min(58vw, 620px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid rgba(248, 113, 113, .46);
+  animation: eternatusRing 2600ms ease-out both;
+}
+
+.effect--eternatus-dynamax i:nth-child(3) {
+  width: min(78vw, 820px);
+  border-color: rgba(147, 51, 234, .42);
+  animation-delay: 180ms;
+}
+
+.effect--genesect-scan {
+  background:
+    repeating-linear-gradient(0deg, rgba(239, 68, 68, .08) 0 2px, transparent 3px 18px),
+    radial-gradient(circle at 50% 50%, rgba(239, 68, 68, .18), transparent 38%);
+}
+
+.effect--genesect-scan span {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 18vh;
+  height: 3px;
+  background: #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, .92), 0 0 34px rgba(239, 68, 68, .48);
+  animation: genesectScanLine 2200ms ease-out both;
+}
+
+.effect--genesect-scan i {
+  position: fixed;
+  border: 2px solid rgba(239, 68, 68, .72);
+  box-shadow: 0 0 18px rgba(239, 68, 68, .42);
+  animation: genesectTarget 2200ms ease-out both;
+}
+
+.effect--genesect-scan i:nth-child(2) {
+  left: 18vw;
+  top: 28vh;
+  width: 22vw;
+  height: 20vh;
+}
+
+.effect--genesect-scan i:nth-child(3) {
+  right: 16vw;
+  bottom: 18vh;
+  width: 18vw;
+  height: 24vh;
+  animation-delay: 180ms;
+}
+
+.effect--wooloo-roll span {
+  position: fixed;
+  left: -18vw;
+  top: 58vh;
+  width: clamp(80px, 14vw, 150px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, #fff 0 18%, transparent 19%),
+    radial-gradient(circle at 62% 32%, #fff 0 20%, transparent 21%),
+    radial-gradient(circle at 48% 62%, #f8fafc 0 28%, transparent 29%),
+    #e5e7eb;
+  border: 4px solid #111;
+  box-shadow: 0 18px 26px rgba(0, 0, 0, .38);
+  animation: woolooRoll 2100ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.effect--cramorant-spit span,
+.effect--alcremie-frosting span,
+.effect--tandemaus-multiply span {
+  position: fixed;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  animation: rarePop 2200ms ease-out both;
+}
+
+.effect--cramorant-spit span {
+  left: 50%;
+  top: 42%;
+  color: #dff7ff;
+  font-size: clamp(18px, 4vw, 42px);
+  text-shadow: 0 0 12px rgba(96, 165, 250, .8);
+}
+
+.effect--cramorant-spit span:nth-child(1) { --x: -32vw; --y: -22vh; animation-delay: 0ms; }
+.effect--cramorant-spit span:nth-child(2) { --x: 24vw; --y: -18vh; animation-delay: 120ms; }
+.effect--cramorant-spit span:nth-child(3) { --x: -18vw; --y: 26vh; animation-delay: 220ms; }
+.effect--cramorant-spit span:nth-child(4) { --x: 34vw; --y: 22vh; animation-delay: 80ms; }
+
+.effect--tea-time {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, .16), transparent 42%);
+}
+
+.effect--tea-time span {
+  width: min(30vw, 260px);
+  height: min(22vw, 170px);
+  border: 5px solid #111;
+  border-radius: 0 0 44% 44%;
+  background: linear-gradient(180deg, #f5d0fe, #7e22ce);
+  box-shadow: inset 0 18px 0 rgba(255, 255, 255, .32), 0 18px 30px rgba(0, 0, 0, .4);
+  animation: teaCup 2300ms ease-out both;
+}
+
+.effect--tea-time i {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  width: 18px;
+  height: 74px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .75), transparent);
+  animation: teaSteam 2300ms ease-out both;
+}
+
+.effect--tea-time i:nth-child(3) { transform: translateX(-38px); animation-delay: 120ms; }
+.effect--tea-time i:nth-child(4) { transform: translateX(38px); animation-delay: 240ms; }
+
+.effect--alcremie-frosting span {
+  left: 50%;
+  top: 46%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0 12px rgba(255, 255, 255, .6);
+}
+
+.effect--alcremie-frosting span:nth-child(3n) { --cream: #fbcfe8; }
+.effect--alcremie-frosting span:nth-child(3n + 1) { --cream: #fde68a; }
+.effect--alcremie-frosting span:nth-child(3n + 2) { --cream: #bfdbfe; }
+.effect--alcremie-frosting span:nth-child(1) { --x: -40vw; --y: -18vh; }
+.effect--alcremie-frosting span:nth-child(2) { --x: -26vw; --y: 16vh; animation-delay: 70ms; }
+.effect--alcremie-frosting span:nth-child(3) { --x: -8vw; --y: -26vh; animation-delay: 140ms; }
+.effect--alcremie-frosting span:nth-child(4) { --x: 12vw; --y: 24vh; animation-delay: 40ms; }
+.effect--alcremie-frosting span:nth-child(5) { --x: 32vw; --y: -20vh; animation-delay: 110ms; }
+.effect--alcremie-frosting span:nth-child(6) { --x: 42vw; --y: 12vh; animation-delay: 210ms; }
+.effect--alcremie-frosting span:nth-child(7) { --x: -35vw; --y: 31vh; animation-delay: 260ms; }
+.effect--alcremie-frosting span:nth-child(8) { --x: 4vw; --y: -36vh; animation-delay: 320ms; }
+.effect--alcremie-frosting span:nth-child(9) { --x: 24vw; --y: 34vh; animation-delay: 180ms; }
+.effect--alcremie-frosting span:nth-child(10) { --x: -12vw; --y: 34vh; animation-delay: 280ms; }
+
+.effect--dragapult-dreepy span {
+  position: fixed;
+  left: -18vw;
+  width: 90px;
+  height: 28px;
+  border-radius: 999px 60% 60% 999px;
+  background: linear-gradient(90deg, #22c55e, #86efac);
+  box-shadow: 0 0 16px rgba(34, 197, 94, .74);
+  animation: dreepyMissile 2100ms cubic-bezier(.18, .8, .2, 1) both;
+}
+
+.effect--dragapult-dreepy span:nth-child(1) { top: 30vh; animation-delay: 0ms; }
+.effect--dragapult-dreepy span:nth-child(2) { top: 50vh; animation-delay: 130ms; }
+.effect--dragapult-dreepy span:nth-child(3) { top: 68vh; animation-delay: 260ms; }
+
+.effect--tandemaus-multiply span {
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 46px;
+  border-radius: 50% 50% 42% 42%;
+  background: #f8fafc;
+  border: 2px solid #111;
+}
+
+.effect--tandemaus-multiply span:nth-child(1) { --x: -24vw; --y: -18vh; }
+.effect--tandemaus-multiply span:nth-child(2) { --x: -12vw; --y: 16vh; animation-delay: 80ms; }
+.effect--tandemaus-multiply span:nth-child(3) { --x: 8vw; --y: -22vh; animation-delay: 160ms; }
+.effect--tandemaus-multiply span:nth-child(4) { --x: 25vw; --y: 14vh; animation-delay: 40ms; }
+.effect--tandemaus-multiply span:nth-child(5) { --x: -34vw; --y: 24vh; animation-delay: 120ms; }
+.effect--tandemaus-multiply span:nth-child(6) { --x: 34vw; --y: -12vh; animation-delay: 200ms; }
+.effect--tandemaus-multiply span:nth-child(7) { --x: -4vw; --y: 30vh; animation-delay: 260ms; }
+.effect--tandemaus-multiply span:nth-child(8) { --x: 0vw; --y: -34vh; animation-delay: 320ms; }
+
+.effect--fidough-bake {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, rgba(253, 186, 116, .2), transparent 42%);
+}
+
+.effect--fidough-bake span {
+  width: min(28vw, 250px);
+  aspect-ratio: 1.35;
+  border-radius: 48%;
+  background: linear-gradient(180deg, #fed7aa, #fb923c);
+  border: 4px solid #7c2d12;
+  box-shadow: inset 0 18px 0 rgba(255, 255, 255, .28), 0 18px 28px rgba(0, 0, 0, .34);
+  animation: fidoughBake 2200ms ease-out both;
+}
+
+.effect--fidough-bake i {
+  position: fixed;
+  bottom: 18vh;
+  width: 18px;
+  height: 70px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .72), transparent);
+  animation: teaSteam 2200ms ease-out both;
+}
+
+.effect--fidough-bake i:nth-child(2) { left: 43vw; }
+.effect--fidough-bake i:nth-child(3) { left: 56vw; animation-delay: 130ms; }
+
+.effect--tinkaton-hammer span {
+  position: fixed;
+  left: 50%;
+  top: -20vh;
+  width: min(42vw, 420px);
+  height: min(16vw, 150px);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #d1d5db, #6b7280);
+  border: 5px solid #111;
+  box-shadow: inset -18px -18px 0 rgba(0, 0, 0, .2), 0 18px 30px rgba(0, 0, 0, .44);
+  animation: tinkatonHammerDrop 2300ms cubic-bezier(.18, .82, .22, 1) both;
+}
+
+.effect--tinkaton-hammer i {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 20vh;
+  height: 8px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .86), transparent);
+  animation: hammerShockwave 2300ms ease-out both;
+}
+
+.effect--kingambit-boss {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, rgba(127, 29, 29, .34), transparent 46%);
+}
+
+.effect--kingambit-boss span {
+  color: #f8fafc;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(20px, 5vw, 62px);
+  text-shadow: 4px 4px #7f1d1d, 0 0 22px rgba(239, 68, 68, .72);
+  animation: bossTitle 2600ms ease-out both;
+}
+
+.effect--kingambit-boss i {
+  position: fixed;
+  bottom: 20vh;
+  width: 52px;
+  height: 70px;
+  background: linear-gradient(180deg, #9ca3af, #111827);
+  border: 3px solid #111;
+  animation: bossMinion 2600ms ease-out both;
+}
+
+.effect--kingambit-boss i:nth-child(2) { left: 24vw; }
+.effect--kingambit-boss i:nth-child(3) { right: 24vw; animation-delay: 160ms; }
 
 .rotom-possessed #btnMic,
 .rotom-possessed #modes-btn,
@@ -2546,6 +3451,57 @@ main {
 
 .effect--lucario-aura span:nth-child(2) { animation-delay: 160ms; }
 .effect--lucario-aura span:nth-child(3) { animation-delay: 320ms; }
+
+.effect--lucario-aura i {
+  position: fixed;
+  left: -18vw;
+  top: 47%;
+  width: clamp(96px, 18vw, 210px);
+  aspect-ratio: 1;
+  border-radius: 44% 40% 50% 46%;
+  background:
+    radial-gradient(circle at 34% 28%, #f8fbff 0 9%, transparent 10%),
+    radial-gradient(circle at 50% 19%, #f8fbff 0 9%, transparent 10%),
+    radial-gradient(circle at 66% 28%, #f8fbff 0 9%, transparent 10%),
+    radial-gradient(circle at 78% 47%, #f8fbff 0 8%, transparent 9%),
+    linear-gradient(145deg, #dff7ff 0%, #5cc6ff 42%, #1d4ed8 100%);
+  border: 5px solid #0b1730;
+  box-shadow:
+    inset -16px -18px 0 rgba(15, 23, 42, .22),
+    0 0 0 5px rgba(68, 173, 255, .2),
+    0 22px 34px rgba(0, 0, 0, .42),
+    0 0 34px rgba(68, 173, 255, .48);
+  transform: translateY(-50%) rotate(9deg);
+  animation: lucarioFistDash 1900ms cubic-bezier(.18, .72, .2, 1) both;
+}
+
+.effect--lucario-aura i::before {
+  content: "";
+  position: absolute;
+  left: 17%;
+  bottom: 6%;
+  width: 48%;
+  height: 33%;
+  border-radius: 42% 26% 48% 44%;
+  background: linear-gradient(145deg, #c7eaff, #2563eb);
+  border: 4px solid #0b1730;
+  box-shadow: inset -8px -8px 0 rgba(15, 23, 42, .2);
+}
+
+.effect--lucario-aura i::after {
+  content: "";
+  position: fixed;
+  left: -38vw;
+  top: 47%;
+  width: 34vw;
+  max-width: 520px;
+  height: clamp(20px, 4vw, 46px);
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(68, 173, 255, .12), rgba(68, 173, 255, .72));
+  filter: blur(1px);
+  transform: translateY(-50%);
+  animation: lucarioFistTrail 1900ms cubic-bezier(.18, .72, .2, 1) both;
+}
 
 .effect--audino-heal span {
   position: fixed;
@@ -2582,8 +3538,8 @@ main {
 .effect--klefki-keys span:nth-child(4) { left: 82vw; top: 62vh; animation-delay: 80ms; }
 
 .effect--gimmighoul-coin {
-  right: clamp(18px, 7vw, 96px);
-  top: clamp(100px, 18vh, 220px);
+  left: var(--coin-left, 78vw);
+  top: var(--coin-top, 22vh);
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -2594,6 +3550,7 @@ main {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, .48), 0 16px 28px rgba(0, 0, 0, .34);
   pointer-events: auto;
   cursor: pointer;
+  transform: translate(-50%, -50%);
   animation: gimmighoulCoin 1900ms ease-in-out infinite;
 }
 
@@ -3103,6 +4060,339 @@ main {
   58% { transform: translateY(-20px) scale(1.1); }
 }
 
+@keyframes hollowHalo {
+  0%, 100% { opacity: 0; transform: scale(.74) rotate(0deg); }
+  25%, 78% { opacity: 1; }
+  100% { transform: scale(1.18) rotate(90deg); }
+}
+
+@keyframes gemScatter {
+  0% { opacity: 0; transform: scale(.45) rotate(-12deg); }
+  30%, 76% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.18) rotate(18deg); }
+}
+
+@keyframes mawileBite {
+  0%, 100% { opacity: 0; transform: translateX(-50%) translateY(12px) scaleY(.35); }
+  28%, 68% { opacity: 1; transform: translateX(-50%) translateY(0) scaleY(1); }
+  45% { transform: translateX(-50%) translateY(-5px) scaleY(.68); }
+}
+
+@keyframes drifloonFloat {
+  0%, 100% { transform: translateY(0); }
+  36% { transform: translateY(-10px); }
+  70% { transform: translateY(-4px); }
+}
+
+@keyframes drifloonTether {
+  0%, 100% { opacity: 0; transform: translateY(10px); }
+  24%, 78% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spiritombLocalSpin {
+  0% { opacity: 0; transform: scale(.7) rotate(0deg); }
+  24%, 82% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.14) rotate(180deg); }
+}
+
+@keyframes falsePikaTwitch {
+  0%, 100% { opacity: 0; transform: translateX(-50%) rotate(-6deg); }
+  18%, 78% { opacity: 1; }
+  42% { transform: translateX(-50%) rotate(5deg) translateY(-4px); }
+  58% { transform: translateX(-50%) rotate(-10deg); }
+}
+
+@keyframes ghostFlame {
+  0%, 100% { opacity: 0; transform: translateY(10px) scale(.7); }
+  26%, 78% { opacity: 1; }
+  48% { transform: translateY(-8px) scale(1.08); }
+}
+
+@keyframes spiritombPulse {
+  0%, 100% { opacity: 0; transform: scale(.8); }
+  22%, 78% { opacity: 1; transform: scale(1); }
+  48% { transform: scale(1.08); }
+}
+
+@keyframes spiritombSoul {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+  22% { opacity: 1; }
+  78% { opacity: .82; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.1); }
+}
+
+@keyframes darkraiNightmare {
+  0%, 100% { opacity: 0; }
+  18%, 76% { opacity: 1; }
+  48% { filter: contrast(1.22) saturate(1.18); }
+}
+
+@keyframes nightmareDrift {
+  0%, 100% { opacity: 0; transform: translateY(18px) scale(.8); }
+  22%, 78% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes nightmareText {
+  0%, 100% { opacity: 0; transform: translateY(14px) scale(.9); }
+  28%, 72% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes mimikyuBlackout {
+  0%, 100% { opacity: 0; }
+  18%, 62% { opacity: 1; }
+  38% { opacity: .72; }
+}
+
+@keyframes chandelureRoom {
+  0%, 100% { opacity: 0; filter: brightness(1); }
+  18%, 78% { opacity: 1; filter: brightness(.78) saturate(1.25); }
+  44% { filter: brightness(.55) saturate(1.45); }
+}
+
+@keyframes chandelureFlame {
+  0%, 100% { opacity: 0; transform: translateY(10px) scale(.7); }
+  22%, 82% { opacity: 1; }
+  50% { transform: translateY(-6px) scale(1.16); }
+}
+
+@keyframes miloticScaleShimmer {
+  0%, 100% { opacity: 0; transform: translateY(16px) scale(.82); }
+  24%, 78% { opacity: 1; }
+  52% { transform: translateY(-8px) scale(1.08); }
+}
+
+@keyframes garchompCutLocal {
+  0%, 100% { opacity: 0; transform: translateX(-35%) skewX(-16deg); }
+  20%, 70% { opacity: 1; }
+  100% { transform: translateX(42%) skewX(-16deg); }
+}
+
+@keyframes arceusRingLocal {
+  0%, 100% { opacity: 0; transform: scale(.72) rotate(0deg); }
+  18%, 82% { opacity: 1; }
+  100% { transform: scale(1.16) rotate(220deg); }
+}
+
+@keyframes prismFlashLocal {
+  0%, 100% { opacity: 0; transform: scale(.8) rotate(0deg); filter: none; }
+  18%, 74% { opacity: .78; }
+  42% { transform: scale(1.08) rotate(16deg); filter: hue-rotate(120deg) saturate(1.8); }
+}
+
+@keyframes dynamaxPulseLocal {
+  0%, 100% { opacity: 0; transform: scale(.7); }
+  22%, 76% { opacity: 1; }
+  48% { transform: scale(1.18); }
+}
+
+@keyframes genesectScanLocal {
+  0%, 100% { opacity: 0; background-position: 0 -80px, 0 0; }
+  18%, 78% { opacity: 1; }
+  100% { background-position: 0 80px, 0 0; }
+}
+
+@keyframes miloticTideGlow {
+  0%, 100% { opacity: 0; }
+  20%, 78% { opacity: 1; }
+}
+
+@keyframes miloticWave {
+  0% { opacity: 0; transform: translateX(-24vw) scaleX(.75); }
+  24%, 76% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(30vw) scaleX(1.2); }
+}
+
+@keyframes garchompDash {
+  0%, 100% { opacity: 0; transform: translateX(0) skewX(-12deg); }
+  12% { opacity: 1; }
+  58% { opacity: 1; transform: translateX(86vw) skewX(-12deg); }
+  84% { opacity: 0; transform: translateX(132vw) skewX(-12deg); }
+}
+
+@keyframes arceusTitle {
+  0%, 100% { opacity: 0; transform: scale(.88); }
+  22%, 78% { opacity: 1; transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes arceusOrbit {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--a)) translateX(0) scale(.55); }
+  22%, 82% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(calc(var(--a) + 260deg)) translateX(min(35vw, 360px)) scale(.82); }
+}
+
+@keyframes xerneasPetal {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(.75); }
+  22%, 82% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(180deg) scale(1.1); }
+}
+
+@keyframes yveltalDrainRoom {
+  0%, 100% { opacity: 0; }
+  18%, 78% { opacity: 1; }
+}
+
+@keyframes yveltalAbsorb {
+  0%, 100% { opacity: 0; transform: rotate(var(--r)) scaleX(.2); }
+  24%, 76% { opacity: 1; }
+  100% { transform: rotate(var(--r)) translateX(24vw) scaleX(1.15); }
+}
+
+@keyframes auraBalanceRoom {
+  0%, 100% { opacity: 0; }
+  18%, 82% { opacity: 1; }
+}
+
+@keyframes auraBalanceCore {
+  0% { opacity: 0; transform: rotate(0deg) scale(.5); }
+  24%, 82% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(360deg) scale(1.08); }
+}
+
+@keyframes necrozmaAberration {
+  0%, 100% { opacity: 0; filter: none; }
+  18%, 78% { opacity: 1; filter: hue-rotate(90deg) contrast(1.5); }
+  42% { transform: translateX(8px); }
+  44% { transform: translateX(-6px); }
+}
+
+@keyframes necrozmaPrism {
+  0%, 100% { opacity: 0; transform: scale(.72) rotate(-8deg); }
+  20%, 76% { opacity: .72; }
+  54% { transform: scale(1.08) rotate(12deg); }
+}
+
+@keyframes eternatusRoom {
+  0%, 100% { opacity: 0; filter: none; }
+  18%, 82% { opacity: 1; filter: saturate(1.45); }
+}
+
+@keyframes eternatusCore {
+  0%, 100% { opacity: 0; transform: scale(.45); }
+  24%, 78% { opacity: 1; }
+  52% { transform: scale(1.18); }
+}
+
+@keyframes eternatusRing {
+  0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.45); }
+  24%, 78% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.22); }
+}
+
+@keyframes genesectScanLine {
+  0%, 100% { opacity: 0; transform: translateY(-18vh); }
+  18%, 82% { opacity: 1; }
+  100% { transform: translateY(74vh); }
+}
+
+@keyframes genesectTarget {
+  0%, 100% { opacity: 0; transform: scale(.82); }
+  24%, 78% { opacity: 1; transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes woolooPuffLocal {
+  0%, 100% { opacity: 0; transform: scale(.7) rotate(0deg); }
+  22%, 76% { opacity: 1; }
+  52% { transform: scale(1.18) rotate(18deg); }
+}
+
+@keyframes cramorantGulpLocal {
+  0%, 100% { opacity: 0; transform: scale(.7); }
+  28%, 74% { opacity: 1; }
+  52% { transform: translateY(-8px) scale(1.12); }
+}
+
+@keyframes teaSteamLocal {
+  0%, 100% { opacity: 0; transform: translateY(18px); }
+  24%, 76% { opacity: .8; }
+  100% { transform: translateY(-22px); }
+}
+
+@keyframes frostingPopLocal {
+  0%, 100% { opacity: 0; transform: scale(.7); }
+  24%, 76% { opacity: 1; }
+  52% { transform: scale(1.16) rotate(16deg); }
+}
+
+@keyframes dragapultMissileLocal {
+  0%, 100% { opacity: 0; transform: translateX(-20%); }
+  22%, 72% { opacity: 1; }
+  100% { transform: translateX(36%); }
+}
+
+@keyframes fidoughPuffLocal {
+  0%, 100% { opacity: 0; transform: scale(.72); }
+  24%, 76% { opacity: 1; }
+  54% { transform: scale(1.22); }
+}
+
+@keyframes tinkatonHammerLocal {
+  0%, 100% { opacity: 0; transform: rotate(-28deg) translateY(-12px); }
+  20%, 78% { opacity: 1; }
+  46% { transform: rotate(18deg) translateY(10px); }
+}
+
+@keyframes woolooRoll {
+  0%, 100% { opacity: 0; transform: translateX(0) rotate(0deg); }
+  12%, 84% { opacity: 1; }
+  100% { transform: translateX(136vw) rotate(900deg); }
+}
+
+@keyframes rarePop {
+  0%, 100% { opacity: 0; transform: translate(0, 0) scale(.5); }
+  24%, 78% { opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) scale(1.1); }
+}
+
+@keyframes teaCup {
+  0%, 100% { opacity: 0; transform: translateY(24px) scale(.82); }
+  24%, 78% { opacity: 1; transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) rotate(-2deg); }
+}
+
+@keyframes teaSteam {
+  0%, 100% { opacity: 0; transform: translateY(24px) scale(.8); }
+  24%, 78% { opacity: .7; }
+  100% { transform: translateY(-80px) scale(1.2); }
+}
+
+@keyframes dreepyMissile {
+  0%, 100% { opacity: 0; transform: translateX(0); }
+  12%, 76% { opacity: 1; }
+  100% { transform: translateX(130vw); }
+}
+
+@keyframes fidoughBake {
+  0%, 100% { opacity: 0; transform: translateY(20px) scale(.65); }
+  24%, 78% { opacity: 1; }
+  48% { transform: translateY(-6px) scale(1.18); }
+}
+
+@keyframes tinkatonHammerDrop {
+  0%, 100% { opacity: 0; transform: translate(-50%, 0) rotate(-18deg); }
+  20% { opacity: 1; }
+  52% { opacity: 1; transform: translate(-50%, 52vh) rotate(6deg); }
+  70% { transform: translate(-50%, 45vh) rotate(-3deg); }
+}
+
+@keyframes hammerShockwave {
+  0%, 46%, 100% { opacity: 0; transform: scaleX(.2); }
+  58% { opacity: 1; transform: scaleX(.78); }
+  86% { opacity: 0; transform: scaleX(1.15); }
+}
+
+@keyframes bossTitle {
+  0%, 100% { opacity: 0; transform: scale(.86); }
+  22%, 82% { opacity: 1; transform: scale(1); }
+  48% { transform: scale(1.08); }
+}
+
+@keyframes bossMinion {
+  0%, 100% { opacity: 0; transform: translateY(30px); }
+  26%, 82% { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes rotomPossessedUi {
   0%, 100% { transform: translate(0, 0) rotate(0); filter: none; }
   50% { transform: translate(4px, -2px) rotate(2deg); filter: hue-rotate(110deg) saturate(1.8); }
@@ -3118,6 +4408,21 @@ main {
   0% { opacity: 0; transform: scale(.18); }
   28% { opacity: .84; }
   100% { opacity: 0; transform: scale(1.45); }
+}
+
+@keyframes lucarioFistDash {
+  0%, 100% { opacity: 0; transform: translate(-18vw, -50%) rotate(9deg) scale(.76); }
+  16% { opacity: 1; }
+  42% { opacity: 1; transform: translate(53vw, -50%) rotate(-8deg) scale(1.06); }
+  52% { transform: translate(60vw, -50%) rotate(-3deg) scale(.96); filter: brightness(1.28); }
+  76% { opacity: .92; transform: translate(118vw, -50%) rotate(-15deg) scale(1); }
+}
+
+@keyframes lucarioFistTrail {
+  0%, 100% { opacity: 0; transform: translate(-20vw, -50%) scaleX(.5); }
+  18% { opacity: .9; }
+  48% { opacity: .78; transform: translate(55vw, -50%) scaleX(1.25); }
+  78% { opacity: 0; transform: translate(112vw, -50%) scaleX(.8); }
 }
 
 @keyframes audinoHeal {
@@ -3139,8 +4444,8 @@ main {
 }
 
 @keyframes gimmighoulCoin {
-  0%, 100% { transform: translateY(0) rotateY(0deg); }
-  50% { transform: translateY(-20px) rotateY(180deg); }
+  0%, 100% { transform: translate(-50%, -50%) translateY(0) rotateY(0deg); }
+  50% { transform: translate(-50%, -50%) translateY(-20px) rotateY(180deg); }
 }
 
 @keyframes palafinHero {

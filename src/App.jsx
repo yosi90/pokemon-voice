@@ -120,10 +120,7 @@ export default function App() {
           ...current,
           meowthCoins: (current.meowthCoins || 0) + 1,
         }))}
-        onGimmighoulCoinCollect={() => game.updateEasterEggState(current => ({
-          ...current,
-          gimmighoulCoins: (current.gimmighoulCoins || 0) + 1,
-        }))}
+        onGimmighoulCoinCollect={game.collectGimmighoulCoin}
         onEffectDone={game.dismissSpecialEffect}
       />
       <PsyduckMode active={game.psyduckMode} onDisable={() => game.setPsyduckMode(false)} />

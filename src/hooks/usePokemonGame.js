@@ -18,6 +18,60 @@ import { playGengarScareTone, playPokemonCry, primeAudio } from '../lib/pokemonA
 import { getPokemonSpecial, matchSecretCommand, SPECIAL_REVEALS, SPECIAL_TIMING } from '../lib/pokemonSpecials.js';
 import { readCardSize, readJson, saveGuessed } from '../lib/storage.js';
 
+const GIMMIGHOUL_EVOLUTION_COINS = 999;
+const GHOLDENGO_ID = 1000;
+const SCROLL_SETTLE_TIMEOUT_MS = 900;
+const ALREADY_CENTERED_PAUSE_MS = 120;
+
+function isNodeNearViewportCenter(node) {
+  const rect = node.getBoundingClientRect();
+  const nodeCenterY = rect.top + rect.height / 2;
+  const nodeCenterX = rect.left + rect.width / 2;
+  const thresholdY = Math.min(170, window.innerHeight * 0.18);
+  const thresholdX = Math.min(220, window.innerWidth * 0.22);
+
+  return Math.abs(nodeCenterY - window.innerHeight / 2) <= thresholdY
+    && Math.abs(nodeCenterX - window.innerWidth / 2) <= thresholdX;
+}
+
+function waitForScrollSettle(node, { stableFramesRequired = 1 } = {}) {
+  return new Promise(resolve => {
+    const startedAt = performance.now();
+    let lastX = window.scrollX;
+    let lastY = window.scrollY;
+    let stableFrames = 0;
+    let hasMoved = false;
+
+    const tick = () => {
+      const now = performance.now();
+      const moved = Math.abs(window.scrollX - lastX) > 1 || Math.abs(window.scrollY - lastY) > 1;
+      const arrived = isNodeNearViewportCenter(node);
+
+      if (moved) {
+        hasMoved = true;
+        stableFrames = 0;
+        lastX = window.scrollX;
+        lastY = window.scrollY;
+      } else {
+        stableFrames += 1;
+      }
+
+      if (
+        arrived
+        || (hasMoved && stableFrames >= stableFramesRequired)
+        || now - startedAt >= SCROLL_SETTLE_TIMEOUT_MS
+      ) {
+        resolve();
+        return;
+      }
+
+      window.requestAnimationFrame(tick);
+    };
+
+    window.requestAnimationFrame(tick);
+  });
+}
+
 export function usePokemonGame() {
   const [allPokemon, setAllPokemon] = useState([]);
   const [loadingError, setLoadingError] = useState('');
@@ -198,8 +252,14 @@ export function usePokemonGame() {
   const scrollToPokemon = useCallback(async id => {
     const node = cardRefs.current.get(id);
     if (!node) return;
+    const alreadyCentered = isNodeNearViewportCenter(node);
+    if (alreadyCentered) {
+      await sleep(ALREADY_CENTERED_PAUSE_MS);
+      return;
+    }
+
     node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    await sleep(450);
+    await waitForScrollSettle(node);
   }, []);
 
   const focusPokemonCard = useCallback(id => {
@@ -331,8 +391,27 @@ export function usePokemonGame() {
       updateEasterEggState(current => ({ ...current, palafinPending: false }));
       enqueueSpecialEffect({ type: SPECIAL_REVEALS.PALAFIN_HERO, id: 964, durationMs: 2200 });
     }
+    if ((id === 716 || id === 717) && guessedRef.current.has(716) && guessedRef.current.has(717) && !easterEggState.xerneasYveltalBalance) {
+      updateEasterEggState(current => ({ ...current, xerneasYveltalBalance: true }));
+      enqueueSpecialEffect({ type: SPECIAL_REVEALS.AURA_BALANCE, id, durationMs: 2800 });
+    }
     return true;
-  }, [allPokemon, easterEggState.palafinPending, enqueueSpecialEffect, playRevealAudio, runSpecialReveal, scrollToPokemon, updateEasterEggState]);
+  }, [allPokemon, easterEggState.palafinPending, easterEggState.xerneasYveltalBalance, enqueueSpecialEffect, playRevealAudio, runSpecialReveal, scrollToPokemon, updateEasterEggState]);
+
+  const collectGimmighoulCoin = useCallback(async () => {
+    const nextCoins = (easterEggState.gimmighoulCoins || 0) + 1;
+    updateEasterEggState(current => ({
+      ...current,
+      gimmighoulCoins: (current.gimmighoulCoins || 0) + 1,
+    }));
+
+    if (nextCoins < GIMMIGHOUL_EVOLUTION_COINS || guessedRef.current.has(GHOLDENGO_ID)) {
+      return;
+    }
+
+    showToast('¡Gimmighoul reunió 999 monedas!', 'ok');
+    await revealPokemon(GHOLDENGO_ID, 'easter-egg');
+  }, [easterEggState.gimmighoulCoins, revealPokemon, showToast, updateEasterEggState]);
 
   const guess = useCallback(async (raw, { fromSpeech = false } = {}) => {
     const secret = matchSecretCommand(raw);
@@ -465,6 +544,7 @@ export function usePokemonGame() {
     audioBlocked,
     cardRefs,
     cardSize,
+    collectGimmighoulCoin,
     closeTimedResults,
     delibirdMode,
     dismissSpecialEffect,

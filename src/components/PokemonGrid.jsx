@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ART_URL, CASTFORM_IMAGE_URLS, PIKACHU_IMAGE_URLS, SPRITE_ANIMATED_URL, SPRITE_URL } from '../../scripts/utils.js';
+import { ART_URL, CASTFORM_IMAGE_URLS, PIKACHU_IMAGE_URLS, ROTOM_FORM_IDS, ROTOM_IMAGE_URLS, SPRITE_ANIMATED_URL, SPRITE_URL } from '../../scripts/utils.js';
 import { formatDex } from '../lib/pokemon.js';
 import { getPokemonSpecial } from '../lib/pokemonSpecials.js';
 
@@ -20,9 +20,11 @@ const randomCastformFormIndex = (currentIndex) => {
 };
 
 const getPokemonImageSrc = ({ pokemonId, imageStyle, spriteFallbackStep, specialImageIndex }) => {
+  const spritePokemonId = pokemonId === 479 ? ROTOM_FORM_IDS[specialImageIndex] : pokemonId;
+
   if (imageStyle === 'sprite') {
-    if (spriteFallbackStep === 0) return SPRITE_ANIMATED_URL(pokemonId);
-    if (spriteFallbackStep === 1) return SPRITE_URL(pokemonId);
+    if (spriteFallbackStep === 0) return SPRITE_ANIMATED_URL(spritePokemonId);
+    if (spriteFallbackStep === 1) return SPRITE_URL(spritePokemonId);
   }
 
   if (imageStyle === '3d' && pokemonId === 25) {
@@ -31,6 +33,10 @@ const getPokemonImageSrc = ({ pokemonId, imageStyle, spriteFallbackStep, special
 
   if (imageStyle === '3d' && pokemonId === 351) {
     return CASTFORM_IMAGE_URLS[specialImageIndex];
+  }
+
+  if (pokemonId === 479) {
+    return ROTOM_IMAGE_URLS[specialImageIndex];
   }
 
   return ART_URL(pokemonId);
@@ -43,8 +49,9 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
   const angryJigglypuffSrc = `${import.meta.env.BASE_URL}assets/images/jigglypuff.png`;
   const isPikachu = pokemon.id === 25;
   const isCastform = pokemon.id === 351;
-  const specialImageUrls = isPikachu ? PIKACHU_IMAGE_URLS : isCastform ? CASTFORM_IMAGE_URLS : null;
-  const canRotateSpecialImage = imageStyle === '3d' && !!specialImageUrls;
+  const isRotom = pokemon.id === 479;
+  const specialImageUrls = isPikachu ? PIKACHU_IMAGE_URLS : isCastform ? CASTFORM_IMAGE_URLS : isRotom ? ROTOM_IMAGE_URLS : null;
+  const canRotateSpecialImage = (imageStyle === '3d' || isRotom) && !!specialImageUrls;
   const imageClassName = [
     'pokemon-art',
     sleepMode && pokemon.id === 39 ? 'pokemon-art--sleep-mode' : '',
@@ -81,6 +88,7 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
         ? randomCastformFormIndex(specialImageIndex)
         : randomImageIndex(specialImageIndex, specialImageUrls);
       setSpecialImageIndex(nextIndex);
+      setSpriteFallbackStep(0);
       if (isCastform) effectOptions = { weather: nextIndex };
     }
     onReplayCry(pokemon.id, effectOptions);

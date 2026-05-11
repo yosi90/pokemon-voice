@@ -96,6 +96,17 @@ export const CASTFORM_IMAGE_URLS = [
   ART_URL(10015),
 ];
 
+export const ROTOM_FORM_IDS = [
+  479,
+  10008,
+  10009,
+  10010,
+  10011,
+  10012,
+];
+
+export const ROTOM_IMAGE_URLS = ROTOM_FORM_IDS.map(id => ART_URL(id));
+
 export const GEN_RANGES = {
   1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5: [494, 649],
   6: [650, 721], 7: [722, 809], 8: [810, 898], 9: [899, 1010]

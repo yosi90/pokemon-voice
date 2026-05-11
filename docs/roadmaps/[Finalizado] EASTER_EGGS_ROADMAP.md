@@ -71,38 +71,37 @@ Este documento marca el plan de implementación por fases. La regla general es m
 
 ## Fase 4 - Spooky y set pieces
 
-- [ ] Shedinja: halo/carta hueca e insinuación oscura al hover.
-- [ ] Sableye: gemas robables.
-- [ ] Mawile: boca trasera que muerde cursor/carta cercana.
-- [ ] Drifloon: globo con hilo y sombra sutil.
-- [ ] Spiritomb: 108 motas/espíritus.
-- [ ] Darkrai: pesadilla elegante sin screamer.
-- [ ] Mimikyu: falso Pikachu y apagón insinuado.
-- [ ] Litwick: llama azul/morada que sigue cursor.
-- [ ] Chandelure: luces parpadeantes y sombras grandes.
+- [x] Shedinja: halo/carta hueca e insinuación oscura al hover.
+- [x] Sableye: gemas robables.
+- [x] Mawile: boca trasera que muerde cursor/carta cercana.
+- [x] Drifloon: globo con hilo y sombra sutil.
+- [x] Spiritomb: 108 motas/espíritus.
+- [x] Darkrai: pesadilla elegante sin screamer.
+- [x] Mimikyu: falso Pikachu y apagón insinuado.
+- [x] Litwick: llama azul/morada que sigue cursor.
+- [x] Chandelure: luces parpadeantes y sombras grandes.
 
 ## Fase 5 - Legendarios y eventos grandes
 
-- [ ] Milotic: reveal elegante con agua/brillo/escamas.
-- [ ] Garchomp: pasada a velocidad absurda.
-- [ ] Arceus: evento divino con pausa/círculo de Pokéballs.
-- [ ] Xerneas: UI florece y recupera color.
-- [ ] Yveltal: absorción temporal de color.
-- [ ] Xerneas/Yveltal: evento de equilibrio al tener ambos.
-- [ ] Necrozma: prismas y aberración cromática.
-- [ ] Eternatus: evento dinamax rojo/morado.
-- [ ] Genesect: escáner/láser.
+- [x] Milotic: reveal elegante con agua/brillo/escamas.
+- [x] Garchomp: pasada a velocidad absurda.
+- [x] Arceus: evento divino con pausa/círculo de Pokéballs.
+- [x] Xerneas: UI florece y recupera color.
+- [x] Yveltal: absorción temporal de color.
+- [x] Xerneas/Yveltal: evento de equilibrio al tener ambos.
+- [x] Necrozma: prismas y aberración cromática.
+- [x] Eternatus: evento dinamax rojo/morado.
+- [x] Genesect: escáner/láser.
 
 ## Fase 6 - Coleccionables y rarezas
 
-- [ ] Wooloo: rueda y empuja Pokéballs visualmente.
-- [ ] Cramorant: escupe item/silueta aleatoria con assets propios o abstractos.
-- [ ] Falinks: formación marchando.
-- [ ] Sinistea/Polteageist: té, vapor y comando `té`.
-- [ ] Alcremie: frosting/topping aleatorio.
-- [ ] Dragapult: Dreepy como misiles.
-- [ ] Tandemaus/Maushold: multiplicación sorpresa.
-- [ ] Fidough: inflado/horneado.
-- [ ] Tinkaton: martillazo y reacción de tipo Acero.
-- [ ] Gholdengo: evento al llegar a 999 monedas de Gimmighoul.
-- [ ] Kingambit: entrada de jefe final con Pawniard/Bisharp.
+- [x] Wooloo: rueda y empuja Pokéballs visualmente.
+- [x] Cramorant: escupe item/silueta aleatoria con assets propios o abstractos.
+- [x] Sinistea/Polteageist: té, vapor y comando `té`.
+- [x] Alcremie: frosting/topping aleatorio.
+- [x] Dragapult: Dreepy como misiles.
+- [x] Tandemaus/Maushold: multiplicación sorpresa.
+- [x] Fidough: inflado/horneado.
+- [x] Tinkaton: martillazo y reacción de tipo Acero.
+- [x] Gholdengo: evento al llegar a 999 monedas de Gimmighoul.
+- [x] Kingambit: entrada de jefe final con Pawniard/Bisharp.
