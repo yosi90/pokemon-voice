@@ -46,7 +46,7 @@ export function Dock({
               />
               <button id="btnGuess" className="btn" type="submit">Adivinar</button>
             </form>
-            <button id="btnReset" className="btn danger" type="button" onClick={onReset}>
+            <button id="btnReset" className="btn danger dock-reset-desktop" type="button" onClick={onReset}>
               Reiniciar
             </button>
           </div>
@@ -60,13 +60,32 @@ export function Dock({
               <span>🏆</span>
             </button>
             {timerText && <span className={`chip timer-chip ${timerDanger ? 'danger' : ''}`}>{timerText}</span>}
+            <button className="btn danger dock-reset-mobile" type="button" onClick={onReset} aria-label="Reiniciar progreso" title="Reiniciar">
+              Rein.
+            </button>
           </div>
           <div className="dock-secondary-group dock-secondary-group--right">
-            <button className="chip chip-click" type="button" onClick={() => onNavigate('guessed')} title="Saltar al siguiente descubierto">
-              {score} descubiertos
+            <button
+              className="chip chip-click stat-chip stat-chip--guessed"
+              type="button"
+              onClick={() => onNavigate('guessed')}
+              aria-label={`${score} descubiertos. Saltar al siguiente descubierto`}
+              title="Saltar al siguiente descubierto"
+            >
+              <span className="stat-icon" aria-hidden="true" />
+              <span className="stat-value">{score}</span>
+              <span className="stat-label">descubiertos</span>
             </button>
-            <button className="chip chip-click" type="button" onClick={() => onNavigate('remaining')} title="Saltar al siguiente restante">
-              {remaining} restantes
+            <button
+              className="chip chip-click stat-chip stat-chip--remaining"
+              type="button"
+              onClick={() => onNavigate('remaining')}
+              aria-label={`${remaining} restantes. Saltar al siguiente restante`}
+              title="Saltar al siguiente restante"
+            >
+              <span className="stat-icon" aria-hidden="true" />
+              <span className="stat-value">{remaining}</span>
+              <span className="stat-label">restantes</span>
             </button>
           </div>
         </div>

@@ -101,6 +101,10 @@ input {
   justify-content: flex-end;
 }
 
+.dock-reset-mobile {
+  display: none;
+}
+
 .btn,
 .chip,
 .pill {
@@ -166,6 +170,41 @@ input {
 
 .chip-click {
   cursor: pointer;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.stat-icon {
+  position: relative;
+  display: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(#e93618 0 46%, #151515 46% 54%, #f8fafc 54% 100%);
+  border: 2px solid #111;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .82);
+}
+
+.stat-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: 1px solid #111;
+  transform: translate(-50%, -50%);
+}
+
+.stat-chip--remaining .stat-icon {
+  background: linear-gradient(#2d3138 0 46%, #151515 46% 54%, #9ca3af 54% 100%);
 }
 
 .timer-chip.danger {
@@ -4785,6 +4824,10 @@ main {
   background: rgba(255, 255, 255, .06);
 }
 
+.mode-meta {
+  min-width: 0;
+}
+
 .acv-ach {
   grid-template-columns: auto 1fr 38px;
 }
@@ -5023,6 +5066,107 @@ main {
 }
 
 @media (max-width: 560px) {
+  :root {
+    --dock-h: 136px;
+  }
+
+  .dock-inner {
+    min-height: var(--dock-h);
+    padding: 7px 10px 9px;
+    justify-content: start;
+    gap: 7px;
+  }
+
+  .dock-main,
+  .dock-secondary {
+    gap: 7px;
+  }
+
+  .dock-primary-controls {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    width: 100%;
+    gap: 7px;
+    justify-content: stretch;
+    align-items: center;
+  }
+
+  #btnMic {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 92px;
+    padding-inline: 10px;
+  }
+
+  .input-wrap {
+    grid-column: 2;
+    grid-row: 1;
+    order: initial;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    padding: 3px;
+    gap: 4px;
+  }
+
+  .input-wrap input {
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+
+  #btnGuess {
+    margin-right: 2px;
+    padding: 8px 9px;
+  }
+
+  .voice-status,
+  .audio-chip {
+    grid-column: 1 / -1;
+    justify-self: center;
+    max-width: 100%;
+  }
+
+  .dock-reset-desktop {
+    display: none;
+  }
+
+  .dock-reset-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 9px;
+  }
+
+  .brand {
+    font-size: 15px;
+    gap: 8px;
+  }
+
+  .brand-ball {
+    width: 17px;
+    height: 17px;
+  }
+
+  .dock-secondary {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .dock-secondary-group,
+  .dock-secondary-group--right {
+    justify-content: center;
+    gap: 7px;
+  }
+
+  .dock-secondary-group {
+    flex-wrap: nowrap;
+  }
+
+  .dock-secondary-group--right {
+    flex-wrap: nowrap;
+  }
+
   .btn {
     font-size: 9px;
     padding: 9px 11px;
@@ -5030,6 +5174,39 @@ main {
 
   .chip {
     font-size: 8px;
+    padding: 8px 9px;
+  }
+
+  .btn-icon {
+    width: 42px;
+  }
+
+  .timer-chip {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-chip {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .stat-icon {
+    display: inline-block;
+  }
+
+  .stat-value {
+    line-height: 1;
+  }
+
+  .stat-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .grid {
@@ -5043,6 +5220,53 @@ main {
   .secondary-menu-panel {
     bottom: 66px;
     gap: 10px;
+  }
+
+  .side-drawer {
+    top: calc(var(--dock-h) + 8px);
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
+
+  .side-drawer--left {
+    left: 12px;
+    transform: translateX(calc(-100% - 18px));
+  }
+
+  .side-drawer--right {
+    right: 12px;
+    transform: translateX(calc(100% + 18px));
+  }
+
+  .drawer-header {
+    padding: 12px 14px;
+  }
+
+  .drawer-content {
+    padding: 12px;
+  }
+
+  .mode-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+  }
+
+  .mode-title {
+    font-size: 10px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .mode-desc {
+    font-size: 12px;
+  }
+
+  .mode-cta {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    margin-top: 2px;
+    padding-block: 11px;
   }
 
   .pill {
