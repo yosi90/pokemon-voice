@@ -1,25 +1,99 @@
-import { ART_URL } from '../../scripts/utils.js';
+import { useEffect, useState } from 'react';
+import { ART_URL, CASTFORM_IMAGE_URLS, PIKACHU_IMAGE_URLS, SPRITE_ANIMATED_URL, SPRITE_URL } from '../../scripts/utils.js';
 import { formatDex } from '../lib/pokemon.js';
 import { getPokemonSpecial } from '../lib/pokemonSpecials.js';
 
-function PokemonBallCard({ pokemon, discovered, revealing, registerRef, onReplayCry, sleepMode }) {
+const randomImageIndex = (currentIndex, imageUrls) => {
+  if (imageUrls.length < 2) return currentIndex;
+
+  let nextIndex = currentIndex;
+  while (nextIndex === currentIndex) {
+    nextIndex = Math.floor(Math.random() * imageUrls.length);
+  }
+  return nextIndex;
+};
+
+const randomCastformFormIndex = (currentIndex) => {
+  const weatherFormIndexes = [1, 2, 3];
+  const candidates = weatherFormIndexes.filter(index => index !== currentIndex);
+  return candidates[Math.floor(Math.random() * candidates.length)];
+};
+
+const getPokemonImageSrc = ({ pokemonId, imageStyle, spriteFallbackStep, specialImageIndex }) => {
+  if (imageStyle === 'sprite') {
+    if (spriteFallbackStep === 0) return SPRITE_ANIMATED_URL(pokemonId);
+    if (spriteFallbackStep === 1) return SPRITE_URL(pokemonId);
+  }
+
+  if (imageStyle === '3d' && pokemonId === 25) {
+    return PIKACHU_IMAGE_URLS[specialImageIndex];
+  }
+
+  if (imageStyle === '3d' && pokemonId === 351) {
+    return CASTFORM_IMAGE_URLS[specialImageIndex];
+  }
+
+  return ART_URL(pokemonId);
+};
+
+function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef, onReplayCry, sleepMode, imageStyle }) {
+  const [specialImageIndex, setSpecialImageIndex] = useState(0);
+  const [spriteFallbackStep, setSpriteFallbackStep] = useState(0);
   const name = pokemon.name.replace(/-/g, ' ');
   const angryJigglypuffSrc = `${import.meta.env.BASE_URL}assets/images/jigglypuff.png`;
-  const artSrc = sleepMode && pokemon.id === 39 ? angryJigglypuffSrc : ART_URL(pokemon.id);
+  const isPikachu = pokemon.id === 25;
+  const isCastform = pokemon.id === 351;
+  const specialImageUrls = isPikachu ? PIKACHU_IMAGE_URLS : isCastform ? CASTFORM_IMAGE_URLS : null;
+  const canRotateSpecialImage = imageStyle === '3d' && !!specialImageUrls;
+  const imageClassName = [
+    'pokemon-art',
+    sleepMode && pokemon.id === 39 ? 'pokemon-art--sleep-mode' : '',
+    imageStyle === 'sprite' && !(sleepMode && pokemon.id === 39) ? 'pokemon-art--sprite' : '',
+  ].filter(Boolean).join(' ');
+  const artSrc = sleepMode && pokemon.id === 39
+    ? angryJigglypuffSrc
+    : getPokemonImageSrc({
+      pokemonId: pokemon.id,
+      imageStyle,
+      spriteFallbackStep,
+      specialImageIndex,
+    });
   const special = getPokemonSpecial(pokemon.id);
   const className = [
     'pokemon-card',
     discovered ? 'discovered' : '',
     revealing ? 'revealing' : '',
+    focused ? 'focused' : '',
     special.className,
   ].filter(Boolean).join(' ');
-  const replayCry = () => {
-    if (discovered) onReplayCry(pokemon.id);
+
+  useEffect(() => {
+    setSpriteFallbackStep(0);
+    setSpecialImageIndex(0);
+  }, [imageStyle, pokemon.id]);
+
+  const handleDiscoveredAction = () => {
+    if (!discovered) return;
+
+    let effectOptions = {};
+    if (canRotateSpecialImage) {
+      const nextIndex = isCastform
+        ? randomCastformFormIndex(specialImageIndex)
+        : randomImageIndex(specialImageIndex, specialImageUrls);
+      setSpecialImageIndex(nextIndex);
+      if (isCastform) effectOptions = { weather: nextIndex };
+    }
+    onReplayCry(pokemon.id, effectOptions);
+  };
+  const handleImageError = () => {
+    if (imageStyle === 'sprite') {
+      setSpriteFallbackStep(currentStep => Math.min(currentStep + 1, 2));
+    }
   };
   const handleKeyDown = event => {
     if (!discovered || (event.key !== 'Enter' && event.key !== ' ')) return;
     event.preventDefault();
-    replayCry();
+    handleDiscoveredAction();
   };
 
   return (
@@ -35,8 +109,8 @@ function PokemonBallCard({ pokemon, discovered, revealing, registerRef, onReplay
           aria-label={discovered ? `${name}, reproducir sonido` : formatDex(pokemon.id)}
           role={discovered ? 'button' : undefined}
           tabIndex={discovered ? 0 : undefined}
-          title={discovered ? `Reproducir cry de ${name}` : undefined}
-          onClick={replayCry}
+          title={discovered ? canRotateSpecialImage ? `Cambiar imagen y reproducir cry de ${name}` : `Reproducir cry de ${name}` : undefined}
+          onClick={handleDiscoveredAction}
           onKeyDown={handleKeyDown}
         >
           <div className="ball-shell ball-shell--top" />
@@ -51,11 +125,12 @@ function PokemonBallCard({ pokemon, discovered, revealing, registerRef, onReplay
           <div className="reveal-glow" />
           {discovered && (
             <img
-              className={`pokemon-art ${sleepMode && pokemon.id === 39 ? 'pokemon-art--sleep-mode' : ''}`}
+              className={imageClassName}
               src={artSrc}
               alt={name}
               loading="lazy"
               decoding="async"
+              onError={handleImageError}
             />
           )}
         </div>
@@ -67,7 +142,7 @@ function PokemonBallCard({ pokemon, discovered, revealing, registerRef, onReplay
   );
 }
 
-export function PokemonGrid({ list, guessed, lastRevealedId, cardRefs, onReplayCry, sleepMode }) {
+export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, cardRefs, onReplayCry, sleepMode, imageStyle }) {
   const registerRef = (id, node) => {
     if (node) cardRefs.current.set(id, node);
     else cardRefs.current.delete(id);
@@ -82,9 +157,11 @@ export function PokemonGrid({ list, guessed, lastRevealedId, cardRefs, onReplayC
             pokemon={pokemon}
             discovered={guessed.has(pokemon.id)}
             revealing={lastRevealedId === pokemon.id}
+            focused={focusedCardId === pokemon.id}
             registerRef={registerRef}
             onReplayCry={onReplayCry}
             sleepMode={sleepMode}
+            imageStyle={imageStyle}
           />
         ))}
       </div>

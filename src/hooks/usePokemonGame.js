@@ -30,6 +30,7 @@ export function usePokemonGame() {
   const [guessText, setGuessText] = useState('');
   const [toast, setToast] = useState(null);
   const [lastRevealedId, setLastRevealedId] = useState(null);
+  const [focusedCardId, setFocusedCardId] = useState(null);
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [specialEffects, setSpecialEffects] = useState([]);
   const [easterEggState, setEasterEggState] = useState(readEasterEggState);
@@ -44,6 +45,7 @@ export function usePokemonGame() {
   const guessedRef = useRef(guessed);
   const timerIntervalRef = useRef(null);
   const runDiscoveredRef = useRef(new Set());
+  const focusedCardTimerRef = useRef(null);
 
   const showToast = useCallback((message, kind = 'info') => {
     setToast({ message, kind });
@@ -200,6 +202,14 @@ export function usePokemonGame() {
     await sleep(450);
   }, []);
 
+  const focusPokemonCard = useCallback(id => {
+    window.clearTimeout(focusedCardTimerRef.current);
+    setFocusedCardId(id);
+    focusedCardTimerRef.current = window.setTimeout(() => {
+      setFocusedCardId(current => current === id ? null : current);
+    }, 1050);
+  }, []);
+
   const enableAudio = useCallback(async () => {
     const ok = await primeAudio();
     if (ok) setAudioBlocked(false);
@@ -240,7 +250,7 @@ export function usePokemonGame() {
 
   const hasDiscovered = useCallback(id => guessedRef.current.has(id), []);
 
-  const runSpecialReveal = useCallback(async (special, id, timing) => {
+  const runSpecialReveal = useCallback(async (special, id, timing, effectOptions = {}) => {
     if (!special.revealEffect || special.timing !== timing) return;
     if (special.revealEffect === SPECIAL_REVEALS.PSYDUCK_THINK) {
       setPsyduckMode(true);
@@ -260,6 +270,7 @@ export function usePokemonGame() {
       type: special.revealEffect,
       id,
       durationMs: special.durationMs,
+      ...effectOptions,
       message: special.revealEffect === SPECIAL_REVEALS.UNOWN_MESSAGE
         ? 'SECRETO DESCUBIERTO'
         : undefined,
@@ -270,14 +281,14 @@ export function usePokemonGame() {
     }
   }, [clearSpecialEffects, easterEggState.unownLetters, enqueueSpecialEffect]);
 
-  const replayPokemonCry = useCallback(async id => {
+  const replayPokemonCry = useCallback(async (id, effectOptions = {}) => {
     if (!guessedRef.current.has(id)) return;
     await primeAudio();
     const special = getPokemonSpecial(id);
-    await runSpecialReveal(special, id, SPECIAL_TIMING.BEFORE_REVEAL);
+    await runSpecialReveal(special, id, SPECIAL_TIMING.BEFORE_REVEAL, effectOptions);
     setLastRevealedId(id);
     playRevealAudio(id);
-    await runSpecialReveal(special, id, SPECIAL_TIMING.AFTER_REVEAL);
+    await runSpecialReveal(special, id, SPECIAL_TIMING.AFTER_REVEAL, effectOptions);
     window.setTimeout(() => setLastRevealedId(current => current === id ? null : current), 1400);
   }, [playRevealAudio, runSpecialReveal]);
 
@@ -397,9 +408,11 @@ export function usePokemonGame() {
       return;
     }
     const nextIndex = (navIndex[kind] + 1) % ids.length;
+    const nextId = ids[nextIndex];
     setNavIndex(current => ({ ...current, [kind]: nextIndex }));
-    scrollToPokemon(ids[nextIndex]);
-  }, [filteredList, guessed, navIndex, scrollToPokemon, showToast]);
+    scrollToPokemon(nextId);
+    window.setTimeout(() => focusPokemonCard(nextId), 180);
+  }, [filteredList, focusPokemonCard, guessed, navIndex, scrollToPokemon, showToast]);
 
   const resetProgress = useCallback(() => {
     const next = new Set();
@@ -458,6 +471,7 @@ export function usePokemonGame() {
     enableAudio,
     easterEggState,
     filteredList,
+    focusedCardId,
     guess,
     guessed,
     guessText,

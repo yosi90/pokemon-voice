@@ -57,6 +57,45 @@ export const esAliases = new Map([
 export const ART_URL = (id) =>
   `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 
+const SPRITES_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon';
+
+export const SPRITE_ANIMATED_URL = (id) =>
+  `${SPRITES_BASE_URL}/versions/generation-v/black-white/animated/${id}.gif`;
+
+export const SPRITE_URL = (id) =>
+  `${SPRITES_BASE_URL}/${id}.png`;
+
+const PIKACHU_COSTUME_IDS = [
+  10080,
+  10081,
+  10082,
+  10083,
+  10084,
+  10085,
+  10094,
+  10095,
+  10096,
+  10097,
+  10098,
+  10099,
+  10148,
+  10160,
+  10199,
+];
+
+export const PIKACHU_IMAGE_URLS = [
+  `${SPRITES_BASE_URL}/other/official-artwork/25.png`,
+  `${SPRITES_BASE_URL}/other/official-artwork/shiny/25.png`,
+  ...PIKACHU_COSTUME_IDS.map(id => ART_URL(id)),
+];
+
+export const CASTFORM_IMAGE_URLS = [
+  ART_URL(351),
+  ART_URL(10013),
+  ART_URL(10014),
+  ART_URL(10015),
+];
+
 export const GEN_RANGES = {
   1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5: [494, 649],
   6: [650, 721], 7: [722, 809], 8: [810, 898], 9: [899, 1010]

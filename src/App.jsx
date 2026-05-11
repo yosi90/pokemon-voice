@@ -8,7 +8,7 @@ import { SleepMode } from './components/SleepMode.jsx';
 import { SpecialEffectsLayer } from './components/SpecialEffectsLayer.jsx';
 import { TimedModal } from './components/TimedModal.jsx';
 import { Toast } from './components/Toast.jsx';
-import { Topbar } from './components/Topbar.jsx';
+import { SecondaryControlsMenu } from './components/Topbar.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
 import { ACV } from '../scripts/achievements-logic.js';
@@ -22,6 +22,7 @@ function formatTimer(left) {
 
 export default function App() {
   const [modesOpen, setModesOpen] = useState(false);
+  const [imageStyle, setImageStyle] = useState('3d');
   const game = usePokemonGame();
   const speech = useSpeechRecognition({
     allPokemon: game.allPokemon,
@@ -52,6 +53,11 @@ export default function App() {
     setModesOpen(false);
   };
 
+  const openAchievements = () => {
+    closeModes();
+    ACV.openDrawer?.();
+  };
+
   const toggleMic = () => {
     game.enableAudio();
     speech.toggleListening();
@@ -70,18 +76,12 @@ export default function App() {
         onMic={toggleMic}
         onReset={resetWithConfirm}
         onModes={toggleModes}
-        onAchievements={closeModes}
+        onAchievements={openAchievements}
         onNavigate={game.navigateCards}
         audioBlocked={game.audioBlocked}
         onEnableAudio={game.enableAudio}
         timerText={game.timer ? formatTimer(game.timerLeft) : ''}
         timerDanger={game.timerLeft <= 10}
-      />
-      <Topbar
-        selectedGens={game.selectedGens}
-        cardSize={game.cardSize}
-        onCardSize={game.setCardSize}
-        onToggleGen={game.toggleGen}
       />
       {game.loadingError ? (
         <main><div className="load-error">{game.loadingError}</div></main>
@@ -90,11 +90,21 @@ export default function App() {
           list={game.filteredList}
           guessed={game.guessed}
           lastRevealedId={game.lastRevealedId}
+          focusedCardId={game.focusedCardId}
           cardRefs={game.cardRefs}
           onReplayCry={game.replayPokemonCry}
           sleepMode={game.sleepMode}
+          imageStyle={imageStyle}
         />
       )}
+      <SecondaryControlsMenu
+        selectedGens={game.selectedGens}
+        cardSize={game.cardSize}
+        imageStyle={imageStyle}
+        onCardSize={game.setCardSize}
+        onImageStyle={setImageStyle}
+        onToggleGen={game.toggleGen}
+      />
       <AchievementsDrawer />
       <ModesDrawer open={modesOpen} onClose={closeModes} onStartTimed={startTimed} />
       <TimedModal
@@ -120,12 +130,15 @@ export default function App() {
       <SleepMode active={game.sleepMode} onWake={() => game.setSleepMode(false)} />
       <DelibirdMode
         active={game.delibirdMode}
-        onWin={() => ACV.unlock?.('delibird-gift-claim')}
+        onWin={async () => {
+          const unlocked = await ACV.unlock?.('delibird-gift-claim');
+          if (!unlocked) game.showToast('Ya habías reclamado el regalo bueno de Delibird.', 'ok');
+        }}
         onClose={() => game.setDelibirdMode(false)}
       />
       <div id="acv-toast-container" aria-live="polite" aria-atomic="true" />
       <Toast toast={game.toast} />
-      <footer className="footer">Imágenes: PokeAPI official artwork. Progreso guardado en tu navegador.</footer>
+      <footer className="footer">Imágenes: PokeAPI official artwork y sprites. Progreso guardado en tu navegador.</footer>
     </>
   );
 }

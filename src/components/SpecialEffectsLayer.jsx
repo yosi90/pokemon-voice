@@ -209,6 +209,7 @@ function CelebiRewind({ effect, onDone }) {
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--celebi-rewind">
+        <i /><i /><i /><i /><i />
         <span>TIME</span>
         <span>REWIND</span>
       </div>
@@ -217,10 +218,20 @@ function CelebiRewind({ effect, onDone }) {
 }
 
 function CastformWeather({ effect, onDone }) {
+  const weatherIcons = {
+    1: '☀',
+    2: '☔',
+    3: '❄',
+  };
+  const icons = effect.weather
+    ? Array.from({ length: 12 }, () => weatherIcons[effect.weather] || '☁')
+    : ['☀', '☔', '❄', '☁', '☀', '☔', '❄', '☁', '☀', '☔', '❄', '☁'];
   return (
     <TimedEffect effect={effect} onDone={onDone}>
       <div className="effect effect--castform-weather">
-        <span>☀</span><span>☔</span><span>❄</span><span>☁</span>
+        {icons.map((icon, index) => (
+          <span key={`${icon}-${index}`} className={icon === '☀' ? 'weather-icon--sun' : ''}>{icon}</span>
+        ))}
       </div>
     </TimedEffect>
   );

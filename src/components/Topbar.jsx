@@ -1,12 +1,45 @@
+import { useEffect, useRef, useState } from 'react';
 import { GEN_RANGES } from '../../scripts/utils.js';
 import { CARD_SIZE_MAX, CARD_SIZE_MIN } from '../lib/constants.js';
 import { formatDex } from '../lib/pokemon.js';
 
-export function Topbar({ selectedGens, cardSize, onCardSize, onToggleGen }) {
+export function SecondaryControlsMenu({ selectedGens, cardSize, imageStyle, onCardSize, onImageStyle, onToggleGen }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    const handlePointerDown = event => {
+      if (!menuRef.current?.contains(event.target)) setOpen(false);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [open]);
+
   return (
-    <div className="topbar">
-      <div className="top-inner">
-        <div className="brand"><span className="brand-ball" /> Poke-Voice</div>
+    <div className={`secondary-menu ${open ? 'is-open' : ''}`} ref={menuRef}>
+      <button
+        className="secondary-menu-toggle"
+        type="button"
+        aria-label={open ? 'Cerrar controles' : 'Abrir controles'}
+        aria-expanded={open}
+        aria-controls="secondaryControlsPanel"
+        onClick={() => setOpen(current => !current)}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+      <div id="secondaryControlsPanel" className="secondary-menu-panel" aria-hidden={!open}>
         <label className="size-control" htmlFor="cardSizeSlider">
           <span className="size-icon size-icon--small" />
           <input
@@ -21,6 +54,29 @@ export function Topbar({ selectedGens, cardSize, onCardSize, onToggleGen }) {
           />
           <span className="size-icon size-icon--large" />
         </label>
+        <fieldset className="image-style-control" aria-label="Estilo de imagen">
+          <legend>Imagen</legend>
+          <label className={`image-style-option ${imageStyle === '3d' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="imageStyle"
+              value="3d"
+              checked={imageStyle === '3d'}
+              onChange={() => onImageStyle('3d')}
+            />
+            <span>3D</span>
+          </label>
+          <label className={`image-style-option ${imageStyle === 'sprite' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="imageStyle"
+              value="sprite"
+              checked={imageStyle === 'sprite'}
+              onChange={() => onImageStyle('sprite')}
+            />
+            <span>Sprite</span>
+          </label>
+        </fieldset>
         <div className="gens" id="gens">
           {Object.keys(GEN_RANGES).map(Number).map(gen => (
             <button
