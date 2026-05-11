@@ -6,6 +6,10 @@ function getSpeechRecognitionCtor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
+function hasSpeechRecognitionSupport() {
+  return typeof window !== 'undefined' && !!getSpeechRecognitionCtor();
+}
+
 function speechErrorMessage(error) {
   return {
     'not-allowed': 'Permiso de micrófono denegado.',
@@ -45,6 +49,7 @@ async function ensureMicrophoneAccess() {
 export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, showToast }) {
   const [listening, setListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState(null);
+  const [speechSupported] = useState(hasSpeechRecognitionSupport);
 
   const recognitionRef = useRef(null);
   const speechQueueRef = useRef(Promise.resolve());
@@ -190,5 +195,5 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
     }
   }, [initSpeech, listening, showToast]);
 
-  return { listening, toggleListening, voiceStatus };
+  return { listening, toggleListening, voiceStatus, speechSupported };
 }

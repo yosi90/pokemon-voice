@@ -75,6 +75,15 @@ const idFromUrl = (url) => {
     return m ? Number(m[1]) : null;
 };
 
+const createRunId = () => {
+    if (typeof globalThis.crypto?.randomUUID === 'function') {
+        return globalThis.crypto.randomUUID();
+    }
+    const randomPart = Math.random().toString(36).slice(2, 10);
+    const timePart = Date.now().toString(36);
+    return `run-${timePart}-${randomPart}`;
+};
+
 ///////////////////////
 // Caché PokeAPI
 ///////////////////////
@@ -204,7 +213,7 @@ async function getAllSpeciesFlags() {
 export function createRunContext(getSelectedGens) {
     // Estado vivo por run
     const state = {
-        runId: crypto.randomUUID(),
+        runId: createRunId(),
         startAt: performance.now(),
         durationSec: null,
 
@@ -384,7 +393,7 @@ export function createRunContext(getSelectedGens) {
         durationSec = null
     } = {}) {
         Object.assign(state, {
-            runId: crypto.randomUUID(),
+            runId: createRunId(),
             startAt: performance.now(),
             durationSec,
             guessedIds: new Set(),

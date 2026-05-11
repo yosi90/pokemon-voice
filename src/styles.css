@@ -131,6 +131,13 @@ input {
   transform: translateY(-1px);
 }
 
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+  filter: grayscale(.25);
+  transform: none;
+}
+
 .btn:active {
   transform: translateY(2px);
   box-shadow: 0 0 0 2px var(--blue), 0 4px 12px rgba(0, 0, 0, .3);
@@ -4924,6 +4931,10 @@ main {
   box-shadow: var(--shadow);
 }
 
+.pv-modal__panel--compact {
+  width: min(520px, 92vw);
+}
+
 .pv-modal__head,
 .pv-modal__foot {
   display: flex;
@@ -4954,6 +4965,16 @@ main {
 
 .pv-modal__body {
   padding: 18px;
+}
+
+.browser-voice-modal {
+  display: grid;
+  gap: 10px;
+}
+
+.browser-voice-modal p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .results-kpis {

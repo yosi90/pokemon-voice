@@ -23,6 +23,7 @@ function formatTimer(left) {
 export default function App() {
   const [modesOpen, setModesOpen] = useState(false);
   const [imageStyle, setImageStyle] = useState('3d');
+  const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
   const game = usePokemonGame();
   const speech = useSpeechRecognition({
     allPokemon: game.allPokemon,
@@ -69,6 +70,7 @@ export default function App() {
         score={game.score}
         remaining={game.remaining}
         listening={speech.listening}
+        speechSupported={speech.speechSupported}
         voiceStatus={speech.voiceStatus}
         guessText={game.guessText}
         onGuessText={game.setGuessText}
@@ -83,6 +85,24 @@ export default function App() {
         timerText={game.timer ? formatTimer(game.timerLeft) : ''}
         timerDanger={game.timerLeft <= 10}
       />
+      {!speech.speechSupported && voiceSupportModalOpen && (
+        <div className="pv-modal" id="voice-support-modal">
+          <div className="pv-modal__backdrop" onClick={() => setVoiceSupportModalOpen(false)} />
+          <div className="pv-modal__panel pv-modal__panel--compact" role="dialog" aria-modal="true" aria-labelledby="voice-support-title">
+            <header className="pv-modal__head">
+              <h3 id="voice-support-title">Voz no disponible</h3>
+              <button className="pv-modal__close" type="button" aria-label="Cerrar" onClick={() => setVoiceSupportModalOpen(false)}>×</button>
+            </header>
+            <div className="pv-modal__body browser-voice-modal">
+              <p>El reconocimiento por micrófono solo funciona en Chrome.</p>
+              <p className="muted">Puedes seguir descubriendo Pokemon escribiendo nombres en el campo de texto.</p>
+            </div>
+            <footer className="pv-modal__foot">
+              <button className="pv-modal__primary" type="button" onClick={() => setVoiceSupportModalOpen(false)}>Entendido</button>
+            </footer>
+          </div>
+        </div>
+      )}
       {game.loadingError ? (
         <main><div className="load-error">{game.loadingError}</div></main>
       ) : (

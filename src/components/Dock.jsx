@@ -2,6 +2,7 @@ export function Dock({
   score,
   remaining,
   listening,
+  speechSupported = true,
   voiceStatus,
   guessText,
   onGuessText,
@@ -22,7 +23,14 @@ export function Dock({
         <div className="dock-main">
           <div className="brand"><span className="brand-ball" /> Poke-Voice</div>
           <div className="dock-primary-controls">
-            <button id="btnMic" className={`btn ${listening ? 'accent' : ''}`} type="button" onClick={onMic}>
+            <button
+              id="btnMic"
+              className={`btn ${listening ? 'accent' : ''}`}
+              type="button"
+              onClick={onMic}
+              disabled={!speechSupported}
+              title={speechSupported ? 'Escuchar por micrófono' : 'Reconocimiento de voz disponible en Chrome'}
+            >
               {listening ? 'Parar' : 'Escuchar'}
             </button>
             {voiceStatus?.message && (
