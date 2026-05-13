@@ -21,7 +21,11 @@ export function Dock({
     <div className="dock" id="dock">
       <div className="dock-inner">
         <div className="dock-main">
-          <div className="brand"><span className="brand-ball" /> Poke-Voice</div>
+          <div className="brand">
+            <span className="brand-ball" />
+            <span className="brand-mic" aria-hidden="true">🎙</span>
+            <span className="brand-text">Poke-Voice</span>
+          </div>
           <div className="dock-primary-controls">
             <button
               id="btnMic"
@@ -29,9 +33,11 @@ export function Dock({
               type="button"
               onClick={onMic}
               disabled={!speechSupported}
-              title={speechSupported ? 'Escuchar por micrófono' : 'Reconocimiento de voz disponible en Chrome'}
+              aria-label={listening ? 'Parar escucha' : 'Escuchar por micrófono'}
+              title={speechSupported ? (listening ? 'Parar escucha' : 'Escuchar por micrófono') : 'Reconocimiento de voz disponible en Chrome'}
             >
-              {listening ? 'Parar' : 'Escuchar'}
+              <span className="mic-label">{listening ? 'Parar' : 'Escuchar'}</span>
+              <span className={`control-icon mic-icon ${listening ? '' : 'mic-icon--off'}`} aria-hidden="true">🎙</span>
             </button>
             {voiceStatus?.message && (
               <span className={`chip voice-status voice-status--${voiceStatus.kind || 'info'}`}>
@@ -52,7 +58,9 @@ export function Dock({
                 value={guessText}
                 onChange={event => onGuessText(event.target.value)}
               />
-              <button id="btnGuess" className="btn" type="submit">Adivinar</button>
+              <button id="btnGuess" className="btn" type="submit" aria-label="Adivinar" title="Adivinar">
+                <span className="control-icon" aria-hidden="true">🔍</span>
+              </button>
             </form>
             <button id="btnReset" className="btn danger dock-reset-desktop" type="button" onClick={onReset}>
               Reiniciar
@@ -62,15 +70,14 @@ export function Dock({
         <div className="dock-secondary">
           <div className="dock-secondary-group">
             <button id="modes-btn" className="btn" type="button" onClick={onModes} title="Modos de juego">
-              <span>Modos</span>
+              <span className="nav-action-icon" aria-hidden="true">🎮</span>
+              <span className="nav-action-label">Modos</span>
             </button>
-            <button id="acv-ach-btn" className="btn btn-icon" type="button" aria-label="Logros" title="Logros" onClick={onAchievements}>
-              <span>🏆</span>
+            <button id="acv-ach-btn" className="btn" type="button" aria-label="Logros" title="Logros" onClick={onAchievements}>
+              <span className="achievement-icon">🏆</span>
+              <span className="nav-action-label">Logros</span>
             </button>
             {timerText && <span className={`chip timer-chip ${timerDanger ? 'danger' : ''}`}>{timerText}</span>}
-            <button className="btn danger dock-reset-mobile" type="button" onClick={onReset} aria-label="Reiniciar progreso" title="Reiniciar">
-              Rein.
-            </button>
           </div>
           <div className="dock-secondary-group dock-secondary-group--right">
             <button

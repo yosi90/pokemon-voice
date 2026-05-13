@@ -54,7 +54,6 @@ input {
 }
 
 .dock-inner {
-  min-height: var(--dock-h);
   max-width: 1500px;
   margin: 0 auto;
   padding: 10px 14px 12px;
@@ -101,7 +100,84 @@ input {
   justify-content: flex-end;
 }
 
-.dock-reset-mobile {
+#btnMic {
+  width: 46px;
+  min-width: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.mic-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.control-icon {
+  position: relative;
+  display: inline-block;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.mic-icon--off::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  width: calc(100% + 4px);
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: rotate(-38deg);
+  transform-origin: center;
+}
+
+.achievement-icon {
+  display: inline-block;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  -webkit-text-stroke: 1px #111;
+  text-shadow:
+    1px 0 0 #111,
+    -1px 0 0 #111,
+    0 1px 0 #111,
+    0 -1px 0 #111,
+    1px 1px 0 #111,
+    -1px 1px 0 #111,
+    1px -1px 0 #111,
+    -1px -1px 0 #111;
+}
+
+.nav-action-icon,
+.achievement-icon {
+  flex: 0 0 auto;
+  margin-top: -4px;
+}
+
+.nav-action-icon {
+  display: inline-block;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1;
+}
+
+#modes-btn,
+#acv-ach-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.floating-reset-mobile {
   display: none;
 }
 
@@ -160,7 +236,13 @@ input {
 }
 
 #btnGuess {
-    margin-right: 4px;
+  width: 46px;
+  min-width: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  padding-inline: 0;
 }
 
 .chip {
@@ -239,7 +321,7 @@ input {
   align-items: center;
   gap: 8px;
   min-width: min(180px, 100%);
-  max-width: 560px;
+  max-width: 350px;
   flex: 1 1 320px;
   padding: 4px;
   border: 2px solid var(--blue);
@@ -352,6 +434,10 @@ input {
     2px 0 0 var(--blue),
     -2px 0 0 var(--blue),
     0 -2px 0 var(--blue);
+}
+
+.brand-mic {
+  display: none;
 }
 
 .brand-ball,
@@ -5033,14 +5119,26 @@ main {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.98px) {
   :root {
-    --dock-h: 218px;
+    --dock-h: 112px;
+  }
+
+  .dock-inner {
+    padding: 6px 10px 7px;
+    justify-content: start;
+    gap: 5px;
   }
 
   .dock-main,
   .dock-secondary {
     grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .dock-main {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 20px;
   }
 
   .dock-primary-controls,
@@ -5078,53 +5176,231 @@ main {
     justify-self: center;
   }
 
+  .floating-reset-mobile {
+    display: inline-flex;
+    justify-content: center;
+  }
+
   .gens {
     justify-self: center;
     justify-content: center;
     flex-wrap: wrap;
     overflow-x: visible;
   }
+
+  .dock-reset-desktop {
+    display: none;
+  }
+
+  .dock-primary-controls {
+    display: flex;
+    width: 100%;
+    gap: 7px;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  #btnMic {
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
+    flex: 0 0 42px;
+  }
+
+  .input-wrap {
+    order: initial;
+    width: 100%;
+    flex: 1 1 180px;
+    max-width: 350px;
+    min-width: 0;
+    padding: 3px;
+    gap: 4px;
+  }
+
+  .input-wrap input {
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+
+  #btnGuess {
+    margin-right: 1px;
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
+  }
+
+  .voice-status,
+  .audio-chip {
+    grid-column: 1 / -1;
+    justify-self: center;
+    max-width: 100%;
+  }
+
+  .brand {
+    justify-self: start;
+    gap: 0;
+  }
+
+  .brand-ball {
+    width: 18px;
+    height: 18px;
+  }
+
+  .brand-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .brand-mic {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #111;
+    border-radius: 50%;
+    background: rgba(10, 12, 15, .9);
+    box-shadow: 0 0 0 2px #fff;
+    color: var(--yellow);
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 19px;
+    line-height: 1;
+    text-shadow: none;
+  }
+
+  .control-icon {
+    font-size: 20px;
+  }
+
+  .dock-secondary {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .dock-secondary-group,
+  .dock-secondary-group--right {
+    justify-content: center;
+    gap: 7px;
+  }
+
+  .dock-secondary-group,
+  .dock-secondary-group--right {
+    flex-wrap: nowrap;
+  }
+
+  .btn {
+    font-size: 9px;
+    padding: 8px 10px;
+  }
+
+  #modes-btn,
+  #acv-ach-btn {
+    width: 42px;
+    min-width: 42px;
+    height: 34px;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .nav-action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .nav-action-icon,
+  .achievement-icon {
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 19px;
+    line-height: 1;
+    margin-top: 0;
+  }
+
+  .chip {
+    font-size: 8px;
+    padding: 7px 9px;
+  }
+
+  .btn-icon {
+    width: 42px;
+  }
+
+  .timer-chip {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-chip {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .stat-icon {
+    display: inline-block;
+  }
+
+  .stat-value {
+    line-height: 1;
+  }
+
+  .stat-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 560px) {
   :root {
-    --dock-h: 136px;
+    --dock-h: 112px;
   }
 
   .dock-inner {
-    min-height: var(--dock-h);
-    padding: 7px 10px 9px;
+    padding: 6px 10px 7px;
     justify-content: start;
-    gap: 7px;
+    gap: 5px;
   }
 
   .dock-main,
   .dock-secondary {
-    gap: 7px;
+    gap: 5px;
   }
 
   .dock-primary-controls {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
     width: 100%;
     gap: 7px;
-    justify-content: stretch;
+    justify-content: flex-end;
     align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
   }
 
   #btnMic {
-    grid-column: 1;
-    grid-row: 1;
-    min-width: 92px;
-    padding-inline: 10px;
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
+    flex: 0 0 42px;
   }
 
   .input-wrap {
-    grid-column: 2;
-    grid-row: 1;
     order: initial;
     width: 100%;
-    max-width: none;
+    flex: 1 1 180px;
+    max-width: 350px;
     min-width: 0;
     padding: 3px;
     gap: 4px;
@@ -5137,7 +5413,9 @@ main {
 
   #btnGuess {
     margin-right: 2px;
-    padding: 8px 9px;
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
   }
 
   .voice-status,
@@ -5147,25 +5425,15 @@ main {
     max-width: 100%;
   }
 
-  .dock-reset-desktop {
-    display: none;
-  }
-
-  .dock-reset-mobile {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding-inline: 9px;
-  }
-
   .brand {
     font-size: 15px;
-    gap: 8px;
+    width: 43px;
+    gap: 0;
   }
 
   .brand-ball {
-    width: 17px;
-    height: 17px;
+    width: 21px;
+    height: 21px;
   }
 
   .dock-secondary {
@@ -5190,7 +5458,7 @@ main {
 
   .btn {
     font-size: 9px;
-    padding: 9px 11px;
+    padding: 4px 11px;
   }
 
   .chip {

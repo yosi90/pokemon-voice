@@ -124,6 +124,7 @@ export default function App() {
         onCardSize={game.setCardSize}
         onImageStyle={setImageStyle}
         onToggleGen={game.toggleGen}
+        onReset={resetWithConfirm}
       />
       <AchievementsDrawer />
       <ModesDrawer open={modesOpen} onClose={closeModes} onStartTimed={startTimed} />
