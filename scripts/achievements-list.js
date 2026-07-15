@@ -5,6 +5,7 @@ export const ACHIEVEMENTS = [{
         title: 'El regalo de Delibird',
         desc: 'Encuentra el regalo bueno durante el modo Delibird.',
         tier: 'Superball',
+        domain: 'mode',
         scope: 'run',
         event: 'manual',
         check: (m) => m?.id === 'delibird-gift-claim',

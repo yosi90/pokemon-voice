@@ -1,15 +1,3 @@
-export function AchievementsDrawer() {
-  return (
-    <aside id="acv-drawer" className="side-drawer side-drawer--right" aria-hidden="true" aria-label="Panel de logros">
-      <header className="drawer-header">
-        <h3>Logros</h3>
-        <button id="acv-drawer-close" className="icon-btn" type="button" aria-label="Cerrar">×</button>
-      </header>
-      <div id="acv-ach-list" className="drawer-content" role="list" />
-    </aside>
-  );
-}
-
 export function ModesDrawer({ open, onClose, onStartTimed }) {
   return (
     <aside id="modes-drawer" className="side-drawer side-drawer--left" aria-hidden={!open} aria-label="Modos">

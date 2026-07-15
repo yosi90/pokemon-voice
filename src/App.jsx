@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Dock } from './components/Dock.jsx';
 import { DelibirdMode } from './components/DelibirdMode.jsx';
-import { AchievementsDrawer, ModesDrawer } from './components/Drawers.jsx';
+import { AchievementsDrawer, AchievementToasts } from './components/AchievementUi.js';
+import { ModesDrawer } from './components/Drawers.jsx';
 import { PokemonGrid } from './components/PokemonGrid.jsx';
 import { PsyduckMode } from './components/PsyduckMode.jsx';
 import { SleepMode } from './components/SleepMode.jsx';
@@ -154,7 +155,7 @@ export default function App() {
         }}
         onClose={() => game.setDelibirdMode(false)}
       />
-      <div id="acv-toast-container" aria-live="polite" aria-atomic="true" />
+      <AchievementToasts />
       <Toast toast={game.toast} />
       <footer className="footer">Imágenes: PokeAPI official artwork y sprites. Progreso guardado en tu navegador.</footer>
     </>

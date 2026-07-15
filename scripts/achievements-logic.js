@@ -1,5 +1,5 @@
 // achievements-logic.js
-// Motor de evaluación + UI de logros con persistencia en localStorage.
+// Adaptador compatible entre contexto legacy, evaluación, progreso y persistencia.
 // API expuesta: ACV.startRun({durationSec}), ACV.registerGuess(meta), ACV.registerFail()
 
 import {
@@ -8,39 +8,32 @@ import {
 import {
     ACHIEVEMENTS
 } from './achievements-list.js';
+import {
+    findSatisfiedAchievements,
+    isAchievementSatisfied
+} from '../src/domain/achievements/evaluateAchievements.ts';
+import {
+    achievementProgress
+} from '../src/store/achievementProgressStore.ts';
+import {
+    achievementUiStore
+} from '../src/store/achievementUiStore.ts';
+import {
+    createBrowserAchievementStorage
+} from '../src/services/achievementStorage.ts';
 
-// ====== UI config ======
-const TIER_ICON = {
-    Pokeball: '⚪',
-    Superball: '🔵',
-    Ultraball: '🟡',
-    MasterBall: '🟣'
-};
-
-const TIER_CLASS = {
-    Pokeball: 'pokeball',
-    Superball: 'superball',
-    Ultraball: 'ultraball',
-    MasterBall: 'masterball'
-};
-
-const PUBLIC_BASE = import.meta.env?.BASE_URL || './';
-
-function publicAsset(path) {
-    return `${PUBLIC_BASE}${path.replace(/^\/+/, '')}`;
-}
+export { achievementProgress } from '../src/store/achievementProgressStore.ts';
 
 
 // ====== Persistencia ======
-const STORAGE_KEY = 'pokevoice-achievements-v1';
 let _acvLoadedFromStorage = false;
 let _lastDurationSec = null;
 let _runToken = 0;
+const achievementStorage = createBrowserAchievementStorage(() => localStorage);
 
 function saveUnlockState() {
     try {
-        const arr = [...unlockState.unlocked.values()];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+        achievementStorage.save(achievementProgress.getSnapshot().permanentRecords);
     } catch (e) {
         console.warn('No se pudo guardar logros:', e);
     }
@@ -50,165 +43,42 @@ function loadUnlockStateOnce() {
     if (_acvLoadedFromStorage) return; // evita dobles cargas y recursiones
     _acvLoadedFromStorage = true;
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const arr = JSON.parse(raw);
-        if (Array.isArray(arr)) {
-            for (const entry of arr) {
-                if (entry && entry.id) {
-                    const date = entry.date || Date.now();
-                    unlockState.unlocked.set(entry.id, {
-                        id: entry.id,
-                        date
-                    });
-                    unlockState.history.push({
-                        id: entry.id,
-                        date
-                    });
-                }
-            }
-        }
+        achievementProgress.loadPermanent(achievementStorage.load());
     } catch (e) {
         console.warn('No se pudo cargar logros:', e);
     }
 }
 
-// ====== Estado de la run (vive en memoria) ======
-const unlockState = {
-    unlocked: new Map(), // id -> { id, date }
-    history: [], // [{id, date}] (histórico visible solo en sesión)
-};
-let _runStartMs = 0;
-
-// ====== DOM refs (lazy) ======
-const ui = {
-    toastRoot: null,
-    drawerEl: null,
-    drawerList: null,
-    btnOpen: null,
-    btnClose: null,
-};
-
-function ensureUI() {
-    if (!ui.toastRoot) ui.toastRoot = document.getElementById('acv-toast-container');
-    if (!ui.drawerEl) ui.drawerEl = document.getElementById('acv-drawer');
-    if (!ui.drawerList) ui.drawerList = document.getElementById('acv-ach-list');
-    if (!ui.btnOpen) ui.btnOpen = document.getElementById('acv-ach-btn');
-    if (!ui.btnClose) ui.btnClose = document.getElementById('acv-drawer-close');
-
-    // Toggle por botón 🏆
-    if (ui.btnOpen && !ui.btnOpen.__wired) {
-        ui.btnOpen.__wired = true;
-        ui.btnOpen.addEventListener('click', () => {
-            const isOpen = ui.drawerEl?.getAttribute('aria-hidden') === 'false';
-            isOpen ? closeDrawer() : openDrawer();
-        });
-    }
-    // Cerrar por X
-    if (ui.btnClose && !ui.btnClose.__wired) {
-        ui.btnClose.__wired = true;
-        ui.btnClose.addEventListener('click', closeDrawer);
-    }
-    // Cerrar al clicar fuera
-    if (!document.__acvOutsideCloseWired) {
-        document.__acvOutsideCloseWired = true;
-        document.addEventListener('click', (ev) => {
-            const isOpen = ui.drawerEl?.getAttribute('aria-hidden') === 'false';
-            if (!isOpen) return;
-            if (ui.drawerEl.contains(ev.target)) return;
-            if (ui.btnOpen?.contains(ev.target)) return;
-            closeDrawer();
-        });
-    }
-}
-
 function toastAch({
+    id,
     title,
     tier,
     desc
 }) {
-    ensureUI();
-    const root = ui.toastRoot || document.body;
-    const el = document.createElement('div');
-    const tierClass = TIER_CLASS[tier] || 'pokeball';
-    const durationMs = 5200;
-    el.className = `acv-toast acv-toast--${tierClass}`;
-    el.style.setProperty('--toast-duration', `${durationMs}ms`);
-    el.innerHTML = `
-    <span class="ball">${TIER_ICON[tier] || '⚪'}</span>
-    <div class="acv-toast__body">
-      <div class="acv-toast__eyebrow">Logro desbloqueado</div>
-      <b>${title}</b>
-      <div>${desc || ''}</div>
-    </div>
-    <button class="acv-toast__close" type="button" aria-label="Descartar logro">×</button>
-    <span class="acv-toast__timer"></span>`;
-    root.appendChild(el);
-    const remove = () => el.remove();
-    el.querySelector('.acv-toast__close')?.addEventListener('click', remove, { once: true });
-    setTimeout(remove, durationMs);
+    achievementUiStore.enqueueToast({
+        achievementId: id,
+        title,
+        tier,
+        description: desc
+    });
 }
 
 function clearAchievementStorage() {
     try {
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i += 1) {
-            const key = localStorage.key(i);
-            if (key === STORAGE_KEY || key?.startsWith('pokevoice-achievements')) keys.push(key);
-        }
-        for (const key of keys) localStorage.removeItem(key);
+        achievementStorage.clear();
     } catch {}
 }
 
 function openDrawer() {
-    ensureUI();
-    ui.drawerEl?.setAttribute('aria-hidden', 'false');
-    renderDrawer();
+    achievementUiStore.openDrawer();
 }
 
 function closeDrawer() {
-    ensureUI();
-    ui.drawerEl?.setAttribute('aria-hidden', 'true');
+    achievementUiStore.closeDrawer();
 }
 
 function renderDrawer() {
-    ensureUI();
-    if (!ui.drawerList) return;
-
-    const entries = [...unlockState.unlocked.values()]
-        .sort((a, b) => a.date - b.date); // opcional: orden cronológico
-
-    if (!entries.length) {
-        ui.drawerList.innerHTML = `
-      <div class="acv-ach" style="opacity:.8">
-        <div class="ball">🏆</div>
-        <div>
-          <div class="title">Aún no hay logros</div>
-          <div class="desc">¡Empieza una run y desbloquea alguno!</div>
-        </div>
-        <div>—</div>
-      </div>`;
-        return;
-    }
-
-    // Mapeamos a datos completos (para título/tier/desc)
-    const byId = new Map(ACHIEVEMENTS.map(a => [a.id, a]));
-    ui.drawerList.innerHTML = entries.map(e => {
-        const a = byId.get(e.id);
-        const when = new Date(e.date);
-        return `
-      <div class="acv-ach" data-id="${e.id}">
-        <div class="ball">${(a && a.tier && ({Pokeball:'⚪',Superball:'🔵',Ultraball:'🟡',MasterBall:'🟣'})[a.tier]) || '⚪'}</div>
-        <div>
-          <div class="title">${a?.title || e.id}</div>
-          <div class="desc">${a?.desc || ''}</div>
-        <div class="date">${when.toLocaleString()}</div>
-        </div>
-        <div class="acv-ach__stamp" aria-label="Logro obtenido">
-          <img src="${publicAsset('assets/images/ash-thumbs-up.png')}" alt="" loading="lazy">
-        </div>
-      </div>`;
-    }).join('');
+    return achievementProgress.getSnapshot().permanentRecords;
 }
 
 
@@ -227,17 +97,13 @@ const engine = createRunContext(getSelectedGens);
 
 // ====== Core ======
 function resetRunState(clearPersistent = false) {
-    // Limpia SOLO estado efímero de la run
-    unlockState.history.length = 0;
-
     // Si se pide borrar persistente, vacía y elimina del storage
     if (clearPersistent) {
         _runToken++;
-        unlockState.unlocked.clear();
+        achievementProgress.clearAll();
         clearAchievementStorage();
         _acvLoadedFromStorage = true;
     }
-    renderDrawer();
 }
 
 function restartEngine(durationSec = null) {
@@ -246,48 +112,41 @@ function restartEngine(durationSec = null) {
     engine.startRun({
         durationSec
     });
-    _runStartMs = Date.now();
+    achievementProgress.startRun({
+        runId: engine.ctx.runId,
+        startedAt: Date.now()
+    });
 }
 
-async function maybeUnlock(a, meta, ctx) {
-    if (unlockState.unlocked.has(a.id)) return false;
-
-    let ok;
-    try {
-        ok = a.check(meta, ctx);
-        if (ok && typeof ok.then === 'function') ok = await ok; // soporta checks async
-    } catch {
-        ok = false;
-    }
-
-    if (!ok) return false;
-
-    const entry = {
+function awardAchievement(a) {
+    const result = achievementProgress.satisfy({
         id: a.id,
-        date: Date.now()
-    };
-    unlockState.unlocked.set(a.id, entry);
-    unlockState.history.push(entry);
+        date: Date.now(),
+        domain: a.domain || 'pokedex'
+    });
+    if (result.status !== 'newlyUnlocked') return false;
+
     toastAch({
+        id: a.id,
         title: a.title,
         tier: a.tier,
         desc: a.desc
     });
-    renderDrawer();
-    saveUnlockState(); // <— persistimos aquí
+    saveUnlockState();
     return true;
 }
 
+async function maybeUnlock(a, meta, ctx) {
+    if (!await isAchievementSatisfied(a, meta, ctx)) return false;
+    return awardAchievement(a);
+}
+
 async function evaluate(eventType, meta) {
-    // Filtra por evento y ámbito run
-    const list = ACHIEVEMENTS.filter(a => (a.event || 'guess') === eventType && (a.scope || 'run') === 'run');
-    for (const a of list) {
-        await maybeUnlock(a, meta, engine.ctx);
-    }
+    const satisfied = await findSatisfiedAchievements(ACHIEVEMENTS, eventType, meta, engine.ctx);
+    for (const achievement of satisfied) awardAchievement(achievement);
 }
 
 async function unlockById(id) {
-    ensureUI();
     const achievement = ACHIEVEMENTS.find(a => a.id === id);
     if (!achievement) return false;
     return maybeUnlock(achievement, { id }, engine.ctx);
@@ -299,16 +158,10 @@ export const ACV = {
     startRun({
         durationSec = null
     } = {}) {
-        ensureUI();
         // Carga persistente una sola vez y pinta lo que haya.
         loadUnlockStateOnce();
-        _lastDurationSec = durationSec;
-        engine.startRun({
-            durationSec
-        });
-        _runStartMs = Date.now();
+        restartEngine(durationSec);
         resetRunState(false); // false = NO borrar logros persistentes
-        renderDrawer();
     },
 
     resetRun({
@@ -317,15 +170,12 @@ export const ACV = {
         // si no te pasan duration, reutiliza el último
         const dur = (durationSec !== undefined) ? durationSec : _lastDurationSec;
         // reinicia SOLO el estado de la run, no borra logros persistidos
-        ensureUI();
         restartEngine(dur || null);
         resetRunState(false);
-        renderDrawer();
     },
 
     // Registra un acierto (meta puede traer id/name/types/...; el engine la enriquece si falta)
     async registerGuess(meta) {
-        ensureUI();
         const token = _runToken;
         const enriched = await engine.registerGuess(meta || {});
         if (token !== _runToken) return enriched;
@@ -335,7 +185,6 @@ export const ACV = {
 
     // Fallo explícito (si lo usas)
     async registerFail() {
-        ensureUI();
         const token = _runToken;
         engine.registerFail();
         if (token !== _runToken) return;
@@ -351,19 +200,19 @@ export const ACV = {
         restartRun = false,
         durationSec = null
     } = {}) {
-        ensureUI();
         resetRunState(true); // limpia Unlocks + localStorage
         if (restartRun) restartEngine(durationSec);
-        renderDrawer();
     },
 
     // Helpers
     openDrawer,
     closeDrawer,
     renderDrawer,
-    has: (id) => unlockState.unlocked.has(id),
-    getUnlockedIds: () => [...unlockState.unlocked.keys()],
-    getHistory: () => [...unlockState.history],
+    has: (id) => achievementProgress.hasPermanent(id),
+    getUnlockedIds: () => achievementProgress.getSnapshot().permanentRecords.map(record => record.id),
+    getHistory: () => achievementProgress.getSnapshot().run.newlyUnlockedIds
+        .map(id => achievementProgress.getPermanentRecord(id))
+        .filter(Boolean),
     getRunUnlocks,
     getAchievementMeta(id) {
         return ACHIEVEMENTS.find(a => a.id === id) || null;
@@ -371,12 +220,5 @@ export const ACV = {
 };
 
 function getRunUnlocks() {
-  return unlockState.history
-    .filter(e => e.date >= _runStartMs)
-    .map(e => e.id);
-}
-
-// Si quieres mostrar títulos/tiers en el modal
-function getAchievementMeta(id) {
-  return ACHIEVEMENTS.find(a => a.id === id) || null;
+  return [...achievementProgress.getSnapshot().run.newlyUnlockedIds];
 }

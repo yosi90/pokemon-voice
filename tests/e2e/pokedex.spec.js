@@ -101,9 +101,57 @@ test('registra y muestra los logros desbloqueados', async ({ page }) => {
   await input.fill('pikachu');
   await input.press('Enter');
 
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('pokevoice-achievements-v1')))
-    .toContain('classic-start-pikachu');
+  await expect.poll(() => page.evaluate(() => {
+    const records = JSON.parse(localStorage.getItem('pokevoice-achievements-v1') || '[]');
+    return records.find(record => record.id === 'classic-start-pikachu') || null;
+  })).toMatchObject({
+    id: 'classic-start-pikachu',
+    domain: 'pokedex',
+    originRunId: expect.any(String),
+  });
   await page.getByRole('button', { name: 'Logros' }).click();
   await expect(page.locator('#acv-drawer')).toHaveAttribute('aria-hidden', 'false');
   await expect(page.locator('#acv-ach-list')).toContainText('Un inicio clásico');
+});
+
+test('silencia un logro permanente aunque vuelva a satisfacerlo en otra run', async ({ page }) => {
+  await page.evaluate(() => {
+    localStorage.setItem('pokevoice-achievements-v1', JSON.stringify([
+      { id: 'classic-start-pikachu', date: 100 },
+    ]));
+  });
+  await page.reload();
+
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+
+  await expect(page.locator('.acv-toast').filter({ hasText: 'Un inicio clásico' })).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-achievements-v1') || '[]')
+      .filter(entry => entry.id === 'classic-start-pikachu').length
+  ))).toBe(1);
+  await page.getByRole('button', { name: 'Logros' }).click();
+  await expect(page.locator('#acv-ach-list')).toContainText('Un inicio clásico');
+});
+
+test('navega de forma circular por las tarjetas descubiertas', async ({ page }) => {
+  await page.getByRole('button', { name: /0 descubiertos/ }).click();
+  await expect(page.locator('.toast')).toHaveText('Aún no hay descubiertos en este filtro.');
+
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+  await page.getByRole('button', { name: /1 descubiertos/ }).click();
+
+  await expect(page.locator('.pokemon-card[data-id="25"]')).toHaveClass(/focused/);
+});
+
+test('ejecuta la secuencia visual declarada al descubrir', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('bulbasaur');
+  await input.press('Enter');
+
+  await expect(page.locator('.effect--leaf-burst')).toBeAttached();
+  await expect(page.locator('.pokemon-card[data-id="1"]')).toHaveClass(/revealing/);
 });

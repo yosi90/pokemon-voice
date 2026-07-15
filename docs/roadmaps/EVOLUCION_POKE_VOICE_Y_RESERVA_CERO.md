@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0 y 1 completados; siguiente trabajo previsto en Hito 2.
+- Estado: Hitos 0, 1 y 2 completados; siguiente trabajo previsto en Hito 3.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -61,21 +61,47 @@ Implementado el 15 de julio de 2026. Git deja de seguir 2.289 archivos de `node_
 
 ## Hito 2 — Fundaciones TypeScript y refactor incremental
 
-- [ ] Configurar TypeScript sin bloquear temporalmente los módulos JavaScript existentes.
-- [ ] Crear tipos compartidos para catálogo, progreso, logros, misiones, mapas y economía.
-- [ ] Extraer catálogo, descubrimiento, navegación, audio, modos y persistencia de `usePokemonGame`.
-- [ ] Crear un store independiente de React que también pueda consumir el motor de aventura.
-- [ ] Convertir el motor de logros en lógica pura y componentes React.
-- [ ] Eliminar la manipulación directa del DOM del sistema de logros.
-- [ ] Crear `AchievementDefinitionV2` con dominio `pokedex`, `pokeDiscover`, `mode` o `global` y ciclo de evaluación.
-- [ ] Mantener una colección permanente y un conjunto efímero de condiciones satisfechas en la run.
-- [ ] Evaluar cada run con contexto limpio aunque existan logros permanentes de runs anteriores.
-- [ ] Ignorar silenciosamente un logro repetido: sin toast, resumen ni recompensa.
-- [ ] Guardar solo la primera obtención con fecha, dominio y `runId` de origen.
-- [ ] Permitir obtener en runs diferentes logros incompatibles como Pikachu primero e inicial primero.
-- [ ] Migrar los logros actuales a la colección permanente conservando sus fechas.
-- [ ] Dividir el CSS en base, layout, componentes, modos y efectos.
-- [ ] Migrar módulos antiguos únicamente después de cubrirlos con tests.
+- [x] Configurar TypeScript sin bloquear temporalmente los módulos JavaScript existentes.
+- [x] Crear tipos compartidos para catálogo, progreso, logros, misiones, mapas y economía.
+- [x] Extraer la carga y normalización del catálogo de `usePokemonGame`.
+- [x] Extraer el estado y la persistencia legacy de descubrimientos de `usePokemonGame`.
+- [x] Extraer la resolución de nombres, alias, formas y tolerancia de voz a lógica pura.
+- [x] Extraer la planificación visual y sonora de cada descubrimiento de `usePokemonGame`.
+- [x] Extraer navegación de `usePokemonGame`.
+- [x] Extraer audio y efectos de `usePokemonGame`.
+- [x] Extraer la transacción posterior al descubrimiento: logros, easter eggs y eventos encadenados.
+- [x] Extraer modos de `usePokemonGame`.
+- [x] Extraer persistencia restante de `usePokemonGame`.
+- [x] Crear un store independiente de React que también pueda consumir el motor de aventura.
+- [x] Convertir el motor de logros en lógica pura y componentes React.
+- [x] Eliminar la manipulación directa del DOM del sistema de logros.
+- [x] Crear `AchievementDefinitionV2` con dominio `pokedex`, `pokeDiscover`, `mode` o `global` y ciclo de evaluación.
+- [x] Mantener una colección permanente y un conjunto efímero de condiciones satisfechas en la run.
+- [x] Evaluar cada run con contexto limpio aunque existan logros permanentes de runs anteriores.
+- [x] Ignorar silenciosamente un logro repetido: sin toast, resumen ni recompensa.
+- [x] Guardar solo la primera obtención con fecha, dominio y `runId` de origen.
+- [x] Permitir obtener en runs diferentes logros incompatibles como Pikachu primero e inicial primero.
+- [x] Migrar los logros actuales a la colección permanente conservando sus fechas.
+- [x] Dividir el CSS en base, layout, componentes, modos y efectos.
+- [x] Migrar módulos antiguos únicamente después de cubrirlos con tests.
+
+Primera entrega implementada el 15 de julio de 2026. TypeScript funciona en modo estricto para código nuevo mientras admite los módulos JavaScript existentes; `npm run typecheck` forma parte de `test:all`. El paquete privado `@poke-voice/contracts` define contratos serializables y versionados para catálogo, investigación, requisitos, logros, runs, PokeDiscover, economía, modos, mapas, misiones, acompañantes, eventos y expresiones por voz. La primera extracción mueve la petición, validación, deduplicación y ordenación de PokeAPI a `pokemonCatalog.ts`, cubierta por pruebas unitarias.
+
+Segunda entrega implementada el 15 de julio de 2026. El estado de descubiertos vive en un store vanilla observable que conserva el orden, evita duplicados y recibe la persistencia como adaptador; React lo consume mediante `useSyncExternalStore` y el futuro motor podrá usar la misma API directamente. Las heurísticas de nombres se han movido a lógica pura conservando alias, formas, visibilidad y distinta tolerancia para voz y teclado. El reset todavía mantiene el comportamiento legacy hasta implementar la separación de runs en el Hito 3.
+
+Tercera entrega implementada el 15 de julio de 2026. La navegación circular y sus candidatos se calculan mediante lógica pura, mientras `usePokemonCardNavigation` encapsula referencias, scroll y foco temporal. `planSpecialReveal` convierte cada regla especial en una secuencia declarativa comprobable y `usePokemonRevealEffects` ejecuta audio, modos y efectos visuales sin recargar `usePokemonGame`. Las pruebas end-to-end cubren ahora la navegación y una revelación especial real en escritorio y móvil.
+
+Cuarta entrega implementada el 15 de julio de 2026. `planPostDiscovery` calcula de forma pura los cambios y efectos encadenados de Unown, Palafin y Xerneas/Yveltal; `processPostDiscovery` coordina ese plan con el motor legacy de logros mediante dependencias inyectadas. Un fallo al evaluar logros ya no puede impedir que se persista o represente un easter egg. El estado legacy mantiene además una referencia síncrona para no perder actualizaciones durante secuencias rápidas de varios descubrimientos.
+
+Quinta entrega implementada el 15 de julio de 2026. `useLegacyPreferences` y `useLegacyEasterEggState` encapsulan las claves y escrituras actuales, dejando `usePokemonGame` sin accesos directos a `localStorage`. `useTimedMode` es ahora propietario del temporizador, resultados, contador de descubrimientos y frontera común de reset. Sigue llamando deliberadamente a `ACV.resetAllPersistent()` hasta que el Hito 3 implemente `startNewPokedexRun`, pero el cambio quedará aislado en ese hook. `usePokemonGame` se reduce a 261 líneas.
+
+Sexta entrega, primera fase, implementada el 15 de julio de 2026. `achievementProgress.ts` separa una colección permanente observable del conjunto de logros satisfechos y recién obtenidos en cada run. El adaptador existente evalúa de nuevo las condiciones al comenzar una run, pero solo una primera obtención genera toast, aparece en el resumen y se escribe en el almacenamiento. Los registros legacy se cargan conservando su primera fecha; las pruebas unitarias cubren repeticiones silenciosas y logros incompatibles entre runs, y Playwright confirma que repetir uno persistido no crea otro toast ni otro registro. Se mantiene deliberadamente el formato `pokevoice-achievements-v1` y la UI DOM actual: persistir `domain` y `runId`, y sustituir el cajón y los toasts por React, quedan para la segunda fase de esta extracción.
+
+Sexta entrega, segunda fase, implementada el 15 de julio de 2026. `AchievementUi.tsx` representa ahora el cajón y los avisos desde stores observables mediante `useSyncExternalStore`; React controla su marcado, cierre y temporizadores. `achievements-logic.js` conserva la API `ACV` para no romper consumidores, pero ya no crea nodos, escribe `innerHTML`, cambia atributos ni registra listeners DOM. El nuevo `achievementUiStore.ts` mantiene únicamente estado de presentación y está cubierto junto a los componentes. El motor de evaluación y el adaptador persistente todavía deben separarse antes de marcar como completa la conversión integral del motor de logros.
+
+Sexta entrega, tercera fase, implementada el 15 de julio de 2026. `evaluateAchievements.ts` selecciona y ejecuta de forma aislada condiciones síncronas o asíncronas, mientras `achievementStorage.ts` encapsula parseo, serialización y limpieza del almacenamiento. Los registros legacy conservan únicamente sus datos fiables; las primeras obtenciones nuevas guardan fecha, dominio y `originRunId`, y Delibird queda clasificado como logro de modo. `achievements-logic.js` pasa a ser un adaptador compatible entre contexto, núcleo, presentación y persistencia. Las pruebas cubren datos corruptos, round-trip enriquecido y checks fallidos, y Playwright verifica el registro completo en ambos viewports.
+
+Séptima entrega implementada el 15 de julio de 2026. El antiguo `styles.css` de 5.587 líneas queda como manifiesto de imports y las reglas se distribuyen en base, layout, componentes de Pokédex y overlays, modos, efectos de descubrimiento y especiales, y responsive. La división conserva literalmente el orden de la cascada original mediante imports secuenciales; el bundle CSS mantiene el mismo tamaño y hash, y las referencias visuales de escritorio y móvil no cambian. Todas las migraciones del hito se realizaron después de disponer de cobertura proporcional.
 
 ---
 

@@ -1,0 +1,407 @@
+.gengar-scare {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+  animation: gengarScreenShake 780ms cubic-bezier(.36, .07, .19, .97) both;
+}
+
+.special-effects-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 155;
+  pointer-events: none;
+}
+
+.effect {
+  position: fixed;
+  pointer-events: none;
+}
+
+.effect--leaf-burst span {
+  position: fixed;
+  width: 30px;
+  height: 20px;
+  border-radius: 100% 0 100% 0;
+  background: linear-gradient(135deg, #95e65d, #2f9f54);
+  filter: drop-shadow(0 0 10px rgba(121, 214, 74, .62));
+  animation: leafDrift 2700ms ease-out both;
+}
+
+.effect--leaf-burst span:nth-child(1) { left: 4vw; top: 15vh; animation-delay: 0ms; }
+.effect--leaf-burst span:nth-child(2) { left: 12vw; top: 78vh; animation-delay: 120ms; }
+.effect--leaf-burst span:nth-child(3) { right: 7vw; top: 18vh; animation-delay: 80ms; }
+.effect--leaf-burst span:nth-child(4) { right: 18vw; top: 72vh; animation-delay: 220ms; }
+.effect--leaf-burst span:nth-child(5) { left: 44vw; top: 9vh; animation-delay: 160ms; }
+.effect--leaf-burst span:nth-child(6) { left: 58vw; top: 86vh; animation-delay: 260ms; }
+.effect--leaf-burst span:nth-child(7) { left: 22vw; top: 8vh; animation-delay: 320ms; }
+.effect--leaf-burst span:nth-child(8) { left: 75vw; top: 44vh; animation-delay: 60ms; }
+.effect--leaf-burst span:nth-child(9) { left: 33vw; top: 66vh; animation-delay: 380ms; }
+.effect--leaf-burst span:nth-child(10) { left: 86vw; top: 82vh; animation-delay: 180ms; }
+.effect--leaf-burst span:nth-child(11) { left: 9vw; top: 46vh; animation-delay: 440ms; }
+.effect--leaf-burst span:nth-child(12) { left: 49vw; top: 35vh; animation-delay: 520ms; }
+.effect--leaf-burst span:nth-child(13) { left: 66vw; top: 12vh; animation-delay: 260ms; }
+.effect--leaf-burst span:nth-child(14) { left: 18vw; top: 91vh; animation-delay: 600ms; }
+
+.effect--ember-burst,
+.effect--starter-fire-burst {
+  inset: 0;
+  overflow: hidden;
+}
+
+.inferno-floor {
+  position: fixed;
+  left: -8vw;
+  right: -8vw;
+  bottom: -8vh;
+  height: min(34vh, 260px);
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse at 9% 100%, rgba(255, 238, 129, .95) 0 10%, rgba(255, 128, 34, .74) 11% 24%, transparent 25%),
+    radial-gradient(ellipse at 21% 100%, rgba(255, 246, 160, .9) 0 12%, rgba(239, 60, 24, .76) 13% 28%, transparent 29%),
+    radial-gradient(ellipse at 34% 100%, rgba(255, 222, 92, .92) 0 9%, rgba(255, 122, 24, .74) 10% 24%, transparent 25%),
+    radial-gradient(ellipse at 49% 100%, rgba(255, 246, 160, .95) 0 13%, rgba(239, 60, 24, .8) 14% 31%, transparent 32%),
+    radial-gradient(ellipse at 65% 100%, rgba(255, 222, 92, .88) 0 10%, rgba(255, 122, 24, .72) 11% 26%, transparent 27%),
+    radial-gradient(ellipse at 82% 100%, rgba(255, 246, 160, .9) 0 12%, rgba(239, 60, 24, .76) 13% 29%, transparent 30%),
+    radial-gradient(ellipse at 96% 100%, rgba(255, 222, 92, .88) 0 9%, rgba(255, 122, 24, .7) 10% 25%, transparent 26%),
+    linear-gradient(0deg, rgba(142, 23, 9, .45), transparent 72%);
+  filter: blur(.15px) drop-shadow(0 -12px 30px rgba(255, 70, 18, .34));
+  animation: infernoFloor 2100ms ease-out both;
+}
+
+.effect--ember-burst span,
+.effect--starter-fire-burst span {
+  position: fixed;
+  width: 10px;
+  height: 18px;
+  border-radius: 50% 50% 50% 10%;
+  background: radial-gradient(circle at 50% 70%, #fff6a0 0 20%, #ff9b22 21% 56%, #e93618 57%);
+  filter: drop-shadow(0 0 10px rgba(255, 130, 34, .85));
+  animation: emberFloat 1900ms ease-out both;
+}
+
+.effect--ember-burst span:nth-child(2) { left: 9vw; bottom: 8vh; --x: -30px; --y: -42vh; --r: -22deg; animation-delay: 0ms; }
+.effect--ember-burst span:nth-child(3) { left: 17vw; bottom: 5vh; --x: 45px; --y: -36vh; --r: 16deg; animation-delay: 100ms; }
+.effect--ember-burst span:nth-child(4) { left: 28vw; bottom: 10vh; --x: -24px; --y: -48vh; --r: -8deg; animation-delay: 40ms; }
+.effect--ember-burst span:nth-child(5) { left: 39vw; bottom: 4vh; --x: 56px; --y: -41vh; --r: 20deg; animation-delay: 150ms; }
+.effect--ember-burst span:nth-child(6) { left: 50vw; bottom: 8vh; --x: -18px; --y: -52vh; --r: -16deg; animation-delay: 80ms; }
+.effect--ember-burst span:nth-child(7) { left: 62vw; bottom: 6vh; --x: 38px; --y: -39vh; --r: 26deg; animation-delay: 200ms; }
+.effect--ember-burst span:nth-child(8) { left: 74vw; bottom: 11vh; --x: -44px; --y: -47vh; --r: -24deg; animation-delay: 140ms; }
+.effect--ember-burst span:nth-child(9) { left: 84vw; bottom: 5vh; --x: 28px; --y: -35vh; --r: 18deg; animation-delay: 260ms; }
+.effect--ember-burst span:nth-child(10) { left: 93vw; bottom: 9vh; --x: -50px; --y: -45vh; --r: -30deg; animation-delay: 180ms; }
+.effect--ember-burst span:nth-child(11) { left: 45vw; bottom: 14vh; --x: 80px; --y: -58vh; --r: 34deg; animation-delay: 320ms; }
+.effect--ember-burst span:nth-child(12) { left: 57vw; bottom: 12vh; --x: -72px; --y: -55vh; --r: -32deg; animation-delay: 280ms; }
+.effect--ember-burst span:nth-child(13) { left: 23vw; bottom: 13vh; --x: 66px; --y: -50vh; --r: 26deg; animation-delay: 360ms; }
+
+.effect--water-splash,
+.effect--starter-water-burst {
+  inset: 0;
+  overflow: hidden;
+}
+
+.waterfall-sheet {
+  position: fixed;
+  left: -4vw;
+  right: -4vw;
+  top: 0;
+  height: min(76vh, 610px);
+  pointer-events: none;
+  opacity: 0;
+  transform-origin: top center;
+  background:
+    radial-gradient(ellipse at 11% 66%, rgba(205, 241, 255, .5) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 23% 81%, rgba(145, 218, 250, .42) 0 8%, transparent 9%),
+    radial-gradient(ellipse at 36% 72%, rgba(227, 249, 255, .46) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 52% 88%, rgba(155, 224, 253, .4) 0 9%, transparent 10%),
+    radial-gradient(ellipse at 68% 70%, rgba(227, 249, 255, .44) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 83% 84%, rgba(145, 218, 250, .4) 0 8%, transparent 9%),
+    radial-gradient(ellipse at 94% 74%, rgba(205, 241, 255, .44) 0 7%, transparent 8%),
+    repeating-linear-gradient(96deg, rgba(220, 247, 255, .1) 0 10px, rgba(58, 174, 238, .28) 11px 18px, rgba(255, 255, 255, .34) 19px 21px, transparent 22px 47px),
+    repeating-linear-gradient(83deg, transparent 0 24px, rgba(255, 255, 255, .18) 25px 28px, transparent 29px 58px),
+    linear-gradient(180deg, rgba(159, 224, 255, .72) 0%, rgba(79, 174, 230, .38) 55%, transparent 83%);
+  background-size: auto, auto, auto, auto, auto, auto, auto, 170px 100%, 230px 100%, auto;
+  mask-image:
+    radial-gradient(ellipse 14% 18% at 8% 67%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 11% 22% at 19% 78%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 16% 16% at 33% 69%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 12% 24% at 48% 84%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 17% 17% at 64% 72%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 13% 21% at 79% 82%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 15% 18% at 93% 74%, #000 0 98%, transparent 100%),
+    linear-gradient(#000 0 68%, transparent 92%);
+  mask-composite: add;
+  -webkit-mask-image:
+    radial-gradient(ellipse 14% 18% at 8% 67%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 11% 22% at 19% 78%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 16% 16% at 33% 69%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 12% 24% at 48% 84%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 17% 17% at 64% 72%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 13% 21% at 79% 82%, #000 0 98%, transparent 100%),
+    radial-gradient(ellipse 15% 18% at 93% 74%, #000 0 98%, transparent 100%),
+    linear-gradient(#000 0 68%, transparent 92%);
+  -webkit-mask-composite: source-over;
+  filter: drop-shadow(0 18px 26px rgba(50, 160, 225, .22));
+  animation: waterfallDrop 2100ms ease-out both;
+}
+
+.waterfall-sheet::before,
+.waterfall-sheet::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.waterfall-sheet::before {
+  top: 0;
+  height: 100%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .62), rgba(122, 207, 246, .32) 62%, transparent 100%) 6% 0 / 11% 82% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(122, 207, 246, .28) 62%, transparent 100%) 22% 0 / 8% 93% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, .58), rgba(122, 207, 246, .3) 62%, transparent 100%) 37% 0 / 13% 76% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, .46), rgba(122, 207, 246, .28) 62%, transparent 100%) 55% 0 / 9% 100% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, .56), rgba(122, 207, 246, .3) 62%, transparent 100%) 70% 0 / 12% 79% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, .48), rgba(122, 207, 246, .26) 62%, transparent 100%) 86% 0 / 10% 91% no-repeat;
+  border-radius: 0 0 36% 42%;
+  opacity: .72;
+  animation: waterfallColumns 2100ms ease-out both;
+}
+
+.waterfall-sheet::after {
+  bottom: 7%;
+  height: 92px;
+  background:
+    radial-gradient(ellipse at 8% 48%, rgba(255, 255, 255, .66) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 19% 64%, rgba(180, 236, 255, .58) 0 8%, transparent 9%),
+    radial-gradient(ellipse at 34% 42%, rgba(255, 255, 255, .7) 0 9%, transparent 10%),
+    radial-gradient(ellipse at 51% 70%, rgba(180, 236, 255, .54) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 67% 46%, rgba(255, 255, 255, .68) 0 10%, transparent 11%),
+    radial-gradient(ellipse at 82% 62%, rgba(180, 236, 255, .56) 0 7%, transparent 8%),
+    radial-gradient(ellipse at 95% 50%, rgba(255, 255, 255, .66) 0 8%, transparent 9%);
+  opacity: .76;
+  animation: waterfallFoam 2100ms ease-out both;
+}
+
+.effect--water-splash span {
+  position: fixed;
+  left: 50%;
+  top: 40%;
+  width: 34px;
+  height: 22px;
+  border-radius: 55% 45% 60% 40%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .9), transparent 18%),
+    linear-gradient(135deg, rgba(136, 224, 255, .94), rgba(36, 151, 226, .66));
+  box-shadow: inset -5px -5px 8px rgba(10, 73, 125, .25), inset 4px 4px 8px rgba(255, 255, 255, .55);
+  filter: drop-shadow(0 0 8px rgba(125, 218, 255, .55));
+  animation: splashDrop 1400ms ease-out both;
+}
+
+.effect--water-splash span:nth-child(1) { --x: -240px; --y: -140px; --r: -28deg; animation-delay: 0ms; }
+.effect--water-splash span:nth-child(2) { --x: -120px; --y: -210px; --r: 18deg; animation-delay: 80ms; }
+.effect--water-splash span:nth-child(3) { --x: 28px; --y: -170px; --r: -8deg; animation-delay: 30ms; }
+.effect--water-splash span:nth-child(4) { --x: 154px; --y: -118px; --r: 24deg; animation-delay: 140ms; }
+.effect--water-splash span:nth-child(5) { --x: 260px; --y: -196px; --r: -18deg; animation-delay: 100ms; }
+
+.effect--sleep-wave {
+  inset: 0;
+  background: rgba(8, 10, 18, .3);
+  animation: sleepDim 2200ms ease-out both;
+}
+
+.effect--sleep-wave span {
+  position: fixed;
+  color: #fff7ba;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 14px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .7);
+  animation: globalZzz 2100ms ease-out both;
+}
+
+.effect--sleep-wave span:nth-child(1) { left: 24vw; top: 34vh; animation-delay: 0ms; }
+.effect--sleep-wave span:nth-child(2) { left: 48vw; top: 52vh; animation-delay: 240ms; }
+.effect--sleep-wave span:nth-child(3) { left: 70vw; top: 28vh; animation-delay: 130ms; }
+
+.effect--meowth-coin {
+  left: 50%;
+  top: 40%;
+  width: 54px;
+  height: 54px;
+  border: 3px solid #8a5a08;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, .85), transparent 18%),
+    linear-gradient(180deg, #ffe66d, #f59e0b);
+  color: #6b3d00;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 22px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .48), 0 16px 28px rgba(0, 0, 0, .34);
+  cursor: pointer;
+  pointer-events: auto;
+  animation: coinBounce 1600ms ease-out infinite;
+}
+
+.meowth-coin-counter {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 207, 33, .65);
+  background: rgba(16, 18, 22, .86);
+  color: #fff7ba;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 10px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .34);
+}
+
+.gimmighoul-coin-counter {
+  position: fixed;
+  left: 14px;
+  bottom: 52px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 207, 33, .65);
+  background: rgba(16, 18, 22, .86);
+  color: #fff7ba;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 10px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .34);
+}
+
+.effect--psyduck-think {
+  left: 50%;
+  top: 50%;
+  width: 92px;
+  height: 92px;
+  margin: -46px 0 0 -46px;
+  border-radius: 50%;
+  border: 5px solid rgba(255, 207, 33, .92);
+  border-top-color: rgba(42, 167, 240, .95);
+  background: rgba(16, 18, 22, .58);
+  display: grid;
+  place-items: center;
+  color: #fff7ba;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 32px;
+  animation: psyduckGlobalThink 1200ms ease-in-out both;
+}
+
+.effect--psyduck-think::before,
+.effect--psyduck-think::after {
+  content: "?????";
+  position: fixed;
+  color: #ff4df3;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(18px, 4vw, 46px);
+  text-shadow: 3px 0 #7cff00, -3px 0 #00e5ff, 0 3px #111;
+  animation: psyduckQuestionStorm 1200ms ease-out both;
+}
+
+.effect--psyduck-think::before {
+  left: 12vw;
+  top: 24vh;
+}
+
+.effect--psyduck-think::after {
+  right: 10vw;
+  bottom: 22vh;
+  animation-delay: 120ms;
+}
+
+.effect--snorlax-nap {
+  left: 50%;
+  top: 52%;
+  width: min(680px, 82vw);
+  height: 118px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 24% 28%, rgba(255, 255, 255, .34), transparent 15%),
+    linear-gradient(180deg, #34435f, #182235);
+  border: 3px solid #0a0d14;
+  box-shadow: 0 22px 42px rgba(0, 0, 0, .46);
+  display: grid;
+  place-items: center;
+  color: #fff7ba;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(10px, 1.7vw, 15px);
+  animation: snorlaxSettle 3000ms ease-in-out both;
+}
+
+.effect--snorlax-nap span {
+  position: absolute;
+  color: #dbeafe;
+  animation: snorlaxZ 2600ms ease-out both;
+}
+
+.effect--snorlax-nap span:nth-child(2) { left: 22%; top: -18px; animation-delay: 0ms; }
+.effect--snorlax-nap span:nth-child(3) { left: 50%; top: -32px; animation-delay: 250ms; }
+.effect--snorlax-nap span:nth-child(4) { left: 76%; top: -14px; animation-delay: 120ms; }
+
+.effect--missingno-glitch {
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 5px),
+    radial-gradient(circle at center, rgba(125, 218, 255, .12), transparent 36%),
+    rgba(4, 6, 10, .24);
+  animation: missingnoOverlay 1800ms steps(2, end) both;
+}
+
+.effect--missingno-glitch span {
+  position: fixed;
+  color: #dff7ff;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  text-shadow: 2px 0 #ef4444, -2px 0 #38bdf8, 0 2px #111;
+  animation: missingnoText 1800ms steps(2, end) both;
+}
+
+.effect--missingno-glitch span:nth-child(2) {
+  left: 8vw;
+  top: 22vh;
+  font-size: clamp(16px, 4vw, 42px);
+}
+
+.effect--missingno-glitch span:nth-child(3) {
+  right: 10vw;
+  top: 58vh;
+  font-size: clamp(12px, 2vw, 22px);
+}
+
+.effect--missingno-glitch span:nth-child(4) {
+  left: 28vw;
+  bottom: 16vh;
+  font-size: clamp(10px, 1.6vw, 18px);
+}
+
+.missingno-block {
+  width: min(220px, 42vw);
+  aspect-ratio: 1;
+  background:
+    repeating-linear-gradient(90deg, #111 0 10px, #dbeafe 10px 18px, #5b5f66 18px 26px, #111 26px 35px),
+    repeating-linear-gradient(0deg, transparent 0 8px, rgba(255, 255, 255, .3) 8px 14px);
+  border: 4px solid #e5e7eb;
+  box-shadow: 0 0 0 4px #111, 0 0 38px rgba(125, 218, 255, .32);
+  mix-blend-mode: screen;
+  animation: missingnoBlock 1800ms steps(3, end) both;
+}
+
+.missingno-active .grid {
+  animation: missingnoGrid 1800ms steps(2, end) both;
+}
+
+.missingno-active .pokemon-card:nth-child(5n) {
+  animation: missingnoCardA 1800ms steps(2, end) both;
+}
+
+.missingno-active .pokemon-card:nth-child(7n) {
+  animation: missingnoCardB 1800ms steps(2, end) both;
+}
+

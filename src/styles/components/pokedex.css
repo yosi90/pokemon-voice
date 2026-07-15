@@ -1,0 +1,1311 @@
+.pokemon-card {
+  min-width: calc(var(--card-size) + 56px);
+  display: grid;
+  grid-template-rows: calc(var(--card-size) * 1.22) minmax(34px, auto);
+  justify-items: center;
+  gap: 4px;
+  scroll-margin-top: calc(var(--dock-h) + 28px);
+}
+
+.pokemon-stage {
+  position: relative;
+  width: calc(var(--card-size) + 60px);
+  height: calc(var(--card-size) * 1.22);
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  transition: transform .18s ease, filter .18s ease;
+}
+
+.pokemon-ball-card {
+  position: relative;
+  width: var(--card-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  isolation: isolate;
+  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, .4));
+}
+
+.pokemon-ball-card::after {
+  content: "";
+  position: absolute;
+  inset: -24%;
+  z-index: 6;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, .98) 0 16%, rgba(255, 245, 153, .9) 17% 31%, rgba(255, 207, 33, .32) 32% 48%, transparent 66%),
+    conic-gradient(from 8deg, transparent 0 8%, rgba(255, 255, 255, .8) 9% 11%, transparent 12% 22%, rgba(255, 255, 255, .75) 23% 25%, transparent 26% 100%);
+}
+
+.ball-shell,
+.ball-band,
+.ball-button,
+.master-mark,
+.electric-burst,
+.local-effect,
+.reveal-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.ball-shell--top {
+  z-index: 2;
+  clip-path: inset(0 0 50% 0);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, .72), transparent 18%),
+    linear-gradient(145deg, #ff5b38 0%, var(--red) 52%, var(--red-dark) 100%);
+  border: 4px solid #111;
+}
+
+.ball-shell--top::before,
+.ball-shell--top::after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.ball-shell--bottom {
+  z-index: 2;
+  clip-path: inset(50% 0 0 0);
+  background:
+    radial-gradient(circle at 35% 76%, rgba(255, 255, 255, .98), transparent 20%),
+    linear-gradient(145deg, #fff 0%, #f4f4f4 55%, #d9d9d9 100%);
+  border: 4px solid #111;
+}
+
+.ball-band {
+  top: 46%;
+  bottom: auto;
+  height: 9%;
+  border-radius: 0;
+  background: #111;
+  z-index: 2;
+}
+
+.ball-button {
+  inset: 50% auto auto 50%;
+  width: 30%;
+  height: 30%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at center, #fff 0 42%, #d6d6d6 43% 58%, #111 59% 70%, #fff 71% 100%);
+  box-shadow: 0 0 0 3px #111;
+  z-index: 3;
+}
+
+.master-mark {
+  display: none;
+  z-index: 4;
+  place-items: center;
+  inset: 4% auto auto 50%;
+  width: 92%;
+  height: 43%;
+  transform: translateX(-47%);
+  color: #f7ecff;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(20px, calc(var(--card-size) * .24), 34px);
+  line-height: 1;
+  text-shadow:
+    -2px 0 0 #3b245f,
+    2px 0 0 #3b245f,
+    0 -2px 0 #3b245f,
+    0 2px 0 #3b245f,
+    0 0 9px rgba(255, 105, 214, .62);
+}
+
+.master-mark::before,
+.master-mark::after {
+  content: "";
+  position: absolute;
+  top: 5%;
+  width: 25%;
+  height: 82%;
+  border: 3px solid #111;
+  border-radius: 58% 42% 58% 42%;
+  background:
+    radial-gradient(ellipse at 42% 28%, rgba(255, 190, 217, .85), transparent 24%),
+    linear-gradient(145deg, #f05a95 0%, #bb245f 65%, #7d123b 100%);
+  box-shadow: inset -8px -7px 0 rgba(0, 0, 0, .18);
+}
+
+.master-mark::before {
+  left: 1%;
+  transform: translateX(-3%) rotate(20deg);
+}
+
+.master-mark::after {
+  right: 1%;
+  transform: translateX(-3%) rotate(-20deg) scaleX(-1);
+}
+
+.electric-burst {
+  z-index: 7;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    conic-gradient(from 18deg, transparent 0 6%, rgba(255, 238, 68, .95) 7% 9%, transparent 10% 23%, rgba(95, 211, 255, .9) 24% 26%, transparent 27% 43%, rgba(255, 238, 68, .95) 44% 46%, transparent 47% 100%);
+  filter: drop-shadow(0 0 10px rgba(255, 226, 45, .8));
+}
+
+.local-effect {
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.pokemon-art {
+  position: absolute;
+  inset: -15%;
+  width: 130%;
+  height: 130%;
+  object-fit: contain;
+  opacity: 0;
+  transform: translateY(10%) scale(.74);
+  filter: drop-shadow(0 18px 14px rgba(0, 0, 0, .5));
+  z-index: 5;
+  pointer-events: none;
+}
+
+.pokemon-card.discovered .pokemon-art {
+  opacity: 1;
+  transform: translateY(-14%) scale(1.04);
+  transition: opacity .28s ease .18s, transform .36s cubic-bezier(.2, .8, .2, 1) .18s;
+}
+
+.pokemon-art--sleep-mode {
+  filter: drop-shadow(0 18px 14px rgba(0, 0, 0, .5)) drop-shadow(0 0 16px rgba(255, 135, 190, .34));
+  animation: angryJigglypuffPulse 1300ms ease-in-out infinite;
+}
+
+.pokemon-art--sprite {
+  image-rendering: pixelated;
+}
+
+.pokemon-card.discovered .pokemon-ball-card {
+  cursor: pointer;
+}
+
+.pokemon-card.discovered:not(.revealing):hover .pokemon-stage,
+.pokemon-card.discovered:not(.revealing):focus-within .pokemon-stage {
+  transform: translateY(-3px) scale(1.055);
+  filter: brightness(1.06);
+}
+
+.pokemon-card.focused .pokemon-stage {
+  animation: pokemonCardCloseUp 1050ms cubic-bezier(.2, .8, .2, 1) both;
+  z-index: 12;
+}
+
+.pokemon-card.focused .pokemon-ball-card::after {
+  animation: pokemonFocusPing 1050ms ease-out both;
+}
+
+.pokemon-card.discovered .pokemon-ball-card:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 7px;
+}
+
+.pokemon-card.discovered .ball-shell--top {
+  opacity: .46;
+  transform: translateY(-24%) rotate(-8deg) scale(.96);
+}
+
+.pokemon-card.discovered .ball-shell--bottom {
+  opacity: .46;
+  transform: translateY(14%) rotate(6deg) scale(.96);
+}
+
+.pokemon-card.discovered .ball-band,
+.pokemon-card.discovered .ball-button,
+.pokemon-card.discovered .master-mark {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.82);
+}
+
+.pokemon-card.discovered .ball-band {
+  transform: none;
+}
+
+.pokemon-card.discovered .master-mark {
+  transform: translateX(-47%) translateY(-24%) rotate(-8deg) scale(.96);
+}
+
+.pokemon-card.revealing .ball-shell--top {
+  animation: ballTopOpen 1200ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pokemon-card.revealing .master-mark {
+  animation: masterMarkOpen 1200ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pokemon-card.revealing .ball-shell--bottom {
+  animation: ballBottomOpen 1200ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pokemon-card.revealing .reveal-glow {
+  animation: pokemonRevealGlow 1200ms ease-out both;
+  background: radial-gradient(circle, rgba(255, 255, 255, 1), rgba(255, 244, 146, .82) 25%, rgba(255, 207, 33, .42) 43%, transparent 72%);
+  z-index: 1;
+}
+
+.pokemon-card.revealing .pokemon-art {
+  animation: pokemonArtReveal 1200ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pokemon-card.revealing .pokemon-ball-card::after {
+  animation: pokeballFlash 900ms ease-out both;
+}
+
+.pokemon-caption {
+  position: relative;
+  z-index: 10;
+  min-height: 34px;
+  width: calc(var(--card-size) + 68px);
+  max-width: 100%;
+  text-align: center;
+  line-height: 1;
+}
+
+.pokemon-number,
+.pokemon-name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 6px 8px 4px;
+  background: rgba(0, 0, 0, .5);
+  border: 1px solid rgba(255, 255, 255, .16);
+  color: #fff;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: clamp(9px, calc(var(--card-size) * .075), 12px);
+  line-height: 1.2;
+  text-transform: capitalize;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  hyphens: none;
+}
+
+.pokemon-card.discovered .pokemon-name {
+  background: rgba(8, 40, 92, .76);
+  color: #fff8b8;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .6);
+}
+
+@keyframes ballTopOpen {
+  0% { transform: translateY(0) rotate(0) scale(1); }
+  18% { transform: translateY(-8%) rotate(-2deg) scale(1.05); }
+  46% { transform: translateY(-46%) rotate(-16deg) scale(1.03); opacity: .9; }
+  100% { transform: translateY(-24%) rotate(-8deg) scale(.96); opacity: .46; }
+}
+
+@keyframes masterMarkOpen {
+  0% { transform: translateX(-47%) translateY(0) rotate(0) scale(1); opacity: 1; }
+  18% { transform: translateX(-47%) translateY(-8%) rotate(-2deg) scale(1.05); opacity: 1; }
+  46% { transform: translateX(-47%) translateY(-46%) rotate(-16deg) scale(1.03); opacity: .75; }
+  100% { transform: translateX(-47%) translateY(-24%) rotate(-8deg) scale(.96); opacity: 0; }
+}
+
+@keyframes ballBottomOpen {
+  0% { transform: translateY(0) rotate(0) scale(1); }
+  18% { transform: translateY(8%) rotate(2deg) scale(1.05); }
+  46% { transform: translateY(30%) rotate(12deg) scale(1.03); opacity: .9; }
+  100% { transform: translateY(14%) rotate(6deg) scale(.96); opacity: .46; }
+}
+
+@keyframes pokemonRevealGlow {
+  0% { opacity: 0; transform: scale(.35); }
+  22% { opacity: 1; transform: scale(1.05); }
+  58% { opacity: .75; transform: scale(1.45); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+
+@keyframes pokemonArtReveal {
+  0% { opacity: 0; transform: translateY(18%) scale(.5); }
+  42% { opacity: 1; transform: translateY(-18%) scale(1.15); }
+  100% { opacity: 1; transform: translateY(-14%) scale(1.04); }
+}
+
+@keyframes pokemonCardCloseUp {
+  0%, 100% { transform: translateY(0) scale(1); filter: none; }
+  18% { transform: translateY(-10px) scale(1.18); filter: brightness(1.12) drop-shadow(0 18px 22px rgba(255, 207, 33, .28)); }
+  62% { transform: translateY(-8px) scale(1.14); filter: brightness(1.08) drop-shadow(0 14px 20px rgba(255, 207, 33, .2)); }
+}
+
+@keyframes pokemonFocusPing {
+  0% { opacity: 0; transform: scale(.55); }
+  22% { opacity: .85; transform: scale(1.12); }
+  100% { opacity: 0; transform: scale(1.75); }
+}
+
+@keyframes pokeballFlash {
+  0% { opacity: 0; transform: scale(.35) rotate(0deg); filter: blur(0); }
+  16% { opacity: 1; transform: scale(.95) rotate(16deg); filter: blur(.5px); }
+  38% { opacity: .78; transform: scale(1.45) rotate(40deg); filter: blur(1px); }
+  100% { opacity: 0; transform: scale(2.25) rotate(78deg); filter: blur(3px); }
+}
+
+.pokemon-card.ball-master .ball-shell--top {
+  background:
+    radial-gradient(circle at 18% 38%, rgba(228, 210, 255, .58), transparent 7%),
+    radial-gradient(circle at 38% 18%, rgba(255, 255, 255, .32), transparent 16%),
+    linear-gradient(145deg, #7741bf 0%, #5a318f 58%, #2b144f 100%);
+}
+
+.pokemon-card.ball-master .ball-shell--bottom {
+  background:
+    radial-gradient(circle at 35% 76%, rgba(255, 255, 255, .98), transparent 20%),
+    linear-gradient(145deg, #fff 0%, #ece8f7 55%, #bdb3d6 100%);
+}
+
+.pokemon-card.ball-master .master-mark {
+  display: grid;
+}
+
+.pokemon-card.ball-master .pokemon-ball-card {
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .44)) drop-shadow(0 0 16px rgba(150, 95, 255, .24));
+}
+
+.pokemon-card.ball-ultra .ball-shell--top {
+  background:
+    radial-gradient(circle at 26% 16%, rgba(255, 255, 255, .9), transparent 13%),
+    radial-gradient(ellipse at 50% 8%, rgba(255, 255, 255, .55), transparent 17%),
+    linear-gradient(90deg, transparent 0 19%, #ffe651 20% 32%, transparent 33% 67%, #ffe651 68% 80%, transparent 81% 100%),
+    radial-gradient(ellipse at 68% 32%, rgba(255, 255, 255, .16), transparent 30%),
+    linear-gradient(145deg, #262d31 0%, #101416 48%, #37444a 100%);
+}
+
+.pokemon-card.ball-ultra .ball-shell--bottom {
+  background:
+    radial-gradient(circle at 35% 76%, rgba(255, 255, 255, .98), transparent 20%),
+    linear-gradient(145deg, #fff 0%, #eeeafa 57%, #c9c1e2 100%);
+}
+
+.pokemon-card.ball-ultra .pokemon-ball-card {
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .44)) drop-shadow(0 0 14px rgba(255, 207, 33, .18));
+}
+
+.pokemon-card.ball-super .ball-shell--top {
+  background:
+    radial-gradient(circle at 28% 14%, rgba(255, 255, 255, .8), transparent 13%),
+    radial-gradient(ellipse at 50% 10%, rgba(212, 249, 255, .58), transparent 22%),
+    radial-gradient(ellipse at 66% 30%, rgba(255, 255, 255, .2), transparent 30%),
+    linear-gradient(145deg, #25c6f4 0%, #068cc9 48%, #005c94 100%);
+}
+
+.pokemon-card.ball-super .ball-shell--top::before,
+.pokemon-card.ball-super .ball-shell--top::after {
+  display: block;
+  top: -5%;
+  width: 19%;
+  height: 42%;
+  border: 3px solid #111;
+  background:
+    radial-gradient(ellipse at 38% 20%, rgba(255, 196, 196, .86), transparent 24%),
+    linear-gradient(145deg, #ff6b6f 0%, #f02f38 56%, #b71322 100%);
+  box-shadow: inset -5px -5px 0 rgba(0, 0, 0, .18);
+  z-index: 1;
+}
+
+.pokemon-card.ball-super .ball-shell--top::before {
+  left: 11%;
+  border-radius: 10% 8% 18% 14%;
+  clip-path: polygon(0 0, 100% 7%, 82% 100%, 14% 100%);
+  transform: rotate(-12deg);
+}
+
+.pokemon-card.ball-super .ball-shell--top::after {
+  right: 11%;
+  border-radius: 8% 10% 14% 18%;
+  clip-path: polygon(0 7%, 100% 0, 86% 100%, 18% 100%);
+  transform: rotate(12deg);
+}
+
+.pokemon-card.ball-super .ball-shell--bottom {
+  background:
+    radial-gradient(circle at 35% 76%, rgba(255, 255, 255, .98), transparent 20%),
+    linear-gradient(145deg, #fff 0%, #f1f6fb 56%, #c9d8e5 100%);
+}
+
+.pokemon-card.ball-super .pokemon-ball-card {
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .44)) drop-shadow(0 0 14px rgba(48, 190, 255, .2));
+}
+
+.pokemon-card.special-shedinja.revealing .pokemon-ball-card,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:hover,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:focus-visible {
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .44)) drop-shadow(0 0 22px rgba(206, 185, 255, .38));
+}
+
+.pokemon-card.special-shedinja.revealing .local-effect--hollow-halo,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:hover .local-effect--hollow-halo,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:focus-visible .local-effect--hollow-halo {
+  opacity: 1;
+  inset: -14%;
+  border: 2px solid rgba(222, 202, 255, .72);
+  background:
+    radial-gradient(circle at center, transparent 0 31%, rgba(18, 15, 28, .58) 32% 36%, transparent 37%),
+    conic-gradient(from 0deg, transparent 0 13%, rgba(216, 193, 255, .68) 14% 16%, transparent 17% 34%, rgba(255, 255, 255, .38) 35% 37%, transparent 38% 100%);
+  filter: drop-shadow(0 0 14px rgba(184, 151, 255, .42));
+  animation: hollowHalo 1800ms ease-out both;
+}
+
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:hover .pokemon-art,
+.pokemon-card.special-shedinja.discovered .pokemon-ball-card:focus-visible .pokemon-art {
+  opacity: .72;
+  filter: drop-shadow(0 18px 14px rgba(0, 0, 0, .5)) grayscale(.28) contrast(1.18);
+}
+
+.pokemon-card.special-sableye.revealing .local-effect--gems,
+.pokemon-card.special-sableye.discovered .pokemon-ball-card:hover .local-effect--gems,
+.pokemon-card.special-sableye.discovered .pokemon-ball-card:focus-visible .local-effect--gems {
+  opacity: 1;
+  inset: -8%;
+  background:
+    radial-gradient(circle at 25% 30%, #f0abfc 0 4%, transparent 5%),
+    radial-gradient(circle at 72% 28%, #67e8f9 0 4%, transparent 5%),
+    radial-gradient(circle at 38% 76%, #fef08a 0 4%, transparent 5%),
+    radial-gradient(circle at 70% 72%, #c084fc 0 5%, transparent 6%);
+  filter: drop-shadow(0 0 9px rgba(216, 180, 254, .72));
+  animation: gemScatter 1800ms ease-out both;
+}
+
+.pokemon-card.special-mawile.revealing .local-effect--jaw,
+.pokemon-card.special-mawile.discovered .pokemon-ball-card:hover .local-effect--jaw,
+.pokemon-card.special-mawile.discovered .pokemon-ball-card:focus-visible .local-effect--jaw {
+  opacity: 1;
+  inset: auto auto -12% 50%;
+  width: 62%;
+  height: 42%;
+  transform: translateX(-50%);
+  border-radius: 0 0 50% 50%;
+  background:
+    linear-gradient(135deg, transparent 0 18%, #f8fafc 19% 26%, transparent 27% 38%, #f8fafc 39% 46%, transparent 47% 100%),
+    linear-gradient(225deg, transparent 0 18%, #f8fafc 19% 26%, transparent 27% 38%, #f8fafc 39% 46%, transparent 47% 100%),
+    linear-gradient(180deg, #171014 0%, #050505 100%);
+  border: 3px solid #111;
+  box-shadow: 0 -8px 16px rgba(0, 0, 0, .34);
+  animation: mawileBite 1700ms ease-out both;
+}
+
+.pokemon-card.special-drifloon.revealing .local-effect--string-shadow,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:hover .local-effect--string-shadow,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:focus-visible .local-effect--string-shadow {
+  opacity: 1;
+  inset: -10% 0 -18%;
+  background:
+    linear-gradient(90deg, transparent 0 49%, rgba(170, 140, 220, .7) 50% 51%, transparent 52% 100%),
+    radial-gradient(ellipse at 50% 93%, rgba(0, 0, 0, .42), transparent 34%);
+  animation: drifloonTether 1900ms ease-out both;
+}
+
+.pokemon-card.special-drifloon.revealing .pokemon-ball-card,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:hover,
+.pokemon-card.special-drifloon.discovered .pokemon-ball-card:focus-visible {
+  animation: drifloonFloat 1900ms ease-in-out both;
+}
+
+.pokemon-card.special-spiritomb.revealing .local-effect--soul-ring,
+.pokemon-card.special-spiritomb.discovered .pokemon-ball-card:hover .local-effect--soul-ring,
+.pokemon-card.special-spiritomb.discovered .pokemon-ball-card:focus-visible .local-effect--soul-ring {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 42%, rgba(126, 34, 206, .36) 43% 48%, transparent 49%),
+    conic-gradient(from 12deg, rgba(190, 116, 255, .72) 0 2%, transparent 3% 9%, rgba(45, 212, 191, .55) 10% 12%, transparent 13% 100%);
+  filter: drop-shadow(0 0 16px rgba(168, 85, 247, .5));
+  animation: spiritombLocalSpin 2600ms linear both;
+}
+
+.pokemon-card.special-mimikyu.revealing .local-effect--false-pika,
+.pokemon-card.special-mimikyu.discovered .pokemon-ball-card:hover .local-effect--false-pika,
+.pokemon-card.special-mimikyu.discovered .pokemon-ball-card:focus-visible .local-effect--false-pika {
+  opacity: 1;
+}
+
+.local-effect--false-pika::before {
+  content: "Pika?";
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  transform: translateX(-50%) rotate(-6deg);
+  padding: 5px 7px;
+  border: 2px solid #111;
+  border-radius: 8px;
+  background: #facc15;
+  color: #111;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 8px;
+  text-shadow: none;
+  animation: falsePikaTwitch 1500ms steps(2, end) both;
+}
+
+.pokemon-card.special-litwick.revealing .local-effect--blue-flame,
+.pokemon-card.special-litwick.discovered .pokemon-ball-card:hover .local-effect--blue-flame,
+.pokemon-card.special-litwick.discovered .pokemon-ball-card:focus-visible .local-effect--blue-flame,
+.pokemon-card.special-chandelure.revealing .local-effect--chandelier-flames,
+.pokemon-card.special-chandelure.discovered .pokemon-ball-card:hover .local-effect--chandelier-flames,
+.pokemon-card.special-chandelure.discovered .pokemon-ball-card:focus-visible .local-effect--chandelier-flames {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(125, 211, 252, .95) 0 7%, rgba(147, 51, 234, .72) 8% 15%, transparent 16%),
+    radial-gradient(ellipse at 27% 35%, rgba(192, 132, 252, .75) 0 6%, transparent 7%),
+    radial-gradient(ellipse at 73% 35%, rgba(125, 211, 252, .72) 0 6%, transparent 7%);
+  filter: drop-shadow(0 0 18px rgba(147, 51, 234, .7));
+  animation: ghostFlame 1700ms ease-out both;
+}
+
+.pokemon-card.special-milotic.revealing .local-effect--scales,
+.pokemon-card.special-milotic.discovered .pokemon-ball-card:hover .local-effect--scales,
+.pokemon-card.special-milotic.discovered .pokemon-ball-card:focus-visible .local-effect--scales {
+  opacity: 1;
+  inset: -14%;
+  background:
+    radial-gradient(ellipse at 25% 32%, rgba(192, 244, 255, .86) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 54% 20%, rgba(255, 214, 244, .82) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 78% 44%, rgba(134, 239, 172, .74) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 42% 72%, rgba(125, 218, 255, .78) 0 6%, transparent 7%);
+  filter: drop-shadow(0 0 12px rgba(125, 218, 255, .58));
+  animation: miloticScaleShimmer 2400ms ease-out both;
+}
+
+.pokemon-card.special-garchomp.revealing .local-effect--speed-cut,
+.pokemon-card.special-garchomp.discovered .pokemon-ball-card:hover .local-effect--speed-cut,
+.pokemon-card.special-garchomp.discovered .pokemon-ball-card:focus-visible .local-effect--speed-cut {
+  opacity: 1;
+  inset: -24%;
+  background:
+    linear-gradient(110deg, transparent 0 34%, rgba(255, 255, 255, .9) 35% 38%, transparent 39%),
+    linear-gradient(110deg, transparent 0 52%, rgba(96, 165, 250, .72) 53% 55%, transparent 56%);
+  filter: drop-shadow(0 0 12px rgba(96, 165, 250, .62));
+  animation: garchompCutLocal 1500ms ease-out both;
+}
+
+.pokemon-card.special-arceus.revealing .local-effect--creation-ring,
+.pokemon-card.special-arceus.discovered .pokemon-ball-card:hover .local-effect--creation-ring,
+.pokemon-card.special-arceus.discovered .pokemon-ball-card:focus-visible .local-effect--creation-ring {
+  opacity: 1;
+  inset: -16%;
+  border: 2px solid rgba(255, 239, 164, .76);
+  background:
+    radial-gradient(circle, transparent 0 42%, rgba(255, 239, 164, .32) 43% 47%, transparent 48%),
+    conic-gradient(from 0deg, rgba(255, 239, 164, .86) 0 3%, transparent 4% 12%, rgba(255, 255, 255, .6) 13% 15%, transparent 16% 100%);
+  filter: drop-shadow(0 0 16px rgba(255, 239, 164, .58));
+  animation: arceusRingLocal 3000ms linear both;
+}
+
+.pokemon-card.special-necrozma.revealing .local-effect--prism,
+.pokemon-card.special-necrozma.discovered .pokemon-ball-card:hover .local-effect--prism,
+.pokemon-card.special-necrozma.discovered .pokemon-ball-card:focus-visible .local-effect--prism {
+  opacity: 1;
+  inset: -12%;
+  background:
+    conic-gradient(from 16deg, rgba(239, 68, 68, .74), rgba(59, 130, 246, .74), rgba(34, 197, 94, .74), rgba(234, 179, 8, .74), rgba(239, 68, 68, .74));
+  clip-path: polygon(50% 0, 90% 25%, 80% 78%, 50% 100%, 20% 78%, 10% 25%);
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, .42));
+  animation: prismFlashLocal 2400ms steps(2, end) both;
+}
+
+.pokemon-card.special-eternatus.revealing .local-effect--dynamax-core,
+.pokemon-card.special-eternatus.discovered .pokemon-ball-card:hover .local-effect--dynamax-core,
+.pokemon-card.special-eternatus.discovered .pokemon-ball-card:focus-visible .local-effect--dynamax-core {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(circle at center, rgba(248, 113, 113, .84) 0 10%, rgba(147, 51, 234, .58) 11% 22%, transparent 23%),
+    conic-gradient(from 0deg, transparent 0 9%, rgba(248, 113, 113, .7) 10% 12%, transparent 13% 38%, rgba(147, 51, 234, .62) 39% 42%, transparent 43% 100%);
+  filter: drop-shadow(0 0 18px rgba(248, 113, 113, .7));
+  animation: dynamaxPulseLocal 2600ms ease-out both;
+}
+
+.pokemon-card.special-genesect.revealing .local-effect--scanner,
+.pokemon-card.special-genesect.discovered .pokemon-ball-card:hover .local-effect--scanner,
+.pokemon-card.special-genesect.discovered .pokemon-ball-card:focus-visible .local-effect--scanner {
+  opacity: 1;
+  inset: -10%;
+  background:
+    linear-gradient(180deg, transparent 0 44%, rgba(239, 68, 68, .82) 45% 49%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent 0 12px, rgba(239, 68, 68, .16) 13px 14px);
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, .72));
+  animation: genesectScanLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-wooloo.revealing .local-effect--wool,
+.pokemon-card.special-wooloo.discovered .pokemon-ball-card:hover .local-effect--wool,
+.pokemon-card.special-wooloo.discovered .pokemon-ball-card:focus-visible .local-effect--wool {
+  opacity: 1;
+  inset: -12%;
+  background:
+    radial-gradient(circle at 28% 30%, rgba(255, 255, 255, .9) 0 9%, transparent 10%),
+    radial-gradient(circle at 64% 28%, rgba(255, 255, 255, .86) 0 10%, transparent 11%),
+    radial-gradient(circle at 50% 64%, rgba(255, 255, 255, .82) 0 12%, transparent 13%);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, .52));
+  animation: woolooPuffLocal 2100ms ease-out both;
+}
+
+.pokemon-card.special-cramorant.revealing .local-effect--gulp,
+.pokemon-card.special-cramorant.discovered .pokemon-ball-card:hover .local-effect--gulp,
+.pokemon-card.special-cramorant.discovered .pokemon-ball-card:focus-visible .local-effect--gulp {
+  opacity: 1;
+  inset: -10%;
+  background: radial-gradient(ellipse at 50% 28%, rgba(96, 165, 250, .78) 0 12%, transparent 13%);
+  animation: cramorantGulpLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-tea.revealing .local-effect--steam,
+.pokemon-card.special-tea.discovered .pokemon-ball-card:hover .local-effect--steam,
+.pokemon-card.special-tea.discovered .pokemon-ball-card:focus-visible .local-effect--steam {
+  opacity: 1;
+  inset: -18%;
+  background:
+    radial-gradient(ellipse at 42% 18%, rgba(255, 255, 255, .62), transparent 16%),
+    radial-gradient(ellipse at 58% 8%, rgba(255, 255, 255, .48), transparent 14%);
+  animation: teaSteamLocal 2300ms ease-out both;
+}
+
+.pokemon-card.special-alcremie.revealing .local-effect--frosting,
+.pokemon-card.special-alcremie.discovered .pokemon-ball-card:hover .local-effect--frosting,
+.pokemon-card.special-alcremie.discovered .pokemon-ball-card:focus-visible .local-effect--frosting {
+  opacity: 1;
+  inset: -12%;
+  background:
+    radial-gradient(circle at 30% 28%, #fbcfe8 0 7%, transparent 8%),
+    radial-gradient(circle at 68% 34%, #fde68a 0 6%, transparent 7%),
+    radial-gradient(circle at 48% 70%, #bfdbfe 0 7%, transparent 8%);
+  animation: frostingPopLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-dragapult.revealing .local-effect--missiles,
+.pokemon-card.special-dragapult.discovered .pokemon-ball-card:hover .local-effect--missiles,
+.pokemon-card.special-dragapult.discovered .pokemon-ball-card:focus-visible .local-effect--missiles {
+  opacity: 1;
+  inset: -24%;
+  background:
+    linear-gradient(90deg, transparent 0 16%, rgba(34, 197, 94, .78) 17% 22%, transparent 23%),
+    linear-gradient(90deg, transparent 0 60%, rgba(34, 197, 94, .72) 61% 66%, transparent 67%);
+  animation: dragapultMissileLocal 2100ms ease-out both;
+}
+
+.pokemon-card.special-fidough.revealing .local-effect--bread-puff,
+.pokemon-card.special-fidough.discovered .pokemon-ball-card:hover .local-effect--bread-puff,
+.pokemon-card.special-fidough.discovered .pokemon-ball-card:focus-visible .local-effect--bread-puff {
+  opacity: 1;
+  inset: -10%;
+  background:
+    radial-gradient(circle at 30% 64%, rgba(254, 215, 170, .82) 0 10%, transparent 11%),
+    radial-gradient(circle at 68% 62%, rgba(253, 186, 116, .72) 0 10%, transparent 11%);
+  animation: fidoughPuffLocal 2200ms ease-out both;
+}
+
+.pokemon-card.special-tinkaton.revealing .local-effect--hammer,
+.pokemon-card.special-tinkaton.discovered .pokemon-ball-card:hover .local-effect--hammer,
+.pokemon-card.special-tinkaton.discovered .pokemon-ball-card:focus-visible .local-effect--hammer {
+  opacity: 1;
+  inset: -20%;
+  background:
+    linear-gradient(110deg, transparent 0 44%, #9ca3af 45% 51%, transparent 52%),
+    radial-gradient(ellipse at 68% 26%, rgba(156, 163, 175, .9) 0 14%, transparent 15%);
+  filter: drop-shadow(0 0 12px rgba(156, 163, 175, .7));
+  animation: tinkatonHammerLocal 2300ms ease-out both;
+}
+
+.pokemon-card.special-pikachu:not(.discovered) .pokemon-ball-card {
+  animation: pikachuRestless 3.2s ease-in-out infinite;
+}
+
+.pokemon-card.special-pikachu:not(.discovered) .pokemon-ball-card::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    conic-gradient(from -18deg, transparent 0 13%, rgba(255, 232, 45, .86) 14% 16%, transparent 17% 47%, rgba(255, 232, 45, .72) 48% 50%, transparent 51% 100%);
+  filter: drop-shadow(0 0 10px rgba(255, 232, 45, .9));
+  animation: pikachuSpark 3.2s ease-in-out infinite;
+  z-index: 7;
+}
+
+.pokemon-card.special-voltorb .pokemon-ball-card:hover .electric-burst,
+.pokemon-card.special-voltorb .pokemon-ball-card:focus-visible .electric-burst {
+  animation: voltorbElectric 620ms steps(2, end) infinite;
+}
+
+.pokemon-card.special-gengar.revealing .pokemon-ball-card::after {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, .98) 0 14%, rgba(203, 141, 255, .94) 15% 31%, rgba(111, 46, 180, .58) 32% 52%, transparent 68%),
+    conic-gradient(from 8deg, transparent 0 8%, rgba(255, 255, 255, .8) 9% 11%, transparent 12% 22%, rgba(204, 148, 255, .8) 23% 25%, transparent 26% 100%);
+}
+
+.pokemon-card.special-bulbasaur.revealing .local-effect--vines {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at 18% 80%, rgba(74, 196, 108, .8) 0 9%, transparent 10%),
+    radial-gradient(ellipse at 80% 24%, rgba(121, 214, 74, .74) 0 8%, transparent 9%),
+    linear-gradient(36deg, transparent 0 26%, #2f9f54 27% 31%, transparent 32%),
+    linear-gradient(-32deg, transparent 0 37%, #4ac46c 38% 42%, transparent 43%),
+    linear-gradient(118deg, transparent 0 56%, #257f42 57% 61%, transparent 62%);
+  filter: drop-shadow(0 0 12px rgba(74, 196, 108, .65));
+  animation: kantoGrow 1500ms ease-out both;
+}
+
+.pokemon-card.special-bulbasaur.revealing .local-effect--bloom {
+  opacity: 1;
+  inset: 6% 26% 54%;
+  border-radius: 50% 50% 44% 44%;
+  background:
+    radial-gradient(circle at 50% 42%, #ff8bd1 0 20%, transparent 21%),
+    radial-gradient(circle at 26% 56%, #ffbadf 0 20%, transparent 21%),
+    radial-gradient(circle at 74% 56%, #ffbadf 0 20%, transparent 21%),
+    linear-gradient(180deg, #67c56a, #2c8b42);
+  animation: kantoBloom 1500ms ease-out both;
+}
+
+.pokemon-card.special-charmander .ball-shell--top {
+  box-shadow: inset 0 -8px 18px rgba(255, 191, 71, .26);
+}
+
+.pokemon-card.special-charmander.revealing .local-effect--flame {
+  opacity: 1;
+  inset: 14% 34% 52%;
+  border-radius: 54% 54% 54% 10%;
+  background: radial-gradient(circle at 50% 70%, #fff6a0 0 18%, #ff9b22 19% 48%, #e93618 49% 74%, transparent 75%);
+  filter: drop-shadow(0 0 12px rgba(255, 130, 34, .85));
+  animation: kantoFlame 900ms ease-in-out infinite alternate;
+}
+
+.pokemon-card.special-charmander.revealing .local-effect--heat {
+  opacity: .7;
+  inset: -18%;
+  background: radial-gradient(circle, rgba(255, 155, 34, .28), transparent 64%);
+  animation: kantoHeat 1300ms ease-out both;
+}
+
+.pokemon-card.special-squirtle.revealing .local-effect--water-drop {
+  opacity: 1;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(125, 218, 255, .95) 0 4%, transparent 5%),
+    radial-gradient(circle at 72% 36%, rgba(125, 218, 255, .9) 0 5%, transparent 6%),
+    radial-gradient(circle at 42% 76%, rgba(125, 218, 255, .82) 0 4%, transparent 5%);
+  animation: kantoSplashLocal 900ms ease-out both;
+}
+
+.pokemon-card.special-jigglypuff.revealing .local-effect--zzz {
+  opacity: 1;
+}
+
+.pokemon-card.special-jigglypuff.revealing .local-effect--zzz::before {
+  content: "Zzz";
+  position: absolute;
+  right: -8%;
+  top: 5%;
+  color: #fff7ba;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 12px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .6);
+  animation: kantoZzz 1400ms ease-out both;
+}
+
+.pokemon-card.special-diglett.revealing .pokemon-ball-card {
+  animation: diglettBurrow 1250ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pokemon-card.special-diglett.revealing .local-effect--dirt {
+  opacity: 1;
+  inset: 72% -16% -12%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 22% 52%, #8b5a2b 0 8%, transparent 9%),
+    radial-gradient(circle at 48% 62%, #a86d32 0 9%, transparent 10%),
+    radial-gradient(circle at 72% 48%, #70421f 0 7%, transparent 8%);
+  animation: dirtPop 900ms ease-out both;
+}
+
+.pokemon-card.special-psyduck.revealing .local-effect--spinner {
+  opacity: 1;
+}
+
+.pokemon-card.special-psyduck.revealing .local-effect--spinner::before {
+  content: "?";
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffcf21;
+  border: 2px solid #111;
+  color: #08285c;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 14px;
+  transform: translateX(-50%);
+  animation: psyduckQuestion 1100ms ease-in-out both;
+}
+
+.pokemon-card.special-ditto.discovered .pokemon-ball-card:hover .pokemon-art {
+  animation: dittoMelt 900ms ease-in-out both;
+}
+
+.pokemon-card.revealing .local-effect--petals,
+.pokemon-card.revealing .local-effect--back-flame,
+.pokemon-card.revealing .local-effect--bite,
+.pokemon-card.revealing .local-effect--climb,
+.pokemon-card.revealing .local-effect--feather,
+.pokemon-card.revealing .local-effect--mud,
+.pokemon-card.revealing .local-effect--sapling,
+.pokemon-card.revealing .local-effect--fire-trail,
+.pokemon-card.revealing .local-effect--ice,
+.pokemon-card.revealing .local-effect--pose-leaf,
+.pokemon-card.revealing .local-effect--smoke,
+.pokemon-card.revealing .local-effect--shell-slash,
+.pokemon-card.revealing .local-effect--spikes,
+.pokemon-card.revealing .local-effect--magic-flame,
+.pokemon-card.revealing .local-effect--ninja,
+.pokemon-card.revealing .local-effect--owl,
+.pokemon-card.revealing .local-effect--furball,
+.pokemon-card.revealing .local-effect--circus,
+.pokemon-card.revealing .local-effect--drum,
+.pokemon-card.revealing .local-effect--sprint,
+.pokemon-card.revealing .local-effect--invisible,
+.pokemon-card.revealing .local-effect--pollen,
+.pokemon-card.revealing .local-effect--chomp,
+.pokemon-card.revealing .local-effect--groom {
+  opacity: 1;
+}
+
+.pokemon-card.revealing .local-effect--petals,
+.pokemon-card.revealing .local-effect--pollen {
+  inset: -20%;
+  background:
+    radial-gradient(ellipse at 28% 22%, rgba(255, 178, 218, .95) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 68% 16%, rgba(160, 232, 94, .9) 0 5%, transparent 6%),
+    radial-gradient(ellipse at 74% 70%, rgba(255, 178, 218, .85) 0 4%, transparent 5%),
+    radial-gradient(ellipse at 18% 72%, rgba(160, 232, 94, .8) 0 5%, transparent 6%);
+  animation: starterOrbit 1500ms ease-out both;
+}
+
+.pokemon-card.special-chikorita.revealing ~ .pokemon-card:nth-child(2n) .pokemon-ball-card {
+  animation: chikoritaBreeze 1050ms ease-in-out both;
+}
+
+.pokemon-card.revealing .local-effect--back-flame,
+.pokemon-card.revealing .local-effect--magic-flame,
+.pokemon-card.revealing .local-effect--furball {
+  inset: 4% 31% 52%;
+  border-radius: 58% 58% 50% 12%;
+  background: radial-gradient(circle at 50% 72%, #fff3a4 0 16%, #ff9b22 17% 48%, #e93618 49% 72%, transparent 73%);
+  filter: drop-shadow(0 0 14px rgba(255, 130, 34, .85));
+  animation: starterFlame 760ms ease-in-out infinite alternate;
+}
+
+.pokemon-card.revealing .local-effect--bite::before,
+.pokemon-card.revealing .local-effect--chomp::before {
+  content: "";
+  position: absolute;
+  inset: 33% 12% 45%;
+  background:
+    linear-gradient(135deg, transparent 0 42%, #fff 43% 54%, transparent 55%),
+    linear-gradient(45deg, transparent 0 42%, #fff 43% 54%, transparent 55%);
+  filter: drop-shadow(0 2px 0 #111);
+  animation: starterBite 760ms ease-in-out both;
+}
+
+.pokemon-card.special-totodile.revealing .pokemon-ball-card,
+.pokemon-card.special-fuecoco.revealing .pokemon-ball-card {
+  animation: starterBiteShake 900ms ease-in-out both;
+}
+
+.pokemon-card.special-treecko.revealing .pokemon-ball-card {
+  animation: treeckoClimb 1250ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pokemon-card.revealing .local-effect--climb,
+.pokemon-card.revealing .local-effect--pose-leaf {
+  background:
+    linear-gradient(90deg, transparent 0 42%, #62c96e 43% 47%, transparent 48%),
+    radial-gradient(ellipse at 46% 18%, #98e866 0 9%, transparent 10%);
+  animation: starterOrbit 1100ms ease-out both;
+}
+
+.pokemon-card.revealing .local-effect--feather,
+.pokemon-card.revealing .local-effect--owl {
+  background:
+    radial-gradient(ellipse at 32% 18%, #f8fafc 0 5%, transparent 6%),
+    radial-gradient(ellipse at 70% 62%, #e6eef8 0 6%, transparent 7%);
+  animation: featherLocal 1300ms ease-out both;
+}
+
+.pokemon-card.revealing .local-effect--mud {
+  inset: 67% -12% 0;
+  background:
+    radial-gradient(circle at 22% 50%, #7a5130 0 11%, transparent 12%),
+    radial-gradient(circle at 54% 60%, #9a6838 0 14%, transparent 15%),
+    radial-gradient(circle at 78% 42%, #5d3a24 0 10%, transparent 11%);
+  animation: mudSplash 1000ms ease-out both;
+}
+
+.pokemon-card.special-mudkip.revealing ~ .pokemon-card:nth-child(3n) .pokemon-ball-card {
+  animation: mudkipSplatter 900ms ease-out both;
+}
+
+.pokemon-card.revealing .local-effect--sapling {
+  inset: 0 34% 58%;
+  background:
+    radial-gradient(ellipse at 42% 22%, #6fd66d 0 18%, transparent 19%),
+    radial-gradient(ellipse at 64% 32%, #8be66e 0 16%, transparent 17%),
+    linear-gradient(90deg, transparent 0 46%, #6b4a2a 47% 52%, transparent 53%);
+  animation: saplingGrow 1300ms ease-out both;
+}
+
+.pokemon-card.special-chimchar.revealing .pokemon-ball-card,
+.pokemon-card.special-scorbunny.revealing .pokemon-ball-card {
+  animation: starterHop 1050ms cubic-bezier(.25, .85, .28, 1) both;
+}
+
+.pokemon-card.revealing .local-effect--fire-trail,
+.pokemon-card.revealing .local-effect--sprint {
+  inset: 68% 10% 12% -18%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 155, 34, .88), transparent);
+  filter: drop-shadow(0 0 10px rgba(255, 130, 34, .7));
+  animation: fireTrail 900ms ease-out both;
+}
+
+.pokemon-card.special-piplup.revealing .pokemon-ball-card {
+  animation: iceSlide 950ms ease-in-out both;
+}
+
+.pokemon-card.revealing .local-effect--ice {
+  inset: 76% -8% 8%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(180, 234, 255, .86), rgba(255, 255, 255, .9), transparent);
+  animation: icePatch 1200ms ease-out both;
+}
+
+.pokemon-card.revealing .local-effect--smoke {
+  background:
+    radial-gradient(circle at 34% 25%, rgba(196, 196, 196, .72) 0 10%, transparent 11%),
+    radial-gradient(circle at 62% 18%, rgba(160, 160, 160, .62) 0 8%, transparent 9%);
+  animation: smokePuff 1400ms ease-out both;
+}
+
+.pokemon-card.revealing .local-effect--shell-slash {
+  inset: -12%;
+  background: linear-gradient(128deg, transparent 0 44%, rgba(255, 255, 255, .95) 45% 48%, rgba(80, 190, 255, .85) 49% 51%, transparent 52%);
+  filter: drop-shadow(0 0 8px rgba(80, 190, 255, .7));
+  animation: slashSweep 900ms ease-out both;
+}
+
+.pokemon-card.revealing .local-effect--spikes {
+  inset: -6%;
+  background:
+    conic-gradient(from 8deg, transparent 0 8%, #8bd15d 9% 11%, transparent 12% 22%, #8bd15d 23% 25%, transparent 26% 43%, #8bd15d 44% 46%, transparent 47% 100%);
+  animation: starterOrbit 1100ms ease-out both;
+}
+
+.pokemon-card.special-chespin.discovered .pokemon-ball-card:hover,
+.pokemon-card.special-chespin.discovered .pokemon-ball-card:focus-visible {
+  animation: chespinPrick 420ms ease-out both;
+}
+
+.pokemon-card.special-froakie.revealing .pokemon-art {
+  animation: ninjaBlink 1200ms steps(2, end) both;
+}
+
+.pokemon-card.revealing .local-effect--ninja,
+.pokemon-card.revealing .local-effect--circus {
+  background:
+    radial-gradient(circle at 24% 38%, rgba(183, 236, 255, .9) 0 6%, transparent 7%),
+    radial-gradient(circle at 72% 28%, rgba(183, 236, 255, .82) 0 7%, transparent 8%),
+    radial-gradient(circle at 58% 74%, rgba(183, 236, 255, .76) 0 6%, transparent 7%);
+  animation: bubbleLocal 1300ms ease-out both;
+}
+
+.pokemon-card.special-rowlet.revealing .pokemon-ball-card {
+  animation: owlSpin 900ms ease-in-out both;
+}
+
+.pokemon-card.special-tepig.revealing ~ .pokemon-card:nth-child(4n) .pokemon-ball-card {
+  animation: tepigNudge 780ms ease-out both;
+}
+
+.pokemon-card.revealing .local-effect--drum::before {
+  content: "";
+  position: absolute;
+  inset: 58% 26% 18%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7a4b24, #3f2613);
+  border: 2px solid #111;
+  animation: drumBeat 820ms ease-out both;
+}
+
+.pokemon-card.special-sobble.revealing .pokemon-art {
+  animation: sobbleFade 1500ms ease-in-out both;
+}
+
+.pokemon-card.revealing .local-effect--invisible {
+  background: radial-gradient(circle, rgba(125, 218, 255, .28), transparent 58%);
+  animation: invisibleShimmer 1400ms ease-out both;
+}
+
+.pokemon-card.special-quaxly.revealing .pokemon-ball-card {
+  animation: quaxlyPose 900ms ease-in-out both;
+}
+
+.pokemon-card.revealing .local-effect--groom::before {
+  content: "";
+  position: absolute;
+  left: 36%;
+  top: 12%;
+  width: 34%;
+  height: 9%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fff, #8bd6ff);
+  box-shadow: 0 0 12px rgba(139, 214, 255, .8);
+  animation: groomShine 1000ms ease-out both;
+}
+
+@keyframes starterOrbit {
+  0% { transform: scale(.75) rotate(-24deg); opacity: 0; }
+  28% { opacity: 1; }
+  100% { transform: scale(1.12) rotate(92deg); opacity: 0; }
+}
+
+@keyframes chikoritaBreeze {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  32% { transform: translateX(5px) rotate(2deg); }
+  62% { transform: translateX(-4px) rotate(-2deg); }
+}
+
+@keyframes starterFlame {
+  from { transform: translateY(3px) scale(.86) rotate(-4deg); }
+  to { transform: translateY(-7px) scale(1.1) rotate(5deg); }
+}
+
+@keyframes starterBite {
+  0%, 100% { transform: scaleX(.7) translateY(0); opacity: 0; }
+  26%, 72% { transform: scaleX(1) translateY(-3px); opacity: .92; }
+}
+
+@keyframes starterBiteShake {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  18% { transform: translate(-4px, 2px) rotate(-4deg); }
+  34% { transform: translate(5px, -1px) rotate(5deg); }
+  50% { transform: translate(-3px, 2px) rotate(-3deg); }
+  66% { transform: translate(2px, 0) rotate(2deg); }
+}
+
+@keyframes treeckoClimb {
+  0% { transform: translateY(18px) rotate(-8deg); }
+  42% { transform: translateY(-18px) rotate(7deg); }
+  72% { transform: translateY(-8px) rotate(-4deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+@keyframes featherLocal {
+  0% { transform: translate(-16px, -18px) rotate(-22deg) scale(.8); opacity: 0; }
+  24% { opacity: 1; }
+  100% { transform: translate(20px, 16px) rotate(28deg) scale(1.08); opacity: 0; }
+}
+
+@keyframes mudSplash {
+  0% { transform: translateY(18px) scale(.62); opacity: 0; }
+  35% { opacity: .96; }
+  100% { transform: translateY(-10px) scale(1.2); opacity: 0; }
+}
+
+@keyframes mudkipSplatter {
+  0%, 100% { filter: none; transform: none; }
+  42% { filter: sepia(.38) saturate(1.25) brightness(.92); transform: translateY(3px) rotate(-1deg); }
+}
+
+@keyframes saplingGrow {
+  0% { transform: translateY(22px) scale(.25); opacity: 0; }
+  45% { opacity: 1; }
+  100% { transform: translateY(-6px) scale(1.04); opacity: .9; }
+}
+
+@keyframes starterHop {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  35% { transform: translate(18px, -22px) rotate(16deg); }
+  62% { transform: translate(-10px, 6px) rotate(-8deg); }
+}
+
+@keyframes fireTrail {
+  0% { transform: translateX(-18px) scaleX(.3); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(36px) scaleX(1.25); opacity: 0; }
+}
+
+@keyframes iceSlide {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-13px) rotate(-7deg); }
+  52% { transform: translateX(17px) rotate(8deg); }
+  76% { transform: translateX(-6px) rotate(-3deg); }
+}
+
+@keyframes icePatch {
+  0% { transform: scaleX(.2); opacity: 0; }
+  28%, 72% { opacity: .9; }
+  100% { transform: scaleX(1.12); opacity: 0; }
+}
+
+@keyframes smokePuff {
+  0% { transform: translateY(12px) scale(.7); opacity: 0; }
+  28% { opacity: .82; }
+  100% { transform: translateY(-26px) scale(1.18); opacity: 0; }
+}
+
+@keyframes slashSweep {
+  0% { transform: translate(-30%, 22%) rotate(-8deg); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translate(28%, -20%) rotate(-8deg); opacity: 0; }
+}
+
+@keyframes ninjaBlink {
+  0%, 100% { opacity: 1; transform: translateY(-6%) scale(1); }
+  26% { opacity: 0; transform: translate(-18px, -18%) scale(.82); }
+  52% { opacity: 1; transform: translate(14px, -8%) scale(1.05); }
+  72% { opacity: .25; transform: translateY(-12%) scale(.9); }
+}
+
+@keyframes chespinPrick {
+  0%, 100% { transform: translateY(0) scale(1); }
+  42% { transform: translateY(-7px) scale(1.04); }
+  70% { transform: translateY(2px) scale(.98); }
+}
+
+@keyframes bubbleLocal {
+  0% { transform: translateY(16px) scale(.75); opacity: 0; }
+  32% { opacity: 1; }
+  100% { transform: translateY(-26px) scale(1.12); opacity: 0; }
+}
+
+@keyframes owlSpin {
+  0% { transform: rotate(0) scale(.96); }
+  46% { transform: rotate(360deg) scale(1.04); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes drumBeat {
+  0%, 100% { transform: scale(.86); opacity: 0; }
+  26%, 68% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes tepigNudge {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  34% { transform: translateX(8px) rotate(3deg); }
+  64% { transform: translateX(-3px) rotate(-1deg); }
+}
+
+@keyframes sobbleFade {
+  0%, 100% { opacity: 1; }
+  42% { opacity: .16; filter: drop-shadow(0 0 12px rgba(125, 218, 255, .85)); }
+  64% { opacity: .42; }
+}
+
+@keyframes invisibleShimmer {
+  0% { transform: scale(.65); opacity: 0; }
+  36% { opacity: .72; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+@keyframes quaxlyPose {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  34% { transform: translateY(-8px) rotate(-5deg); }
+  62% { transform: translateY(0) rotate(5deg); }
+}
+
+@keyframes groomShine {
+  0% { transform: translateX(-30px) scaleX(.65); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(30px) scaleX(1.05); opacity: 0; }
+}
+
+@keyframes kantoGrow {
+  from { transform: scale(.4) rotate(-8deg); opacity: 0; }
+  to { transform: scale(1.12) rotate(0); opacity: 1; }
+}
+
+@keyframes kantoBloom {
+  0% { transform: translateY(18px) scale(.2); opacity: 0; }
+  60% { transform: translateY(-4px) scale(1.08); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: .95; }
+}
+
+@keyframes kantoFlame {
+  from { transform: translateY(3px) scale(.92) rotate(-4deg); }
+  to { transform: translateY(-4px) scale(1.08) rotate(4deg); }
+}
+
+@keyframes kantoHeat {
+  from { transform: scale(.6); opacity: 0; }
+  45% { opacity: .8; }
+  to { transform: scale(1.45); opacity: 0; }
+}
+
+@keyframes kantoSplashLocal {
+  from { transform: scale(.6); opacity: 0; }
+  35% { opacity: 1; }
+  to { transform: scale(1.3) translateY(-12px); opacity: 0; }
+}
+
+@keyframes kantoZzz {
+  from { transform: translateY(8px) scale(.75); opacity: 0; }
+  35% { opacity: 1; }
+  to { transform: translateY(-34px) scale(1.08); opacity: 0; }
+}
+
+@keyframes diglettBurrow {
+  0%, 100% { transform: translateY(0); }
+  34% { transform: translateY(34px) scaleY(.82); }
+  64% { transform: translateY(-9px) scaleY(1.04); }
+}
+
+@keyframes dirtPop {
+  from { transform: scale(.6); opacity: 0; }
+  45% { opacity: 1; }
+  to { transform: scale(1.25); opacity: 0; }
+}
+
+@keyframes psyduckQuestion {
+  0% { transform: translateX(-50%) rotate(0) scale(.8); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateX(-50%) rotate(720deg) scale(1); opacity: 0; }
+}
+
+@keyframes dittoMelt {
+  0%, 100% { transform: translateY(-14%) scale(1.04); filter: drop-shadow(0 18px 14px rgba(0, 0, 0, .5)); }
+  50% { transform: translateY(-3%) scale(1.12, .74); filter: drop-shadow(0 8px 14px rgba(204, 96, 220, .34)); }
+}
+
+@keyframes pikachuRestless {
+  0%, 72%, 100% { transform: translate(0, 0) rotate(0); }
+  75% { transform: translate(-2px, 0) rotate(-2deg); }
+  78% { transform: translate(2px, -1px) rotate(2deg); }
+  81% { transform: translate(-1px, 1px) rotate(-1deg); }
+  84% { transform: translate(0, 0) rotate(0); }
+}
+
+@keyframes pikachuSpark {
+  0%, 70%, 100% { opacity: 0; transform: scale(.78) rotate(0deg); }
+  76% { opacity: .95; transform: scale(1.05) rotate(18deg); }
+  83% { opacity: .45; transform: scale(1.18) rotate(34deg); }
+}
+
+@keyframes voltorbElectric {
+  0% { opacity: 0; transform: scale(.9) rotate(0); }
+  35% { opacity: .95; transform: scale(1.06) rotate(16deg); }
+  70% { opacity: .62; transform: scale(1.18) rotate(-12deg); }
+  100% { opacity: 0; transform: scale(1.25) rotate(22deg); }
+}
+

@@ -1,0 +1,316 @@
+.psyduck-mode {
+  --yellow: #d7ff00;
+  --blue: #ff3df2;
+  --red: #27ffb5;
+  --surface: #2b164f;
+  --surface-2: #162b4f;
+  --line: rgba(255, 77, 243, .38);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 61, 242, .24), transparent 26rem),
+    radial-gradient(circle at 82% 4%, rgba(124, 255, 0, .22), transparent 30rem),
+    linear-gradient(180deg, #363b16 0%, #2b164f 48%, #164f43 100%);
+}
+
+.psyduck-mode .dock,
+.psyduck-mode .secondary-menu,
+.psyduck-mode .drawer,
+.psyduck-mode .pv-modal {
+  filter: hue-rotate(105deg) saturate(1.9) contrast(1.18);
+}
+
+.psyduck-mode .btn,
+.psyduck-mode .chip,
+.psyduck-mode .pill,
+.psyduck-mode .pokemon-name,
+.psyduck-mode .pokemon-number {
+  text-shadow: 2px 0 #ff4df3, -2px 0 #00e5ff, 0 2px #111;
+  box-shadow: 0 0 0 2px #ff4df3, 0 0 18px rgba(124, 255, 0, .36);
+}
+
+.psyduck-mode .pokemon-card:nth-child(3n) {
+  filter: hue-rotate(70deg) saturate(1.5);
+}
+
+.psyduck-mode .pokemon-card:nth-child(5n) {
+  filter: hue-rotate(-120deg) saturate(1.8);
+}
+
+.psyduck-mode-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  contain: layout paint;
+}
+
+.psyduck-question-field span {
+  position: fixed;
+  left: var(--psy-left);
+  top: var(--psy-top);
+  color: #fff176;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: var(--psy-size);
+  line-height: 1;
+  text-shadow: 3px 0 #ff4df3, -3px 0 #00e5ff, 0 3px #111;
+  transform: rotate(var(--psy-rotate));
+  animation: psyduckFloatQuestion 1900ms ease-in-out infinite;
+  animation-delay: var(--psy-delay);
+}
+
+.psyduck-mode-exit {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10001;
+  pointer-events: auto;
+  border: 3px solid #111;
+  border-radius: 999px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #fff176, #ffcf21);
+  color: #2b164f;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 11px;
+  box-shadow: 0 0 0 3px #ff4df3, 0 14px 28px rgba(0, 0, 0, .38);
+  cursor: pointer;
+}
+
+.psyduck-mode-exit:hover {
+  transform: translateY(-2px) rotate(-1deg);
+  filter: brightness(1.08);
+}
+
+.sleep-mode {
+  --surface: #111827;
+  --surface-2: #1f2937;
+  --line: rgba(191, 219, 254, .22);
+}
+
+.sleep-mode .grid,
+.sleep-mode .secondary-menu,
+.sleep-mode .dock,
+.sleep-mode .drawer {
+  filter: saturate(.78) brightness(.82);
+}
+
+.sleep-mode-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9800;
+  pointer-events: none;
+  contain: layout paint;
+}
+
+.sleep-mode-dim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 76% 18%, rgba(250, 245, 190, .18), transparent 12rem),
+    linear-gradient(180deg, rgba(5, 8, 20, .28), rgba(10, 13, 30, .46));
+  animation: sleepModeDim 1400ms ease-out both;
+}
+
+.sleep-moon {
+  position: fixed;
+  right: clamp(24px, 7vw, 96px);
+  top: clamp(78px, 14vh, 150px);
+  width: clamp(54px, 8vw, 90px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .92), transparent 12%),
+    linear-gradient(145deg, #fff7ba, #dbeafe);
+  box-shadow: 0 0 32px rgba(255, 247, 186, .38);
+  opacity: .82;
+  animation: sleepMoonBob 3600ms ease-in-out infinite;
+}
+
+.sleep-moon::after {
+  content: "";
+  position: absolute;
+  inset: -2% -10% 2% 34%;
+  border-radius: 50%;
+  background: rgba(9, 12, 28, .9);
+}
+
+.sleep-notes span,
+.sleep-zzz-field span {
+  position: fixed;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  color: #dbeafe;
+  text-shadow: 0 0 12px rgba(191, 219, 254, .8), 0 2px 0 rgba(0, 0, 0, .55);
+}
+
+.sleep-notes span {
+  left: 18vw;
+  top: 22vh;
+  font-size: clamp(18px, 3vw, 34px);
+  animation: sleepNoteFloat 2800ms ease-in-out infinite;
+}
+
+.sleep-notes span:nth-child(2) {
+  left: 48vw;
+  top: 16vh;
+  animation-delay: 360ms;
+}
+
+.sleep-notes span:nth-child(3) {
+  left: 72vw;
+  top: 32vh;
+  animation-delay: 720ms;
+}
+
+.sleep-zzz-field span {
+  left: var(--sleep-left);
+  top: var(--sleep-top);
+  font-size: var(--sleep-size);
+  opacity: .18;
+  animation: sleepZzzFloat 3200ms ease-in-out infinite;
+  animation-delay: var(--sleep-delay);
+}
+
+.sleep-mode-wake {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9801;
+  pointer-events: auto;
+  border: 3px solid #1e3a8a;
+  border-radius: 999px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #dbeafe, #93c5fd);
+  color: #0f172a;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 11px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .32), 0 14px 28px rgba(0, 0, 0, .42);
+  cursor: pointer;
+}
+
+.sleep-mode-wake:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.delibird-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 9900;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(219, 234, 254, .18), transparent 28rem),
+    rgba(15, 23, 42, .18);
+  animation: delibirdModeIn 260ms ease-out both;
+}
+
+.delibird-snow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, .85) 0 3px, transparent 4px),
+    radial-gradient(circle at 32% 44%, rgba(255, 255, 255, .75) 0 2px, transparent 3px),
+    radial-gradient(circle at 56% 22%, rgba(255, 255, 255, .82) 0 3px, transparent 4px),
+    radial-gradient(circle at 72% 66%, rgba(255, 255, 255, .7) 0 2px, transparent 3px),
+    radial-gradient(circle at 88% 36%, rgba(255, 255, 255, .8) 0 3px, transparent 4px);
+  animation: delibirdSnow 1900ms linear infinite;
+}
+
+.delibird-gift {
+  position: fixed;
+  left: var(--gift-left);
+  top: var(--gift-top);
+  width: var(--gift-size);
+  aspect-ratio: 1;
+  pointer-events: auto;
+  border: 3px solid #111;
+  border-radius: 10px;
+  cursor: pointer;
+  transform: rotate(var(--gift-rotate));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, .34);
+  animation: delibirdGiftFloat 1700ms ease-in-out infinite;
+  animation-delay: var(--gift-delay);
+}
+
+.delibird-gift::before,
+.delibird-gift::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, .86);
+}
+
+.delibird-gift::before {
+  left: 42%;
+  top: 0;
+  width: 16%;
+  height: 100%;
+}
+
+.delibird-gift::after {
+  left: 0;
+  top: 42%;
+  width: 100%;
+  height: 16%;
+}
+
+.delibird-gift span {
+  position: absolute;
+  left: 27%;
+  top: -18%;
+  width: 46%;
+  height: 30%;
+  border: 3px solid #111;
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  background: rgba(255, 255, 255, .86);
+}
+
+.delibird-gift--red { background: linear-gradient(145deg, #ff7668, #dc2626); }
+.delibird-gift--blue { background: linear-gradient(145deg, #7dd3fc, #2563eb); }
+.delibird-gift--yellow { background: linear-gradient(145deg, #fde68a, #f59e0b); }
+.delibird-gift--green { background: linear-gradient(145deg, #86efac, #16a34a); }
+.delibird-gift--pink { background: linear-gradient(145deg, #f9a8d4, #db2777); }
+.delibird-gift--ice { background: linear-gradient(145deg, #e0f2fe, #38bdf8); }
+
+.delibird-gift.is-dud {
+  pointer-events: none;
+  background:
+    radial-gradient(circle, #fff7ba 0 12%, #fb923c 13% 26%, #ef4444 27% 42%, transparent 43%),
+    conic-gradient(from 8deg, transparent 0 8%, #fff7ba 9% 13%, transparent 14% 22%, #fb923c 23% 28%, transparent 29% 42%, #ef4444 43% 48%, transparent 49% 100%);
+  border-color: transparent;
+  box-shadow: 0 0 32px rgba(251, 146, 60, .85), 0 0 70px rgba(239, 68, 68, .45);
+  animation: delibirdDudPop 1120ms ease-out both;
+}
+
+.delibird-gift.is-dud::before,
+.delibird-gift.is-dud::after {
+  left: -95%;
+  top: -95%;
+  width: 290%;
+  height: 290%;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 16deg, transparent 0 6%, rgba(255, 247, 186, .95) 7% 10%, transparent 11% 18%, rgba(251, 146, 60, .88) 19% 23%, transparent 24% 39%, rgba(239, 68, 68, .78) 40% 44%, transparent 45% 100%);
+  animation: delibirdBlastRays 1120ms ease-out both;
+}
+
+.delibird-gift.is-dud::after {
+  transform: rotate(24deg);
+  animation-delay: 80ms;
+}
+
+.delibird-gift.is-dud span {
+  display: none;
+}
+
+.delibird-gift.is-winner {
+  pointer-events: none;
+  animation: delibirdWinner 1700ms ease-out both;
+}
+
+.delibird-mode--opened .delibird-snow {
+  animation: delibirdSnowExit 1050ms ease-out both;
+}
+
+.delibird-mode--opened .delibird-gift:not(.is-dud):not(.is-winner) {
+  animation: delibirdGiftFade 480ms ease-out both;
+}
+

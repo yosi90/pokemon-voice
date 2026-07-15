@@ -1,0 +1,472 @@
+@media (max-width: 1220px) {
+  .secondary-menu-panel {
+    grid-template-columns: minmax(240px, 340px) minmax(170px, auto);
+    border-radius: 30px;
+  }
+
+  .secondary-menu-panel .gens {
+    grid-column: 1 / -1;
+    justify-self: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 899.98px) {
+  :root {
+    --dock-h: 112px;
+  }
+
+  .dock-inner {
+    padding: 6px 10px 7px;
+    justify-content: start;
+    gap: 5px;
+  }
+
+  .dock-main,
+  .dock-secondary {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .dock-main {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 20px;
+  }
+
+  .dock-primary-controls,
+  .dock-secondary-group,
+  .dock-secondary-group--right {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .input-wrap {
+    order: 20;
+    flex-basis: 100%;
+    max-width: 680px;
+  }
+
+  .brand,
+  .gens {
+    justify-content: center;
+  }
+
+  .secondary-menu-panel {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    border-radius: 28px;
+    padding: 12px;
+    width: min(680px, calc(100vw - 28px));
+  }
+
+  .size-control {
+    width: min(100%, 420px);
+    justify-self: center;
+  }
+
+  .image-style-control {
+    justify-self: center;
+  }
+
+  .floating-reset-mobile {
+    display: inline-flex;
+    justify-content: center;
+  }
+
+  .gens {
+    justify-self: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .dock-reset-desktop {
+    display: none;
+  }
+
+  .dock-primary-controls {
+    display: flex;
+    width: 100%;
+    gap: 7px;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  #btnMic {
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
+    flex: 0 0 42px;
+  }
+
+  .input-wrap {
+    order: initial;
+    width: 100%;
+    flex: 1 1 180px;
+    max-width: 350px;
+    min-width: 0;
+    padding: 3px;
+    gap: 4px;
+  }
+
+  .input-wrap input {
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+
+  #btnGuess {
+    margin-right: 1px;
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
+  }
+
+  .voice-status,
+  .audio-chip {
+    grid-column: 1 / -1;
+    justify-self: center;
+    max-width: 100%;
+  }
+
+  .brand {
+    justify-self: start;
+    gap: 0;
+  }
+
+  .brand-ball {
+    width: 18px;
+    height: 18px;
+  }
+
+  .brand-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .brand-mic {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #111;
+    border-radius: 50%;
+    background: rgba(10, 12, 15, .9);
+    box-shadow: 0 0 0 2px #fff;
+    color: var(--yellow);
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 19px;
+    line-height: 1;
+    text-shadow: none;
+  }
+
+  .control-icon {
+    font-size: 20px;
+  }
+
+  .dock-secondary {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .dock-secondary-group,
+  .dock-secondary-group--right {
+    justify-content: center;
+    gap: 7px;
+  }
+
+  .dock-secondary-group,
+  .dock-secondary-group--right {
+    flex-wrap: nowrap;
+  }
+
+  .btn {
+    font-size: 9px;
+    padding: 8px 10px;
+  }
+
+  #modes-btn,
+  #acv-ach-btn {
+    width: 42px;
+    min-width: 42px;
+    height: 34px;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .nav-action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .nav-action-icon,
+  .achievement-icon {
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 19px;
+    line-height: 1;
+    margin-top: 0;
+  }
+
+  .chip {
+    font-size: 8px;
+    padding: 7px 9px;
+  }
+
+  .btn-icon {
+    width: 42px;
+  }
+
+  .timer-chip {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-chip {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .stat-icon {
+    display: inline-block;
+  }
+
+  .stat-value {
+    line-height: 1;
+  }
+
+  .stat-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --dock-h: 112px;
+  }
+
+  .dock-inner {
+    padding: 6px 10px 7px;
+    justify-content: start;
+    gap: 5px;
+  }
+
+  .dock-main,
+  .dock-secondary {
+    gap: 5px;
+  }
+
+  .dock-primary-controls {
+    display: flex;
+    width: 100%;
+    gap: 7px;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  #btnMic {
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
+    flex: 0 0 42px;
+  }
+
+  .input-wrap {
+    order: initial;
+    width: 100%;
+    flex: 1 1 180px;
+    max-width: 350px;
+    min-width: 0;
+    padding: 3px;
+    gap: 4px;
+  }
+
+  .input-wrap input {
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+
+  #btnGuess {
+    margin-right: 2px;
+    width: 42px;
+    min-width: 42px;
+    padding-inline: 0;
+  }
+
+  .voice-status,
+  .audio-chip {
+    grid-column: 1 / -1;
+    justify-self: center;
+    max-width: 100%;
+  }
+
+  .brand {
+    font-size: 15px;
+    width: 43px;
+    gap: 0;
+  }
+
+  .brand-ball {
+    width: 21px;
+    height: 21px;
+  }
+
+  .dock-secondary {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .dock-secondary-group,
+  .dock-secondary-group--right {
+    justify-content: center;
+    gap: 7px;
+  }
+
+  .dock-secondary-group {
+    flex-wrap: nowrap;
+  }
+
+  .dock-secondary-group--right {
+    flex-wrap: nowrap;
+  }
+
+  .btn {
+    font-size: 9px;
+    padding: 4px 11px;
+  }
+
+  .chip {
+    font-size: 8px;
+    padding: 8px 9px;
+  }
+
+  .btn-icon {
+    width: 42px;
+  }
+
+  .timer-chip {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-chip {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .stat-icon {
+    display: inline-block;
+  }
+
+  .stat-value {
+    line-height: 1;
+  }
+
+  .stat-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .grid {
+    gap: 14px 10px;
+  }
+
+  .secondary-menu {
+    width: calc(100vw - 18px);
+  }
+
+  .secondary-menu-panel {
+    bottom: 66px;
+    gap: 10px;
+  }
+
+  .side-drawer {
+    top: calc(var(--dock-h) + 8px);
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
+
+  .side-drawer--left {
+    left: 12px;
+    transform: translateX(calc(-100% - 18px));
+  }
+
+  .side-drawer--right {
+    right: 12px;
+    transform: translateX(calc(100% + 18px));
+  }
+
+  .drawer-header {
+    padding: 12px 14px;
+  }
+
+  .drawer-content {
+    padding: 12px;
+  }
+
+  .mode-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+  }
+
+  .mode-title {
+    font-size: 10px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .mode-desc {
+    font-size: 12px;
+  }
+
+  .mode-cta {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    margin-top: 2px;
+    padding-block: 11px;
+  }
+
+  .pill {
+    min-width: 60px;
+  }
+
+  .ach-list,
+  .results-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
