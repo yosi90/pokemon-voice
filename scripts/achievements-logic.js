@@ -80,6 +80,10 @@ function closeDrawer() {
     achievementUiStore.closeDrawer();
 }
 
+function toggleDrawer() {
+    achievementUiStore.toggleDrawer();
+}
+
 function renderDrawer() {
     return achievementProgress.getSnapshot().permanentRecords;
 }
@@ -213,6 +217,7 @@ export const ACV = {
     // Helpers
     openDrawer,
     closeDrawer,
+    toggleDrawer,
     renderDrawer,
     has: (id) => achievementProgress.hasPermanent(id),
     getUnlockedIds: () => achievementProgress.getSnapshot().permanentRecords.map(record => record.id),

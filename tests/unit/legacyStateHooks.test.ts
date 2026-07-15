@@ -2,19 +2,19 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { LS_CARD_SCALE, LS_GENS } from '../../scripts/utils.js';
 import { useLegacyEasterEggState } from '../../src/hooks/useLegacyEasterEggState.js';
-import { useLegacyPreferences } from '../../src/hooks/useLegacyPreferences.js';
+import { usePokedexPreferences } from '../../src/hooks/usePokedexPreferences.js';
 
 describe('adaptadores de persistencia legacy', () => {
   it('recupera y persiste preferencias sin mezclarlas con el hook principal', async () => {
     localStorage.setItem(LS_GENS, JSON.stringify([1, 2]));
     localStorage.setItem(LS_CARD_SCALE, '150');
-    const { result } = renderHook(() => useLegacyPreferences());
+    const { result } = renderHook(() => usePokedexPreferences());
 
-    expect(result.current.selectedGens).toEqual([1, 2]);
+    expect(result.current.activeGeneration).toBe(1);
     expect(result.current.cardSize).toBe(150);
 
     act(() => {
-      result.current.toggleGen(1);
+      result.current.setActiveGeneration(2);
       result.current.setCardSize(160);
     });
 

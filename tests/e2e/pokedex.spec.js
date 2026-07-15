@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   mockPokemonApi,
   mockPokemonApiUnavailable,
+  generationOneFixtureCount,
   pokemonCatalogFixture,
 } from '../fixtures/pokemonCatalog.js';
 
@@ -12,7 +13,7 @@ test.beforeEach(async ({ page }) => {
   if (await voiceModal.isVisible()) {
     await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
   }
-  await expect(page.locator('.pokemon-card')).toHaveCount(pokemonCatalogFixture.results.length);
+  await expect(page.locator('.pokemon-card')).toHaveCount(generationOneFixtureCount);
 });
 
 test('permite descubrir por texto y persiste el resultado', async ({ page }) => {
@@ -32,10 +33,21 @@ test('arranca con el catálogo local cuando PokeAPI no está disponible', async 
   await page.evaluate(() => localStorage.removeItem('pokevoice-pokemon-catalog-v1'));
   await page.reload();
 
-  await expect(page.locator('.pokemon-card')).toHaveCount(1010);
+  await expect(page.locator('.pokemon-card')).toHaveCount(151);
   await expect(page.locator('.load-error')).toHaveCount(0);
   await expect(page.locator('.pokemon-card[data-id="25"]')).toBeVisible();
-  await expect(page.locator('.pokemon-card[data-id="1010"]')).toBeAttached();
+  await expect(page.locator('.pokemon-card[data-id="151"]')).toBeAttached();
+  await expect(page.locator('.pokemon-card[data-id="152"]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
+  await page.getByRole('button', { name: 'Mostrar Generación V', exact: true }).click();
+  await expect(page.locator('.pokemon-card')).toHaveCount(156);
+  const metrics = await page.evaluate(() => ({
+    nodeCount: document.querySelectorAll('*').length,
+    horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+  }));
+  expect(metrics.nodeCount).toBeLessThan(3000);
+  expect(metrics.horizontalOverflow).toBeLessThanOrEqual(1);
 });
 
 test('muestra feedback inmediato ante un nombre desconocido', async ({ page }) => {
@@ -54,6 +66,48 @@ test('mantiene disponible el fallback de texto en ambos viewports', async ({ pag
   await expect(page.locator('body')).not.toHaveCSS('overflow-x', 'scroll');
 });
 
+test('adapta la navegación al lateral en escritorio y abajo en móvil', async ({ page }) => {
+  const metrics = await page.locator('#dock').evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      right: Math.round(rect.right),
+      bottom: Math.round(rect.bottom),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  await expect(page.locator('#dock').getByPlaceholder('Escribe un nombre y pulsa Enter.')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Descubrimiento por voz o texto', exact: true })
+    .getByPlaceholder('Escribe un nombre y pulsa Enter.')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Descubrimiento por voz o texto', exact: true }))
+    .toHaveCSS('position', 'fixed');
+  const searchMetrics = await page.evaluate(() => {
+    const input = document.querySelector('#txtGuess');
+    const firstBall = document.querySelector('.pokemon-ball-card');
+    const inputRect = input.getBoundingClientRect();
+    const ballRect = firstBall.getBoundingClientRect();
+    return {
+      placeholderColor: getComputedStyle(input, '::placeholder').color,
+      gapToFirstBall: Math.round(ballRect.top - inputRect.bottom),
+    };
+  });
+  expect(searchMetrics.placeholderColor).toBe('rgba(255, 255, 255, 0.72)');
+  expect(searchMetrics.gapToFirstBall).toBeGreaterThanOrEqual(50);
+
+  if (metrics.viewportWidth >= 900) {
+    expect(metrics).toMatchObject({ left: 0, top: 0, bottom: metrics.viewportHeight, width: 112 });
+  } else {
+    expect(metrics.left).toBe(0);
+    expect(metrics.right).toBe(metrics.viewportWidth);
+    expect(metrics.bottom).toBe(metrics.viewportHeight);
+    expect(metrics.height).toBeGreaterThanOrEqual(74);
+  }
+});
+
 test('recupera los descubrimientos al recargar', async ({ page }) => {
   const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
   await input.fill('eevee');
@@ -66,14 +120,102 @@ test('recupera los descubrimientos al recargar', async ({ page }) => {
   await expect(page.getByRole('button', { name: /1 descubiertos/ })).toBeVisible();
 });
 
-test('aplica los filtros de generación a tarjetas y contadores', async ({ page }) => {
-  await page.getByRole('button', { name: 'Abrir controles' }).click();
-  await page.getByRole('button', { name: 'Gen 1' }).click();
+test('muestra una sola generación y recuerda la selección', async ({ page }) => {
+  await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
+  await page.getByRole('button', { name: 'Mostrar Generación II', exact: true }).click();
 
-  await expect(page.locator('.pokemon-card')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: /2 restantes/ })).toBeVisible();
+  await expect(page.locator('.pokemon-card')).toHaveCount(1);
   await expect(page.locator('.pokemon-card[data-id="152"]')).toBeVisible();
-  await expect(page.locator('.pokemon-card[data-id="906"]')).toBeVisible();
+  await expect(page.locator('.pokemon-card[data-id="25"]')).toHaveCount(0);
+
+  await page.reload();
+
+  await expect(page.locator('.pokemon-card[data-id="152"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
+  await expect(page.getByRole('heading', { name: 'Generación II' })).toBeVisible();
+});
+
+test('la búsqueda global cambia a la generación del resultado', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('sprigatito');
+  await input.press('Enter');
+
+  await expect(page.getByRole('button', { name: 'sprigatito, reproducir sonido' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).preferences.activeGenerationId
+  ))).toBe(9);
+  await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
+  await expect(page.getByRole('heading', { name: 'Generación IX' })).toBeVisible();
+});
+
+test('reúne generación, estadísticas y ajustes en un único drawer', async ({ page }) => {
+  const trigger = page.getByRole('button', { name: 'Controles de Pokédex' });
+  const drawer = page.locator('#pokedex-controls-drawer');
+  const idleAppearance = await trigger.evaluate(element => {
+    const style = getComputedStyle(element);
+    const icon = element.querySelector('.nav-action-icon');
+    return { borderColor: style.borderColor, color: style.color, iconSize: getComputedStyle(icon).fontSize };
+  });
+
+  await trigger.click();
+  await expect(drawer).toHaveAttribute('aria-hidden', 'false');
+  const generations = drawer.getByRole('navigation', { name: 'Generaciones de la Pokédex' });
+  await expect(generations).toBeVisible();
+  await expect(generations.getByRole('button')).toHaveCount(10);
+  await expect(generations.getByRole('button', { name: 'Generación X aún no disponible' })).toBeDisabled();
+  const progress = drawer.getByLabel('Progreso de la Pokédex');
+  await expect(progress).toBeVisible();
+  await expect(progress.getByRole('progressbar')).toHaveCount(2);
+  await expect(progress.getByText('0%', { exact: true })).toHaveCount(2);
+  await expect(drawer.getByLabel('Tamaño de Pokéballs')).toBeVisible();
+  await expect(page.locator('.secondary-menu')).toHaveCount(0);
+  const activeAppearance = await trigger.evaluate(element => {
+    const style = getComputedStyle(element);
+    const icon = element.querySelector('.nav-action-icon');
+    return { borderColor: style.borderColor, color: style.color, iconSize: getComputedStyle(icon).fontSize };
+  });
+  expect(activeAppearance).toEqual(idleAppearance);
+  const layout = await page.evaluate(() => {
+    const drawerRect = document.querySelector('#pokedex-controls-drawer').getBoundingClientRect();
+    const buttons = [...document.querySelectorAll('.generation-pagination button')].map(button => button.getBoundingClientRect());
+    const styleToggleRect = document.querySelector('.image-style-control').getBoundingClientRect();
+    const dangerRect = document.querySelector('.drawer-section--danger').getBoundingClientRect();
+    return {
+      drawerWidth: Math.round(drawerRect.width),
+      firstRowTop: Math.round(buttons[0].top),
+      firstRowEndTop: Math.round(buttons[4].top),
+      secondRowTop: Math.round(buttons[5].top),
+      secondRowEndTop: Math.round(buttons[9].top),
+      styleToggleWidth: Math.round(styleToggleRect.width),
+      dangerBottomGap: Math.round(drawerRect.bottom - dangerRect.bottom),
+    };
+  });
+  expect(layout.drawerWidth).toBeGreaterThanOrEqual(350);
+  expect(layout.drawerWidth).toBeLessThanOrEqual(365);
+  expect(layout.firstRowEndTop).toBe(layout.firstRowTop);
+  expect(layout.secondRowEndTop).toBe(layout.secondRowTop);
+  expect(layout.secondRowTop).toBeGreaterThan(layout.firstRowTop);
+  expect(layout.styleToggleWidth).toBeLessThan(layout.drawerWidth - 20);
+  expect(layout.dangerBottomGap).toBeLessThanOrEqual(16);
+
+  await trigger.click();
+  await expect(drawer).toHaveAttribute('aria-hidden', 'true');
+});
+
+test('representa el progreso de generación y global con barras y porcentajes', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+  await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
+
+  const generationProgress = page.getByRole('progressbar', { name: 'Progreso de esta generación' });
+  const globalProgress = page.getByRole('progressbar', { name: 'Progreso global de la Pokédex' });
+  await expect(generationProgress).toHaveAttribute('value', '1');
+  await expect(generationProgress).toHaveAttribute('max', '8');
+  await expect(globalProgress).toHaveAttribute('value', '1');
+  await expect(globalProgress).toHaveAttribute('max', '10');
+  await expect(page.getByText('13%', { exact: true })).toBeVisible();
+  await expect(page.getByText('10%', { exact: true })).toBeVisible();
 });
 
 test('abre modos e inicia el contrarreloj tras confirmación', async ({ page }) => {
@@ -163,6 +305,13 @@ test('registra y muestra los logros desbloqueados', async ({ page }) => {
   await page.getByRole('button', { name: 'Logros' }).click();
   await expect(page.locator('#acv-drawer')).toHaveAttribute('aria-hidden', 'false');
   await expect(page.locator('#acv-ach-list')).toContainText('Un inicio clásico');
+  const achievementDrawerPosition = await page.locator('#acv-drawer').evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return { rightGap: Math.round(window.innerWidth - rect.right) };
+  });
+  expect(achievementDrawerPosition.rightGap).toBeLessThanOrEqual(12);
+  await page.getByRole('button', { name: 'Logros' }).click();
+  await expect(page.locator('#acv-drawer')).toHaveAttribute('aria-hidden', 'true');
 });
 
 test('silencia un logro permanente aunque vuelva a satisfacerlo en otra run', async ({ page }) => {
@@ -199,13 +348,8 @@ test('reinicia solo la run y explica qué conserva PokeDiscover', async ({ page 
     expect(dialog.message()).toContain('Conservarás PokeDiscover completo');
     await dialog.accept();
   });
-  if ((page.viewportSize()?.width ?? 1280) <= 600) {
-    const mobileControls = page.getByRole('button', { name: 'Abrir controles' });
-    await mobileControls.click();
-    await page.getByRole('button', { name: 'Reiniciar progreso', exact: true }).click();
-  } else {
-    await page.getByRole('button', { name: 'Reiniciar', exact: true }).click();
-  }
+  await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
+  await page.getByRole('button', { name: 'Reiniciar progreso', exact: true }).click();
 
   await expect(page.getByRole('button', { name: /0 descubiertos/ })).toBeVisible();
   await page.getByRole('button', { name: 'Logros' }).click();
@@ -221,7 +365,7 @@ test('reserva el borrado total para una confirmación reforzada', async ({ page 
   await input.press('Enter');
   await expect(page.getByRole('button', { name: /1 descubiertos/ })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Abrir controles' }).click();
+  await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
   page.once('dialog', async dialog => {
     expect(dialog.type()).toBe('prompt');
     expect(dialog.message()).toContain('se eliminarán la Pokédex actual y PokeDiscover completo');

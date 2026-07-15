@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0, 1, 2 y 3 completados; siguiente trabajo previsto en Hito 4.
+- Estado: Hitos 0, 1, 2, 3 y 4 completados; siguiente trabajo previsto en Hito 5.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -186,17 +186,23 @@ Cuarta entrega implementada el 15 de julio de 2026. `rewardLedger.ts` aplica lot
 
 ## Hito 4 — Dashboard y Pokédex por generaciones
 
-- [ ] Sustituir las barras actuales por un dashboard Pokémon.
-- [ ] Crear navegación lateral compacta en escritorio.
-- [ ] Crear navegación inferior adaptada en móvil.
-- [ ] Integrar voz y texto dentro del área principal en vez de una barra saturada.
-- [ ] Mostrar una generación activa cada vez y recordar la última selección.
-- [ ] Usar Gen 1 como valor inicial para usuarios sin preferencia guardada.
-- [ ] Mostrar progreso de la generación y progreso global por separado.
-- [ ] Permitir búsqueda global y cambio automático a la generación del resultado.
-- [ ] Mantener paleta, tipografías, fondo, Pokéballs y estética Pokémon actual.
-- [ ] Reducir la vista normal a menos de 3000 nodos.
-- [ ] Evitar overflow horizontal en escritorio y móvil.
+- [x] Sustituir las barras actuales por un dashboard Pokémon.
+- [x] Crear navegación lateral compacta en escritorio.
+- [x] Crear navegación inferior adaptada en móvil.
+- [x] Integrar voz y texto dentro del área principal en vez de una barra saturada.
+- [x] Mostrar una generación activa cada vez y recordar la última selección.
+- [x] Usar Gen 1 como valor inicial para usuarios sin preferencia guardada.
+- [x] Mostrar progreso de la generación y progreso global por separado.
+- [x] Permitir búsqueda global y cambio automático a la generación del resultado.
+- [x] Mantener paleta, tipografías, fondo, Pokéballs y estética Pokémon actual.
+- [x] Reducir la vista normal a menos de 3000 nodos.
+- [x] Evitar overflow horizontal en escritorio y móvil.
+
+Primera entrega implementada el 15 de julio de 2026. La cuadrícula muestra una única generación y persiste `activeGenerationId`, manteniendo `selectedGenerationIds` solo como puente de compatibilidad con partidas anteriores. Una partida sin preferencia comienza en Kanto. La resolución por voz o texto sigue siendo global: encontrar una especie de otra generación cambia la vista antes de revelarla. El progreso activo y el total permanecen separados. Con el catálogo local completo, incluso la generación más grande mantiene menos de 3000 nodos y no produce overflow horizontal en ninguno de los dos viewports. Las nuevas referencias visuales documentan el cambio intencional.
+
+Segunda entrega implementada el 15 de julio de 2026. La barra superior saturada se divide en una consola de reconocimiento dentro del contenido y una navegación dedicada. Escritorio usa un rail lateral compacto con marca, modos, logros y accesos a descubiertos o pendientes; móvil dispone esos mismos destinos en una barra inferior fija. Voz, texto, estado del micrófono y activación de audio comparten `DiscoveryConsole`, por lo que el fallback escrito permanece igual de visible. Una prueba geométrica impide que el dock vuelva accidentalmente a la parte superior o que el formulario se duplique dentro de él. Hito 4 cerrado con referencias visuales específicas para ambos layouts.
+
+Revisión visual posterior. Un único drawer compacto de Pokédex, abierto desde el dock justo antes de los accesos a descubiertos y restantes, reúne la paginación libre en dos filas —generaciones 1 a 9 y una décima posición decorativa deshabilitada—, dos tarjetas con porcentaje y barra para el progreso de generación y global, el tamaño de cartas y el selector compacto de estilo de imagen. Las acciones de partida quedan separadas y ancladas al fondo por su carácter destructivo. Esto elimina tanto el bloque permanente de generación como el menú hamburguesa flotante. La consola de descubrimiento queda fija en el viewport, sin título, fondo ni card contenedora: solo conserva el botón de voz y el formulario de búsqueda por texto, con contraste y separación suficientes respecto a la primera fila. Los accesos a descubiertos y restantes muestran únicamente icono y cantidad, con tooltip, y el botón de logros alterna correctamente un cajón anclado a la derecha.
 
 ---
 

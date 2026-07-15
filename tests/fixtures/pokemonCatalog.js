@@ -16,6 +16,11 @@ export const pokemonCatalogFixture = {
   ],
 };
 
+export const generationOneFixtureCount = pokemonCatalogFixture.results.filter(entry => {
+  const id = Number(entry.url.match(/\/(\d+)\/$/)?.[1]);
+  return id >= 1 && id <= 151;
+}).length;
+
 const generationNameForId = id => {
   if (id <= 151) return 'generation-i';
   if (id <= 251) return 'generation-ii';

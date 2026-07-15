@@ -588,6 +588,109 @@ main {
   padding: 28px 18px 132px;
 }
 
+.generation-overview {
+  max-width: 1500px;
+  margin: 0 auto 28px;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: minmax(190px, .7fr) minmax(420px, 1.3fr);
+  align-items: center;
+  gap: 28px;
+  border: 1px solid rgba(255, 207, 33, .34);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 8% 20%, rgba(255, 207, 33, .13), transparent 34%),
+    linear-gradient(135deg, rgba(10, 12, 15, .94), rgba(20, 26, 36, .88));
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .24), inset 0 0 0 1px rgba(255, 255, 255, .04);
+  backdrop-filter: blur(12px);
+}
+
+.generation-overview__eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--yellow);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.generation-overview h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(18px, 2vw, 28px);
+  line-height: 1.25;
+  text-shadow: 2px 2px 0 rgba(33, 89, 173, .75);
+}
+
+.generation-overview__progress {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.generation-progress {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, .24);
+}
+
+.generation-progress--active {
+  border-color: rgba(255, 207, 33, .35);
+}
+
+.generation-progress__copy {
+  margin-bottom: 9px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.generation-progress__copy strong {
+  color: #fff;
+  white-space: nowrap;
+}
+
+.generation-progress progress {
+  width: calc(100% - 42px);
+  height: 9px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
+  accent-color: var(--blue);
+}
+
+.generation-progress--active progress {
+  accent-color: var(--yellow);
+}
+
+.generation-progress progress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
+}
+
+.generation-progress progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), #5ba6ff);
+}
+
+.generation-progress--active progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #ffad1f, var(--yellow));
+}
+
+.generation-progress__percentage {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
 .grid {
   max-width: 1500px;
   margin: 0 auto;
@@ -596,4 +699,3 @@ main {
   gap: clamp(20px, 2.2vw, 34px);
   align-items: start;
 }
-

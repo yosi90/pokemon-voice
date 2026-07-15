@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { GEN_RANGES } from '../../scripts/utils.js';
 import { ACV } from '../../scripts/achievements-logic.js';
 import { createPokemonNameIndex, resolveGuessTranscript } from '../domain/discovery/resolvePokemonGuess.ts';
 import { toLegacyPokemonList } from '../domain/catalog/pokemonCatalogModel.ts';
+import { getPokemonGenerationId, POKEMON_GENERATION_RANGES } from '../domain/catalog/pokemonGeneration.ts';
 import { formatDex, playSuccessTone, sleep } from '../lib/pokemon.js';
 import { getPokemonSpecial, matchSecretCommand, SPECIAL_REVEALS, SPECIAL_TIMING } from '../lib/pokemonSpecials.js';
 import { LOCAL_POKEMON_CATALOG, loadPokemonCatalog } from '../services/pokemonCatalog.ts';
@@ -10,7 +10,7 @@ import { processPostDiscovery } from '../services/postDiscovery.ts';
 import { browserDiscoveryStore } from '../store/browserDiscoveryStore.ts';
 import { getBrowserPokeVoiceSave } from '../store/browserPokeVoiceSaveStore.ts';
 import { useLegacyEasterEggState } from './useLegacyEasterEggState.ts';
-import { useLegacyPreferences } from './useLegacyPreferences.ts';
+import { usePokedexPreferences } from './usePokedexPreferences.ts';
 import { usePokemonCardNavigation } from './usePokemonCardNavigation.ts';
 import { usePokemonRevealEffects } from './usePokemonRevealEffects.ts';
 import { useTimedMode } from './useTimedMode.ts';
@@ -27,7 +27,8 @@ export function usePokemonGame() {
     browserDiscoveryStore.getSnapshot,
   );
   const guessed = discoverySnapshot.guessedIds;
-  const { cardSize, selectedGens, setCardSize, toggleGen } = useLegacyPreferences();
+  const { activeGeneration, cardSize, setActiveGeneration, setCardSize } = usePokedexPreferences();
+  const activeGenerationRef = useRef(activeGeneration);
   const [guessText, setGuessText] = useState('');
   const [toast, setToast] = useState(null);
 
@@ -90,6 +91,10 @@ export function usePokemonGame() {
   }, [guessed]);
 
   useEffect(() => {
+    activeGenerationRef.current = activeGeneration;
+  }, [activeGeneration]);
+
+  useEffect(() => {
     let alive = true;
     const controller = new AbortController();
     async function loadPokemonList() {
@@ -117,14 +122,14 @@ export function usePokemonGame() {
 
   const nameIndex = useMemo(() => createPokemonNameIndex(allPokemon), [allPokemon]);
 
-  const filteredList = useMemo(() => allPokemon.filter(p => selectedGens.some(gen => {
-    const [min, max] = GEN_RANGES[gen];
-    return p.id >= min && p.id <= max;
-  })), [allPokemon, selectedGens]);
+  const filteredList = useMemo(() => {
+    const [minimum, maximum] = POKEMON_GENERATION_RANGES[activeGeneration];
+    return allPokemon.filter(pokemon => pokemon.id >= minimum && pokemon.id <= maximum);
+  }, [activeGeneration, allPokemon]);
 
-  const visiblePokemonIds = useMemo(
-    () => new Set(filteredList.map(pokemon => pokemon.id)),
-    [filteredList],
+  const catalogPokemonIds = useMemo(
+    () => new Set(allPokemon.map(pokemon => pokemon.id)),
+    [allPokemon],
   );
   const visiblePokemonIdList = useMemo(
     () => filteredList.map(pokemon => pokemon.id),
@@ -137,10 +142,16 @@ export function usePokemonGame() {
   });
 
   const tryGuessTranscript = useCallback((raw, options = {}) => {
-    return resolveGuessTranscript(raw, nameIndex, visiblePokemonIds, options);
-  }, [nameIndex, visiblePokemonIds]);
+    return resolveGuessTranscript(raw, nameIndex, catalogPokemonIds, options);
+  }, [catalogPokemonIds, nameIndex]);
 
   const revealPokemon = useCallback(async (id, source) => {
+    const targetGeneration = getPokemonGenerationId(id);
+    if (targetGeneration && targetGeneration !== activeGenerationRef.current) {
+      activeGenerationRef.current = targetGeneration;
+      setActiveGeneration(targetGeneration);
+      await new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+    }
     const firstTime = !guessedRef.current.has(id);
     await scrollToPokemon(id);
     if (!firstTime) return false;
@@ -173,7 +184,7 @@ export function usePokemonGame() {
       onAchievementError: error => console.warn('No se pudieron evaluar los logros:', error),
     });
     return true;
-  }, [allPokemon, enqueueSpecialEffect, getEasterEggState, markRevealed, playRevealAudio, recordTimedDiscovery, runSpecialReveal, scrollToPokemon, updateEasterEggState]);
+  }, [allPokemon, enqueueSpecialEffect, getEasterEggState, markRevealed, playRevealAudio, recordTimedDiscovery, runSpecialReveal, scrollToPokemon, setActiveGeneration, updateEasterEggState]);
 
   const collectGimmighoulCoin = useCallback(async () => {
     const nextCoins = (easterEggState.gimmighoulCoins || 0) + 1;
@@ -248,9 +259,11 @@ export function usePokemonGame() {
 
   const score = filteredList.filter(p => guessed.has(p.id)).length;
   const remaining = filteredList.length - score;
+  const globalScore = allPokemon.filter(p => guessed.has(p.id)).length;
 
   return {
     allPokemon,
+    activeGeneration,
     pokemonCatalog,
     audioBlocked,
     cardRefs,
@@ -266,6 +279,8 @@ export function usePokemonGame() {
     guess,
     guessed,
     guessText,
+    globalScore,
+    globalTotal: allPokemon.length,
     handleGuessSubmit,
     lastRevealedId,
     loadingError,
@@ -275,9 +290,9 @@ export function usePokemonGame() {
     replayPokemonCry,
     resetProgress,
     score,
-    selectedGens,
     sleepMode,
     setCardSize,
+    setActiveGeneration,
     setDelibirdMode,
     setGuessText,
     setSleepMode,
@@ -288,7 +303,6 @@ export function usePokemonGame() {
     timer,
     timerLeft,
     toast,
-    toggleGen,
     tryGuessTranscript,
     updateEasterEggState,
     setPsyduckMode,

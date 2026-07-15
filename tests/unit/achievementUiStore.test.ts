@@ -10,9 +10,11 @@ describe('store de presentación de logros', () => {
     achievementUiStore.openDrawer();
     achievementUiStore.openDrawer();
     achievementUiStore.closeDrawer();
+    achievementUiStore.toggleDrawer();
+    achievementUiStore.toggleDrawer();
     unsubscribe();
 
-    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenCalledTimes(4);
     expect(achievementUiStore.getSnapshot().drawerOpen).toBe(false);
   });
 

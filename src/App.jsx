@@ -9,7 +9,7 @@ import { SleepMode } from './components/SleepMode.jsx';
 import { SpecialEffectsLayer } from './components/SpecialEffectsLayer.jsx';
 import { TimedModal } from './components/TimedModal.jsx';
 import { Toast } from './components/Toast.jsx';
-import { SecondaryControlsMenu } from './components/Topbar.jsx';
+import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
 import { ACV } from '../scripts/achievements-logic.js';
@@ -24,6 +24,7 @@ function formatTimer(left) {
 
 export default function App() {
   const [modesOpen, setModesOpen] = useState(false);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [imageStyle, setImageStyle] = useState('3d');
   const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
   const game = usePokemonGame();
@@ -54,7 +55,10 @@ export default function App() {
   const toggleModes = () => {
     setModesOpen(current => {
       const next = !current;
-      if (next) ACV.closeDrawer?.();
+      if (next) {
+        setControlsOpen(false);
+        ACV.closeDrawer?.();
+      }
       return next;
     });
   };
@@ -65,7 +69,24 @@ export default function App() {
 
   const openAchievements = () => {
     closeModes();
-    ACV.openDrawer?.();
+    setControlsOpen(false);
+    ACV.toggleDrawer?.();
+  };
+
+  const toggleControls = () => {
+    setControlsOpen(current => {
+      const next = !current;
+      if (next) {
+        closeModes();
+        ACV.closeDrawer?.();
+      }
+      return next;
+    });
+  };
+
+  const selectGeneration = generation => {
+    game.setActiveGeneration(generation);
+    setControlsOpen(false);
   };
 
   const toggleMic = () => {
@@ -78,19 +99,11 @@ export default function App() {
       <Dock
         score={game.score}
         remaining={game.remaining}
-        listening={speech.listening}
-        speechSupported={speech.speechSupported}
-        voiceStatus={speech.voiceStatus}
-        guessText={game.guessText}
-        onGuessText={game.setGuessText}
-        onGuess={game.handleGuessSubmit}
-        onMic={toggleMic}
-        onReset={resetWithConfirm}
         onModes={toggleModes}
         onAchievements={openAchievements}
+        controlsOpen={controlsOpen}
+        onControls={toggleControls}
         onNavigate={game.navigateCards}
-        audioBlocked={game.audioBlocked}
-        onEnableAudio={game.enableAudio}
         timerText={game.timer ? formatTimer(game.timerLeft) : ''}
         timerDanger={game.timerLeft <= 10}
       />
@@ -124,16 +137,33 @@ export default function App() {
           onReplayCry={game.replayPokemonCry}
           sleepMode={game.sleepMode}
           imageStyle={imageStyle}
+          discoveryConsole={{
+            listening: speech.listening,
+            speechSupported: speech.speechSupported,
+            voiceStatus: speech.voiceStatus,
+            guessText: game.guessText,
+            onGuessText: game.setGuessText,
+            onGuess: game.handleGuessSubmit,
+            onMic: toggleMic,
+            audioBlocked: game.audioBlocked,
+            onEnableAudio: game.enableAudio,
+          }}
         />
       )}
-      <SecondaryControlsMenu
-        selectedGens={game.selectedGens}
+      <PokedexControlsDrawer
+        open={controlsOpen}
+        onClose={() => setControlsOpen(false)}
+        generation={game.activeGeneration}
+        discovered={game.score}
+        total={game.filteredList.length}
+        globalDiscovered={game.globalScore}
+        globalTotal={game.globalTotal}
+        onGenerationChange={selectGeneration}
         cardSize={game.cardSize}
         imageStyle={imageStyle}
         onCardSize={game.setCardSize}
         onDeleteAll={deleteAllWithConfirm}
         onImageStyle={setImageStyle}
-        onToggleGen={game.toggleGen}
         onReset={resetWithConfirm}
       />
       <AchievementsDrawer />

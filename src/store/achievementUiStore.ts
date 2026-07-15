@@ -46,6 +46,10 @@ export const achievementUiStore = {
     update(current => current.drawerOpen ? { ...current, drawerOpen: false } : current);
   },
 
+  toggleDrawer() {
+    update(current => ({ ...current, drawerOpen: !current.drawerOpen }));
+  },
+
   enqueueToast({
     achievementId,
     title,

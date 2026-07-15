@@ -105,6 +105,8 @@ export interface PokeDiscoverStateV1 extends VersionedContractV1 {
 }
 
 export interface PokeVoicePreferencesV1 extends VersionedContractV1 {
+  activeGenerationId?: number;
+  /** Compatibilidad temporal con el selector múltiple anterior al dashboard. */
   selectedGenerationIds: number[];
   cardSize: number;
 }

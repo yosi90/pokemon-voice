@@ -185,6 +185,7 @@ export function createPokeVoiceSaveV1({ runId, now, legacy = {} }: CreateSaveOpt
   const easterEggState = splitLegacyEasterEggState(legacy.easterEggState);
   const preferences: PokeVoicePreferencesV1 = {
     schemaVersion: 1,
+    activeGenerationId: normalizeGenerationIds(legacy.selectedGenerationIds)[0] ?? 1,
     selectedGenerationIds: normalizeGenerationIds(legacy.selectedGenerationIds),
     cardSize: normalizeCardSize(legacy.cardSize),
   };

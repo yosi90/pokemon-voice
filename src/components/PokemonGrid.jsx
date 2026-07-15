@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ART_URL, CASTFORM_IMAGE_URLS, PIKACHU_IMAGE_URLS, ROTOM_FORM_IDS, ROTOM_IMAGE_URLS, SPRITE_ANIMATED_URL, SPRITE_URL } from '../../scripts/utils.js';
 import { formatDex } from '../lib/pokemon.js';
 import { getPokemonSpecial } from '../lib/pokemonSpecials.js';
+import { DiscoveryConsole } from './DiscoveryConsole.jsx';
 
 const randomImageIndex = (currentIndex, imageUrls) => {
   if (imageUrls.length < 2) return currentIndex;
@@ -150,7 +151,7 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
   );
 }
 
-export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, cardRefs, onReplayCry, sleepMode, imageStyle }) {
+export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, cardRefs, onReplayCry, sleepMode, imageStyle, discoveryConsole }) {
   const registerRef = (id, node) => {
     if (node) cardRefs.current.set(id, node);
     else cardRefs.current.delete(id);
@@ -158,6 +159,7 @@ export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, card
 
   return (
     <main>
+      <DiscoveryConsole {...discoveryConsole} />
       <div id="grid" className="grid" aria-live="polite">
         {list.map(pokemon => (
           <PokemonBallCard
