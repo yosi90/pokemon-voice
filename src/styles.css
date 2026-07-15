@@ -36,7 +36,7 @@ body {
     radial-gradient(circle at 18% 12%, rgba(255, 207, 33, .18), transparent 26rem),
     radial-gradient(circle at 80% -10%, rgba(233, 54, 24, .25), transparent 30rem),
     linear-gradient(180deg, #3d3e3f 0%, #303236 44%, #5d5f5d 100%); */
-  background-image: url('../assets/images/fondo.png');
+  background-image: url('/assets/images/fondo.png');
   background-size: 100% 100%;
   background-attachment: fixed;
   overflow-y: scroll;

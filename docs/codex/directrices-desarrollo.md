@@ -37,6 +37,14 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - Evitar estados ocultos dificiles de depurar sin dejar rastro en el codigo o en un roadmap.
 - Mantener la persistencia local compatible con partidas existentes siempre que sea posible.
 
+## Pruebas
+
+- Mantener las pruebas unitarias en `tests/unit/` y las pruebas de navegador en `tests/e2e/`.
+- Ejecutar los flujos end-to-end en los viewports de escritorio y móvil definidos en `playwright.config.js`.
+- Interceptar PokeAPI mediante los fixtures locales de `tests/fixtures/`; la red externa no debe decidir si una prueba pasa.
+- Actualizar una referencia visual solo después de comprobar que el cambio de interfaz es intencionado.
+- Antes de cerrar un hito, ejecutar las pruebas proporcionales al cambio y un build de producción.
+
 ## Roadmaps de desarrollos largos
 
 Los desarrollos largos se documentan en `docs/roadmaps/`.
