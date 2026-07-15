@@ -14,6 +14,8 @@
   display: grid;
   place-items: center;
   overflow: visible;
+  perspective: calc(var(--card-size) * 5.5);
+  perspective-origin: 50% 42%;
   transition: transform .18s ease, filter .18s ease;
 }
 
@@ -24,6 +26,62 @@
   border-radius: 50%;
   isolation: isolate;
   filter: drop-shadow(0 16px 22px rgba(0, 0, 0, .4));
+}
+
+.ball-assembly {
+  --ball-rotate-x: -2deg;
+  --ball-rotate-y: 3deg;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 50%;
+  transform: rotateX(var(--ball-rotate-x)) rotateY(var(--ball-rotate-y));
+  transform-style: preserve-3d;
+  transition: transform 180ms cubic-bezier(.2, .75, .25, 1);
+}
+
+.ball-assembly::before,
+.ball-assembly::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.ball-assembly::before {
+  inset: 3px;
+  z-index: 5;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, .62) 0 5%, rgba(255, 255, 255, .2) 11%, transparent 25%),
+    radial-gradient(circle at 72% 78%, rgba(0, 0, 0, .28), transparent 43%);
+  box-shadow:
+    inset 11px 8px 17px rgba(255, 255, 255, .13),
+    inset -16px -13px 22px rgba(0, 0, 0, .22);
+}
+
+.ball-assembly::after {
+  inset: 1px;
+  z-index: 6;
+  border: 2px solid rgba(255, 255, 255, .1);
+  box-shadow:
+    inset 4px 2px 6px rgba(255, 255, 255, .2),
+    inset -5px -4px 8px rgba(0, 0, 0, .22);
+}
+
+.ball-assembly.is-ball-tilting {
+  transition-duration: 90ms;
+  will-change: transform;
+}
+
+.pokemon-ball-card:focus-visible .ball-assembly:not(.is-ball-tilting) {
+  --ball-rotate-x: -6deg;
+  --ball-rotate-y: 8deg;
+}
+
+.pokemon-card.revealing .ball-assembly {
+  --ball-rotate-x: -2deg !important;
+  --ball-rotate-y: 3deg !important;
+  will-change: auto;
 }
 
 .pokemon-ball-card::after {
@@ -90,7 +148,7 @@
   inset: 50% auto auto 50%;
   width: 30%;
   height: 30%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translateZ(calc(var(--card-size) * .09));
   background: radial-gradient(circle at center, #fff 0 42%, #d6d6d6 43% 58%, #111 59% 70%, #fff 71% 100%);
   box-shadow: 0 0 0 3px #111;
   z-index: 3;
@@ -103,7 +161,7 @@
   inset: 4% auto auto 50%;
   width: 92%;
   height: 43%;
-  transform: translateX(-47%);
+  transform: translateX(-47%) translateZ(calc(var(--card-size) * .035));
   color: #f7ecff;
   font-family: "Press Start 2P", Inter, sans-serif;
   font-size: clamp(20px, calc(var(--card-size) * .24), 34px);
@@ -223,6 +281,14 @@
 .pokemon-card.discovered .master-mark {
   opacity: 0;
   transform: translate(-50%, -50%) scale(.82);
+}
+
+.pokemon-card.discovered .ball-assembly::before,
+.pokemon-card.discovered .ball-assembly::after,
+.pokemon-card.revealing .ball-assembly::before,
+.pokemon-card.revealing .ball-assembly::after {
+  opacity: 0;
+  transition: opacity .18s ease;
 }
 
 .pokemon-card.discovered .ball-band {
@@ -1308,4 +1374,3 @@
   70% { opacity: .62; transform: scale(1.18) rotate(-12deg); }
   100% { opacity: 0; transform: scale(1.25) rotate(22deg); }
 }
-

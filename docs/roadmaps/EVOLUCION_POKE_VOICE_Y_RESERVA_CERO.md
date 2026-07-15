@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0, 1, 2, 3 y 4 completados; siguiente trabajo previsto en Hito 5.
+- Estado: Hitos 0, 1, 2, 3, 4 y 5 completados; siguiente trabajo previsto en Hito 6.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -208,23 +208,45 @@ Revisión visual posterior. Un único drawer compacto de Pokédex, abierto desde
 
 ## Hito 5 — Ficha animada de Pokédex
 
-- [ ] Crear un modal que simule una Pokédex física desplegándose.
-- [ ] Implementar el estado `desconocido`: número y datos clasificados, sin revelar nombre ni imagen.
-- [ ] Implementar el estado `registrado`: nombre, imagen y cry tras nombrarlo por voz o texto.
-- [ ] Separar el eje de registro (`desconocido`/`registrado`) del eje de investigación (`no-avistado`/`avistado`/`parcial`/`completo`).
-- [ ] Mostrar una galería de formas y apariencias descubiertas sin convertirlas en especies independientes.
-- [ ] Mostrar la primera procedencia y las notas específicas de cada forma o apariencia.
-- [ ] Impedir que registrar un Pokémon mítico equivalga a avistarlo o cumpla sus condiciones narrativas.
-- [ ] Implementar el estado `investigado`: ficha completada mediante aventuras.
-- [ ] Mostrar campos corruptos en Pokémon registrados pero no investigados.
-- [ ] Añadir mensajes narrativos variables sobre Team Rocket, fallos del servidor o posibles leyendas.
-- [ ] Dividir la investigación en biometría, conducta, alimentación/hábitat y nota excepcional.
-- [ ] Permitir que mapas diferentes aporten campos distintos de una misma especie.
-- [ ] Completar la ficha únicamente al reunir los cuatro campos base, sin exigir que procedan de un solo mapa.
-- [ ] Permitir notas adicionales futuras sin invalidar una ficha que ya completó sus cuatro campos base.
-- [ ] Añadir control explícito para reproducir el cry.
-- [ ] Implementar foco atrapado, restauración de foco, Escape y lectores de pantalla.
-- [ ] Respetar `prefers-reduced-motion`.
+- [x] Crear un modal que simule una Pokédex física desplegándose.
+- [x] Tematizar la ficha por tipo primario, usando el secundario como acento y motivos visuales reutilizables.
+- [x] Implementar el estado `desconocido`: número y datos clasificados, sin revelar nombre ni imagen.
+- [x] Implementar el estado `registrado`: nombre, imagen y cry tras nombrarlo por voz o texto.
+- [x] Separar el eje de registro (`desconocido`/`registrado`) del eje de investigación (`no-avistado`/`avistado`/`parcial`/`completo`).
+- [x] Mostrar una galería de formas y apariencias descubiertas sin convertirlas en especies independientes.
+- [x] Mostrar la primera procedencia y las notas específicas de cada forma o apariencia.
+- [x] Impedir que registrar un Pokémon mítico equivalga a avistarlo o cumpla sus condiciones narrativas.
+- [x] Implementar el estado `investigado`: ficha completada mediante aventuras.
+- [x] Mostrar campos corruptos en Pokémon registrados pero no investigados.
+- [x] Añadir mensajes narrativos variables sobre Team Rocket, fallos del servidor o posibles leyendas.
+- [x] Dividir la investigación en biometría, conducta, alimentación/hábitat y nota excepcional.
+- [x] Permitir que mapas diferentes aporten campos distintos de una misma especie.
+- [x] Completar la ficha únicamente al reunir los cuatro campos base, sin exigir que procedan de un solo mapa.
+- [x] Permitir notas adicionales futuras sin invalidar una ficha que ya completó sus cuatro campos base.
+- [x] Añadir control explícito para reproducir el cry.
+- [x] Implementar foco atrapado, restauración de foco, Escape y lectores de pantalla.
+- [x] Respetar `prefers-reduced-motion`.
+- [x] Añadir volumen pseudo-3D compartido a Poké Ball, Super Ball, Ultra Ball y Master Ball sin WebGL.
+- [x] Inclinar únicamente la Pokéball activa siguiendo el cursor, con límites que preserven la ilusión plana.
+- [x] Eliminar la flotación genérica de las Pokéballs; conservar la inclinación bajo cursor y los easter eggs propios de especies concretas.
+- [x] Mantener sprites, revelaciones y efectos especiales fuera del plano inclinado.
+- [x] Validar accesibilidad, movimiento reducido, carga máxima y ausencia de overflow en Playwright.
+
+Primera entrega iniciada el 15 de julio de 2026. Todas las entradas, incluidas las desconocidas, abren una ficha física accesible. Las registradas cargan sus tipos bajo demanda: el primario gobierna color, brillo y motivo; el secundario se limita al acento. La ficha no confunde registro con investigación, muestra los cuatro campos todavía bloqueados y conserva explícitamente el caso de Mew como nombre registrado pero no avistamiento. La apertura animada se elimina con `prefers-reduced-motion`, Escape cierra, el foco queda atrapado y vuelve a la carta de origen.
+
+Segunda entrega implementada el 15 de julio de 2026. `getPokemonEntryState` combina la run reiniciable con PokeDiscover sin mezclarlos: la investigación permanente se oculta mientras la especie no esté registrada y reaparece al redescubrirla. La ficha representa `no-avistado`, `avistado`, `parcial` y `completo`, y cada uno de los cuatro campos distingue bloqueo, avistamiento, observaciones parciales y finalización. Los 18 tipos poseen motivos CSS con identidad propia: mar para Agua, ondas concéntricas para Psíquico, viento para Volador, burbujas para Veneno, ojos para Fantasma, gemas para Hada, escarcha y copos para Hielo, telaraña para Bicho, puños para Lucha, montañas para Roca, fallas sinuosas para Tierra y placas diagonales reservadas para Acero.
+
+Tercera entrega implementada el 15 de julio de 2026. La ficha incorpora una galería horizontal de variantes construida desde la forma habitual y los registros permanentes `discoveredForms` y `discoveredAppearances` de PokeDiscover. Las variantes nunca alteran el número de especies ni crean tarjetas nuevas en la cuadrícula. Cada hallazgo conserva su primera procedencia por mapa, misión o encuentro y presenta sus notas de campo. Las relaciones de otra especie se descartan y las formas permanentes permanecen ocultas mientras la especie no esté registrada en la run actual.
+
+Corrección visual del 15 de julio de 2026. La capa decorativa de los motivos queda contenida y no puede ampliar el área desplazable de la ficha. Los patrones Bicho y Tierra ya no transforman el lienzo completo, el modal bloquea el desbordamiento horizontal y una prueba recorre los 18 motivos en escritorio y móvil verificando que ninguno modifica sus dimensiones de scroll.
+
+Cuarta entrega implementada el 15 de julio de 2026. `ResearchFactV1` declara si aporta una observación parcial, completa uno de los cuatro campos base o añade una nota posterior. `discoverResearchFact` agrega hechos de cualquier mapa mediante IDs estables, registra el primer avistamiento, calcula el estado de la ficha desde sus cuatro campos y entrega experiencia y PD a través del ledger permanente. Repetir un hecho no vuelve a investigar ni recompensa; añadir contenido futuro no invalida campos completos y una nota adicional conserva el estado `complete`.
+
+Quinta entrega implementada el 15 de julio de 2026. La cuadrícula incorpora una geometría pseudo-3D común para Poké Ball, Super Ball, Ultra Ball y Master Ball sin añadir Three.js ni WebGL. Una capa interior separa carcasa, banda y botón de sprites, brillos y efectos especiales; en escritorio sigue el cursor con rotación limitada, mientras teclado y movimiento reducido conservan feedback estático. Un único `IntersectionObserver` permite flotar solamente a bolas no descubiertas presentes en pantalla, pausa el movimiento con la pestaña oculta y deja estáticas las entradas registradas. La generación V mantiene sus 156 tarjetas por debajo de 3000 nodos, sin overflow ni más de una inclinación activa, y las referencias visuales cubren las cuatro variantes en escritorio y móvil.
+
+Sexta entrega implementada el 16 de julio de 2026. Cada Pokéball conserva un ritmo determinista por especie, pero las duraciones varían entre 5,6 y 8,48 segundos: incluso la más rápida resulta sensiblemente más pausada que el ciclo anterior de 3,4 segundos. Las fichas clasificadas y los campos todavía no investigados distribuyen de forma estable mensajes sobre archivos interceptados por el Team Rocket, fallos de sincronización, rumores de posibles leyendas y notas del profesor. Los textos nunca revelan la identidad ni datos reales antes de tiempo. Con este cierre narrativo, el Hito 5 queda completado.
+
+Corrección de rendimiento del 16 de julio de 2026. Las pruebas en hardware real mostraron que componer muchas capas en movimiento seguía penalizando la experiencia pese a limitar la flotación por visibilidad. Se elimina por completo el vaivén genérico y el `IntersectionObserver` que ya no resulta necesario. En reposo las Pokéballs normales no animan ni declaran `will-change`; el único trabajo compartido ocurre al mover un cursor preciso sobre una tarjeta y afecta como máximo a una bola. Se conservan los comportamientos especiales diseñados como easter eggs de especies concretas, incluido Pikachu inquieto y sus chispas periódicas.
 
 ---
 

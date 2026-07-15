@@ -27,6 +27,19 @@ const generationNameForId = id => {
   return 'generation-ix';
 };
 
+const pokemonTypesForId = {
+  1: ['grass', 'poison'],
+  2: ['grass', 'poison'],
+  3: ['grass', 'poison'],
+  4: ['fire'],
+  7: ['water'],
+  25: ['electric'],
+  133: ['normal'],
+  151: ['psychic'],
+  152: ['grass'],
+  906: ['grass'],
+};
+
 export async function mockPokemonApi(page) {
   await page.route('https://pokeapi.co/api/v2/**', route => {
     const url = new URL(route.request().url());
@@ -44,7 +57,7 @@ export async function mockPokemonApi(page) {
         body: JSON.stringify({
           id,
           name: pokemon?.name || `pokemon-${id}`,
-          types: [],
+          types: (pokemonTypesForId[id] || []).map((type, index) => ({ slot: index + 1, type: { name: type } })),
           species: { url: `https://pokeapi.co/api/v2/pokemon-species/${id}/` },
         }),
       });

@@ -1,27 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ART_URL, CASTFORM_IMAGE_URLS, PIKACHU_IMAGE_URLS, ROTOM_FORM_IDS, ROTOM_IMAGE_URLS, SPRITE_ANIMATED_URL, SPRITE_URL } from '../../scripts/utils.js';
 import { formatDex } from '../lib/pokemon.js';
 import { getPokemonSpecial } from '../lib/pokemonSpecials.js';
+import { usePokeballMotion } from '../hooks/usePokeballMotion.js';
 import { DiscoveryConsole } from './DiscoveryConsole.jsx';
 
-const randomImageIndex = (currentIndex, imageUrls) => {
-  if (imageUrls.length < 2) return currentIndex;
-
-  let nextIndex = currentIndex;
-  while (nextIndex === currentIndex) {
-    nextIndex = Math.floor(Math.random() * imageUrls.length);
-  }
-  return nextIndex;
-};
-
-const randomCastformFormIndex = (currentIndex) => {
-  const weatherFormIndexes = [1, 2, 3];
-  const candidates = weatherFormIndexes.filter(index => index !== currentIndex);
-  return candidates[Math.floor(Math.random() * candidates.length)];
-};
-
-const getPokemonImageSrc = ({ pokemonId, imageStyle, spriteFallbackStep, specialImageIndex }) => {
-  const spritePokemonId = pokemonId === 479 ? ROTOM_FORM_IDS[specialImageIndex] : pokemonId;
+const getPokemonImageSrc = ({ pokemonId, imageStyle, spriteFallbackStep }) => {
+  const spritePokemonId = pokemonId === 479 ? ROTOM_FORM_IDS[0] : pokemonId;
 
   if (imageStyle === 'sprite') {
     if (spriteFallbackStep === 0) return SPRITE_ANIMATED_URL(spritePokemonId);
@@ -29,30 +14,24 @@ const getPokemonImageSrc = ({ pokemonId, imageStyle, spriteFallbackStep, special
   }
 
   if (imageStyle === '3d' && pokemonId === 25) {
-    return PIKACHU_IMAGE_URLS[specialImageIndex];
+    return PIKACHU_IMAGE_URLS[0];
   }
 
   if (imageStyle === '3d' && pokemonId === 351) {
-    return CASTFORM_IMAGE_URLS[specialImageIndex];
+    return CASTFORM_IMAGE_URLS[0];
   }
 
   if (pokemonId === 479) {
-    return ROTOM_IMAGE_URLS[specialImageIndex];
+    return ROTOM_IMAGE_URLS[0];
   }
 
   return ART_URL(pokemonId);
 };
 
-function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef, onReplayCry, sleepMode, imageStyle }) {
-  const [specialImageIndex, setSpecialImageIndex] = useState(0);
+function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef, onOpenDetails, sleepMode, imageStyle }) {
   const [spriteFallbackStep, setSpriteFallbackStep] = useState(0);
   const name = pokemon.name.replace(/-/g, ' ');
   const angryJigglypuffSrc = `${import.meta.env.BASE_URL}assets/images/jigglypuff.png`;
-  const isPikachu = pokemon.id === 25;
-  const isCastform = pokemon.id === 351;
-  const isRotom = pokemon.id === 479;
-  const specialImageUrls = isPikachu ? PIKACHU_IMAGE_URLS : isCastform ? CASTFORM_IMAGE_URLS : isRotom ? ROTOM_IMAGE_URLS : null;
-  const canRotateSpecialImage = (imageStyle === '3d' || isRotom) && !!specialImageUrls;
   const imageClassName = [
     'pokemon-art',
     sleepMode && pokemon.id === 39 ? 'pokemon-art--sleep-mode' : '',
@@ -64,7 +43,6 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
       pokemonId: pokemon.id,
       imageStyle,
       spriteFallbackStep,
-      specialImageIndex,
     });
   const special = getPokemonSpecial(pokemon.id);
   const className = [
@@ -77,32 +55,17 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
 
   useEffect(() => {
     setSpriteFallbackStep(0);
-    setSpecialImageIndex(0);
   }, [imageStyle, pokemon.id]);
 
-  const handleDiscoveredAction = () => {
-    if (!discovered) return;
-
-    let effectOptions = {};
-    if (canRotateSpecialImage) {
-      const nextIndex = isCastform
-        ? randomCastformFormIndex(specialImageIndex)
-        : randomImageIndex(specialImageIndex, specialImageUrls);
-      setSpecialImageIndex(nextIndex);
-      setSpriteFallbackStep(0);
-      if (isCastform) effectOptions = { weather: nextIndex };
-    }
-    onReplayCry(pokemon.id, effectOptions);
-  };
   const handleImageError = () => {
     if (imageStyle === 'sprite') {
       setSpriteFallbackStep(currentStep => Math.min(currentStep + 1, 2));
     }
   };
   const handleKeyDown = event => {
-    if (!discovered || (event.key !== 'Enter' && event.key !== ' ')) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    handleDiscoveredAction();
+    onOpenDetails(pokemon);
   };
 
   return (
@@ -115,18 +78,20 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
       <div className="pokemon-stage">
         <div
           className="pokemon-ball-card"
-          aria-label={discovered ? `${name}, reproducir sonido` : formatDex(pokemon.id)}
-          role={discovered ? 'button' : undefined}
-          tabIndex={discovered ? 0 : undefined}
-          title={discovered ? canRotateSpecialImage ? `Cambiar imagen y reproducir cry de ${name}` : `Reproducir cry de ${name}` : undefined}
-          onClick={handleDiscoveredAction}
+          aria-label={discovered ? `Abrir ficha de ${name}` : `Abrir ficha de ${formatDex(pokemon.id)}`}
+          role="button"
+          tabIndex={0}
+          title={discovered ? `Abrir ficha de ${name}` : 'Abrir entrada clasificada'}
+          onClick={() => onOpenDetails(pokemon)}
           onKeyDown={handleKeyDown}
         >
-          <div className="ball-shell ball-shell--top" />
-          <div className="ball-shell ball-shell--bottom" />
-          <div className="ball-band" />
-          <div className="ball-button" />
-          <div className="master-mark">M</div>
+          <div className="ball-assembly" aria-hidden="true">
+            <div className="ball-shell ball-shell--top" />
+            <div className="ball-shell ball-shell--bottom" />
+            <div className="ball-band" />
+            <div className="ball-button" />
+            <div className="master-mark">M</div>
+          </div>
           <div className="electric-burst" />
           {special.localEffects.map(effect => (
             <div key={effect} className={`local-effect local-effect--${effect}`} />
@@ -151,7 +116,10 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
   );
 }
 
-export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, cardRefs, onReplayCry, sleepMode, imageStyle, discoveryConsole }) {
+export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, cardRefs, onOpenDetails, sleepMode, imageStyle, discoveryConsole }) {
+  const gridRef = useRef(null);
+  usePokeballMotion(gridRef);
+
   const registerRef = (id, node) => {
     if (node) cardRefs.current.set(id, node);
     else cardRefs.current.delete(id);
@@ -160,7 +128,7 @@ export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, card
   return (
     <main>
       <DiscoveryConsole {...discoveryConsole} />
-      <div id="grid" className="grid" aria-live="polite">
+      <div ref={gridRef} id="grid" className="grid" aria-live="polite">
         {list.map(pokemon => (
           <PokemonBallCard
             key={pokemon.id}
@@ -169,7 +137,7 @@ export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, card
             revealing={lastRevealedId === pokemon.id}
             focused={focusedCardId === pokemon.id}
             registerRef={registerRef}
-            onReplayCry={onReplayCry}
+            onOpenDetails={onOpenDetails}
             sleepMode={sleepMode}
             imageStyle={imageStyle}
           />

@@ -491,4 +491,13 @@
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;
   }
+
+  .ball-assembly,
+  .pokemon-ball-card:focus-visible .ball-assembly {
+    --ball-rotate-x: -2deg;
+    --ball-rotate-y: 3deg;
+    animation: none !important;
+    translate: none !important;
+    will-change: auto !important;
+  }
 }

@@ -6,6 +6,7 @@ import type {
   PokeDiscoverStateV1,
   PokeVoicePreferencesV1,
   PokeVoiceSaveV1,
+  ResearchFactV1,
 } from '../../packages/contracts/src/index.js';
 import { LS_CARD_SCALE, LS_GENS, LS_KEY } from '../../scripts/utils.js';
 import type { AchievementRecord } from '../domain/achievements/achievementProgress.js';
@@ -14,6 +15,10 @@ import {
   type RewardClaimRequest,
   type RewardClaimResult,
 } from '../domain/progress/rewardLedger.js';
+import {
+  discoverResearchFact,
+  type DiscoverResearchFactContext,
+} from '../domain/research/researchProgress.js';
 import {
   POKE_VOICE_SAVE_KEY,
   createPokedexRunStateV1,
@@ -145,6 +150,18 @@ export function claimBrowserPokeDiscoverRewards(request: RewardClaimRequest): Re
   const current = readCurrentSave();
   const result = claimPokeDiscoverRewards(current.pokeDiscover, request);
   if (result.status === 'claimed') {
+    persist({ ...current, pokeDiscover: result.state });
+  }
+  return result;
+}
+
+export function discoverBrowserResearchFact(
+  fact: ResearchFactV1,
+  context: DiscoverResearchFactContext,
+) {
+  const current = readCurrentSave();
+  const result = discoverResearchFact(current.pokeDiscover, fact, context);
+  if (result.status === 'discovered') {
     persist({ ...current, pokeDiscover: result.state });
   }
   return result;

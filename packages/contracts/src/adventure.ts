@@ -88,12 +88,15 @@ export interface MissionDefinitionV1 extends VersionedContractV1 {
   unlocksFreeExpedition: boolean;
 }
 
+export type ResearchContributionKind = 'observation' | 'fieldCompletion' | 'additionalNote';
+
 export interface ResearchFactV1 extends VersionedContractV1 {
   factId: StableId;
   speciesId: PokemonSpeciesId;
   formId?: PokemonFormId;
   appearanceId?: StableId;
   field: ResearchFieldKey;
+  contribution: ResearchContributionKind;
   mapId: StableId;
   interactionId: StableId;
   text: string;

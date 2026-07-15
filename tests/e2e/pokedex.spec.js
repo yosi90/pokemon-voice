@@ -20,11 +20,181 @@ test('permite descubrir por texto y persiste el resultado', async ({ page }) => 
   await page.getByPlaceholder('Escribe un nombre y pulsa Enter.').fill('pikachu');
   await page.getByPlaceholder('Escribe un nombre y pulsa Enter.').press('Enter');
 
-  await expect(page.getByRole('button', { name: 'pikachu, reproducir sonido' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir ficha de pikachu' })).toBeVisible();
   await expect(page.getByRole('button', { name: /1 descubiertos/ })).toBeVisible();
   await expect(page.locator('.toast')).toContainText('pikachu descubierto (#0025)');
   await expect.poll(() => page.evaluate(() => localStorage.getItem('pokevoice-guessed-v1')))
     .toBe('[25]');
+});
+
+test('abre una ficha clasificada sin revelar un Pokémon desconocido', async ({ page }) => {
+  const card = page.getByRole('button', { name: 'Abrir ficha de #0001' });
+  await card.click();
+
+  const modal = page.getByRole('dialog', { name: 'DATOS CLASIFICADOS' });
+  await expect(modal).toBeVisible();
+  await expect(modal).toHaveAttribute('data-primary-type', 'unknown');
+  await expect(modal.getByText('Nombra a este Pokémon para desbloquear su registro.')).toBeVisible();
+  await expect(modal.getByText('ACCESO DENEGADO')).toHaveCount(4);
+  await expect(modal.getByRole('img')).toHaveCount(0);
+});
+
+test('varía de forma estable los bloqueos narrativos entre entradas', async ({ page }) => {
+  await page.getByRole('button', { name: 'Abrir ficha de #0002' }).click();
+  let modal = page.getByRole('dialog', { name: 'DATOS CLASIFICADOS' });
+  await expect(modal.getByText(/Team Rocket/)).toBeVisible();
+  await modal.getByRole('button', { name: 'Cerrar ficha' }).click();
+
+  await page.getByRole('button', { name: 'Abrir ficha de #0003' }).click();
+  modal = page.getByRole('dialog', { name: 'DATOS CLASIFICADOS' });
+  await expect(modal.getByText(/SERVIDOR SIN RESPUESTA/)).toBeVisible();
+  await modal.getByRole('button', { name: 'Cerrar ficha' }).click();
+
+  await page.getByRole('button', { name: 'Abrir ficha de #0004' }).click();
+  modal = page.getByRole('dialog', { name: 'DATOS CLASIFICADOS' });
+  await expect(modal.getByText(/leyenda/)).toBeVisible();
+});
+
+test('tematiza la ficha registrada por tipo y restaura el foco al cerrarla', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+  const card = page.getByRole('button', { name: 'Abrir ficha de pikachu' });
+  await card.click();
+
+  const modal = page.getByRole('dialog', { name: 'pikachu' });
+  await expect(modal).toHaveAttribute('data-primary-type', 'electric');
+  await expect(modal).toHaveAttribute('data-motif', 'bolts');
+  await expect(modal.getByText('Eléctrico', { exact: true })).toBeVisible();
+  await expect(modal.getByRole('button', { name: 'Reproducir cry' })).toBeVisible();
+  await expect(modal.getByRole('button', { name: 'Cerrar ficha' })).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(modal).toHaveCount(0);
+  await expect(card).toBeFocused();
+});
+
+test('usa el segundo tipo como acento sin sustituir la identidad primaria', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('bulbasaur');
+  await input.press('Enter');
+  await page.getByRole('button', { name: 'Abrir ficha de bulbasaur' }).click();
+
+  const modal = page.getByRole('dialog', { name: 'bulbasaur' });
+  await expect(modal).toHaveAttribute('data-primary-type', 'grass');
+  await expect(modal).toHaveAttribute('data-secondary-type', 'poison');
+  await expect(modal.getByText('Planta', { exact: true })).toBeVisible();
+  await expect(modal.getByText('Veneno', { exact: true })).toBeVisible();
+});
+
+test('ningún motivo de tipo altera el tamaño desplazable del modal', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+  await page.getByRole('button', { name: 'Abrir ficha de pikachu' }).click();
+
+  const measurements = await page.evaluate(() => {
+    const motifs = [
+      'rings', 'flame', 'sea', 'bolts', 'leaves', 'frost', 'fists', 'bubbles', 'quake',
+      'currents', 'waves', 'web', 'mountains', 'eyes', 'scales', 'shadows', 'plates', 'gems',
+    ];
+    const panel = document.querySelector('.pokemon-detail-panel');
+    return motifs.map(motif => {
+      panel.dataset.motif = motif;
+      panel.scrollLeft = 9999;
+      return {
+        motif,
+        horizontalOverflow: panel.scrollWidth - panel.clientWidth,
+        scrollLeft: panel.scrollLeft,
+        scrollHeight: panel.scrollHeight,
+      };
+    });
+  });
+
+  expect(measurements.every(item => item.horizontalOverflow <= 1 && item.scrollLeft === 0)).toBe(true);
+  expect(new Set(measurements.map(item => item.scrollHeight)).size).toBe(1);
+});
+
+test('mantiene registro e investigación como ejes independientes', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.sightings = [25];
+    save.pokeDiscover.researchBySpecies[25] = {
+      schemaVersion: 1,
+      speciesId: 25,
+      status: 'partial',
+      fields: {
+        biometrics: { field: 'biometrics', discoveredFactIds: ['fact:pikachu:size'], completed: true },
+        behavior: { field: 'behavior', discoveredFactIds: ['fact:pikachu:playful'], completed: false },
+        habitat: { field: 'habitat', discoveredFactIds: [], completed: false },
+        exceptional: { field: 'exceptional', discoveredFactIds: [], completed: false },
+      },
+      additionalNoteIds: [],
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.getByRole('button', { name: 'Abrir ficha de pikachu' }).click();
+
+  const modal = page.getByRole('dialog', { name: 'pikachu' });
+  await expect(modal.getByText('Investigación parcial', { exact: true })).toBeVisible();
+  await expect(modal.getByText('CAMPO COMPLETO // 1 hallazgo verificado')).toBeVisible();
+  await expect(modal.getByText('INVESTIGACIÓN PARCIAL // 1 observación')).toBeVisible();
+  await expect(modal.getByText('AVISTAMIENTO REGISTRADO // faltan observaciones')).toHaveCount(2);
+});
+
+test('lista formas y apariencias permanentes con su primera procedencia', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.discoveredForms['pokemon-form:25:partner'] = {
+      schemaVersion: 1,
+      formId: 'pokemon-form:25:partner',
+      speciesId: 25,
+      discoveredAt: '2026-07-15T10:00:00.000Z',
+      noteIds: ['note:comportamiento-jugueton'],
+      originMapId: 'map:bosque-verde',
+    };
+    save.pokeDiscover.discoveredAppearances['pokemon-appearance:25:surfista'] = {
+      schemaVersion: 1,
+      appearanceId: 'pokemon-appearance:25:surfista',
+      formId: 'pokemon-form:25:default',
+      speciesId: 25,
+      discoveredAt: '2026-07-15T11:00:00.000Z',
+      noteIds: ['note:domina-las-olas'],
+      originMissionId: 'mission:bahia-en-calma',
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.getByRole('button', { name: 'Abrir ficha de pikachu' }).click();
+
+  const modal = page.getByRole('dialog', { name: 'pikachu' });
+  await expect(modal.getByRole('heading', { name: 'Formas y apariencias' })).toBeVisible();
+  await expect(modal.getByText('3 descubiertas')).toBeVisible();
+  await expect(modal.getByText('Forma habitual', { exact: true })).toBeVisible();
+  await expect(modal.getByText('Forma Partner', { exact: true })).toBeVisible();
+  await expect(modal.getByText('Surfista', { exact: true })).toBeVisible();
+  await expect(modal.getByText('Mapa · Bosque verde')).toBeVisible();
+  await expect(modal.getByText('Misión · Bahia en calma')).toBeVisible();
+  await expect(modal.getByText('Nota · Domina las olas')).toBeVisible();
+});
+
+test('registrar a Mew no cuenta como avistarlo', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('mew');
+  await input.press('Enter');
+  await page.getByRole('button', { name: 'Abrir ficha de mew' }).click();
+
+  const modal = page.getByRole('dialog', { name: 'mew' });
+  await expect(modal.getByText('No avistado', { exact: true })).toBeVisible();
+  await expect(modal.getByText(/Team Rocket/)).toBeVisible();
+  await expect(modal.getByText(/SERVIDOR SIN RESPUESTA/)).toBeVisible();
+  await expect(modal.getByText(/posible leyenda/)).toBeVisible();
+  await expect(modal.getByText('Registrar un nombre no equivale a un avistamiento. Su rastro continúa siendo una leyenda.')).toBeVisible();
 });
 
 test('arranca con el catálogo local cuando PokeAPI no está disponible', async ({ page }) => {
@@ -45,9 +215,14 @@ test('arranca con el catálogo local cuando PokeAPI no está disponible', async 
   const metrics = await page.evaluate(() => ({
     nodeCount: document.querySelectorAll('*').length,
     horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+    animatedBalls: [...document.querySelectorAll('.ball-assembly, .pokemon-ball-card')]
+      .filter(ball => getComputedStyle(ball).animationName !== 'none').length,
+    tiltingBalls: document.querySelectorAll('.ball-assembly.is-ball-tilting').length,
   }));
   expect(metrics.nodeCount).toBeLessThan(3000);
   expect(metrics.horizontalOverflow).toBeLessThanOrEqual(1);
+  expect(metrics.animatedBalls).toBe(0);
+  expect(metrics.tiltingBalls).toBe(0);
 });
 
 test('muestra feedback inmediato ante un nombre desconocido', async ({ page }) => {
@@ -64,6 +239,64 @@ test('mantiene disponible el fallback de texto en ambos viewports', async ({ pag
   await expect(input).toBeVisible();
   await expect(page.getByRole('button', { name: 'Adivinar' })).toBeVisible();
   await expect(page.locator('body')).not.toHaveCSS('overflow-x', 'scroll');
+});
+
+test('mantiene las Pokéballs quietas e inclina solo la que está bajo el cursor', async ({ page }) => {
+  const firstCard = page.locator('.pokemon-card[data-id="1"]');
+  const secondCard = page.locator('.pokemon-card[data-id="2"]');
+  const firstAssembly = firstCard.locator('.ball-assembly');
+  await expect(firstAssembly).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.pokemon-card[data-id="25"] .pokemon-ball-card')).toHaveCSS('animation-name', 'pikachuRestless');
+
+  if (page.viewportSize().width >= 900) {
+    const firstBox = await firstAssembly.boundingBox();
+    const secondBox = await secondCard.locator('.ball-assembly').boundingBox();
+    await page.mouse.move(firstBox.x + firstBox.width - 2, firstBox.y + 2);
+    await expect(firstAssembly).toHaveClass(/is-ball-tilting/);
+    await expect.poll(() => firstAssembly.evaluate(element => (
+      element.style.getPropertyValue('--ball-rotate-y') !== ''
+    ))).toBe(true);
+    const rotation = await firstAssembly.evaluate(element => ({
+      x: Number.parseFloat(element.style.getPropertyValue('--ball-rotate-x')),
+      y: Number.parseFloat(element.style.getPropertyValue('--ball-rotate-y')),
+    }));
+    expect(Math.abs(rotation.x)).toBeLessThanOrEqual(10);
+    expect(Math.abs(rotation.y)).toBeLessThanOrEqual(14);
+    expect(Math.abs(rotation.x)).toBeGreaterThan(5);
+    expect(Math.abs(rotation.y)).toBeGreaterThan(7);
+
+    await page.mouse.move(secondBox.x + secondBox.width / 2, secondBox.y + secondBox.height / 2);
+    await expect(secondCard.locator('.ball-assembly')).toHaveClass(/is-ball-tilting/);
+    await expect(firstAssembly).not.toHaveClass(/is-ball-tilting/);
+  }
+
+  await firstCard.getByRole('button', { name: 'Abrir ficha de #0001' }).click();
+  await expect(page.getByRole('dialog', { name: 'DATOS CLASIFICADOS' })).toBeVisible();
+});
+
+test('una Pokéball descubierta conserva el volumen pero deja de flotar', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+
+  const card = page.locator('.pokemon-card[data-id="25"]');
+  await expect(card.locator('.ball-assembly')).toHaveCount(1);
+  await expect(card.locator('.ball-assembly')).toHaveCSS('animation-name', 'none');
+  await expect(card.locator('.pokemon-art')).toBeVisible();
+});
+
+test('respeta movimiento reducido sin perder el volumen estático', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const card = page.locator('.pokemon-card[data-id="1"]');
+  const assembly = card.locator('.ball-assembly');
+  await expect(assembly).toHaveCSS('animation-name', 'none');
+  await expect(assembly).toHaveCSS('translate', 'none');
+
+  if (page.viewportSize().width >= 900) {
+    const box = await assembly.boundingBox();
+    await page.mouse.move(box.x + box.width - 2, box.y + 2);
+    await expect(assembly).not.toHaveClass(/is-ball-tilting/);
+  }
 });
 
 test('adapta la navegación al lateral en escritorio y abajo en móvil', async ({ page }) => {
@@ -112,11 +345,11 @@ test('recupera los descubrimientos al recargar', async ({ page }) => {
   const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
   await input.fill('eevee');
   await input.press('Enter');
-  await expect(page.getByRole('button', { name: 'eevee, reproducir sonido' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir ficha de eevee' })).toBeVisible();
 
   await page.reload();
 
-  await expect(page.getByRole('button', { name: 'eevee, reproducir sonido' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir ficha de eevee' })).toBeVisible();
   await expect(page.getByRole('button', { name: /1 descubiertos/ })).toBeVisible();
 });
 
@@ -140,7 +373,7 @@ test('la búsqueda global cambia a la generación del resultado', async ({ page 
   await input.fill('sprigatito');
   await input.press('Enter');
 
-  await expect(page.getByRole('button', { name: 'sprigatito, reproducir sonido' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir ficha de sprigatito' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => (
     JSON.parse(localStorage.getItem('pokevoice-save-v1')).preferences.activeGenerationId
   ))).toBe(9);

@@ -4,6 +4,7 @@ import { DelibirdMode } from './components/DelibirdMode.jsx';
 import { AchievementsDrawer, AchievementToasts } from './components/AchievementUi.js';
 import { ModesDrawer } from './components/Drawers.jsx';
 import { PokemonGrid } from './components/PokemonGrid.jsx';
+import { PokemonDetailModal } from './components/PokemonDetailModal.jsx';
 import { PsyduckMode } from './components/PsyduckMode.jsx';
 import { SleepMode } from './components/SleepMode.jsx';
 import { SpecialEffectsLayer } from './components/SpecialEffectsLayer.jsx';
@@ -13,7 +14,8 @@ import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
 import { ACV } from '../scripts/achievements-logic.js';
-import { deleteAllBrowserPokeVoiceData } from './store/browserPokeVoiceSaveStore.js';
+import { getPokemonEntryState } from './domain/research/pokemonEntryState.ts';
+import { deleteAllBrowserPokeVoiceData, getBrowserPokeVoiceSave } from './store/browserPokeVoiceSaveStore.js';
 
 function formatTimer(left) {
   const safe = Math.max(0, Math.round(left || 0));
@@ -25,6 +27,7 @@ function formatTimer(left) {
 export default function App() {
   const [modesOpen, setModesOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [selectedPokemon, setSelectedPokemon] = useState(null);
   const [imageStyle, setImageStyle] = useState('3d');
   const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
   const game = usePokemonGame();
@@ -34,6 +37,9 @@ export default function App() {
     tryGuessTranscript: game.tryGuessTranscript,
     showToast: game.showToast,
   });
+  const selectedEntryState = selectedPokemon
+    ? getPokemonEntryState(getBrowserPokeVoiceSave(), selectedPokemon.id)
+    : null;
 
   const resetWithConfirm = () => {
     if (window.confirm('Esto iniciará una nueva run de Pokédex: se vaciarán los Pokémon registrados, el orden, las rachas y el acompañante equipado. Conservarás PokeDiscover completo: logros, investigación, mapas, nivel, PD, herramientas y objetos. ¿Continuar?')) {
@@ -134,7 +140,7 @@ export default function App() {
           lastRevealedId={game.lastRevealedId}
           focusedCardId={game.focusedCardId}
           cardRefs={game.cardRefs}
-          onReplayCry={game.replayPokemonCry}
+          onOpenDetails={setSelectedPokemon}
           sleepMode={game.sleepMode}
           imageStyle={imageStyle}
           discoveryConsole={{
@@ -150,6 +156,13 @@ export default function App() {
           }}
         />
       )}
+      <PokemonDetailModal
+        pokemon={selectedPokemon}
+        discovered={selectedPokemon ? game.guessed.has(selectedPokemon.id) : false}
+        entryState={selectedEntryState}
+        onClose={() => setSelectedPokemon(null)}
+        onCry={game.replayPokemonCry}
+      />
       <PokedexControlsDrawer
         open={controlsOpen}
         onClose={() => setControlsOpen(false)}
