@@ -1,10 +1,18 @@
-import { LS_KEY } from '../../scripts/utils.js';
-import { readJson, saveGuessed } from '../lib/storage.js';
+import { saveGuessed } from '../lib/storage.js';
+import { getBrowserPokeVoiceSave, updateBrowserPokedexRun } from './browserPokeVoiceSaveStore.js';
 import { createDiscoveryStore } from './discoveryStore.js';
 
-const savedIds = readJson(LS_KEY, []);
+const savedIds = getBrowserPokeVoiceSave().pokedexRun.registeredSpeciesIds;
 
 export const browserDiscoveryStore = createDiscoveryStore({
   initialIds: Array.isArray(savedIds) ? savedIds : [],
-  persist: ids => saveGuessed(ids),
+  persist: ids => {
+    saveGuessed(ids);
+    const registeredSpeciesIds = [...ids];
+    updateBrowserPokedexRun(current => ({
+      ...current,
+      registeredSpeciesIds,
+      discoveryOrder: registeredSpeciesIds,
+    }));
+  },
 });

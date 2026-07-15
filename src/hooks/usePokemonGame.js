@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { GEN_RANGES } from '../../scripts/utils.js';
 import { ACV } from '../../scripts/achievements-logic.js';
 import { createPokemonNameIndex, resolveGuessTranscript } from '../domain/discovery/resolvePokemonGuess.ts';
+import { toLegacyPokemonList } from '../domain/catalog/pokemonCatalogModel.ts';
 import { formatDex, playSuccessTone, sleep } from '../lib/pokemon.js';
 import { getPokemonSpecial, matchSecretCommand, SPECIAL_REVEALS, SPECIAL_TIMING } from '../lib/pokemonSpecials.js';
-import { fetchPokemonCatalog } from '../services/pokemonCatalog.ts';
+import { LOCAL_POKEMON_CATALOG, loadPokemonCatalog } from '../services/pokemonCatalog.ts';
 import { processPostDiscovery } from '../services/postDiscovery.ts';
 import { browserDiscoveryStore } from '../store/browserDiscoveryStore.ts';
+import { getBrowserPokeVoiceSave } from '../store/browserPokeVoiceSaveStore.ts';
 import { useLegacyEasterEggState } from './useLegacyEasterEggState.ts';
 import { useLegacyPreferences } from './useLegacyPreferences.ts';
 import { usePokemonCardNavigation } from './usePokemonCardNavigation.ts';
@@ -17,7 +19,8 @@ const GIMMIGHOUL_EVOLUTION_COINS = 999;
 const GHOLDENGO_ID = 1000;
 
 export function usePokemonGame() {
-  const [allPokemon, setAllPokemon] = useState([]);
+  const [pokemonCatalog, setPokemonCatalog] = useState(() => [...LOCAL_POKEMON_CATALOG]);
+  const allPokemon = useMemo(() => toLegacyPokemonList(pokemonCatalog), [pokemonCatalog]);
   const [loadingError, setLoadingError] = useState('');
   const discoverySnapshot = useSyncExternalStore(
     browserDiscoveryStore.subscribe,
@@ -91,8 +94,8 @@ export function usePokemonGame() {
     const controller = new AbortController();
     async function loadPokemonList() {
       try {
-        const all = await fetchPokemonCatalog({ signal: controller.signal });
-        if (alive) setAllPokemon(all);
+        const result = await loadPokemonCatalog({ signal: controller.signal });
+        if (alive) setPokemonCatalog(result.records);
       } catch (error) {
         if (error?.name === 'AbortError') return;
         console.error(error);
@@ -100,7 +103,11 @@ export function usePokemonGame() {
       }
     }
     loadPokemonList();
-    ACV.startRun({ durationSec: null });
+    const persistedSave = getBrowserPokeVoiceSave();
+    ACV.startRun({
+      durationSec: persistedSave.activeModeSession?.durationSec ?? null,
+      runId: persistedSave.pokedexRun.runId,
+    });
     return () => {
       alive = false;
       controller.abort();
@@ -244,6 +251,7 @@ export function usePokemonGame() {
 
   return {
     allPokemon,
+    pokemonCatalog,
     audioBlocked,
     cardRefs,
     cardSize,

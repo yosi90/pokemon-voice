@@ -62,3 +62,11 @@ export async function mockPokemonApi(page) {
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
   });
 }
+
+export async function mockPokemonApiUnavailable(page) {
+  await page.route('https://pokeapi.co/api/v2/**', route => route.fulfill({
+    status: 503,
+    contentType: 'application/json',
+    body: '{}',
+  }));
+}

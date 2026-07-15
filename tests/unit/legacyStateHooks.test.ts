@@ -22,7 +22,7 @@ describe('adaptadores de persistencia legacy', () => {
     expect(localStorage.getItem(LS_CARD_SCALE)).toBe('160');
   });
 
-  it('encadena cambios de easter eggs con una referencia síncrona y permite resetear', () => {
+  it('encadena cambios de easter eggs y los conserva al reiniciar la run', () => {
     const { result } = renderHook(() => useLegacyEasterEggState());
 
     act(() => {
@@ -34,7 +34,7 @@ describe('adaptadores de persistencia legacy', () => {
     expect(result.current.getEasterEggState().meowthCoins).toBe(2);
 
     act(() => result.current.resetEasterEggProgress());
-    expect(result.current.easterEggState.meowthCoins).toBe(0);
-    expect(localStorage.getItem('pokevoice-easter-eggs-v1')).toBeNull();
+    expect(result.current.easterEggState.meowthCoins).toBe(2);
+    expect(JSON.parse(localStorage.getItem('pokevoice-easter-eggs-v1') || '{}').meowthCoins).toBe(2);
   });
 });

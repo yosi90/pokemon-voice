@@ -3,7 +3,7 @@ import { GEN_RANGES } from '../../scripts/utils.js';
 import { CARD_SIZE_MAX, CARD_SIZE_MIN } from '../lib/constants.js';
 import { formatDex } from '../lib/pokemon.js';
 
-export function SecondaryControlsMenu({ selectedGens, cardSize, imageStyle, onCardSize, onImageStyle, onToggleGen, onReset }) {
+export function SecondaryControlsMenu({ selectedGens, cardSize, imageStyle, onCardSize, onDeleteAll, onImageStyle, onToggleGen, onReset }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -79,6 +79,9 @@ export function SecondaryControlsMenu({ selectedGens, cardSize, imageStyle, onCa
         </fieldset>
         <button className="btn danger floating-reset-mobile" type="button" onClick={onReset}>
           Reiniciar progreso
+        </button>
+        <button className="btn danger" type="button" onClick={onDeleteAll}>
+          Borrar todos los datos
         </button>
         <div className="gens" id="gens">
           {Object.keys(GEN_RANGES).map(Number).map(gen => (

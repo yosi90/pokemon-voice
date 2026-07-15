@@ -21,7 +21,8 @@ export interface AchievementDefinitionV2 {
 export interface PermanentAchievementRecordV1 extends VersionedContractV1 {
   achievementId: StableId;
   unlockedAt: ISODateString;
-  domain: AchievementDomain;
+  /** Ausente únicamente en registros legacy cuya procedencia no puede inferirse. */
+  domain?: AchievementDomain;
   originRunId?: StableId;
   originModeId?: StableId;
 }

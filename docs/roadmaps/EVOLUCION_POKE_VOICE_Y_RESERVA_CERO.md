@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0, 1 y 2 completados; siguiente trabajo previsto en Hito 3.
+- Estado: Hitos 0, 1, 2 y 3 completados; siguiente trabajo previsto en Hito 4.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -107,21 +107,44 @@ Séptima entrega implementada el 15 de julio de 2026. El antiguo `styles.css` de
 
 ## Hito 3 — Catálogo, runs y persistencia versionada
 
-- [ ] Incluir un catálogo local mínimo para arrancar sin depender de PokeAPI.
-- [ ] Encapsular PokeAPI en un servicio con caché, validación y fallback.
-- [ ] Separar el concepto de especie, forma y entrada de Pokédex.
-- [ ] Separar el estado en `PokedexRunStateV1` y `PokeDiscoverStateV1`.
-- [ ] Diseñar la migración desde las claves actuales sin forzar un reset.
-- [ ] Conservar descubrimientos, generaciones, tamaño de cartas, logros y easter eggs existentes.
-- [ ] Migrar los Pokémon descubiertos actuales como la run inicial y los easter eggs a PokeDiscover.
-- [ ] Recuperar correctamente un contrarreloj al recargar.
-- [ ] Cerrar como finalizado un contrarreloj que haya caducado durante la ausencia.
-- [ ] Añadir un ledger de recompensas con identificadores estables y pago único.
-- [ ] Crear `startNewPokedexRun({ sourceModeId })` para reset manual y modos que lo requieran.
-- [ ] Sustituir el uso normal de `ACV.resetAllPersistent()` por un reset exclusivo de run.
-- [ ] Bloquear el reset de Pokédex mientras haya una expedición activa.
-- [ ] Mostrar antes del reset normal qué se vacía y qué conserva PokeDiscover.
-- [ ] Crear un borrado total separado con confirmación reforzada.
+- [x] Incluir un catálogo local mínimo para arrancar sin depender de PokeAPI.
+- [x] Encapsular PokeAPI en un servicio con caché, validación y fallback.
+- [x] Separar el concepto de especie, forma y entrada de Pokédex.
+- [x] Separar el estado en `PokedexRunStateV1` y `PokeDiscoverStateV1`.
+- [x] Diseñar la migración desde las claves actuales sin forzar un reset.
+- [x] Conservar descubrimientos, generaciones, tamaño de cartas, logros y easter eggs existentes.
+- [x] Migrar los Pokémon descubiertos actuales como la run inicial y los easter eggs a PokeDiscover.
+- [x] Recuperar correctamente un contrarreloj al recargar.
+- [x] Cerrar como finalizado un contrarreloj que haya caducado durante la ausencia.
+- [x] Añadir un ledger de recompensas con identificadores estables y pago único.
+- [x] Crear `startNewPokedexRun({ sourceModeId })` para reset manual y modos que lo requieran.
+- [x] Sustituir el uso normal de `ACV.resetAllPersistent()` por un reset exclusivo de run.
+- [x] Bloquear el reset de Pokédex mientras haya una expedición activa.
+- [x] Mostrar antes del reset normal qué se vacía y qué conserva PokeDiscover.
+- [x] Crear un borrado total separado con confirmación reforzada.
+
+Primera entrega implementada el 15 de julio de 2026. La aplicación incluye localmente las 1.010 entradas `{id, name}` que ya soportaba, por lo que la Pokédex y el reconocimiento de nombres arrancan de inmediato sin esperar a PokeAPI. `pokemonCatalog.ts` valida la respuesta remota, guarda una caché versionada y aplica la prioridad red → caché → catálogo local; una caché corrupta se ignora sin afectar al progreso. La red externa sigue actualizando el catálogo, pero ya no decide si el juego puede arrancar. Las pruebas unitarias cubren las tres fuentes y Playwright verifica el modo sin PokeAPI en escritorio y móvil.
+
+Segunda entrega implementada el 15 de julio de 2026. `pokemonCatalogModel.ts` normaliza cada elemento en una identidad de especie, una forma por defecto y una entrada de Pokédex nacional con IDs estables independientes. El hook conserva ese catálogo normalizado y deriva la antigua lista `{id, name}` únicamente para los componentes todavía no migrados, evitando cambiar la interfaz durante esta fase. La caché plana v1 se lee como registros normalizados y las escrituras nuevas usan v2; se descartan relaciones incoherentes entre especie, forma y entrada. Las pruebas cubren identidades, proyección compatible, validación y round-trip de ambas versiones.
+
+Tercera entrega implementada el 15 de julio de 2026. `pokevoice-save-v1` reúne por primera vez la run reiniciable, PokeDiscover, preferencias y la sesión de modo activa bajo contratos versionados. La migración idempotente conserva la Pokédex actual como run inicial, fechas y procedencia fiable de logros, generaciones, tamaño de cartas y cualquier estado JSON de easter eggs; las claves antiguas permanecen en escritura dual durante la transición. Los logros sin dominio histórico siguen sin inventar procedencia. Iniciar una run ya no llama a `ACV.resetAllPersistent()` ni borra logros o easter eggs, y el contrarreloj conserva su `runId`, continúa tras recargar y muestra el resumen si caducó durante la ausencia. Las pruebas cubren datos migrados, corruptos e idempotencia, además de recuperación y caducidad en escritorio y móvil.
+
+Cuarta entrega implementada el 15 de julio de 2026. `rewardLedger.ts` aplica lotes de experiencia, PD, herramientas, objetos clave, permisos y cosméticos de forma atómica; un `originId` ya cobrado devuelve su entrada original sin volver a pagar, incluso después de reiniciar la Pokédex. El contrato distingue ahora herramientas y objetos clave para que el destino de inventario no sea ambiguo. La raíz puede representar una expedición activa y rechaza cualquier nueva run mientras exista. El borrado total queda separado del reset normal, exige escribir `BORRAR`, enumera toda la metaprogresión eliminada y conserva las cachés técnicas ajenas a la partida. Hito 3 cerrado con cobertura unitaria y de navegador.
+
+### Formas y apariencias desbloqueables
+
+- El sistema será genérico para todo el catálogo y estará dirigido por datos; no habrá listas especiales limitadas a Pikachu, Raichu ni a los ejemplos iniciales.
+- La especie será propietaria del registro principal y de los cuatro campos de investigación compartidos.
+- Una forma canónica representará una variación biológica o funcional: regional, alternativa o temporal de combate. Tendrá `formId`, tipos, capacidades y posibles requisitos de acompañante propios, pero seguirá vinculada a la ficha de su especie. Aquí entran, entre otras, formas de Alola, Galar, Hisui y Paldea, además de formas alternativas curadas como Rotom, Unown, Mega o Gigamax cuando correspondan.
+- Una apariencia representará un diseño visual sobre una forma existente: diferencia de género, disfraz, atuendo, versión estacional o evento. Tendrá `appearanceId` propio, pero no contará como especie ni forma biológica adicional.
+- Los Pokémon Paradoja, convergentes y otras contrapartes que tengan número propio de Pokédex seguirán siendo especies independientes. Se enlazarán mediante `PokemonSpeciesRelationV1` para mostrar su relación narrativa, sin convertirlos falsamente en formas.
+- Formas y apariencias podrán descubrirse mediante misiones secundarias, encuentros opcionales, secretos o estímulos declarativos de un mapa.
+- El primer encuentro guardará de forma permanente su procedencia —mapa, misión y encuentro— en PokeDiscover. Repetirlo no duplicará recompensas.
+- Resetear la Pokédex conservará formas y apariencias descubiertas, aunque permanecerán ocultas en la ficha hasta volver a registrar la especie correspondiente.
+- La ficha de detalle mostrará una galería de formas y apariencias descubiertas, junto a su procedencia y notas asociadas.
+- Un dato observado sobre una forma o apariencia podrá añadir una nota específica, pero solo completará uno de los cuatro campos cuando el `ResearchFactV1` de la especie lo declare.
+- El editor y los encuentros distinguirán `speciesId`, `formId` y `appearanceId`; nunca se creará un Pokémon ficticio separado para representar un atuendo.
+- Ejemplos previstos, no exclusivos: una misión en islas podrá descubrir a Raichu de Alola; un secreto de playa activado bajo estímulos concretos podrá hacer aparecer a Pikachu surfista como encuentro extra de evento; otras misiones podrán desbloquear cualquier forma o apariencia declarada en el catálogo.
 
 ### Contrato inicial de `PokedexRunStateV1`
 
@@ -137,6 +160,8 @@ Séptima entrega implementada el 15 de julio de 2026. El antiguo `styles.css` de
 - Nivel y experiencia de entrenador.
 - Puntos de Descubrimiento bajo la clave interna `discoveryPoints`.
 - Investigación por especie.
+- Formas canónicas descubiertas y su primera procedencia.
+- Apariencias o variantes de evento descubiertas y su primera procedencia.
 - Investigación persistente cuya visibilidad depende del registro en la run actual.
 - Cuaderno de campo con pistas conocidas.
 - Misiones separadas del estado persistente de cada mapa.
@@ -181,6 +206,8 @@ Séptima entrega implementada el 15 de julio de 2026. El antiguo `styles.css` de
 - [ ] Implementar el estado `desconocido`: número y datos clasificados, sin revelar nombre ni imagen.
 - [ ] Implementar el estado `registrado`: nombre, imagen y cry tras nombrarlo por voz o texto.
 - [ ] Separar el eje de registro (`desconocido`/`registrado`) del eje de investigación (`no-avistado`/`avistado`/`parcial`/`completo`).
+- [ ] Mostrar una galería de formas y apariencias descubiertas sin convertirlas en especies independientes.
+- [ ] Mostrar la primera procedencia y las notas específicas de cada forma o apariencia.
 - [ ] Impedir que registrar un Pokémon mítico equivalga a avistarlo o cumpla sus condiciones narrativas.
 - [ ] Implementar el estado `investigado`: ficha completada mediante aventuras.
 - [ ] Mostrar campos corruptos en Pokémon registrados pero no investigados.
@@ -462,6 +489,7 @@ Construir antes del juego de aventura una aplicación web independiente para cen
 - [ ] Crear una matriz especie × campo de investigación × mapa.
 - [ ] Advertir sobre especies completadas demasiado pronto y campos sin contenido planificado.
 - [ ] Asociar diálogos, objetivos, especies e interacciones de investigación.
+- [ ] Configurar encuentros de una forma concreta o de una apariencia de evento vinculada a una forma.
 - [ ] Validar referencias rotas, IDs duplicados, salidas inaccesibles y capas obligatorias.
 - [ ] Detectar dependencias circulares y requisitos de progreso imposibles.
 - [ ] Advertir si una interacción de voz obligatoria carece de fallback accesible o de pistas obtenibles.
@@ -525,6 +553,7 @@ Un mapa creado completamente en la sideweb se exporta, valida y ejecuta en Poke-
 - [ ] Ejecutar prompts contextuales y secuencias automáticas de acompañante desde datos exportados por el editor.
 - [ ] Resolver capacidades narrativas de movimientos, como `rock-tomb`, desde los mismos requisitos declarativos.
 - [ ] Guardar inmediatamente observaciones, secretos y recompensas.
+- [ ] Guardar una sola vez el descubrimiento y procedencia de formas y apariencias encontradas.
 - [ ] Guardar pistas del cuaderno, conversaciones únicas, coleccionables e intentos elegibles de encuentros raros.
 - [ ] Guardar pistas de expresiones conocidas, secretos resueltos y el método de primera resolución.
 - [ ] Permitir abandonar y regresar sin perder progreso.
@@ -587,6 +616,8 @@ Los cuatro campos no tienen que estar disponibles en Reserva Cero. Cada mapa pod
 - [ ] Verificar que la migración conserva logros, fechas y la Pokédex actual como run inicial.
 - [ ] Verificar que solo el borrado total elimina PokeDiscover y logros permanentes.
 - [ ] Verificar que registrar Mew no lo marca como avistado ni satisface sus requisitos narrativos.
+- [ ] Verificar que descubrir a Raichu de Alola amplía la ficha de Raichu sin crear una especie independiente.
+- [ ] Verificar que Pikachu surfista se guarda como apariencia de evento, sobrevive al reset y no duplica recompensas.
 - [ ] Verificar que un Pokémon normal registrado y con nivel suficiente puede acompañar.
 - [ ] Verificar que un requisito secreto se desbloquea sin revelar previamente su condición exacta.
 - [ ] Verificar que una secuencia automática de acompañante se ejecuta y recompensa una sola vez.

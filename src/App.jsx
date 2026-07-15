@@ -13,6 +13,7 @@ import { SecondaryControlsMenu } from './components/Topbar.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
 import { ACV } from '../scripts/achievements-logic.js';
+import { deleteAllBrowserPokeVoiceData } from './store/browserPokeVoiceSaveStore.js';
 
 function formatTimer(left) {
   const safe = Math.max(0, Math.round(left || 0));
@@ -34,9 +35,16 @@ export default function App() {
   });
 
   const resetWithConfirm = () => {
-    if (window.confirm('Esto borrará tu progreso y logros. ¿Seguro?')) {
+    if (window.confirm('Esto iniciará una nueva run de Pokédex: se vaciarán los Pokémon registrados, el orden, las rachas y el acompañante equipado. Conservarás PokeDiscover completo: logros, investigación, mapas, nivel, PD, herramientas y objetos. ¿Continuar?')) {
       game.resetProgress();
     }
+  };
+
+  const deleteAllWithConfirm = () => {
+    const confirmation = window.prompt('BORRADO TOTAL: se eliminarán la Pokédex actual y PokeDiscover completo, incluidos logros, investigación, mapas, secretos, nivel, PD, herramientas, objetos, permisos, cosméticos y preferencias. Esta acción no se puede deshacer. Escribe BORRAR para continuar.');
+    if (confirmation !== 'BORRAR') return;
+    deleteAllBrowserPokeVoiceData();
+    window.location.reload();
   };
 
   const startTimed = () => {
@@ -123,6 +131,7 @@ export default function App() {
         cardSize={game.cardSize}
         imageStyle={imageStyle}
         onCardSize={game.setCardSize}
+        onDeleteAll={deleteAllWithConfirm}
         onImageStyle={setImageStyle}
         onToggleGen={game.toggleGen}
         onReset={resetWithConfirm}

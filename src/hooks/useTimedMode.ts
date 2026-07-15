@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ACV } from '../../scripts/achievements-logic.js';
 import { createTimedRun, getTimedRunRemaining, type TimedRunState } from '../domain/modes/timedMode.js';
+import { TIMED_COLLECTOR_MODE_ID } from '../domain/progress/pokeVoiceSave.js';
 import { TIMER_KEY } from '../lib/constants.js';
+import {
+  getBrowserPokeVoiceSave,
+  setBrowserActiveModeSession,
+  startNewPokedexRun,
+} from '../store/browserPokeVoiceSaveStore.js';
 
-const resetLegacyAchievements = ACV.resetAllPersistent as (options: {
-  restartRun: boolean;
+const resetAchievementRun = ACV.resetRun as (options: {
   durationSec: number | null;
-}) => void;
+}) => string;
 
 interface TimedResults {
   discovered: number;
@@ -26,10 +31,20 @@ export function useTimedMode({
   resetEasterEggProgress,
   showToast,
 }: TimedModeOptions) {
-  const [timer, setTimer] = useState<TimedRunState | null>(null);
+  const [timer, setTimer] = useState<TimedRunState | null>(() => {
+    const session = getBrowserPokeVoiceSave().activeModeSession;
+    if (!session || session.modeId !== TIMED_COLLECTOR_MODE_ID) return null;
+    const startedAt = Date.parse(session.startedAt);
+    if (!Number.isFinite(startedAt)) return null;
+    return createTimedRun(session.durationSec, startedAt);
+  });
   const [timedResults, setTimedResults] = useState<TimedResults | null>(null);
   const timerIntervalRef = useRef<number | undefined>(undefined);
-  const runDiscoveredRef = useRef(new Set<number>());
+  const runDiscoveredRef = useRef(new Set<number>(
+    getBrowserPokeVoiceSave().activeModeSession
+      ? getBrowserPokeVoiceSave().pokedexRun.registeredSpeciesIds
+      : [],
+  ));
 
   useEffect(() => {
     window.getRemainingSeconds = () => timer ? getTimedRunRemaining(timer) : null;
@@ -45,6 +60,7 @@ export function useTimedMode({
       if (left <= 0) {
         window.clearInterval(timerIntervalRef.current);
         localStorage.removeItem(TIMER_KEY);
+        setBrowserActiveModeSession(undefined);
         const ids = ACV.getRunUnlocks ? ACV.getRunUnlocks() : [];
         const achievements = ids.map((id: string) => ACV.getAchievementMeta?.(id)?.title || id);
         setTimedResults({ discovered: runDiscoveredRef.current.size, achievements });
@@ -62,9 +78,14 @@ export function useTimedMode({
     runDiscoveredRef.current.clear();
     resetRevealEffects();
     resetEasterEggProgress();
-    resetLegacyAchievements({ restartRun: true, durationSec });
+    const runId = resetAchievementRun({ durationSec });
+    startNewPokedexRun({
+      runId,
+      ...(durationSec ? { sourceModeId: TIMED_COLLECTOR_MODE_ID } : {}),
+    });
     setTimer(null);
     localStorage.removeItem(TIMER_KEY);
+    setBrowserActiveModeSession(undefined);
     setTimedResults(null);
   }, [resetDiscovery, resetEasterEggProgress, resetRevealEffects]);
 
@@ -74,7 +95,7 @@ export function useTimedMode({
   }, [resetSharedRunState, showToast]);
 
   const startTimed = useCallback(() => {
-    const confirmed = window.confirm('Vas a iniciar el modo contrarreloj de 2:00. Esto reiniciará cartas y logros. ¿Continuar?');
+    const confirmed = window.confirm('Vas a iniciar el modo contrarreloj de 2:00. Esto iniciará una nueva run de Pokédex, pero conservará tus logros y PokeDiscover. ¿Continuar?');
     if (!confirmed) return false;
 
     resetSharedRunState(120);
@@ -84,6 +105,13 @@ export function useTimedMode({
       startedAt: nextTimer.startedAt,
       durationSec: nextTimer.durationSec,
     }));
+    setBrowserActiveModeSession({
+      schemaVersion: 1,
+      modeId: TIMED_COLLECTOR_MODE_ID,
+      runId: getBrowserPokeVoiceSave().pokedexRun.runId,
+      startedAt: new Date(nextTimer.startedAt).toISOString(),
+      durationSec: nextTimer.durationSec,
+    });
     showToast('Modo contrarreloj iniciado.', 'info');
     return true;
   }, [resetSharedRunState, showToast]);

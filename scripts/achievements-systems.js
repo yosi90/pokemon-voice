@@ -390,10 +390,11 @@ export function createRunContext(getSelectedGens) {
 
     // API de ciclo de vida de la run
     function startRun({
-        durationSec = null
+        durationSec = null,
+        runId = createRunId()
     } = {}) {
         Object.assign(state, {
-            runId: createRunId(),
+            runId,
             startAt: performance.now(),
             durationSec,
             guessedIds: new Set(),

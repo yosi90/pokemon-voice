@@ -21,6 +21,7 @@ import {
 import {
     createBrowserAchievementStorage
 } from '../src/services/achievementStorage.ts';
+import { syncBrowserAchievements } from '../src/store/browserPokeVoiceSaveStore.ts';
 
 export { achievementProgress } from '../src/store/achievementProgressStore.ts';
 
@@ -33,7 +34,9 @@ const achievementStorage = createBrowserAchievementStorage(() => localStorage);
 
 function saveUnlockState() {
     try {
-        achievementStorage.save(achievementProgress.getSnapshot().permanentRecords);
+        const records = achievementProgress.getSnapshot().permanentRecords;
+        achievementStorage.save(records);
+        syncBrowserAchievements(records);
     } catch (e) {
         console.warn('No se pudo guardar logros:', e);
     }
@@ -106,16 +109,18 @@ function resetRunState(clearPersistent = false) {
     }
 }
 
-function restartEngine(durationSec = null) {
+function restartEngine(durationSec = null, runId) {
     _runToken++;
     _lastDurationSec = durationSec;
     engine.startRun({
-        durationSec
+        durationSec,
+        ...(runId ? { runId } : {})
     });
     achievementProgress.startRun({
         runId: engine.ctx.runId,
         startedAt: Date.now()
     });
+    return engine.ctx.runId;
 }
 
 function awardAchievement(a) {
@@ -156,11 +161,12 @@ async function unlockById(id) {
 export const ACV = {
     // Inicia una nueva run (reinicia contadores/rachas/sets efímeros, carga persistido una vez)
     startRun({
-        durationSec = null
+        durationSec = null,
+        runId
     } = {}) {
         // Carga persistente una sola vez y pinta lo que haya.
         loadUnlockStateOnce();
-        restartEngine(durationSec);
+        restartEngine(durationSec, runId);
         resetRunState(false); // false = NO borrar logros persistentes
     },
 
@@ -170,7 +176,7 @@ export const ACV = {
         // si no te pasan duration, reutiliza el último
         const dur = (durationSec !== undefined) ? durationSec : _lastDurationSec;
         // reinicia SOLO el estado de la run, no borra logros persistidos
-        restartEngine(dur || null);
+        return restartEngine(dur || null);
         resetRunState(false);
     },
 

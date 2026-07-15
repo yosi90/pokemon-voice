@@ -45,6 +45,8 @@ export interface MapVariantV1 {
 export interface RareEncounterDefinitionV1 {
   encounterId: StableId;
   speciesId: PokemonSpeciesId;
+  formId?: PokemonFormId;
+  appearanceId?: StableId;
   requirement: RequirementExpressionV1;
   baseProbability: number;
   guaranteedEligibleVisit: number;
@@ -89,6 +91,8 @@ export interface MissionDefinitionV1 extends VersionedContractV1 {
 export interface ResearchFactV1 extends VersionedContractV1 {
   factId: StableId;
   speciesId: PokemonSpeciesId;
+  formId?: PokemonFormId;
+  appearanceId?: StableId;
   field: ResearchFieldKey;
   mapId: StableId;
   interactionId: StableId;

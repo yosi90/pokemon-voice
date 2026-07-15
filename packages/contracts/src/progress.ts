@@ -42,6 +42,27 @@ export interface CompanionAccessRecordV1 extends VersionedContractV1 {
   originRunId?: StableId;
 }
 
+export interface FormDiscoveryRecordV1 extends VersionedContractV1 {
+  formId: PokemonFormId;
+  speciesId: PokemonSpeciesId;
+  discoveredAt: ISODateString;
+  noteIds: StableId[];
+  originMapId?: StableId;
+  originMissionId?: StableId;
+  originEncounterId?: StableId;
+}
+
+export interface AppearanceDiscoveryRecordV1 extends VersionedContractV1 {
+  appearanceId: StableId;
+  formId: PokemonFormId;
+  speciesId: PokemonSpeciesId;
+  discoveredAt: ISODateString;
+  noteIds: StableId[];
+  originMapId?: StableId;
+  originMissionId?: StableId;
+  originEncounterId?: StableId;
+}
+
 export interface AdventureMapProgressV1 extends VersionedContractV1 {
   mapId: StableId;
   freeExpeditionUnlocked: boolean;
@@ -68,6 +89,8 @@ export interface PokeDiscoverStateV1 extends VersionedContractV1 {
   trainerExperience: number;
   discoveryPoints: number;
   sightings: PokemonSpeciesId[];
+  discoveredForms: Record<PokemonFormId, FormDiscoveryRecordV1>;
+  discoveredAppearances: Record<StableId, AppearanceDiscoveryRecordV1>;
   researchBySpecies: Record<PokemonSpeciesId, SpeciesResearchProgressV1>;
   mapProgress: Record<StableId, AdventureMapProgressV1>;
   worldFlags: Record<StableId, JsonValue>;
@@ -79,4 +102,33 @@ export interface PokeDiscoverStateV1 extends VersionedContractV1 {
   rewardLedger: Record<StableId, RewardLedgerEntryV1>;
   activeMissionIds: StableId[];
   cosmeticPreferences: Record<StableId, StableId>;
+}
+
+export interface PokeVoicePreferencesV1 extends VersionedContractV1 {
+  selectedGenerationIds: number[];
+  cardSize: number;
+}
+
+export interface ActiveModeSessionV1 extends VersionedContractV1 {
+  modeId: StableId;
+  runId: StableId;
+  startedAt: ISODateString;
+  durationSec: number;
+}
+
+export interface ActiveExpeditionSessionV1 extends VersionedContractV1 {
+  mapId: StableId;
+  enteredAt: ISODateString;
+  missionId?: StableId;
+  companionFormId?: PokemonFormId;
+  toolId?: StableId;
+}
+
+/** Raíz transaccional del guardado local. Las cachés de catálogo y audio no forman parte de ella. */
+export interface PokeVoiceSaveV1 extends VersionedContractV1 {
+  pokedexRun: PokedexRunStateV1;
+  pokeDiscover: PokeDiscoverStateV1;
+  preferences: PokeVoicePreferencesV1;
+  activeModeSession?: ActiveModeSessionV1;
+  activeExpeditionSession?: ActiveExpeditionSessionV1;
 }
