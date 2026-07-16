@@ -8,6 +8,10 @@ import type {
   PokeVoiceSaveV1,
 } from '../../../packages/contracts/src/index.js';
 import { TIMED_COLLECTOR_MODE_ID } from '../modes/modeDefinitions.js';
+import {
+  createNarrativeProgressV1,
+  createProfessorIntroductionStateV1,
+} from '../narrative/professorIntroduction.js';
 
 export { TIMED_COLLECTOR_MODE_ID } from '../modes/modeDefinitions.js';
 
@@ -155,6 +159,8 @@ export function createPokeDiscoverStateV1({
 }: Partial<Pick<PokeDiscoverStateV1, 'achievements' | 'worldFlags' | 'globalCounters'>> = {}): PokeDiscoverStateV1 {
   return {
     schemaVersion: 1,
+    introduction: createProfessorIntroductionStateV1(),
+    narrativeProgress: createNarrativeProgressV1(),
     trainerLevel: 1,
     trainerExperience: 0,
     discoveryPoints: 0,

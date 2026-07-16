@@ -3,6 +3,7 @@ import type {
   RewardDefinitionV1,
   RewardLedgerEntryV1,
 } from '../../../packages/contracts/src/index.js';
+import { getTrainerLevelForExperience } from '../trainer/trainerLevel.js';
 
 export interface RewardClaimRequest {
   originId: string;
@@ -112,6 +113,7 @@ export function claimPokeDiscoverRewards(
     entry,
     state: {
       ...current,
+      trainerLevel: getTrainerLevelForExperience(trainerExperience),
       trainerExperience,
       discoveryPoints,
       inventory,

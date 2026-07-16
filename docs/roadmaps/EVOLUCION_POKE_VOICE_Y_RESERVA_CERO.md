@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0, 1, 2, 3, 4, 5 y 6 completados; Hito 7 es el siguiente.
+- Estado: Hitos 0, 1, 2, 3, 4, 5 y 6 completados; Hito 7 en curso.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -296,7 +296,22 @@ Octava entrega implementada el 16 de julio de 2026. El Coleccionista comienza co
 
 ---
 
-## Hito 7 — Nivel de entrenador, acompañantes y obediencia
+## Hito 7 — Introducción de PokeDiscover, nivel de entrenador y acompañantes
+
+### Entrada narrativa a PokeDiscover
+
+- PokeDiscover no será un modo del drawer, sino el programa de investigación permanente dirigido por el profesor Alcanfor.
+- La primera ficha de una especie registrada presentará a Alcanfor; si el jugador no abre fichas, el quinto descubrimiento forzará la invitación.
+- Las partidas anteriores no serán interrumpidas al cargar: la presentación esperará a la siguiente ficha registrada o al siguiente descubrimiento nuevo.
+- Una escena narrativa solo aparecerá en un momento seguro y permanecerá encolada mientras exista un modo, expedición, revelación, modal o conversación incompatible.
+- Rechazar tres veces aplazará la invitación hasta el siguiente descubrimiento nuevo. Aceptar será permanente entre runs y no concederá por sí solo `first-mission`.
+- Tras aceptar, una hoja de alcanforero abrirá el centro de encargos fuera del selector de modos.
+- Antes de completar la adhesión, Alcanfor mostrará a Achaman y Guayota para elegir protagonista; sus nombres canónicos serán valores iniciales editables.
+- El protagonista y su nombre pertenecen a PokeDiscover, sobreviven a resets de Pokédex y se normalizan al cargar guardados.
+- Las futuras ofertas del profesor y personajes como Porygon-Z reutilizarán el mismo motor declarativo de novela visual.
+- Las escenas narrativas ocultarán completamente la Pokédex y declararán un fondo mediante un ID estable a nivel de secuencia o página.
+- La biblioteca actual reúne 21 fondos para laboratorios, hogares, ciudades, tiendas, centros Pokémon, gimnasios, Liga, costa, playa, lagos, bosques, pastizales, desierto, pantano, cuevas, central eléctrica y pueblo fantasma.
+- Los fondos cuyo archivo use un slug seguro podrán referenciarse directamente mediante ese mismo `backgroundId`; solo los nombres excepcionales necesitarán alias.
 
 ### Reglas cerradas
 
@@ -325,8 +340,22 @@ Octava entrega implementada el 16 de julio de 2026. El Coleccionista comienza co
 
 ### Checklist
 
-- [ ] Añadir experiencia acumulada y nivel de entrenador a `PokeDiscoverStateV1`.
-- [ ] Definir una tabla configurable de umbrales de nivel.
+- [x] Crear contratos declarativos para secuencias, páginas, retratos, elecciones y acciones narrativas.
+- [x] Persistir introducción, escenas pendientes, escena activa y secuencias completadas dentro de PokeDiscover.
+- [x] Migrar partidas existentes sin presentar automáticamente al profesor durante la carga.
+- [x] Activar la invitación desde la primera ficha registrada o el quinto descubrimiento.
+- [x] Implementar las tres negativas, el aplazamiento y la reaparición tras el siguiente descubrimiento.
+- [x] Crear la escena accesible de novela visual con typewriter acelerable y movimiento reducido.
+- [x] Bloquear la cuadrícula y ocultar navegación, consola, footer, cajones y avisos durante la escena.
+- [x] Añadir la hoja de Alcanfor con transparencia real y el modal de encargos fuera del drawer de modos.
+- [x] Integrar los retratos definitivos de Alcanfor para `neutral`, `speaking` e `idea`.
+- [x] Integrar a Achaman y Guayota con Horquilla, elección visual y orientación hacia el centro.
+- [x] Persistir protagonista y nombre editable con valores iniciales `Achaman` y `Guayota`.
+- [x] Ofrecer la ficha de protagonista desde el botón de Poke-Discover a adhesiones antiguas, sin interrumpir la carga.
+- [x] Sustituir la cuadrícula visible durante diálogos por fondos narrativos declarativos y registrar la primera biblioteca de escenarios.
+- [x] Corregir la zona segura de nombres y botones de protagonista para que nunca quede bajo la caja de diálogo.
+- [x] Añadir experiencia acumulada y nivel de entrenador a `PokeDiscoverStateV1`.
+- [x] Definir una tabla configurable de umbrales de nivel.
 - [ ] Crear `CompanionRequirementV1` con nivel mínimo, descubrimientos temáticos, flags de historia y condiciones compuestas.
 - [ ] Crear `CompanionAccessRecordV1` para cualificaciones permanentes que sobreviven a resets.
 - [ ] Añadir a `CompanionRequirementV1` la visibilidad `public`, `hinted` o `secret` y su texto narrativo de rechazo.
@@ -341,6 +370,14 @@ Octava entrega implementada el 16 de julio de 2026. El Coleccionista comienza co
 - [ ] Aplicar `first-mission` como prerrequisito global salvo para Pikachu e iniciales base.
 - [ ] Añadir mensajes y animaciones de rechazo no punitivas.
 - [ ] Registrar estadísticas de acompañantes elegidos para detectar opciones dominantes.
+
+Primera entrega implementada el 16 de julio de 2026. La experiencia acumulada de PokeDiscover pasa a ser la única fuente de verdad del nivel de entrenador: una tabla configurable de cien umbrales deriva el nivel al cobrar cualquier recompensa de experiencia y lo limita al nivel 100. La curva inicial es deliberadamente sustituible para poder balancearla con las expediciones reales sin cambiar contratos ni guardados. Las partidas raíz anteriores se normalizan y persisten silenciosamente al cargarse, conservando su experiencia y corrigiendo niveles ausentes o incoherentes. Las fronteras de nivel, tablas alternativas, recompensas idempotentes y migración quedan cubiertas por pruebas unitarias.
+
+Segunda entrega implementada el 16 de julio de 2026. PokeDiscover deja de plantearse como modo visible y obtiene una entrada narrativa persistente. Alcanfor interrumpe la primera ficha registrada —cerrándola— o aparece tras el quinto descubrimiento; las partidas veteranas esperan a la siguiente acción y las actividades incompatibles encolan la escena. La conversación declarativa admite typewriter acelerable, teclado, movimiento reducido, tres negativas y aplazamiento. Aceptar conserva la relación entre runs, no concede `first-mission` y añade al dock una hoja de alcanfor que abre el centro de encargos. Los retratos finales usan las poses alegre, parlanchín y explicando para los estados `neutral`, `speaking` e `idea`; sus PNG y el icono se integran con transparencia real, conservando el resto de poses originales como reserva narrativa. El motor guarda secuencias pendientes, activas y completadas para futuras ofertas.
+
+Tercera entrega implementada el 16 de julio de 2026. La adhesión incorpora una ficha de entrenador: Alcanfor presenta visualmente a Achaman y Guayota —esta última junto a Horquilla—, propone sus nombres canónicos y permite editarlos antes de confirmar. El perfil queda en PokeDiscover y no depende de la run de Pokédex. Los guardados que ya habían aceptado antes de existir esta ficha no reciben una interrupción al cargar; el botón Poke-Discover muestra una novedad y abre la selección antes del centro de encargos. Los retratos de saludo se recortan con transparencia real y Guayota se refleja únicamente mediante CSS para que ambos candidatos miren hacia el centro sin duplicar assets.
+
+Cuarta entrega implementada el 16 de julio de 2026. Las escenas dejan de mostrar Pokéballs detrás de personajes y utilizan fondos declarados mediante `backgroundId`, con valor general por secuencia y sobrescritura opcional por página. La introducción usa el laboratorio de Alcanfor y el registro local prepara otros siete escenarios para futuras conversaciones y misiones. La selección reserva una franja segura sobre el diálogo, evitando que nombres o acciones queden ocultos incluso en viewports bajos.
 
 ### Criterio de aceptación
 
@@ -413,6 +450,11 @@ El jugador solo puede entrar con un acompañante registrado en la run actual cuy
 - La corrupción será temporal y reversible en la presentación, mientras que pistas, encuentros y recompensas obtenidos quedarán en PokeDiscover.
 - Una variante corrupta podrá alterar tiles, colisiones controladas, diálogos, encuentros y audio sin duplicar el mapa base.
 - MissingNo y otras anomalías nunca bloquearán la historia principal, borrarán progreso ni causarán pérdidas permanentes.
+- `Corrupción del mundo digital` será una cadena especial oculta que exigirá haberse unido a PokeDiscover y poseer permanentemente `tm:rock-tomb`, en homenaje a los rumores clásicos sobre glitches.
+- Al desbloquearla, Porygon-Z romperá la presentación de la web, hablará mentalmente al jugador y pedirá ayuda para detener la corrupción de MissingNo.
+- Aceptar iniciará directamente el escenario especial; aplazar conservará la oferta pendiente en la hoja de Alcanfor.
+- La confrontación contra MissingNo será narrativa y basada en puzles o anomalías del escenario, sin introducir combate Pokémon convencional.
+- El jardín de Bill y el volcán de Isla Canela quedan registrados como semillas de futuras ofertas especiales de Alcanfor; sus requisitos se definirán al diseñar esos mapas.
 
 ### Interacciones expresivas por voz
 
@@ -584,7 +626,7 @@ Un mapa creado completamente en la sideweb se exporta, valida y ejecuta en Poke-
 - [ ] Crear una guía exacta para los assets que proporcionará el usuario.
 - [ ] Especificar tiles de agua, costa, árboles, hierba alta, caminos, cuevas, interiores, lluvia y obstáculos.
 - [ ] Especificar protagonista y protagonista femenina en cuatro direcciones y ciclos de movimiento.
-- [ ] Especificar profesor en retrato neutro, hablando y teniendo una idea.
+- [x] Especificar e integrar al profesor en retrato neutro, hablando y teniendo una idea.
 - [ ] Especificar NPC aldeano y elementos de suministros.
 - [ ] Especificar Pikachu, Snorlax, Charizard y Charmander en las poses necesarias para sus observaciones.
 - [ ] Relacionar cada pose solicitada con el dato de Pokédex que revelará.

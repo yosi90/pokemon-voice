@@ -111,6 +111,46 @@ describe('guardado raíz y migración legacy', () => {
     expect(createRunId).toHaveBeenCalledTimes(1);
   });
 
+  it('migra partidas raíz anteriores derivando el nivel desde su experiencia conservada', () => {
+    const legacyRoot = loadOrMigratePokeVoiceSave({
+      storage: localStorage,
+      now: () => NOW,
+      createRunId: () => 'pokedex-run:before-levels',
+    }).save;
+    const pokeDiscover = { ...legacyRoot.pokeDiscover } as Partial<typeof legacyRoot.pokeDiscover>;
+    delete pokeDiscover.trainerLevel;
+    pokeDiscover.trainerExperience = 100;
+    localStorage.setItem(POKE_VOICE_SAVE_KEY, JSON.stringify({ ...legacyRoot, pokeDiscover }));
+
+    const result = loadOrMigratePokeVoiceSave({ storage: localStorage });
+
+    expect(result.source).toBe('current');
+    expect(result.save.pokeDiscover).toMatchObject({ trainerExperience: 100, trainerLevel: 3 });
+    expect(JSON.parse(localStorage.getItem(POKE_VOICE_SAVE_KEY) || '{}').pokeDiscover.trainerLevel).toBe(3);
+  });
+
+  it('añade la introducción y el progreso narrativo a partidas raíz anteriores', () => {
+    const oldSave = loadOrMigratePokeVoiceSave({
+      storage: localStorage,
+      now: () => NOW,
+      createRunId: () => 'pokedex-run:before-professor',
+    }).save;
+    const pokeDiscover = { ...oldSave.pokeDiscover } as Partial<typeof oldSave.pokeDiscover>;
+    delete pokeDiscover.introduction;
+    delete pokeDiscover.narrativeProgress;
+    localStorage.setItem(POKE_VOICE_SAVE_KEY, JSON.stringify({ ...oldSave, pokeDiscover }));
+
+    const result = loadOrMigratePokeVoiceSave({ storage: localStorage });
+
+    expect(result.source).toBe('current');
+    expect(result.save.pokeDiscover.introduction).toMatchObject({ status: 'hidden', invitationCount: 0 });
+    expect(result.save.pokeDiscover.narrativeProgress).toEqual({
+      schemaVersion: 1,
+      pendingSequenceIds: [],
+      completedSequenceIds: [],
+    });
+  });
+
   it('conserva un contrarreloj activo ligado a la run migrada', () => {
     const startedAt = NOW - 30_000;
     localStorage.setItem(TIMER_KEY, JSON.stringify({ startedAt, durationSec: 120 }));

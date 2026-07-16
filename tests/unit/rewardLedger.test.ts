@@ -33,6 +33,7 @@ describe('ledger de recompensas de PokeDiscover', () => {
     expect(result.status).toBe('claimed');
     expect(result.state).not.toBe(initial);
     expect(result.state).toMatchObject({
+      trainerLevel: 2,
       trainerExperience: 40,
       discoveryPoints: 25,
       inventory: {
@@ -49,6 +50,23 @@ describe('ledger de recompensas de PokeDiscover', () => {
       missionId: 'mission:first',
       mapId: 'map:zero-reserve',
     });
+  });
+
+  it('deriva el nivel de la experiencia acumulada y no lo altera al repetir el origen', () => {
+    const initial = { ...createPokeDiscoverStateV1(), trainerExperience: 20, trainerLevel: 99 };
+    const first = claimPokeDiscoverRewards(initial, {
+      originId: 'mission:trainer-level-boundary',
+      claimedAt: CLAIMED_AT,
+      rewards: [{ kind: 'trainerExperience', amount: 5 }],
+    });
+    const repeated = claimPokeDiscoverRewards(first.state, {
+      originId: 'mission:trainer-level-boundary',
+      claimedAt: CLAIMED_AT,
+      rewards: [{ kind: 'trainerExperience', amount: 1000 }],
+    });
+
+    expect(first.state).toMatchObject({ trainerExperience: 25, trainerLevel: 2 });
+    expect(repeated.state).toBe(first.state);
   });
 
   it('ignora por completo un origen ya cobrado aunque cambie su declaración', () => {

@@ -121,7 +121,7 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
   );
 }
 
-export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, cardRefs, onOpenDetails, sleepMode, imageStyle, discoveryConsole }) {
+export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, cardRefs, onOpenDetails, sleepMode, imageStyle, discoveryConsole, cinematic = false }) {
   const gridRef = useRef(null);
   usePokeballMotion(gridRef);
 
@@ -131,8 +131,8 @@ export function PokemonGrid({ list, guessed, lastRevealedId, focusedCardId, card
   };
 
   return (
-    <main>
-      <DiscoveryConsole {...discoveryConsole} />
+    <main className={cinematic ? 'pokedex-cinematic-background' : ''} inert={cinematic ? true : undefined}>
+      {!cinematic && <DiscoveryConsole {...discoveryConsole} />}
       <div ref={gridRef} id="grid" className="grid" aria-live="polite">
         {list.map(pokemon => (
           <PokemonBallCard

@@ -2,6 +2,9 @@ export function Dock({
   score,
   remaining,
   onModes,
+  professorAvailable,
+  professorNotification,
+  onProfessor,
   onAchievements,
   controlsOpen,
   onControls,
@@ -18,6 +21,13 @@ export function Dock({
         </div>
         <div className="dock-secondary">
           <div className="dock-secondary-group dock-secondary-group--navigation">
+            {professorAvailable && (
+              <button id="professor-btn" className="btn professor-dock-btn" type="button" onClick={onProfessor} title="Poke-Discover · Profesor Alcanfor" aria-label="Profesor Alcanfor">
+                <img src={`${import.meta.env.BASE_URL}assets/icons/profesor-alcanfor/hoja-alcanforero.png`} alt="" aria-hidden="true" />
+                {professorNotification && <span className="professor-dock-btn__notification" aria-label="Novedad pendiente" />}
+                <span className="nav-action-label">Poke-<wbr />Discover</span>
+              </button>
+            )}
             <button id="modes-btn" className="btn" type="button" onClick={onModes} title="Modos de juego">
               <span className="nav-action-icon" aria-hidden="true">🎮</span>
               <span className="nav-action-label">Modos</span>

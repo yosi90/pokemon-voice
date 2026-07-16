@@ -9,6 +9,8 @@ import type {
 import type { PermanentAchievementRecordV1 } from './achievements.js';
 import type { InventoryStateV1, RewardDefinitionV1 } from './economy.js';
 import type { SpeciesResearchProgressV1 } from './research.js';
+import type { NarrativeProgressV1, PokeDiscoverIntroductionStateV1 } from './narrative.js';
+import type { TrainerProfileV1 } from './narrative.js';
 
 export interface PokedexRunStateV1 extends VersionedContractV1 {
   runId: StableId;
@@ -94,6 +96,9 @@ export interface ModeProgressV1 {
 }
 
 export interface PokeDiscoverStateV1 extends VersionedContractV1 {
+  introduction: PokeDiscoverIntroductionStateV1;
+  narrativeProgress: NarrativeProgressV1;
+  trainerProfile?: TrainerProfileV1;
   trainerLevel: number;
   trainerExperience: number;
   discoveryPoints: number;

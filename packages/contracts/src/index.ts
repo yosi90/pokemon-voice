@@ -4,6 +4,7 @@ export * from './catalog.js';
 export * from './common.js';
 export * from './economy.js';
 export * from './modes.js';
+export * from './narrative.js';
 export * from './progress.js';
 export * from './requirements.js';
 export * from './research.js';

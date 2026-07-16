@@ -12,12 +12,15 @@ import { TimedModal } from './components/TimedModal.jsx';
 import { WhosThatPokemonMode } from './components/WhosThatPokemonMode.tsx';
 import { ThemedChallengesMode } from './components/ThemedChallengesMode.tsx';
 import { Toast } from './components/Toast.jsx';
+import { NarrativeScene } from './components/NarrativeScene.tsx';
+import { ProfessorMissionModal } from './components/ProfessorMissionModal.tsx';
 import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
 import { useWhosThatPokemonMode } from './hooks/useWhosThatPokemonMode.ts';
 import { useThemedChallengesMode } from './hooks/useThemedChallengesMode.ts';
 import { useDailyTriviaMode } from './hooks/useDailyTriviaMode.ts';
+import { useProfessorIntroduction } from './hooks/useProfessorIntroduction.ts';
 import { ACV } from '../scripts/achievements-logic.js';
 import { getPokemonEntryState } from './domain/research/pokemonEntryState.ts';
 import {
@@ -43,6 +46,7 @@ export default function App() {
   const [selectedPokemon, setSelectedPokemon] = useState(null);
   const [imageStyle, setImageStyle] = useState('3d');
   const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
+  const [professorMissionsOpen, setProfessorMissionsOpen] = useState(false);
   const game = usePokemonGame();
   const whosThatPokemon = useWhosThatPokemonMode({
     resolveGuess: game.tryGuessTranscript,
@@ -72,9 +76,50 @@ export default function App() {
     tryGuessTranscript: game.tryGuessTranscript,
     showToast: game.showToast,
   });
+  const narrativeCanPresent = !game.timer
+    && !game.timedCountdown
+    && !whosThatPokemon.active
+    && !themedChallenges.active
+    && !dailyTrivia.active
+    && !game.specialEffects.length
+    && !game.timedResults
+    && !game.delibirdMode
+    && !game.psyduckMode
+    && !game.sleepMode
+    && !selectedPokemon
+    && !modesOpen
+    && !controlsOpen
+    && !professorMissionsOpen
+    && (!voiceSupportModalOpen || speech.speechSupported);
+  const professor = useProfessorIntroduction({
+    discoveryCount: game.globalScore,
+    canPresent: narrativeCanPresent,
+    ignoreNewDiscoveries: Boolean(game.timer || game.timedCountdown),
+  });
   const selectedEntryState = selectedPokemon
     ? getPokemonEntryState(getBrowserPokeVoiceSave(), selectedPokemon.id)
     : null;
+  const professorProgress = getBrowserPokeVoiceSave().pokeDiscover;
+  const knownProfessorMissionIds = [...new Set([
+    ...professorProgress.activeMissionIds,
+    ...Object.values(professorProgress.mapProgress).flatMap(progress => progress.completedMissionIds),
+  ])];
+
+  const closeNavigationLayers = () => {
+    setModesOpen(false);
+    setControlsOpen(false);
+    setProfessorMissionsOpen(false);
+    ACV.closeDrawer?.();
+  };
+
+  const openPokemonDetails = pokemon => {
+    if (game.guessed.has(pokemon.id) && professor.requestFromDetail(game.globalScore)) {
+      setSelectedPokemon(null);
+      closeNavigationLayers();
+      return;
+    }
+    setSelectedPokemon(pokemon);
+  };
 
   const resetWithConfirm = () => {
     if (window.confirm('Esto iniciará una nueva run de Pokédex: se vaciarán los Pokémon registrados, el orden, las rachas y el acompañante equipado. Conservarás PokeDiscover completo: logros, investigación, mapas, nivel, PD, herramientas y objetos. ¿Continuar?')) {
@@ -107,6 +152,12 @@ export default function App() {
       }
       return next;
     });
+  };
+
+  const openProfessorMissions = () => {
+    closeNavigationLayers();
+    if (professor.requestProfileSetup()) return;
+    setProfessorMissionsOpen(true);
   };
 
   const closeModes = () => {
@@ -157,10 +208,13 @@ export default function App() {
 
   return (
     <>
-      {!game.timer && !game.timedCountdown && <Dock
+      {!game.timer && !game.timedCountdown && !professor.active && <Dock
         score={game.score}
         remaining={game.remaining}
         onModes={toggleModes}
+        professorAvailable={professor.accepted}
+        professorNotification={professor.hasNotification}
+        onProfessor={openProfessorMissions}
         onAchievements={openAchievements}
         controlsOpen={controlsOpen}
         onControls={toggleControls}
@@ -179,7 +233,7 @@ export default function App() {
           <button type="button" className="timed-mode-exit" aria-label="Finalizar Coleccionista" onClick={game.finishTimedEarly}>×</button>
         </div>
       )}
-      {!speech.speechSupported && voiceSupportModalOpen && (
+      {!professor.active && !speech.speechSupported && voiceSupportModalOpen && (
         <div className="pv-modal" id="voice-support-modal">
           <div className="pv-modal__backdrop" onClick={() => setVoiceSupportModalOpen(false)} />
           <div className="pv-modal__panel pv-modal__panel--compact" role="dialog" aria-modal="true" aria-labelledby="voice-support-title">
@@ -206,9 +260,10 @@ export default function App() {
           lastRevealedId={game.lastRevealedId}
           focusedCardId={game.focusedCardId}
           cardRefs={game.cardRefs}
-          onOpenDetails={setSelectedPokemon}
+          onOpenDetails={openPokemonDetails}
           sleepMode={game.sleepMode}
           imageStyle={imageStyle}
+          cinematic={professor.active}
           discoveryConsole={{
             listening: speech.listening,
             speechSupported: speech.speechSupported,
@@ -222,14 +277,14 @@ export default function App() {
           }}
         />
       )}
-      <PokemonDetailModal
+      {!professor.active && <PokemonDetailModal
         pokemon={selectedPokemon}
         discovered={selectedPokemon ? game.guessed.has(selectedPokemon.id) : false}
         entryState={selectedEntryState}
         onClose={() => setSelectedPokemon(null)}
         onCry={game.replayPokemonCry}
-      />
-      <PokedexControlsDrawer
+      />}
+      {!professor.active && <PokedexControlsDrawer
         open={controlsOpen}
         onClose={() => setControlsOpen(false)}
         generation={game.activeGeneration}
@@ -244,9 +299,24 @@ export default function App() {
         onDeleteAll={deleteAllWithConfirm}
         onImageStyle={setImageStyle}
         onReset={resetWithConfirm}
+      />}
+      {!professor.active && <AchievementsDrawer />}
+      {!professor.active && <ModesDrawer open={modesOpen} onClose={closeModes} onStartMode={startMode} />}
+      <ProfessorMissionModal
+        open={professorMissionsOpen && !professor.active}
+        missionIds={knownProfessorMissionIds}
+        onClose={() => setProfessorMissionsOpen(false)}
       />
-      <AchievementsDrawer />
-      <ModesDrawer open={modesOpen} onClose={closeModes} onStartMode={startMode} />
+      <NarrativeScene
+        open={professor.active}
+        sequence={professor.activeSequence}
+        page={professor.activePage}
+        onAdvance={professor.advance}
+        onChoice={professor.choose}
+        onTextSubmit={professor.submitTextInput}
+        onDismiss={professor.dismiss}
+        trainerProfile={professor.trainerProfile}
+      />
       <TimedModal
         open={!!game.timedResults}
         results={game.timedResults}
@@ -319,9 +389,9 @@ export default function App() {
         }}
         onClose={() => game.setDelibirdMode(false)}
       />
-      <AchievementToasts />
-      <Toast toast={game.toast} />
-      <footer className="footer">Imágenes: PokeAPI official artwork y sprites. Progreso guardado en tu navegador.</footer>
+      {!professor.active && <AchievementToasts />}
+      {!professor.active && <Toast toast={game.toast} />}
+      {!professor.active && <footer className="footer">Imágenes: PokeAPI official artwork y sprites. Progreso guardado en tu navegador.</footer>}
     </>
   );
 }

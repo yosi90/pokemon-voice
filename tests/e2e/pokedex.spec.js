@@ -6,6 +6,36 @@ import {
   pokemonCatalogFixture,
 } from '../fixtures/pokemonCatalog.js';
 
+async function setProfessorIntroduction(page, state) {
+  await page.evaluate(introduction => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.introduction = { ...save.pokeDiscover.introduction, ...introduction };
+    if (introduction.acceptedAt === null) delete save.pokeDiscover.introduction.acceptedAt;
+    save.pokeDiscover.narrativeProgress = {
+      schemaVersion: 1,
+      pendingSequenceIds: [],
+      completedSequenceIds: [],
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  }, state);
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+}
+
+async function revealByText(page, name) {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill(name);
+  await input.press('Enter');
+  await expect(page.getByRole('button', { name: `Abrir ficha de ${name}` })).toBeVisible();
+}
+
+async function completeNarrativePage(page) {
+  const box = page.locator('.narrative-box');
+  await box.click();
+  await box.click();
+}
+
 test.beforeEach(async ({ page }) => {
   await mockPokemonApi(page);
   await page.goto('/');
@@ -13,7 +43,133 @@ test.beforeEach(async ({ page }) => {
   if (await voiceModal.isVisible()) {
     await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
   }
+  await setProfessorIntroduction(page, {
+    status: 'accepted',
+    acceptedAt: '2026-07-16T12:00:00.000Z',
+  });
   await expect(page.locator('.pokemon-card')).toHaveCount(generationOneFixtureCount);
+});
+
+test('Alcanfor se presenta desde la primera ficha y abre PokeDiscover sin conceder la primera misión', async ({ page }) => {
+  await setProfessorIntroduction(page, {
+    status: 'hidden',
+    invitationCount: 0,
+    declineCount: 0,
+    nextEligibleDiscoveryCount: 5,
+    acceptedAt: null,
+  });
+  await revealByText(page, 'bulbasaur');
+  await page.getByRole('button', { name: 'Abrir ficha de bulbasaur' }).click();
+
+  const scene = page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' });
+  await expect(scene).toBeVisible();
+  await expect(scene.locator('.narrative-scene__background')).toHaveCSS('background-image', /Laboratorio-de-alcanfor\.png/);
+  await expect(page.locator('#dock')).toHaveCount(0);
+  await expect(page.locator('.discovery-console')).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'bulbasaur' })).toHaveCount(0);
+  await expect(page.locator('main')).toHaveAttribute('inert', '');
+
+  await completeNarrativePage(page);
+  await completeNarrativePage(page);
+  await completeNarrativePage(page);
+  await scene.locator('.narrative-box').click();
+  await scene.getByRole('button', { name: '¡Sí, acepto!' }).click();
+  await scene.locator('.narrative-box').click();
+  await expect(scene.getByRole('button', { name: 'Soy un chico' })).toBeVisible();
+  await expect(scene.getByRole('button', { name: 'Soy una chica' })).toBeVisible();
+  await scene.getByRole('button', { name: 'Soy una chica' }).click();
+  await scene.locator('.narrative-box').click();
+  const trainerName = scene.getByLabel('Nombre del entrenador');
+  await expect(trainerName).toHaveValue('Guayota');
+  await trainerName.fill('Naira');
+  await scene.getByRole('button', { name: 'Confirmar nombre' }).click();
+  await completeNarrativePage(page);
+
+  await expect(scene).toHaveCount(0);
+  const professorButton = page.getByRole('button', { name: 'Profesor Alcanfor' });
+  await expect(professorButton).toBeVisible();
+  await expect(professorButton.locator('.nav-action-label')).toHaveText('Poke-Discover');
+  const [dockBounds, professorButtonBounds] = await Promise.all([
+    page.locator('#dock').boundingBox(),
+    professorButton.boundingBox(),
+  ]);
+  expect(dockBounds).not.toBeNull();
+  expect(professorButtonBounds).not.toBeNull();
+  expect(professorButtonBounds.x).toBeGreaterThanOrEqual(dockBounds.x);
+  expect(professorButtonBounds.x + professorButtonBounds.width).toBeLessThanOrEqual(dockBounds.x + dockBounds.width);
+  const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokeDiscover);
+  expect(persisted.introduction.status).toBe('accepted');
+  expect(persisted.introduction.acceptedAt).toBeTruthy();
+  expect(persisted.trainerProfile).toEqual({ schemaVersion: 1, avatarId: 'guayota', displayName: 'Naira' });
+  expect(persisted.achievements['first-mission']).toBeUndefined();
+
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  const missions = page.getByRole('dialog', { name: 'Profesor Alcanfor' });
+  await expect(missions).toContainText('Preparando el primer encargo');
+});
+
+test('una adhesión anterior solicita el perfil al abrir Poke-Discover sin interrumpir la carga', async ({ page }) => {
+  await setProfessorIntroduction(page, {
+    status: 'accepted',
+    acceptedAt: '2026-07-16T12:00:00.000Z',
+  });
+  await expect(page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  const scene = page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' });
+  await expect(scene).toBeVisible();
+  await scene.locator('.narrative-box').click();
+  await scene.getByRole('button', { name: 'Soy un chico' }).click();
+  await scene.locator('.narrative-box').click();
+  await expect(scene.getByLabel('Nombre del entrenador')).toHaveValue('Achaman');
+});
+
+test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan', async ({ page }) => {
+  await setProfessorIntroduction(page, {
+    status: 'hidden',
+    invitationCount: 0,
+    declineCount: 0,
+    nextEligibleDiscoveryCount: 5,
+    acceptedAt: null,
+  });
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokedexRun.registeredSpeciesIds = [1, 2, 3, 4];
+    save.pokedexRun.discoveryOrder = [1, 2, 3, 4];
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+    localStorage.setItem('pokevoice-guessed-v1', JSON.stringify([1, 2, 3, 4]));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('squirtle');
+  await input.press('Enter');
+
+  const scene = page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' });
+  await expect(scene).toBeVisible();
+  await completeNarrativePage(page);
+  await completeNarrativePage(page);
+  await completeNarrativePage(page);
+  await scene.locator('.narrative-box').click();
+  await scene.getByRole('button', { name: 'No, gracias' }).click();
+  await completeNarrativePage(page);
+  await scene.locator('.narrative-box').click();
+  await scene.getByRole('button', { name: 'Sigo diciendo que no' }).click();
+  await completeNarrativePage(page);
+  await scene.locator('.narrative-box').click();
+  await scene.getByRole('button', { name: 'Ahora no' }).click();
+  await completeNarrativePage(page);
+
+  await expect(scene).toHaveCount(0);
+  const postponed = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokeDiscover.introduction);
+  expect(postponed).toMatchObject({ status: 'postponed', declineCount: 3, nextEligibleDiscoveryCount: 6 });
+
+  await page.getByRole('button', { name: 'Abrir ficha de bulbasaur' }).click();
+  await expect(page.getByRole('dialog', { name: 'bulbasaur' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar ficha' }).click();
+  await input.fill('eevee');
+  await input.press('Enter');
+  await expect(scene).toContainText('¡Otra captura para esa Pokédex!');
 });
 
 test('permite descubrir por texto y persiste el resultado', async ({ page }) => {

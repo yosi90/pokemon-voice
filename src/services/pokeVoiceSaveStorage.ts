@@ -7,6 +7,12 @@ import {
 } from '../domain/progress/pokeVoiceSave.js';
 import { TIMER_KEY } from '../lib/constants.js';
 import type { LegacyAchievementSnapshot } from '../domain/progress/pokeVoiceSave.js';
+import { normalizeTrainerProgress } from '../domain/trainer/trainerLevel.js';
+import {
+  normalizeNarrativeProgress,
+  normalizeProfessorIntroduction,
+  normalizeTrainerProfile,
+} from '../domain/narrative/professorIntroduction.js';
 
 export const EASTER_EGG_STORAGE_KEY = 'pokevoice-easter-eggs-v1';
 export const LEGACY_ACHIEVEMENT_STORAGE_KEY = 'pokevoice-achievements-v1';
@@ -51,7 +57,19 @@ export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
     || !Array.isArray(value.preferences.selectedGenerationIds)) {
     return null;
   }
-  return value as unknown as PokeVoiceSaveV1;
+  const save = value as unknown as PokeVoiceSaveV1;
+  const trainerProfile = normalizeTrainerProfile(save.pokeDiscover.trainerProfile);
+  const { trainerProfile: _storedTrainerProfile, ...pokeDiscoverWithoutTrainerProfile } = save.pokeDiscover;
+  return {
+    ...save,
+    pokeDiscover: {
+      ...pokeDiscoverWithoutTrainerProfile,
+      introduction: normalizeProfessorIntroduction(save.pokeDiscover.introduction),
+      narrativeProgress: normalizeNarrativeProgress(save.pokeDiscover.narrativeProgress),
+      ...(trainerProfile ? { trainerProfile } : {}),
+      ...normalizeTrainerProgress(save.pokeDiscover.trainerExperience),
+    },
+  };
 }
 
 function parseTimedMode(raw: string | null): LegacyTimedModeSnapshot | null {
@@ -96,8 +114,13 @@ export function loadOrMigratePokeVoiceSave({
   now = Date.now,
   createRunId = defaultRunId,
 }: StorageDependencies): PokeVoiceSaveStorageResult {
-  const current = parsePokeVoiceSave(storage.getItem(POKE_VOICE_SAVE_KEY));
-  if (current) return { save: current, source: 'current' };
+  const currentRaw = storage.getItem(POKE_VOICE_SAVE_KEY);
+  const current = parsePokeVoiceSave(currentRaw);
+  if (current) {
+    const normalized = JSON.stringify(current);
+    if (normalized !== currentRaw) storage.setItem(POKE_VOICE_SAVE_KEY, normalized);
+    return { save: current, source: 'current' };
+  }
 
   const timestamp = now();
   const save = createPokeVoiceSaveV1({

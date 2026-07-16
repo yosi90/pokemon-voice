@@ -57,6 +57,7 @@
   margin-top: auto;
 }
 
+.dock #professor-btn,
 .dock #modes-btn,
 .dock #acv-ach-btn {
   width: 76px;
@@ -379,6 +380,7 @@ main {
     gap: 7px;
   }
 
+  .dock #professor-btn,
   .dock #modes-btn,
   .dock #acv-ach-btn,
   .dock .dock-controls-btn {
