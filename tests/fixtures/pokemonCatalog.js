@@ -34,24 +34,26 @@ const pokemonTypesForId = {
   4: ['fire'],
   7: ['water'],
   25: ['electric'],
+  26: ['electric'],
   133: ['normal'],
   151: ['psychic'],
   152: ['grass'],
   906: ['grass'],
 };
 
-export async function mockPokemonApi(page) {
+export async function mockPokemonApi(page, { extraEntries = [] } = {}) {
+  const results = [...pokemonCatalogFixture.results, ...extraEntries];
   await page.route('https://pokeapi.co/api/v2/**', route => {
     const url = new URL(route.request().url());
 
     if (url.pathname === '/api/v2/pokemon') {
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(pokemonCatalogFixture) });
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ...pokemonCatalogFixture, count: results.length, results }) });
     }
 
     const pokemonMatch = url.pathname.match(/^\/api\/v2\/pokemon\/(\d+)\/?$/);
     if (pokemonMatch) {
       const id = Number(pokemonMatch[1]);
-      const pokemon = pokemonCatalogFixture.results.find(entry => entry.url.endsWith(`/pokemon/${id}/`));
+      const pokemon = results.find(entry => entry.url.endsWith(`/pokemon/${id}/`));
       return route.fulfill({
         contentType: 'application/json',
         body: JSON.stringify({
@@ -69,7 +71,7 @@ export async function mockPokemonApi(page) {
       return route.fulfill({
         contentType: 'application/json',
         body: JSON.stringify({
-          name: pokemonCatalogFixture.results.find(entry => entry.url.endsWith(`/pokemon/${id}/`))?.name,
+          name: results.find(entry => entry.url.endsWith(`/pokemon/${id}/`))?.name,
           generation: { name: generationNameForId(id) },
           is_legendary: false,
           is_mythical: id === 151,

@@ -41,6 +41,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function normalizeCompanionSelection(run: PokeVoiceSaveV1['pokedexRun']) {
+  const selection = isRecord(run.selectedCompanion)
+    && run.selectedCompanion.schemaVersion === 1
+    && typeof run.selectedCompanion.formId === 'string'
+    && run.selectedCompanion.formId
+    ? {
+      schemaVersion: 1 as const,
+      formId: run.selectedCompanion.formId,
+      ...(typeof run.selectedCompanion.appearanceId === 'string' && run.selectedCompanion.appearanceId
+        ? { appearanceId: run.selectedCompanion.appearanceId }
+        : {}),
+    }
+    : typeof run.selectedCompanionFormId === 'string' && run.selectedCompanionFormId
+      ? { schemaVersion: 1 as const, formId: run.selectedCompanionFormId }
+      : undefined;
+  return {
+    ...run,
+    ...(selection ? { selectedCompanion: selection, selectedCompanionFormId: selection.formId } : {}),
+  };
+}
+
 export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
   const value = parseJson(raw);
   if (!isRecord(value)
@@ -62,6 +83,7 @@ export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
   const { trainerProfile: _storedTrainerProfile, ...pokeDiscoverWithoutTrainerProfile } = save.pokeDiscover;
   return {
     ...save,
+    pokedexRun: normalizeCompanionSelection(save.pokedexRun),
     pokeDiscover: {
       ...pokeDiscoverWithoutTrainerProfile,
       introduction: normalizeProfessorIntroduction(save.pokeDiscover.introduction),

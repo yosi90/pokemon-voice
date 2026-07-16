@@ -86,6 +86,7 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
 
   const handleSpeechBatches = useCallback(async batches => {
     for (const alternatives of batches) {
+      if (!listeningRef.current) return;
       const candidates = alternatives.map(a => (a.transcript || '').trim()).filter(Boolean);
       if (!candidates.length) continue;
       setVoiceStatus({ message: `Oído: ${candidates[0]}`, kind: 'info' });
@@ -134,7 +135,10 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
       const message = speechErrorMessage(event.error);
       setVoiceStatus({ message, kind: 'bad' });
       showToast(message, 'bad');
-      if (fatal) setListening(false);
+      if (fatal) {
+        listeningRef.current = false;
+        setListening(false);
+      }
     };
     rec.onend = () => {
       if (!listeningRef.current || speechFatalRef.current) return;
@@ -154,14 +158,19 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
     return rec;
   }, [applySpeechBias, handleSpeechBatches, showToast]);
 
+  const stopListening = useCallback(() => {
+    listeningRef.current = false;
+    window.clearTimeout(speechRestartTimerRef.current);
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
+    setListening(false);
+    setVoiceStatus(null);
+  }, []);
+
   const toggleListening = useCallback(async () => {
-    if (listening) {
-      window.clearTimeout(speechRestartTimerRef.current);
-      try {
-        recognitionRef.current?.stop();
-      } catch {}
-      setListening(false);
-      setVoiceStatus(null);
+    if (listeningRef.current) {
+      stopListening();
       return;
     }
     if (!recognitionRef.current) {
@@ -184,6 +193,7 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
     try {
       speechFatalRef.current = false;
       speechRestartDelayRef.current = 350;
+      listeningRef.current = true;
       recognitionRef.current.start();
       setListening(true);
       setVoiceStatus({ message: 'Escuchando...', kind: 'ok' });
@@ -192,8 +202,9 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
       if (error?.name !== 'InvalidStateError') {
         showToast('No se pudo iniciar el reconocimiento de voz.', 'bad');
       }
+      listeningRef.current = false;
     }
-  }, [initSpeech, listening, showToast]);
+  }, [initSpeech, showToast, stopListening]);
 
-  return { listening, toggleListening, voiceStatus, speechSupported };
+  return { listening, stopListening, toggleListening, voiceStatus, speechSupported };
 }

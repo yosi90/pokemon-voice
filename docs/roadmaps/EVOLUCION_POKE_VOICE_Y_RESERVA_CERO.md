@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0, 1, 2, 3, 4, 5 y 6 completados; Hito 7 en curso.
+- Estado: Hitos 0, 1, 2, 3, 4, 5, 6 y 7 completados; Hito 8 pendiente de inicio.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -344,6 +344,8 @@ Octava entrega implementada el 16 de julio de 2026. El Coleccionista comienza co
 - [x] Persistir introducción, escenas pendientes, escena activa y secuencias completadas dentro de PokeDiscover.
 - [x] Migrar partidas existentes sin presentar automáticamente al profesor durante la carga.
 - [x] Activar la invitación desde la primera ficha registrada o el quinto descubrimiento.
+- [x] Presentar las escenas automáticas como llamadas pendientes después del scroll, la revelación, el cry y los efectos especiales.
+- [x] Detener el reconocimiento de voz al recibir o aceptar una llamada narrativa.
 - [x] Implementar las tres negativas, el aplazamiento y la reaparición tras el siguiente descubrimiento.
 - [x] Crear la escena accesible de novela visual con typewriter acelerable y movimiento reducido.
 - [x] Bloquear la cuadrícula y ocultar navegación, consola, footer, cajones y avisos durante la escena.
@@ -356,20 +358,31 @@ Octava entrega implementada el 16 de julio de 2026. El Coleccionista comienza co
 - [x] Corregir la zona segura de nombres y botones de protagonista para que nunca quede bajo la caja de diálogo.
 - [x] Añadir experiencia acumulada y nivel de entrenador a `PokeDiscoverStateV1`.
 - [x] Definir una tabla configurable de umbrales de nivel.
-- [ ] Crear `CompanionRequirementV1` con nivel mínimo, descubrimientos temáticos, flags de historia y condiciones compuestas.
-- [ ] Crear `CompanionAccessRecordV1` para cualificaciones permanentes que sobreviven a resets.
-- [ ] Añadir a `CompanionRequirementV1` la visibilidad `public`, `hinted` o `secret` y su texto narrativo de rechazo.
-- [ ] Añadir nivel de referencia, etiquetas de lore y capacidades de campo al catálogo de formas.
-- [ ] Crear un catálogo curado de requisitos por especie o forma, sin derivarlos automáticamente de estadísticas de combate.
-- [ ] Crear el selector de acompañante con estados disponible, inelegible y no registrado.
-- [ ] Implementar la regla general de diferencia de 5 niveles y permitir excepciones narrativas declarativas.
-- [ ] Añadir soporte para requisitos como `minTrainerLevel`, `minDiscoveredByTag`, `requiredStoryFlags` y operadores `all`/`any`.
-- [ ] Permitir que acompañantes y secretos requieran logros permanentes de Pokédex, PokeDiscover o modos específicos.
-- [ ] Permitir requisitos de avistamiento, investigación y objetos clave para especies especiales.
-- [ ] Añadir el logro permanente `first-mission` y su concesión al terminar la primera misión del profesor.
-- [ ] Aplicar `first-mission` como prerrequisito global salvo para Pikachu e iniciales base.
-- [ ] Añadir mensajes y animaciones de rechazo no punitivas.
-- [ ] Registrar estadísticas de acompañantes elegidos para detectar opciones dominantes.
+- [x] Crear `CompanionRequirementV1` con nivel mínimo, descubrimientos temáticos, flags de historia y condiciones compuestas.
+- [x] Crear `CompanionAccessRecordV1` para cualificaciones permanentes que sobreviven a resets.
+- [x] Añadir a `CompanionRequirementV1` la visibilidad `public`, `hinted` o `secret` y su texto narrativo de rechazo.
+- [x] Añadir nivel de referencia, etiquetas de lore y capacidades de campo al catálogo de formas.
+- [x] Crear un catálogo curado de requisitos por especie o forma, sin derivarlos automáticamente de estadísticas de combate.
+- [x] Crear el selector de acompañante mostrando solo especies registradas y diferenciando disponibles de inelegibles en escala de grises.
+- [x] Crear una portada de PokeDiscover con avatar, nivel, experiencia, PD, resumen de encargos y estado de acompañantes.
+- [x] Crear un catálogo local editable por generación con las 1.025 especies, formas, apariencias, niveles, requisitos y capacidades.
+- [x] Añadir clasificación exclusiva por prioridad y una categoría `Especiales` para Ultraentes y Pokémon Paradoja.
+- [x] Sembrar niveles provisionales por categoría preservando las excepciones curadas de Mew, Mewtwo y Pikachu.
+- [x] Añadir un importador reproducible de PokeAPI que preserve la curación local y un validador de cobertura.
+- [x] Permitir seleccionar formas persistentes y apariencias desbloqueadas como candidatos independientes.
+- [x] Migrar la selección a `{ formId, appearanceId? }` manteniendo compatibilidad con `selectedCompanionFormId`.
+- [x] Filtrar acompañantes por las categorías presentes entre los candidatos registrados y desbloqueados.
+- [x] Validar con Playwright el filtro, las variantes, la selección persistida y la ausencia de overflow en escritorio y móvil.
+- [x] Mantener una altura estable del centro PokeDiscover al alternar entre Inicio, Encargos y Compañero.
+- [x] Convertir el letrero regional de escritorio en un selector rápido de las nueve regiones.
+- [x] Añadir un filtro de generación combinable con categoría y búsqueda en el selector de compañeros.
+- [x] Implementar la regla general de diferencia de 5 niveles y permitir excepciones narrativas declarativas.
+- [x] Añadir soporte para requisitos como `minTrainerLevel`, `minDiscoveredByTag`, `requiredStoryFlags` y operadores `all`/`any`.
+- [x] Permitir que acompañantes y secretos requieran logros permanentes de Pokédex, PokeDiscover o modos específicos.
+- [x] Permitir requisitos de avistamiento, investigación y objetos clave para especies especiales.
+- [x] Aplicar `first-mission` como prerrequisito global salvo para Pikachu e iniciales base.
+- [x] Añadir mensajes y animaciones de rechazo no punitivas.
+- [x] Registrar estadísticas de acompañantes elegidos para detectar opciones dominantes.
 
 Primera entrega implementada el 16 de julio de 2026. La experiencia acumulada de PokeDiscover pasa a ser la única fuente de verdad del nivel de entrenador: una tabla configurable de cien umbrales deriva el nivel al cobrar cualquier recompensa de experiencia y lo limita al nivel 100. La curva inicial es deliberadamente sustituible para poder balancearla con las expediciones reales sin cambiar contratos ni guardados. Las partidas raíz anteriores se normalizan y persisten silenciosamente al cargarse, conservando su experiencia y corrigiendo niveles ausentes o incoherentes. Las fronteras de nivel, tablas alternativas, recompensas idempotentes y migración quedan cubiertas por pruebas unitarias.
 
@@ -378,6 +391,24 @@ Segunda entrega implementada el 16 de julio de 2026. PokeDiscover deja de plante
 Tercera entrega implementada el 16 de julio de 2026. La adhesión incorpora una ficha de entrenador: Alcanfor presenta visualmente a Achaman y Guayota —esta última junto a Horquilla—, propone sus nombres canónicos y permite editarlos antes de confirmar. El perfil queda en PokeDiscover y no depende de la run de Pokédex. Los guardados que ya habían aceptado antes de existir esta ficha no reciben una interrupción al cargar; el botón Poke-Discover muestra una novedad y abre la selección antes del centro de encargos. Los retratos de saludo se recortan con transparencia real y Guayota se refleja únicamente mediante CSS para que ambos candidatos miren hacia el centro sin duplicar assets.
 
 Cuarta entrega implementada el 16 de julio de 2026. Las escenas dejan de mostrar Pokéballs detrás de personajes y utilizan fondos declarados mediante `backgroundId`, con valor general por secuencia y sobrescritura opcional por página. La introducción usa el laboratorio de Alcanfor y el registro local prepara otros siete escenarios para futuras conversaciones y misiones. La selección reserva una franja segura sobre el diálogo, evitando que nombres o acciones queden ocultos incluso en viewports bajos.
+
+Quinta entrega implementada el 16 de julio de 2026. Los requisitos declarativos dejan de ser solo contratos y cuentan con un evaluador común para condiciones atómicas, `all` y `any`; las alternativas fallidas conservan únicamente la rama más cercana para no inundar la futura interfaz. El motor consulta la run actual y la metaprogresión permanente: nivel, especies y etiquetas registradas, avistamientos, investigación, logros, modos, flags, contadores, inventario, NPC, conversaciones, secretos y capacidades del acompañante. La elegibilidad distingue especies no registradas de candidatas inelegibles, aplica la diferencia general de cinco niveles cuando existe un nivel de referencia curado y admite excepciones narrativas. Las cadenas complejas pueden guardarse una sola vez mediante `CompanionAccessRecordV1` y reactivarse tras un reset al redescubrir la especie, sin eludir el nivel ni el registro actuales. Pikachu, Eevee y los iniciales base quedan declarados como excepciones provisionales a `first-mission`; el resto ya reconoce ese prerrequisito, aunque su concesión se implementará junto a la primera misión real.
+
+Sexta entrega implementada el 16 de julio de 2026. El catálogo de acompañantes separa la regla estándar de las excepciones curadas y no consulta estadísticas de combate ni PokeAPI para decidir niveles. Pikachu conserva acceso inicial explícito; Mewtwo queda como ejemplo `hinted` de nivel 90 y Mew como requisito `secret` de nivel 20, avistamiento real y veinte especies etiquetadas como `sweet`. El texto visible de Mew no revela cifras ni condiciones técnicas. La asignación definitiva de etiquetas temáticas y el balance del resto de especies quedan deliberadamente pendientes de contenido, mientras las entradas normales reciben identificadores estables por especie para poder cualificarse y migrarse sin ambigüedad.
+
+Séptima entrega implementada el 16 de julio de 2026. El centro Poke-Discover incorpora pestañas separadas para encargos y compañero. El selector reúne las especies registradas de la run actual sin listar ningún Pokémon ausente de la Pokédex, ni siquiera iniciales o especies avistadas en runs anteriores. Cada tarjeta diferencia `disponible`, `inelegible` en escala de grises y la selección actual; las condiciones ocultas se sustituyen por pistas narrativas. Elegir persiste `selectedCompanionFormId`, registra cualificaciones complejas cuando corresponde y queda bloqueado durante una expedición. El nivel de entrenador se muestra como contexto y los rechazos usan feedback breve, no punitivo y compatible con movimiento reducido.
+
+Octava entrega implementada el 16 de julio de 2026. `first-mission` ya se aplica como prerrequisito permanente a todas las especies salvo Pikachu, Eevee y los iniciales base, y la selección registra contadores permanentes por forma y un total agregado para detectar compañeros dominantes durante el balance. Volver a pulsar sobre el mismo compañero no infla la estadística y los contadores sobreviven a los resets por pertenecer a PokeDiscover. La definición y concesión efectiva de `first-mission` permanece deliberadamente pendiente del primer encargo real del Hito 8: no se simula una misión ni se entrega el logro por aceptar al profesor.
+
+Novena entrega implementada el 16 de julio de 2026. Las secuencias narrativas automáticas ya no sustituyen la interfaz en cuanto se desbloquean. Permanecen en la cola persistente mientras termina el desplazamiento hasta la tarjeta, la revelación, el cry y cualquier efecto especial; después de una pausa breve se presentan como una llamada entrante no bloqueante. La ficha que origine la primera invitación puede contemplarse y cerrarse con normalidad. Solo `Descolgar` activa la novela visual, momento en que se cierran capas incompatibles. El reconocimiento de voz se detiene en cuanto aparece la llamada, cancela su reinicio automático e ignora lotes pendientes, evitando que siga escuchando durante la conversación. El mismo flujo queda disponible para futuras ofertas de Alcanfor y anomalías narrativas.
+
+Décima entrega implementada el 16 de julio de 2026. PokeDiscover abre ahora en una portada propia en lugar de presentar directamente los encargos. La ficha reúne el avatar y nombre elegidos, nivel, experiencia, PD, actividad de misiones, número de Pokémon dispuestos a acompañar y el compañero actual. El encabezado deja de tratar el programa como un modal del profesor y utiliza el nombre PokeDiscover, con un cierre de alto contraste. La frontera de la run se refuerza: el selector omite por completo especies no registradas y reserva el estado gris para Pokémon conocidos que todavía no cumplen sus requisitos.
+
+Undécima entrega implementada el 16 de julio de 2026. Nueve catálogos JSON generacionales convierten las 1.025 especies y 1.336 formas importadas en datos de gameplay editables y validados. Cada forma declara tipos, etapa, nivel narrativo, estado de balance, requisitos, tamaño, capacidades y selectabilidad; las apariencias pueden heredar la forma y sumar excepciones, como `surf` para Pikachu surfista. La clasificación elige una sola categoría mediante la prioridad mítico, legendario, especial, pseudo, tercera etapa, segunda etapa, bebé, inicial y común. Los niveles provisionales siguen esa misma jerarquía, mientras Mew, Mewtwo y Pikachu conservan su lore curado. El selector genera únicamente las categorías presentes, combina el filtro con la búsqueda y trata formas regionales y apariencias descubiertas como candidatos independientes. La selección versionada conserva forma y apariencia, y las partidas anteriores migran silenciosamente desde `selectedCompanionFormId`.
+
+Duodécima entrega implementada el 17 de julio de 2026. El cierre visual del Hito 7 fija el alto adaptable de PokeDiscover para que sus tres secciones no desplacen el modal al navegar. En escritorio, el antiguo letrero regional pasa a ser un botón separado del micrófono que despliega las nueve regiones, conserva la selección mediante las preferencias existentes y se cierra al elegir, pulsar fuera o usar Escape. El selector de compañeros añade Generación junto a Categoría; ambas opciones se calculan solo a partir de candidatos registrados y variantes desbloqueadas, y se combinan mediante AND con la búsqueda y la paginación. Las referencias Playwright cubren el menú regional y la distribución de los tres filtros en escritorio y móvil.
+
+Hito 7 finalizado el 17 de julio de 2026. La introducción narrativa, la metaprogresión de entrenador, los contratos de requisitos, el catálogo completo de compañeros y el centro PokeDiscover quedan operativos y cubiertos por build, pruebas unitarias y Playwright. La concesión de `first-mission` se traslada expresamente al Hito 8 porque depende de completar la primera misión real del profesor, todavía no de aceptar su invitación.
 
 ### Criterio de aceptación
 
@@ -483,6 +514,7 @@ El jugador solo puede entrar con un acompañante registrado en la run actual cuy
 
 ### Checklist
 
+- [ ] Añadir el logro permanente `first-mission` y concederlo al completar la primera misión real del profesor.
 - [ ] Crear el registro de capacidades de campo por Pokémon o forma.
 - [ ] Diferenciar capacidades físicas genéricas de capacidades narrativas procedentes de movimientos concretos.
 - [ ] Crear `RequirementExpressionV1` con operadores `all`, `any` y condiciones atómicas tipadas.

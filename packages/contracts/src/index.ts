@@ -1,6 +1,7 @@
 export * from './achievements.js';
 export * from './adventure.js';
 export * from './catalog.js';
+export * from './companionCatalog.js';
 export * from './common.js';
 export * from './economy.js';
 export * from './modes.js';

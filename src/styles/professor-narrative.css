@@ -286,28 +286,662 @@
   background: #ef4444;
 }
 
+.professor-call {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 116;
+  width: min(430px, calc(100vw - 32px));
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  overflow: hidden;
+  border: 3px solid #285b49;
+  border-radius: 18px;
+  padding: 12px 14px;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 227, 105, .35), transparent 34%),
+    linear-gradient(145deg, #f4fae8, #d9ead0);
+  color: #173b35;
+  box-shadow: 0 7px 0 #173b35, 0 18px 42px rgba(0, 0, 0, .38);
+  animation: professor-call-arrives .35s ease-out both;
+}
+
+.professor-call::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: -1;
+  border: 1px solid rgba(40, 91, 73, .28);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.professor-call__signal {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #285b49;
+  border-radius: 50%;
+  background: #ffe169;
+}
+
+.professor-call__signal > span {
+  position: absolute;
+  color: #285b49;
+  font-size: 34px;
+  animation: professor-phone-rings .8s ease-in-out infinite;
+}
+
+.professor-call__signal img {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .3));
+}
+
+.professor-call__copy {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.professor-call__copy span {
+  color: #5d866f;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.professor-call__copy strong {
+  overflow: hidden;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+}
+
+.professor-call button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 3px solid #1d6544;
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: #43c875;
+  color: #103d2a;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #17492f;
+}
+
+.professor-call button:hover,
+.professor-call button:focus-visible {
+  background: #65e394;
+  transform: translateY(-1px);
+}
+
+@keyframes professor-call-arrives {
+  from { opacity: 0; transform: translateX(34px) scale(.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes professor-phone-rings {
+  0%, 46%, 100% { transform: rotate(0); }
+  12% { transform: rotate(-10deg); }
+  24% { transform: rotate(10deg); }
+  36% { transform: rotate(-7deg); }
+}
+
 .professor-missions__panel {
   top: 50%;
+  width: min(920px, calc(100vw - 28px));
+  height: min(720px, calc(100dvh - 28px));
+  max-height: calc(100dvh - 28px);
+  display: flex;
+  flex-direction: column;
   transform: translate(-50%, -50%);
   border-color: rgba(91, 173, 116, .6);
   background: linear-gradient(155deg, #f2fae7, #dcebd4);
   color: #173b35;
 }
 
+.professor-missions__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .professor-missions__panel .pv-modal__head {
+  min-height: 72px;
   border-color: rgba(37, 94, 74, .2);
 }
 
-.professor-missions__panel h3 {
+.professor-missions__panel .pv-modal__head h3 {
   color: #285b49;
   font-family: "Press Start 2P", monospace;
+  font-size: 18px;
 }
 
-.professor-missions__eyebrow {
-  color: #5d866f;
+.professor-missions__close {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #376d59;
+  background: #fff8c9;
+  box-shadow: 0 3px 0 #204b3c;
+}
+
+.professor-missions__close::before,
+.professor-missions__close::after {
+  width: 19px;
+  height: 4px;
+  background: #285b49;
+  box-shadow: none;
+}
+
+.professor-missions__close:hover,
+.professor-missions__close:focus-visible {
+  background: #ffe16c;
+  outline: 3px solid rgba(228, 173, 24, .28);
+  outline-offset: 2px;
+}
+
+.professor-missions__tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(37, 94, 74, .18);
+  background: rgba(255, 255, 255, .3);
+}
+
+.professor-missions__tabs button {
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #426f5d;
   font-family: "Press Start 2P", monospace;
   font-size: 8px;
+  cursor: pointer;
+}
+
+.professor-missions__tabs button:hover,
+.professor-missions__tabs button:focus-visible,
+.professor-missions__tabs button.is-active {
+  border-color: #4c876d;
+  background: #fff8c9;
+  color: #214f40;
+}
+
+.companion-selector {
+  display: grid;
+  gap: 14px;
+}
+
+.companion-selector__intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.companion-selector__intro span {
+  color: #5d866f;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
   text-transform: uppercase;
+}
+
+.companion-selector__intro h4 {
+  margin: 7px 0 8px;
+  color: #234f41;
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+}
+
+.companion-selector__intro p {
+  max-width: 580px;
+  margin: 0;
+  color: #45685b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.companion-selector__trainer-level {
+  width: 70px;
+  min-width: 70px;
+  height: 70px;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  border: 3px solid #376d59;
+  border-radius: 50%;
+  background: #fff6b7;
+  color: #234f41;
+  text-align: center;
+  box-shadow: 0 4px 0 #204b3c;
+}
+
+.companion-selector__trainer-level small {
+  font-family: "Press Start 2P", monospace;
+  font-size: 6px;
+  text-transform: uppercase;
+}
+
+.companion-selector__trainer-level strong {
+  font-family: "Press Start 2P", monospace;
+  font-size: 17px;
+}
+
+.companion-selector__current,
+.companion-selector__feedback {
+  margin: 0;
+  border: 1px solid #75a787;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, .55);
+  color: #315d4e;
+  font-size: 12px;
+}
+
+.companion-selector__feedback {
+  animation: companion-feedback-in .2s ease-out both;
+}
+
+@keyframes companion-feedback-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.companion-selector__current {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.companion-selector__filters {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.companion-selector__filter-controls {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(190px, 1.35fr) repeat(2, minmax(150px, .8fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.companion-selector__filters label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.companion-selector__filters label > span {
+  color: #4c7162;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+}
+
+.companion-selector__filters input,
+.companion-selector__filters select {
+  width: 100%;
+  min-height: 40px;
+  border: 2px solid #75a787;
+  border-radius: 11px;
+  padding: 8px 11px;
+  background: rgba(255, 255, 255, .72);
+  color: #214f40;
+  outline: none;
+}
+
+.companion-selector__filters select {
+  appearance: none;
+  padding-right: 34px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #376d59 50%),
+    linear-gradient(135deg, #376d59 50%, transparent 50%);
+  background-position: calc(100% - 16px) 17px, calc(100% - 11px) 17px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.companion-selector__filters input:focus,
+.companion-selector__filters select:focus {
+  border-color: #e4ad18;
+  box-shadow: 0 0 0 3px rgba(228, 173, 24, .18);
+}
+
+.companion-selector__filters > span {
+  color: #5d796d;
+  font-size: 11px;
+}
+
+.companion-selector__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.companion-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  overflow: hidden;
+  border: 2px solid #8daa97;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .62);
+}
+
+.companion-card.is-selected {
+  border-color: #e4ad18;
+  box-shadow: inset 0 0 0 2px #fff2a7;
+}
+
+.companion-card--ineligible,
+.companion-card--unregistered { background: rgba(231, 235, 226, .72); }
+
+.companion-card__art {
+  position: relative;
+  min-height: 148px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, #f5f1ca, #b8d0b5);
+}
+
+.companion-card__art img {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+}
+
+.companion-card--ineligible {
+  border-color: #a7afa9;
+  background: rgba(218, 222, 217, .78);
+}
+
+.companion-card--ineligible .companion-card__art {
+  background: radial-gradient(circle, #e4e7e2, #aeb6af);
+}
+
+.companion-card--ineligible .companion-card__art img {
+  filter: grayscale(1) brightness(.62) contrast(.9);
+  opacity: .68;
+}
+
+.companion-card__art span {
+  position: absolute;
+  left: 7px;
+  bottom: 7px;
+  border-radius: 999px;
+  padding: 4px 6px;
+  background: rgba(26, 66, 53, .8);
+  color: #fff;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+}
+
+.companion-card__body {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 7px;
+  padding: 12px;
+}
+
+.companion-card__body h5 {
+  margin: 0;
+  color: #173f34;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  line-height: 1.35;
+  text-transform: capitalize;
+}
+
+.companion-card__status {
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: #d9e6d7;
+  color: #315d4e;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.companion-card--eligible .companion-card__status,
+.companion-card.is-selected .companion-card__status {
+  background: #ccefc9;
+  color: #256135;
+}
+
+.companion-card__body p {
+  margin: 0;
+  color: #527064;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.companion-card__body button {
+  min-height: 32px;
+  border: 2px solid #376d59;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #ffe16c;
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  cursor: pointer;
+}
+
+.companion-card__body button:disabled {
+  border-color: #9aaba2;
+  background: #d9dfd8;
+  color: #718078;
+  cursor: not-allowed;
+}
+
+.companion-selector__empty {
+  margin: 0;
+  border: 1px dashed #8daa97;
+  border-radius: 12px;
+  padding: 24px;
+  color: #527064;
+  text-align: center;
+}
+
+.companion-selector__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.companion-selector__pagination button {
+  min-height: 34px;
+  border: 2px solid #4c876d;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #fff8c9;
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  cursor: pointer;
+}
+
+.companion-selector__pagination button:disabled { opacity: .45; cursor: not-allowed; }
+.companion-selector__pagination span { color: #45685b; font-weight: 800; }
+
+.pokediscover-home {
+  display: grid;
+  gap: 16px;
+}
+
+.pokediscover-profile {
+  min-height: 188px;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  overflow: hidden;
+  border: 2px solid #75a787;
+  border-radius: 18px;
+  padding: 0 20px 0 0;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 236, 129, .5), transparent 28%),
+    linear-gradient(135deg, rgba(255,255,255,.82), rgba(218,237,211,.82));
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.38);
+}
+
+.pokediscover-profile__portrait {
+  align-self: stretch;
+  display: grid;
+  place-items: end center;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(112, 170, 130, .12), rgba(58, 111, 87, .24));
+}
+
+.pokediscover-profile__portrait > img:not(.camphor-leaf-mark) {
+  width: 190px;
+  height: 230px;
+  object-fit: contain;
+  object-position: center bottom;
+  transform: translateY(30px);
+}
+
+.pokediscover-profile__copy { min-width: 0; }
+.pokediscover-profile__copy > span,
+.pokediscover-home-card__eyebrow {
+  color: #5d866f;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.pokediscover-profile__copy h4 {
+  margin: 10px 0 9px;
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.pokediscover-profile__copy p,
+.pokediscover-home-card p {
+  margin: 0;
+  color: #45685b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pokediscover-profile__level {
+  width: 82px;
+  height: 82px;
+  display: grid;
+  place-content: center;
+  gap: 5px;
+  border: 3px solid #376d59;
+  border-radius: 50%;
+  background: #fff6b7;
+  color: #234f41;
+  text-align: center;
+  box-shadow: 0 5px 0 #204b3c;
+}
+
+.pokediscover-profile__level small,
+.pokediscover-profile__level strong {
+  font-family: "Press Start 2P", monospace;
+}
+.pokediscover-profile__level small { font-size: 6px; text-transform: uppercase; }
+.pokediscover-profile__level strong { font-size: 20px; }
+
+.pokediscover-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pokediscover-summary article {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  border: 1px solid #8daa97;
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,.56);
+}
+
+.pokediscover-summary span {
+  color: #5d796d;
+  font-size: 10px;
+}
+
+.pokediscover-summary strong {
+  overflow-wrap: anywhere;
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+}
+
+.pokediscover-home__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pokediscover-home-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  border: 2px solid #75a787;
+  border-radius: 15px;
+  padding: 16px;
+  background: rgba(255,255,255,.58);
+}
+
+.pokediscover-home-card h4 {
+  margin: 0;
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.pokediscover-current-companion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid rgba(75, 126, 103, .2);
+  padding-top: 9px;
+}
+
+.pokediscover-current-companion img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.pokediscover-current-companion div { display: grid; gap: 5px; }
+.pokediscover-current-companion small { color: #5d796d; }
+.pokediscover-current-companion strong {
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
 }
 
 .professor-missions__empty {
@@ -338,6 +972,58 @@
 }
 
 @media (max-width: 680px) {
+  .professor-call {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    min-height: 84px;
+    grid-template-columns: 50px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 10px;
+  }
+
+  .professor-call__signal { width: 48px; height: 48px; }
+  .professor-call__signal > span { font-size: 28px; }
+  .professor-call__copy strong { font-size: 8px; }
+  .professor-call button { padding-inline: 10px; font-size: 0; }
+  .professor-call button span { font-size: 20px; }
+
+  .professor-missions__panel {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .professor-missions__tabs { padding-inline: 12px; }
+  .professor-missions__body { padding: 14px; }
+  .professor-missions__panel .pv-modal__head { min-height: 62px; padding: 10px 12px; }
+  .professor-missions__panel .pv-modal__head h3 { font-size: 13px; }
+  .pokediscover-profile {
+    min-height: 158px;
+    grid-template-columns: 104px minmax(0, 1fr) 56px;
+    gap: 10px;
+    padding-right: 10px;
+  }
+  .pokediscover-profile__portrait > img:not(.camphor-leaf-mark) {
+    width: 138px;
+    height: 180px;
+    transform: translateY(25px);
+  }
+  .pokediscover-profile__copy h4 { font-size: 11px; }
+  .pokediscover-profile__copy p { font-size: 10px; }
+  .pokediscover-profile__level { width: 54px; height: 54px; border-width: 2px; box-shadow: 0 3px 0 #204b3c; }
+  .pokediscover-profile__level small { font-size: 5px; }
+  .pokediscover-profile__level strong { font-size: 13px; }
+  .pokediscover-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pokediscover-home__columns { grid-template-columns: 1fr; }
+  .companion-selector__grid { grid-template-columns: 1fr; }
+  .companion-selector__filters { align-items: stretch; flex-direction: column; }
+  .companion-selector__filter-controls { grid-template-columns: 1fr; width: 100%; }
+  .companion-card { grid-template-columns: 96px minmax(0, 1fr); }
+  .companion-card__art { min-height: 138px; }
+  .companion-card__art img { width: 88px; height: 88px; }
+
   .professor-portrait {
     left: 50%;
     bottom: 218px;
@@ -394,4 +1080,7 @@
 @media (prefers-reduced-motion: reduce) {
   .narrative-box__advance { animation: none; }
   .narrative-box__choices button { transform: none; }
+  .companion-selector__feedback { animation: none; }
+  .professor-call,
+  .professor-call__signal > span { animation: none; }
 }

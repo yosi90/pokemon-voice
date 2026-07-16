@@ -12,6 +12,11 @@ import type { SpeciesResearchProgressV1 } from './research.js';
 import type { NarrativeProgressV1, PokeDiscoverIntroductionStateV1 } from './narrative.js';
 import type { TrainerProfileV1 } from './narrative.js';
 
+export interface CompanionSelectionV1 extends VersionedContractV1 {
+  formId: PokemonFormId;
+  appearanceId?: StableId;
+}
+
 export interface PokedexRunStateV1 extends VersionedContractV1 {
   runId: StableId;
   startedAt: ISODateString;
@@ -23,6 +28,8 @@ export interface PokedexRunStateV1 extends VersionedContractV1 {
   currentStreak: number;
   bestStreak: number;
   temporaryCounters: Record<StableId, number>;
+  selectedCompanion?: CompanionSelectionV1;
+  /** Compatibilidad de lectura con partidas anteriores a las variantes seleccionables. */
   selectedCompanionFormId?: PokemonFormId;
   satisfiedAchievementIds: StableId[];
 }
@@ -39,6 +46,7 @@ export interface RewardLedgerEntryV1 extends VersionedContractV1 {
 export interface CompanionAccessRecordV1 extends VersionedContractV1 {
   speciesId: PokemonSpeciesId;
   formId?: PokemonFormId;
+  appearanceId?: StableId;
   qualificationId: StableId;
   qualifiedAt: ISODateString;
   originRunId?: StableId;

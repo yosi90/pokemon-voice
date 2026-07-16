@@ -1,6 +1,15 @@
 // ------- Definición de logros -------
 // Nota: todos cuentan dentro de la run actual. Se desbloquean y guardan con fecha.
 export const ACHIEVEMENTS = [{
+        id: 'first-mission',
+        title: '¡Primera misión!',
+        desc: 'Completa tu primer encargo de campo para el profesor Alcanfor.',
+        tier: 'Superball',
+        domain: 'pokeDiscover',
+        scope: 'run',
+        event: 'manual',
+        check: (m) => m?.id === 'first-mission',
+    }, {
         id: 'daily-trivia-streak-7',
         title: 'Semana de sobresalientes',
         desc: 'Aprueba el examen diario siete días seguidos.',

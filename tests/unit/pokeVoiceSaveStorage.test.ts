@@ -129,6 +129,26 @@ describe('guardado raíz y migración legacy', () => {
     expect(JSON.parse(localStorage.getItem(POKE_VOICE_SAVE_KEY) || '{}').pokeDiscover.trainerLevel).toBe(3);
   });
 
+  it('migra una selección de compañero anterior al objeto de variante', () => {
+    const oldSave = loadOrMigratePokeVoiceSave({
+      storage: localStorage,
+      now: () => NOW,
+      createRunId: () => 'pokedex-run:legacy-companion',
+    }).save;
+    oldSave.pokedexRun.selectedCompanionFormId = 'pokemon-form:25:default';
+    delete oldSave.pokedexRun.selectedCompanion;
+    localStorage.setItem(POKE_VOICE_SAVE_KEY, JSON.stringify(oldSave));
+
+    const result = loadOrMigratePokeVoiceSave({ storage: localStorage });
+
+    expect(result.save.pokedexRun.selectedCompanion).toEqual({
+      schemaVersion: 1,
+      formId: 'pokemon-form:25:default',
+    });
+    expect(JSON.parse(localStorage.getItem(POKE_VOICE_SAVE_KEY) || '{}').pokedexRun.selectedCompanion)
+      .toEqual({ schemaVersion: 1, formId: 'pokemon-form:25:default' });
+  });
+
   it('añade la introducción y el progreso narrativo a partidas raíz anteriores', () => {
     const oldSave = loadOrMigratePokeVoiceSave({
       storage: localStorage,

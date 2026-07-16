@@ -4,6 +4,7 @@ import {
   DEFAULT_TRAINER_NAMES,
   PROFESSOR_NARRATIVE_SEQUENCES,
   PROFESSOR_PROFILE_SEQUENCE_ID,
+  PROFESSOR_INCOMING_CALL_DELAY_MS,
   getProfessorIntroductionTrigger,
   normalizeTrainerName,
 } from '../domain/narrative/professorIntroduction.js';
@@ -31,7 +32,9 @@ export function useProfessorIntroduction({
   ignoreNewDiscoveries?: boolean;
 }) {
   const [state, setState] = useState(readState);
+  const [incomingCallSequenceId, setIncomingCallSequenceId] = useState<string>();
   const previousDiscoveryCount = useRef(discoveryCount);
+  const incomingCallTimer = useRef<number | undefined>(undefined);
 
   const commit = useCallback((updater: (current: ReturnType<typeof readState>) => ReturnType<typeof readState>) => {
     let nextState = state;
@@ -72,12 +75,30 @@ export function useProfessorIntroduction({
     });
   }, [commit]);
 
+  const activateSequence = useCallback((sequenceId: string) => {
+    const sequence = PROFESSOR_NARRATIVE_SEQUENCES[sequenceId];
+    if (!sequence) return false;
+    commit(current => ({
+      ...current,
+      narrativeProgress: {
+        ...current.narrativeProgress,
+        pendingSequenceIds: current.narrativeProgress.pendingSequenceIds.filter(id => id !== sequenceId),
+        activeSequence: {
+          sequenceId,
+          pageId: sequence.initialPageId,
+          startedAt: new Date().toISOString(),
+        },
+      },
+    }));
+    setIncomingCallSequenceId(undefined);
+    return true;
+  }, [commit]);
+
   const requestProfileSetup = useCallback(() => {
     const current = readState();
     if (current.introduction.status !== 'accepted' || current.trainerProfile) return false;
-    queueSequence(PROFESSOR_PROFILE_SEQUENCE_ID, false);
-    return true;
-  }, [queueSequence]);
+    return activateSequence(PROFESSOR_PROFILE_SEQUENCE_ID);
+  }, [activateSequence]);
 
   const requestFromDetail = useCallback((currentDiscoveryCount: number) => {
     const current = readState();
@@ -105,23 +126,25 @@ export function useProfessorIntroduction({
   }, [discoveryCount, ignoreNewDiscoveries, queueSequence]);
 
   useEffect(() => {
-    if (!canPresent || state.narrativeProgress.activeSequence) return;
+    window.clearTimeout(incomingCallTimer.current);
+    if (!canPresent || state.narrativeProgress.activeSequence || incomingCallSequenceId) return undefined;
     const [sequenceId] = state.narrativeProgress.pendingSequenceIds;
     const sequence = sequenceId ? PROFESSOR_NARRATIVE_SEQUENCES[sequenceId] : undefined;
-    if (!sequence) return;
-    commit(current => ({
-      ...current,
-      narrativeProgress: {
-        ...current.narrativeProgress,
-        pendingSequenceIds: current.narrativeProgress.pendingSequenceIds.filter(id => id !== sequenceId),
-        activeSequence: {
-          sequenceId,
-          pageId: sequence.initialPageId,
-          startedAt: new Date().toISOString(),
-        },
-      },
-    }));
-  }, [canPresent, commit, state.narrativeProgress.activeSequence, state.narrativeProgress.pendingSequenceIds]);
+    if (!sequence) return undefined;
+    incomingCallTimer.current = window.setTimeout(() => {
+      const current = readState();
+      if (!current.narrativeProgress.activeSequence
+        && current.narrativeProgress.pendingSequenceIds.includes(sequenceId)) {
+        setIncomingCallSequenceId(sequenceId);
+      }
+    }, PROFESSOR_INCOMING_CALL_DELAY_MS);
+    return () => window.clearTimeout(incomingCallTimer.current);
+  }, [canPresent, incomingCallSequenceId, state.narrativeProgress.activeSequence, state.narrativeProgress.pendingSequenceIds]);
+
+  const answerCall = useCallback(() => {
+    const sequenceId = incomingCallSequenceId ?? readState().narrativeProgress.pendingSequenceIds[0];
+    return sequenceId ? activateSequence(sequenceId) : false;
+  }, [activateSequence, incomingCallSequenceId]);
 
   const completeActiveSequence = useCallback((introduction = state.introduction) => {
     const active = state.narrativeProgress.activeSequence;
@@ -238,6 +261,7 @@ export function useProfessorIntroduction({
 
   return useMemo(() => ({
     accepted: state.introduction.status === 'accepted',
+    answerCall,
     active: Boolean(activeSequence && activePage),
     activePage,
     activeSequence,
@@ -246,9 +270,10 @@ export function useProfessorIntroduction({
     dismiss,
     hasNotification: state.narrativeProgress.pendingSequenceIds.length > 0
       || (state.introduction.status === 'accepted' && !state.trainerProfile),
+    incomingCall: Boolean(incomingCallSequenceId),
     requestProfileSetup,
     requestFromDetail,
     submitTextInput,
     trainerProfile: state.trainerProfile,
-  }), [activePage, activeSequence, advance, choose, dismiss, requestFromDetail, requestProfileSetup, state.introduction.status, state.narrativeProgress.pendingSequenceIds.length, state.trainerProfile, submitTextInput]);
+  }), [activePage, activeSequence, advance, answerCall, choose, dismiss, incomingCallSequenceId, requestFromDetail, requestProfileSetup, state.introduction.status, state.narrativeProgress.pendingSequenceIds.length, state.trainerProfile, submitTextInput]);
 }

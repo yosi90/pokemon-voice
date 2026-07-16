@@ -1,0 +1,4738 @@
+{
+  "schemaVersion": 1,
+  "generation": 7,
+  "species": [
+    {
+      "schemaVersion": 1,
+      "speciesId": 722,
+      "slug": "rowlet",
+      "displayName": "Rowlet",
+      "generation": 7,
+      "traits": {
+        "starter": true,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:722:default",
+          "slug": "rowlet",
+          "displayName": "Rowlet",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:722",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 1,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 723,
+      "slug": "dartrix",
+      "displayName": "Dartrix",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:723:default",
+          "slug": "dartrix",
+          "displayName": "Dartrix",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:723",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "flying"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.7,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 724,
+      "slug": "decidueye",
+      "displayName": "Decidueye",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:724:default",
+          "slug": "decidueye",
+          "displayName": "Decidueye",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:724",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "ghost"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.6,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:724:hisui",
+          "slug": "decidueye-hisui",
+          "displayName": "Decidueye Hisui",
+          "kind": "regional",
+          "assetId": "pokeapi-artwork:10244",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "fighting"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.6,
+          "sizeClass": "medium",
+          "narrativeTags": [
+            "hisui"
+          ],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 725,
+      "slug": "litten",
+      "displayName": "Litten",
+      "generation": 7,
+      "traits": {
+        "starter": true,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:725:default",
+          "slug": "litten",
+          "displayName": "Litten",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:725",
+          "selectableCompanion": true,
+          "types": [
+            "fire"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 1,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 726,
+      "slug": "torracat",
+      "displayName": "Torracat",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:726:default",
+          "slug": "torracat",
+          "displayName": "Torracat",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:726",
+          "selectableCompanion": true,
+          "types": [
+            "fire"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.7,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 727,
+      "slug": "incineroar",
+      "displayName": "Incineroar",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:727:default",
+          "slug": "incineroar",
+          "displayName": "Incineroar",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:727",
+          "selectableCompanion": true,
+          "types": [
+            "fire",
+            "dark"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.8,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 728,
+      "slug": "popplio",
+      "displayName": "Popplio",
+      "generation": 7,
+      "traits": {
+        "starter": true,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:728:default",
+          "slug": "popplio",
+          "displayName": "Popplio",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:728",
+          "selectableCompanion": true,
+          "types": [
+            "water"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 1,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 729,
+      "slug": "brionne",
+      "displayName": "Brionne",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:729:default",
+          "slug": "brionne",
+          "displayName": "Brionne",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:729",
+          "selectableCompanion": true,
+          "types": [
+            "water"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 730,
+      "slug": "primarina",
+      "displayName": "Primarina",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:730:default",
+          "slug": "primarina",
+          "displayName": "Primarina",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:730",
+          "selectableCompanion": true,
+          "types": [
+            "water",
+            "fairy"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.8,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 731,
+      "slug": "pikipek",
+      "displayName": "Pikipek",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:731:default",
+          "slug": "pikipek",
+          "displayName": "Pikipek",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:731",
+          "selectableCompanion": true,
+          "types": [
+            "normal",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 732,
+      "slug": "trumbeak",
+      "displayName": "Trumbeak",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:732:default",
+          "slug": "trumbeak",
+          "displayName": "Trumbeak",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:732",
+          "selectableCompanion": true,
+          "types": [
+            "normal",
+            "flying"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 733,
+      "slug": "toucannon",
+      "displayName": "Toucannon",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:733:default",
+          "slug": "toucannon",
+          "displayName": "Toucannon",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:733",
+          "selectableCompanion": true,
+          "types": [
+            "normal",
+            "flying"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.1,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 734,
+      "slug": "yungoos",
+      "displayName": "Yungoos",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:734:default",
+          "slug": "yungoos",
+          "displayName": "Yungoos",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:734",
+          "selectableCompanion": true,
+          "types": [
+            "normal"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 735,
+      "slug": "gumshoos",
+      "displayName": "Gumshoos",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:735:default",
+          "slug": "gumshoos",
+          "displayName": "Gumshoos",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:735",
+          "selectableCompanion": true,
+          "types": [
+            "normal"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.7,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:735:totem",
+          "slug": "gumshoos-totem",
+          "displayName": "Gumshoos Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10121",
+          "selectableCompanion": false,
+          "types": [
+            "normal"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.4,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 736,
+      "slug": "grubbin",
+      "displayName": "Grubbin",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:736:default",
+          "slug": "grubbin",
+          "displayName": "Grubbin",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:736",
+          "selectableCompanion": true,
+          "types": [
+            "bug"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 737,
+      "slug": "charjabug",
+      "displayName": "Charjabug",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:737:default",
+          "slug": "charjabug",
+          "displayName": "Charjabug",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:737",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "electric"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.5,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 738,
+      "slug": "vikavolt",
+      "displayName": "Vikavolt",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:738:default",
+          "slug": "vikavolt",
+          "displayName": "Vikavolt",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:738",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "electric"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.5,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:738:totem",
+          "slug": "vikavolt-totem",
+          "displayName": "Vikavolt Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10122",
+          "selectableCompanion": false,
+          "types": [
+            "bug",
+            "electric"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 2.6,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 739,
+      "slug": "crabrawler",
+      "displayName": "Crabrawler",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:739:default",
+          "slug": "crabrawler",
+          "displayName": "Crabrawler",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:739",
+          "selectableCompanion": true,
+          "types": [
+            "fighting"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 740,
+      "slug": "crabominable",
+      "displayName": "Crabominable",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:740:default",
+          "slug": "crabominable",
+          "displayName": "Crabominable",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:740",
+          "selectableCompanion": true,
+          "types": [
+            "fighting",
+            "ice"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.7,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:740:mega",
+          "slug": "crabominable-mega",
+          "displayName": "Crabominable Mega",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10315",
+          "selectableCompanion": false,
+          "types": [
+            "fighting",
+            "ice"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 2.6,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 741,
+      "slug": "oricorio-baile",
+      "displayName": "Oricorio Baile",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:741:default",
+          "slug": "oricorio-baile",
+          "displayName": "Oricorio Baile",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:741",
+          "selectableCompanion": true,
+          "types": [
+            "fire",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:741:oricorio-pom-pom",
+          "slug": "oricorio-pom-pom",
+          "displayName": "Oricorio Pom Pom",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10123",
+          "selectableCompanion": true,
+          "types": [
+            "electric",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:741:oricorio-pau",
+          "slug": "oricorio-pau",
+          "displayName": "Oricorio Pau",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10124",
+          "selectableCompanion": true,
+          "types": [
+            "psychic",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:741:oricorio-sensu",
+          "slug": "oricorio-sensu",
+          "displayName": "Oricorio Sensu",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10125",
+          "selectableCompanion": true,
+          "types": [
+            "ghost",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 742,
+      "slug": "cutiefly",
+      "displayName": "Cutiefly",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:742:default",
+          "slug": "cutiefly",
+          "displayName": "Cutiefly",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:742",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.1,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 743,
+      "slug": "ribombee",
+      "displayName": "Ribombee",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:743:default",
+          "slug": "ribombee",
+          "displayName": "Ribombee",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:743",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "fairy"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.2,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:743:totem",
+          "slug": "ribombee-totem",
+          "displayName": "Ribombee Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10150",
+          "selectableCompanion": false,
+          "types": [
+            "bug",
+            "fairy"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 744,
+      "slug": "rockruff",
+      "displayName": "Rockruff",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:744:default",
+          "slug": "rockruff",
+          "displayName": "Rockruff",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:744",
+          "selectableCompanion": true,
+          "types": [
+            "rock"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.5,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:744:own-tempo",
+          "slug": "rockruff-own-tempo",
+          "displayName": "Rockruff Own Tempo",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10151",
+          "selectableCompanion": true,
+          "types": [
+            "rock"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.5,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 745,
+      "slug": "lycanroc-midday",
+      "displayName": "Lycanroc Midday",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:745:default",
+          "slug": "lycanroc-midday",
+          "displayName": "Lycanroc Midday",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:745",
+          "selectableCompanion": true,
+          "types": [
+            "rock"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.8,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:745:lycanroc-midnight",
+          "slug": "lycanroc-midnight",
+          "displayName": "Lycanroc Midnight",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10126",
+          "selectableCompanion": true,
+          "types": [
+            "rock"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.1,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:745:lycanroc-dusk",
+          "slug": "lycanroc-dusk",
+          "displayName": "Lycanroc Dusk",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10152",
+          "selectableCompanion": true,
+          "types": [
+            "rock"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.8,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 746,
+      "slug": "wishiwashi-solo",
+      "displayName": "Wishiwashi Solo",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:746:default",
+          "slug": "wishiwashi-solo",
+          "displayName": "Wishiwashi Solo",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:746",
+          "selectableCompanion": true,
+          "types": [
+            "water"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.2,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:746:wishiwashi-school",
+          "slug": "wishiwashi-school",
+          "displayName": "Wishiwashi School",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10127",
+          "selectableCompanion": false,
+          "types": [
+            "water"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 8.2,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 747,
+      "slug": "mareanie",
+      "displayName": "Mareanie",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:747:default",
+          "slug": "mareanie",
+          "displayName": "Mareanie",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:747",
+          "selectableCompanion": true,
+          "types": [
+            "poison",
+            "water"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 748,
+      "slug": "toxapex",
+      "displayName": "Toxapex",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:748:default",
+          "slug": "toxapex",
+          "displayName": "Toxapex",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:748",
+          "selectableCompanion": true,
+          "types": [
+            "poison",
+            "water"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.7,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 749,
+      "slug": "mudbray",
+      "displayName": "Mudbray",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:749:default",
+          "slug": "mudbray",
+          "displayName": "Mudbray",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:749",
+          "selectableCompanion": true,
+          "types": [
+            "ground"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 750,
+      "slug": "mudsdale",
+      "displayName": "Mudsdale",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:750:default",
+          "slug": "mudsdale",
+          "displayName": "Mudsdale",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:750",
+          "selectableCompanion": true,
+          "types": [
+            "ground"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 2.5,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 751,
+      "slug": "dewpider",
+      "displayName": "Dewpider",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:751:default",
+          "slug": "dewpider",
+          "displayName": "Dewpider",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:751",
+          "selectableCompanion": true,
+          "types": [
+            "water",
+            "bug"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 752,
+      "slug": "araquanid",
+      "displayName": "Araquanid",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:752:default",
+          "slug": "araquanid",
+          "displayName": "Araquanid",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:752",
+          "selectableCompanion": true,
+          "types": [
+            "water",
+            "bug"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.8,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:752:totem",
+          "slug": "araquanid-totem",
+          "displayName": "Araquanid Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10153",
+          "selectableCompanion": false,
+          "types": [
+            "water",
+            "bug"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 3.1,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 753,
+      "slug": "fomantis",
+      "displayName": "Fomantis",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:753:default",
+          "slug": "fomantis",
+          "displayName": "Fomantis",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:753",
+          "selectableCompanion": true,
+          "types": [
+            "grass"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 754,
+      "slug": "lurantis",
+      "displayName": "Lurantis",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:754:default",
+          "slug": "lurantis",
+          "displayName": "Lurantis",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:754",
+          "selectableCompanion": true,
+          "types": [
+            "grass"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.9,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:754:totem",
+          "slug": "lurantis-totem",
+          "displayName": "Lurantis Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10128",
+          "selectableCompanion": false,
+          "types": [
+            "grass"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.5,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 755,
+      "slug": "morelull",
+      "displayName": "Morelull",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:755:default",
+          "slug": "morelull",
+          "displayName": "Morelull",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:755",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.2,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 756,
+      "slug": "shiinotic",
+      "displayName": "Shiinotic",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:756:default",
+          "slug": "shiinotic",
+          "displayName": "Shiinotic",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:756",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "fairy"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 757,
+      "slug": "salandit",
+      "displayName": "Salandit",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:757:default",
+          "slug": "salandit",
+          "displayName": "Salandit",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:757",
+          "selectableCompanion": true,
+          "types": [
+            "poison",
+            "fire"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 758,
+      "slug": "salazzle",
+      "displayName": "Salazzle",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:758:default",
+          "slug": "salazzle",
+          "displayName": "Salazzle",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:758",
+          "selectableCompanion": true,
+          "types": [
+            "poison",
+            "fire"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.2,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:758:totem",
+          "slug": "salazzle-totem",
+          "displayName": "Salazzle Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10129",
+          "selectableCompanion": false,
+          "types": [
+            "poison",
+            "fire"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 2.1,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 759,
+      "slug": "stufful",
+      "displayName": "Stufful",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:759:default",
+          "slug": "stufful",
+          "displayName": "Stufful",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:759",
+          "selectableCompanion": true,
+          "types": [
+            "normal",
+            "fighting"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.5,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 760,
+      "slug": "bewear",
+      "displayName": "Bewear",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:760:default",
+          "slug": "bewear",
+          "displayName": "Bewear",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:760",
+          "selectableCompanion": true,
+          "types": [
+            "normal",
+            "fighting"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 2.1,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 761,
+      "slug": "bounsweet",
+      "displayName": "Bounsweet",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:761:default",
+          "slug": "bounsweet",
+          "displayName": "Bounsweet",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:761",
+          "selectableCompanion": true,
+          "types": [
+            "grass"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 762,
+      "slug": "steenee",
+      "displayName": "Steenee",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:762:default",
+          "slug": "steenee",
+          "displayName": "Steenee",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:762",
+          "selectableCompanion": true,
+          "types": [
+            "grass"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.7,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 763,
+      "slug": "tsareena",
+      "displayName": "Tsareena",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:763:default",
+          "slug": "tsareena",
+          "displayName": "Tsareena",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:763",
+          "selectableCompanion": true,
+          "types": [
+            "grass"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.2,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 36,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 764,
+      "slug": "comfey",
+      "displayName": "Comfey",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:764:default",
+          "slug": "comfey",
+          "displayName": "Comfey",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:764",
+          "selectableCompanion": true,
+          "types": [
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.1,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 765,
+      "slug": "oranguru",
+      "displayName": "Oranguru",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:765:default",
+          "slug": "oranguru",
+          "displayName": "Oranguru",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:765",
+          "selectableCompanion": true,
+          "types": [
+            "normal",
+            "psychic"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.5,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 766,
+      "slug": "passimian",
+      "displayName": "Passimian",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:766:default",
+          "slug": "passimian",
+          "displayName": "Passimian",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:766",
+          "selectableCompanion": true,
+          "types": [
+            "fighting"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 2,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 767,
+      "slug": "wimpod",
+      "displayName": "Wimpod",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:767:default",
+          "slug": "wimpod",
+          "displayName": "Wimpod",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:767",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "water"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.5,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 768,
+      "slug": "golisopod",
+      "displayName": "Golisopod",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:768:default",
+          "slug": "golisopod",
+          "displayName": "Golisopod",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:768",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "water"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 2,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:768:mega",
+          "slug": "golisopod-mega",
+          "displayName": "Golisopod Mega",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10316",
+          "selectableCompanion": false,
+          "types": [
+            "bug",
+            "steel"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 2.3,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 769,
+      "slug": "sandygast",
+      "displayName": "Sandygast",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:769:default",
+          "slug": "sandygast",
+          "displayName": "Sandygast",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:769",
+          "selectableCompanion": true,
+          "types": [
+            "ghost",
+            "ground"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.5,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 770,
+      "slug": "palossand",
+      "displayName": "Palossand",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:770:default",
+          "slug": "palossand",
+          "displayName": "Palossand",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:770",
+          "selectableCompanion": true,
+          "types": [
+            "ghost",
+            "ground"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.3,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 771,
+      "slug": "pyukumuku",
+      "displayName": "Pyukumuku",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:771:default",
+          "slug": "pyukumuku",
+          "displayName": "Pyukumuku",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:771",
+          "selectableCompanion": true,
+          "types": [
+            "water"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 772,
+      "slug": "type-null",
+      "displayName": "Type Null",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:772:default",
+          "slug": "type-null",
+          "displayName": "Type Null",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:772",
+          "selectableCompanion": true,
+          "types": [
+            "normal"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.9,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 773,
+      "slug": "silvally",
+      "displayName": "Silvally",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:773:default",
+          "slug": "silvally",
+          "displayName": "Silvally",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:773",
+          "selectableCompanion": true,
+          "types": [
+            "normal"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 2.3,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 774,
+      "slug": "minior-red-meteor",
+      "displayName": "Minior Red Meteor",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:default",
+          "slug": "minior-red-meteor",
+          "displayName": "Minior Red Meteor",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:774",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-orange-meteor",
+          "slug": "minior-orange-meteor",
+          "displayName": "Minior Orange Meteor",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10130",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-yellow-meteor",
+          "slug": "minior-yellow-meteor",
+          "displayName": "Minior Yellow Meteor",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10131",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-green-meteor",
+          "slug": "minior-green-meteor",
+          "displayName": "Minior Green Meteor",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10132",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-blue-meteor",
+          "slug": "minior-blue-meteor",
+          "displayName": "Minior Blue Meteor",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10133",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-indigo-meteor",
+          "slug": "minior-indigo-meteor",
+          "displayName": "Minior Indigo Meteor",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10134",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-violet-meteor",
+          "slug": "minior-violet-meteor",
+          "displayName": "Minior Violet Meteor",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10135",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-red",
+          "slug": "minior-red",
+          "displayName": "Minior Red",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10136",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-orange",
+          "slug": "minior-orange",
+          "displayName": "Minior Orange",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10137",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-yellow",
+          "slug": "minior-yellow",
+          "displayName": "Minior Yellow",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10138",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-green",
+          "slug": "minior-green",
+          "displayName": "Minior Green",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10139",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-blue",
+          "slug": "minior-blue",
+          "displayName": "Minior Blue",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10140",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-indigo",
+          "slug": "minior-indigo",
+          "displayName": "Minior Indigo",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10141",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:774:minior-violet",
+          "slug": "minior-violet",
+          "displayName": "Minior Violet",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10142",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 775,
+      "slug": "komala",
+      "displayName": "Komala",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:775:default",
+          "slug": "komala",
+          "displayName": "Komala",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:775",
+          "selectableCompanion": true,
+          "types": [
+            "normal"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 776,
+      "slug": "turtonator",
+      "displayName": "Turtonator",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:776:default",
+          "slug": "turtonator",
+          "displayName": "Turtonator",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:776",
+          "selectableCompanion": true,
+          "types": [
+            "fire",
+            "dragon"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 2,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 777,
+      "slug": "togedemaru",
+      "displayName": "Togedemaru",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:777:default",
+          "slug": "togedemaru",
+          "displayName": "Togedemaru",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:777",
+          "selectableCompanion": true,
+          "types": [
+            "electric",
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:777:totem",
+          "slug": "togedemaru-totem",
+          "displayName": "Togedemaru Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10154",
+          "selectableCompanion": false,
+          "types": [
+            "electric",
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 778,
+      "slug": "mimikyu-disguised",
+      "displayName": "Mimikyu Disguised",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:778:default",
+          "slug": "mimikyu-disguised",
+          "displayName": "Mimikyu Disguised",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:778",
+          "selectableCompanion": true,
+          "types": [
+            "ghost",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.2,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:778:mimikyu-busted",
+          "slug": "mimikyu-busted",
+          "displayName": "Mimikyu Busted",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10143",
+          "selectableCompanion": false,
+          "types": [
+            "ghost",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.2,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:778:mimikyu-totem-disguised",
+          "slug": "mimikyu-totem-disguised",
+          "displayName": "Mimikyu Totem Disguised",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10144",
+          "selectableCompanion": false,
+          "types": [
+            "ghost",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:778:mimikyu-totem-busted",
+          "slug": "mimikyu-totem-busted",
+          "displayName": "Mimikyu Totem Busted",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10145",
+          "selectableCompanion": false,
+          "types": [
+            "ghost",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.4,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 779,
+      "slug": "bruxish",
+      "displayName": "Bruxish",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:779:default",
+          "slug": "bruxish",
+          "displayName": "Bruxish",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:779",
+          "selectableCompanion": true,
+          "types": [
+            "water",
+            "psychic"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.9,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 780,
+      "slug": "drampa",
+      "displayName": "Drampa",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:780:default",
+          "slug": "drampa",
+          "displayName": "Drampa",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:780",
+          "selectableCompanion": true,
+          "types": [
+            "normal",
+            "dragon"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 3,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:780:mega",
+          "slug": "drampa-mega",
+          "displayName": "Drampa Mega",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10302",
+          "selectableCompanion": false,
+          "types": [
+            "normal",
+            "dragon"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 3,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 781,
+      "slug": "dhelmise",
+      "displayName": "Dhelmise",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:781:default",
+          "slug": "dhelmise",
+          "displayName": "Dhelmise",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:781",
+          "selectableCompanion": true,
+          "types": [
+            "ghost",
+            "grass"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 3.9,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 782,
+      "slug": "jangmo-o",
+      "displayName": "Jangmo O",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:782:default",
+          "slug": "jangmo-o",
+          "displayName": "Jangmo O",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:782",
+          "selectableCompanion": true,
+          "types": [
+            "dragon"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 3,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 783,
+      "slug": "hakamo-o",
+      "displayName": "Hakamo O",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:783:default",
+          "slug": "hakamo-o",
+          "displayName": "Hakamo O",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:783",
+          "selectableCompanion": true,
+          "types": [
+            "dragon",
+            "fighting"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 1.2,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 24,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 784,
+      "slug": "kommo-o",
+      "displayName": "Kommo O",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": true,
+        "legendary": false,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:784:default",
+          "slug": "kommo-o",
+          "displayName": "Kommo O",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:784",
+          "selectableCompanion": true,
+          "types": [
+            "dragon",
+            "fighting"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 1.6,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 50,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:784:totem",
+          "slug": "kommo-o-totem",
+          "displayName": "Kommo O Totem",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10146",
+          "selectableCompanion": false,
+          "types": [
+            "dragon",
+            "fighting"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 2.4,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 50,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 785,
+      "slug": "tapu-koko",
+      "displayName": "Tapu Koko",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:785:default",
+          "slug": "tapu-koko",
+          "displayName": "Tapu Koko",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:785",
+          "selectableCompanion": true,
+          "types": [
+            "electric",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.8,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 786,
+      "slug": "tapu-lele",
+      "displayName": "Tapu Lele",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:786:default",
+          "slug": "tapu-lele",
+          "displayName": "Tapu Lele",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:786",
+          "selectableCompanion": true,
+          "types": [
+            "psychic",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.2,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 787,
+      "slug": "tapu-bulu",
+      "displayName": "Tapu Bulu",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:787:default",
+          "slug": "tapu-bulu",
+          "displayName": "Tapu Bulu",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:787",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.9,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 788,
+      "slug": "tapu-fini",
+      "displayName": "Tapu Fini",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:788:default",
+          "slug": "tapu-fini",
+          "displayName": "Tapu Fini",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:788",
+          "selectableCompanion": true,
+          "types": [
+            "water",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.3,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 789,
+      "slug": "cosmog",
+      "displayName": "Cosmog",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:789:default",
+          "slug": "cosmog",
+          "displayName": "Cosmog",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:789",
+          "selectableCompanion": true,
+          "types": [
+            "psychic"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.2,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 790,
+      "slug": "cosmoem",
+      "displayName": "Cosmoem",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:790:default",
+          "slug": "cosmoem",
+          "displayName": "Cosmoem",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:790",
+          "selectableCompanion": true,
+          "types": [
+            "psychic"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 0.1,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 791,
+      "slug": "solgaleo",
+      "displayName": "Solgaleo",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:791:default",
+          "slug": "solgaleo",
+          "displayName": "Solgaleo",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:791",
+          "selectableCompanion": true,
+          "types": [
+            "psychic",
+            "steel"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 3.4,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 792,
+      "slug": "lunala",
+      "displayName": "Lunala",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:792:default",
+          "slug": "lunala",
+          "displayName": "Lunala",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:792",
+          "selectableCompanion": true,
+          "types": [
+            "psychic",
+            "ghost"
+          ],
+          "evolutionStage": 3,
+          "heightMeters": 4,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 793,
+      "slug": "nihilego",
+      "displayName": "Nihilego",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:793:default",
+          "slug": "nihilego",
+          "displayName": "Nihilego",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:793",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "poison"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.2,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 794,
+      "slug": "buzzwole",
+      "displayName": "Buzzwole",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:794:default",
+          "slug": "buzzwole",
+          "displayName": "Buzzwole",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:794",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "fighting"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 2.4,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 795,
+      "slug": "pheromosa",
+      "displayName": "Pheromosa",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:795:default",
+          "slug": "pheromosa",
+          "displayName": "Pheromosa",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:795",
+          "selectableCompanion": true,
+          "types": [
+            "bug",
+            "fighting"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.8,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 796,
+      "slug": "xurkitree",
+      "displayName": "Xurkitree",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:796:default",
+          "slug": "xurkitree",
+          "displayName": "Xurkitree",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:796",
+          "selectableCompanion": true,
+          "types": [
+            "electric"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 3.8,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 797,
+      "slug": "celesteela",
+      "displayName": "Celesteela",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:797:default",
+          "slug": "celesteela",
+          "displayName": "Celesteela",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:797",
+          "selectableCompanion": true,
+          "types": [
+            "steel",
+            "flying"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 9.2,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 798,
+      "slug": "kartana",
+      "displayName": "Kartana",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:798:default",
+          "slug": "kartana",
+          "displayName": "Kartana",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:798",
+          "selectableCompanion": true,
+          "types": [
+            "grass",
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.3,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 799,
+      "slug": "guzzlord",
+      "displayName": "Guzzlord",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:799:default",
+          "slug": "guzzlord",
+          "displayName": "Guzzlord",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:799",
+          "selectableCompanion": true,
+          "types": [
+            "dark",
+            "dragon"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 5.5,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 800,
+      "slug": "necrozma",
+      "displayName": "Necrozma",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": true,
+        "mythical": false,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:800:default",
+          "slug": "necrozma",
+          "displayName": "Necrozma",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:800",
+          "selectableCompanion": true,
+          "types": [
+            "psychic"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 2.4,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:800:dusk",
+          "slug": "necrozma-dusk",
+          "displayName": "Necrozma Dusk",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10155",
+          "selectableCompanion": true,
+          "types": [
+            "psychic",
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 3.8,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:800:dawn",
+          "slug": "necrozma-dawn",
+          "displayName": "Necrozma Dawn",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10156",
+          "selectableCompanion": true,
+          "types": [
+            "psychic",
+            "ghost"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 4.2,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:800:ultra",
+          "slug": "necrozma-ultra",
+          "displayName": "Necrozma Ultra",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10157",
+          "selectableCompanion": true,
+          "types": [
+            "psychic",
+            "dragon"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 7.5,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 65,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 801,
+      "slug": "magearna",
+      "displayName": "Magearna",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": true,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:801:default",
+          "slug": "magearna",
+          "displayName": "Magearna",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:801",
+          "selectableCompanion": true,
+          "types": [
+            "steel",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:801:original",
+          "slug": "magearna-original",
+          "displayName": "Magearna Original",
+          "kind": "alternate",
+          "assetId": "pokeapi-artwork:10147",
+          "selectableCompanion": true,
+          "types": [
+            "steel",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:801:mega",
+          "slug": "magearna-mega",
+          "displayName": "Magearna Mega",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10317",
+          "selectableCompanion": false,
+          "types": [
+            "steel",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.3,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:801:original-mega",
+          "slug": "magearna-original-mega",
+          "displayName": "Magearna Original Mega",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10318",
+          "selectableCompanion": false,
+          "types": [
+            "steel",
+            "fairy"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.3,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 802,
+      "slug": "marshadow",
+      "displayName": "Marshadow",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": true,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:802:default",
+          "slug": "marshadow",
+          "displayName": "Marshadow",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:802",
+          "selectableCompanion": true,
+          "types": [
+            "fighting",
+            "ghost"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.7,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 803,
+      "slug": "poipole",
+      "displayName": "Poipole",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:803:default",
+          "slug": "poipole",
+          "displayName": "Poipole",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:803",
+          "selectableCompanion": true,
+          "types": [
+            "poison"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.6,
+          "sizeClass": "small",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 804,
+      "slug": "naganadel",
+      "displayName": "Naganadel",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:804:default",
+          "slug": "naganadel",
+          "displayName": "Naganadel",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:804",
+          "selectableCompanion": true,
+          "types": [
+            "poison",
+            "dragon"
+          ],
+          "evolutionStage": 2,
+          "heightMeters": 3.6,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 805,
+      "slug": "stakataka",
+      "displayName": "Stakataka",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:805:default",
+          "slug": "stakataka",
+          "displayName": "Stakataka",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:805",
+          "selectableCompanion": true,
+          "types": [
+            "rock",
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 5.5,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 806,
+      "slug": "blacephalon",
+      "displayName": "Blacephalon",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": false,
+        "special": true
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:806:default",
+          "slug": "blacephalon",
+          "displayName": "Blacephalon",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:806",
+          "selectableCompanion": true,
+          "types": [
+            "fire",
+            "ghost"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.8,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 60,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 807,
+      "slug": "zeraora",
+      "displayName": "Zeraora",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": true,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:807:default",
+          "slug": "zeraora",
+          "displayName": "Zeraora",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:807",
+          "selectableCompanion": true,
+          "types": [
+            "electric"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.5,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:807:mega",
+          "slug": "zeraora-mega",
+          "displayName": "Zeraora Mega",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10319",
+          "selectableCompanion": false,
+          "types": [
+            "electric"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 1.5,
+          "sizeClass": "medium",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 808,
+      "slug": "meltan",
+      "displayName": "Meltan",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": true,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:808:default",
+          "slug": "meltan",
+          "displayName": "Meltan",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:808",
+          "selectableCompanion": true,
+          "types": [
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 0.2,
+          "sizeClass": "tiny",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "speciesId": 809,
+      "slug": "melmetal",
+      "displayName": "Melmetal",
+      "generation": 7,
+      "traits": {
+        "starter": false,
+        "baby": false,
+        "pseudoLegendary": false,
+        "legendary": false,
+        "mythical": true,
+        "special": false
+      },
+      "forms": [
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:809:default",
+          "slug": "melmetal",
+          "displayName": "Melmetal",
+          "kind": "default",
+          "assetId": "pokeapi-artwork:809",
+          "selectableCompanion": true,
+          "types": [
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 2.5,
+          "sizeClass": "large",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        },
+        {
+          "schemaVersion": 1,
+          "formId": "pokemon-form:809:gmax",
+          "slug": "melmetal-gmax",
+          "displayName": "Melmetal Gmax",
+          "kind": "battle",
+          "assetId": "pokeapi-artwork:10208",
+          "selectableCompanion": false,
+          "types": [
+            "steel"
+          ],
+          "evolutionStage": 1,
+          "heightMeters": 25,
+          "sizeClass": "huge",
+          "narrativeTags": [],
+          "fieldCapabilities": [],
+          "companion": {
+            "minimumTrainerLevel": 70,
+            "balanceStatus": "provisional",
+            "visibility": "public",
+            "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "appearances": []
+        }
+      ]
+    }
+  ]
+}

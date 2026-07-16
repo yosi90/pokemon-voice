@@ -10,6 +10,7 @@ export const PROFESSOR_INTRO_SEQUENCE_ID = 'narrative:professor-camphor:introduc
 export const PROFESSOR_RETURN_SEQUENCE_ID = 'narrative:professor-camphor:return';
 export const PROFESSOR_PROFILE_SEQUENCE_ID = 'narrative:professor-camphor:trainer-profile';
 export const PROFESSOR_FIRST_AUTOMATIC_DISCOVERY = 5;
+export const PROFESSOR_INCOMING_CALL_DELAY_MS = 1800;
 export const DEFAULT_TRAINER_NAMES: Readonly<Record<TrainerAvatarId, string>> = Object.freeze({
   achaman: 'Achaman',
   guayota: 'Guayota',

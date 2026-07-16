@@ -10,6 +10,12 @@ import type {
 } from '../../packages/contracts/src/index.js';
 import { LS_CARD_SCALE, LS_GENS, LS_KEY } from '../../scripts/utils.js';
 import type { AchievementRecord } from '../domain/achievements/achievementProgress.js';
+import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
+import {
+  createCompanionCatalogSpecies,
+  type CompanionCandidate,
+} from '../domain/companions/companionCandidates.js';
+import { selectCompanion } from '../domain/companions/companionEligibility.js';
 import {
   claimPokeDiscoverRewards,
   type RewardClaimRequest,
@@ -84,6 +90,23 @@ export function updateBrowserPreferences(
 ) {
   const current = readCurrentSave();
   persist({ ...current, preferences: updater(current.preferences) });
+}
+
+export function selectBrowserCompanion(
+  candidate: CompanionCandidate,
+  catalog: readonly PokemonCatalogRecord[],
+  selectedAt = new Date().toISOString(),
+) {
+  const current = readCurrentSave();
+  const result = selectCompanion({
+    save: current,
+    definition: candidate.requirement,
+    form: candidate.form,
+    species: catalog.map(createCompanionCatalogSpecies),
+    selectedAt,
+  });
+  if (result.status === 'selected') persist(result.save);
+  return result;
 }
 
 export function startNewPokedexRun({
@@ -323,7 +346,10 @@ export function syncBrowserLegacyEasterEggState(legacyState: unknown) {
 }
 
 export function syncBrowserAchievements(records: readonly AchievementRecord[]) {
-  const achievements: Record<string, PermanentAchievementRecordV1> = {};
+  const current = readCurrentSave();
+  const achievements: Record<string, PermanentAchievementRecordV1> = {
+    ...current.pokeDiscover.achievements,
+  };
   for (const record of records) {
     achievements[record.id] = {
       schemaVersion: 1,
@@ -334,7 +360,10 @@ export function syncBrowserAchievements(records: readonly AchievementRecord[]) {
       ...(record.originModeId ? { originModeId: record.originModeId } : {}),
     };
   }
-  updateBrowserPokeDiscover(current => ({ ...current, achievements }));
+  persist({
+    ...current,
+    pokeDiscover: { ...current.pokeDiscover, achievements },
+  });
 }
 
 export function claimBrowserPokeDiscoverRewards(request: RewardClaimRequest): RewardClaimResult {

@@ -13,7 +13,9 @@
     "test:e2e": "playwright test",
     "test:visual": "playwright test tests/e2e/visual.spec.js",
     "test:e2e:update": "playwright test --update-snapshots",
-    "test:all": "npm run typecheck && npm run test && npm run test:e2e"
+    "test:all": "npm run typecheck && npm run test && npm run test:e2e",
+    "catalog:import": "node scripts/import-companion-catalog.mjs",
+    "catalog:validate": "node scripts/validate-companion-catalog.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

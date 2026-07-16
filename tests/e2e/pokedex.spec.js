@@ -36,6 +36,12 @@ async function completeNarrativePage(page) {
   await box.click();
 }
 
+async function answerProfessorCall(page) {
+  const call = page.getByRole('status', { name: 'Llamada entrante del profesor Alcanfor' });
+  await expect(call).toBeVisible({ timeout: 10000 });
+  await call.getByRole('button', { name: 'Descolgar' }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   await mockPokemonApi(page);
   await page.goto('/');
@@ -60,6 +66,11 @@ test('Alcanfor se presenta desde la primera ficha y abre PokeDiscover sin conced
   });
   await revealByText(page, 'bulbasaur');
   await page.getByRole('button', { name: 'Abrir ficha de bulbasaur' }).click();
+
+  await expect(page.getByRole('dialog', { name: 'bulbasaur' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cerrar ficha' }).click();
+  await answerProfessorCall(page);
 
   const scene = page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' });
   await expect(scene).toBeVisible();
@@ -104,7 +115,7 @@ test('Alcanfor se presenta desde la primera ficha y abre PokeDiscover sin conced
   expect(persisted.achievements['first-mission']).toBeUndefined();
 
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
-  const missions = page.getByRole('dialog', { name: 'Profesor Alcanfor' });
+  const missions = page.getByRole('dialog', { name: 'PokeDiscover' });
   await expect(missions).toContainText('Preparando el primer encargo');
 });
 
@@ -121,6 +132,83 @@ test('una adhesión anterior solicita el perfil al abrir Poke-Discover sin inter
   await scene.getByRole('button', { name: 'Soy un chico' }).click();
   await scene.locator('.narrative-box').click();
   await expect(scene.getByLabel('Nombre del entrenador')).toHaveValue('Achaman');
+});
+
+test('filtra compañeros por categoría y conserva forma y apariencia seleccionadas', async ({ page }) => {
+  await mockPokemonApi(page, {
+    extraEntries: [{ name: 'raichu', url: 'https://pokeapi.co/api/v2/pokemon/26/' }],
+  });
+  await page.goto('/');
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokedexRun.registeredSpeciesIds = [25, 26, 152];
+    save.pokedexRun.discoveryOrder = [25, 26, 152];
+    save.pokeDiscover.introduction = {
+      ...save.pokeDiscover.introduction,
+      status: 'accepted',
+      acceptedAt: new Date().toISOString(),
+    };
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'guayota', displayName: 'Guayota' };
+    save.pokeDiscover.discoveredForms['pokemon-form:26:alola'] = {
+      schemaVersion: 1,
+      formId: 'pokemon-form:26:alola',
+      speciesId: 26,
+      discoveredAt: new Date().toISOString(),
+      noteIds: [],
+    };
+    save.pokeDiscover.discoveredAppearances['pokemon-appearance:25:surfista'] = {
+      schemaVersion: 1,
+      appearanceId: 'pokemon-appearance:25:surfista',
+      formId: 'pokemon-form:25:default',
+      speciesId: 25,
+      discoveredAt: new Date().toISOString(),
+      noteIds: [],
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  const pokeDiscover = page.getByRole('dialog', { name: 'PokeDiscover' });
+  const homeHeight = (await pokeDiscover.boundingBox()).height;
+  await page.getByRole('button', { name: 'Encargos' }).click();
+  expect((await pokeDiscover.boundingBox()).height).toBe(homeHeight);
+  await page.getByRole('button', { name: 'Compañero' }).click();
+  expect((await pokeDiscover.boundingBox()).height).toBe(homeHeight);
+
+  const category = page.getByLabel('Categoría');
+  const generation = page.getByRole('combobox', { name: 'Filtrar por generación' });
+  await expect(generation).toContainText('Kanto · Gen. 1 (4)');
+  await expect(generation).toContainText('Johto · Gen. 2 (1)');
+  await generation.selectOption('2');
+  await expect(page.getByRole('heading', { name: 'Chikorita' })).toBeVisible();
+  await expect(page.locator('.companion-card')).toHaveCount(1);
+  await generation.selectOption('all');
+  await expect(category).toContainText('Tercera evolución (2)');
+  await expect(category).toContainText('Segunda evolución (2)');
+  await category.selectOption('third-evolution');
+  await expect(page.locator('.companion-card')).toHaveCount(2);
+  const search = page.getByPlaceholder('Nombre o número');
+  await search.fill('alola');
+  await expect(page.getByRole('heading', { name: 'Raichu Alola' })).toBeVisible();
+  await expect(page.locator('.companion-card')).toHaveCount(1);
+  await category.selectOption('second-evolution');
+  await search.fill('surfista');
+  const surfista = page.locator('.companion-card').filter({ hasText: 'Pikachu surfista' });
+  await expect(surfista).toHaveCount(1);
+  await surfista.getByRole('button', { name: 'Elegir' }).click();
+
+  const selection = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.selectedCompanion);
+  expect(selection).toEqual({
+    schemaVersion: 1,
+    formId: 'pokemon-form:25:default',
+    appearanceId: 'pokemon-appearance:25:surfista',
+  });
+  await page.getByRole('button', { name: 'Inicio' }).click();
+  expect((await pokeDiscover.boundingBox()).height).toBe(homeHeight);
+  await expect(page.getByText('Compañero actual')).toBeVisible();
+  await expect(page.getByText('Pikachu surfista')).toBeVisible();
 });
 
 test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan', async ({ page }) => {
@@ -145,6 +233,8 @@ test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan
   await input.fill('squirtle');
   await input.press('Enter');
 
+  await expect(page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' })).toHaveCount(0);
+  await answerProfessorCall(page);
   const scene = page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' });
   await expect(scene).toBeVisible();
   await completeNarrativePage(page);
@@ -169,7 +259,57 @@ test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan
   await page.getByRole('button', { name: 'Cerrar ficha' }).click();
   await input.fill('eevee');
   await input.press('Enter');
+  await answerProfessorCall(page);
   await expect(scene).toContainText('¡Otra captura para esa Pokédex!');
+});
+
+test('una llamada de Alcanfor detiene el reconocimiento de voz antes de poder descolgar', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__speechRecognitionInstances = [];
+    class FakeSpeechRecognition {
+      constructor() {
+        window.__speechRecognitionInstances.push(this);
+      }
+      start() { this.started = true; }
+      stop() {
+        this.started = false;
+        this.stopped = true;
+        this.onend?.();
+      }
+    }
+    window.SpeechRecognition = FakeSpeechRecognition;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }),
+      },
+    });
+  });
+  await setProfessorIntroduction(page, {
+    status: 'hidden',
+    invitationCount: 0,
+    declineCount: 0,
+    nextEligibleDiscoveryCount: 5,
+    acceptedAt: null,
+  });
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokedexRun.registeredSpeciesIds = [1, 2, 3, 4];
+    save.pokedexRun.discoveryOrder = [1, 2, 3, 4];
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+    localStorage.setItem('pokevoice-guessed-v1', JSON.stringify([1, 2, 3, 4]));
+  });
+  await page.reload();
+  const mic = page.getByRole('button', { name: 'Escuchar por micrófono' });
+  await mic.click();
+  await expect(page.getByRole('button', { name: 'Parar escucha' })).toBeVisible();
+
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('squirtle');
+  await input.press('Enter');
+  await expect(page.getByRole('status', { name: 'Llamada entrante del profesor Alcanfor' })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('button', { name: 'Escuchar por micrófono' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__speechRecognitionInstances.at(-1)?.stopped)).toBe(true);
 });
 
 test('permite descubrir por texto y persiste el resultado', async ({ page }) => {
@@ -569,6 +709,22 @@ test('muestra una sola generación y recuerda la selección', async ({ page }) =
   await expect(page.locator('.pokemon-card[data-id="152"]')).toBeVisible();
   await page.getByRole('button', { name: 'Controles de Pokédex' }).click();
   await expect(page.getByRole('heading', { name: 'Generación II' })).toBeVisible();
+});
+
+test('cambia de región desde el selector rápido de la cabecera', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chromium', 'El selector regional se muestra solo en pantallas grandes.');
+  const region = page.getByRole('button', { name: 'Kanto' });
+  await region.click();
+  const menu = page.getByRole('menu', { name: 'Cambiar región' });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitemradio')).toHaveCount(9);
+  await menu.getByRole('menuitemradio', { name: 'Johto, generación 2' }).click();
+
+  await expect(page.locator('.pokemon-card[data-id="152"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Johto' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).preferences.activeGenerationId
+  ))).toBe(2);
 });
 
 test('la búsqueda global cambia a la generación del resultado', async ({ page }) => {

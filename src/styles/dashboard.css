@@ -146,10 +146,114 @@ main {
   width: min(780px, 100%);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(112px, auto) auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
   pointer-events: auto;
+}
+
+.discovery-console__region-picker {
+  position: relative;
+  margin-right: 8px;
+}
+
+.discovery-console__region {
+  width: 100%;
+  min-width: 112px;
+  height: 50px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #173f76;
+  border-radius: 14px 5px 14px 5px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .38), transparent 42%),
+    linear-gradient(180deg, #ffe271, #ffc928);
+  color: #12396e;
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, .65);
+  cursor: pointer;
+  box-shadow:
+    0 3px 0 #0d294e,
+    0 8px 18px rgba(0, 0, 0, .24);
+}
+
+.discovery-console__region > span:last-child {
+  margin-left: 9px;
+  font-size: 12px;
+  transition: transform .16s ease;
+}
+
+.discovery-console__region[aria-expanded="true"] > span:last-child {
+  transform: rotate(180deg);
+}
+
+.discovery-console__region:hover,
+.discovery-console__region:focus-visible,
+.discovery-console__region[aria-expanded="true"] {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .5), transparent 42%),
+    linear-gradient(180deg, #fff08c, #ffd43f);
+  outline: 3px solid rgba(23, 63, 118, .2);
+  outline-offset: 3px;
+}
+
+.discovery-console__region-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 2;
+  width: 250px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  border: 3px solid #173f76;
+  border-radius: 16px 7px 16px 7px;
+  padding: 9px;
+  background: rgba(12, 28, 48, .96);
+  box-shadow: 0 8px 0 rgba(7, 21, 39, .72), 0 18px 34px rgba(0, 0, 0, .34);
+}
+
+.discovery-console__region-menu button {
+  min-width: 0;
+  min-height: 48px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  border: 2px solid rgba(255, 255, 255, .12);
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.discovery-console__region-menu button > span {
+  font-family: "Press Start 2P", Inter, sans-serif;
+  font-size: 8px;
+}
+
+.discovery-console__region-menu button > small {
+  color: #a9bfd9;
+  font-size: 9px;
+}
+
+.discovery-console__region-menu button:hover,
+.discovery-console__region-menu button:focus-visible,
+.discovery-console__region-menu button[aria-checked="true"] {
+  border-color: #ffcf21;
+  background: linear-gradient(180deg, #ffe768, #ffcf21);
+  color: #08285c;
+  outline: none;
+}
+
+.discovery-console__region-menu button[aria-checked="true"] > small {
+  color: #31568b;
 }
 
 .discovery-console #btnMic {
@@ -319,6 +423,14 @@ main {
 }
 
 @media (max-width: 899.98px) {
+  .discovery-console__controls {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .discovery-console__region-picker {
+    display: none;
+  }
+
   :root {
     --nav-rail-w: 0px;
     --dock-h: 0px;

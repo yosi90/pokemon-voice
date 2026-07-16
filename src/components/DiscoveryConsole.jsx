@@ -1,4 +1,11 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  POKEMON_GENERATION_REGIONS,
+  getPokemonGenerationRegion,
+} from '../domain/catalog/pokemonGeneration.ts';
+
 export function DiscoveryConsole({
+  generation,
   listening,
   speechSupported = true,
   voiceStatus,
@@ -8,10 +15,65 @@ export function DiscoveryConsole({
   onMic,
   audioBlocked,
   onEnableAudio,
+  onGenerationChange,
 }) {
+  const region = getPokemonGenerationRegion(generation);
+  const [regionsOpen, setRegionsOpen] = useState(false);
+  const regionPickerRef = useRef(null);
+
+  useEffect(() => {
+    if (!regionsOpen) return undefined;
+    const closeOnOutsideClick = event => {
+      if (!regionPickerRef.current?.contains(event.target)) setRegionsOpen(false);
+    };
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setRegionsOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [regionsOpen]);
+
   return (
     <section className="discovery-console" aria-label="Descubrimiento por voz o texto">
       <div className="discovery-console__controls">
+        {region && (
+          <div className="discovery-console__region-picker" ref={regionPickerRef}>
+            <button
+              className="discovery-console__region"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={regionsOpen}
+              onClick={() => setRegionsOpen(current => !current)}
+            >
+              <span>{region}</span>
+              <span aria-hidden="true">▾</span>
+            </button>
+            {regionsOpen && (
+              <div className="discovery-console__region-menu" role="menu" aria-label="Cambiar región">
+                {Object.entries(POKEMON_GENERATION_REGIONS).map(([generationId, regionName]) => (
+                  <button
+                    key={generationId}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={Number(generationId) === generation}
+                    aria-label={`${regionName}, generación ${generationId}`}
+                    onClick={() => {
+                      onGenerationChange?.(Number(generationId));
+                      setRegionsOpen(false);
+                    }}
+                  >
+                    <span>{regionName}</span>
+                    <small>Gen. {generationId}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <button
           id="btnMic"
           className={`btn discovery-console__mic ${listening ? 'accent' : ''}`}

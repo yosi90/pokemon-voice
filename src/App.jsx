@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dock } from './components/Dock.jsx';
 import { DelibirdMode } from './components/DelibirdMode.jsx';
 import { AchievementsDrawer, AchievementToasts } from './components/AchievementUi.js';
@@ -14,6 +14,7 @@ import { ThemedChallengesMode } from './components/ThemedChallengesMode.tsx';
 import { Toast } from './components/Toast.jsx';
 import { NarrativeScene } from './components/NarrativeScene.tsx';
 import { ProfessorMissionModal } from './components/ProfessorMissionModal.tsx';
+import { ProfessorIncomingCall } from './components/ProfessorIncomingCall.tsx';
 import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
@@ -90,12 +91,17 @@ export default function App() {
     && !modesOpen
     && !controlsOpen
     && !professorMissionsOpen
+    && !game.lastRevealedId
+    && game.specialEffects.length === 0
     && (!voiceSupportModalOpen || speech.speechSupported);
   const professor = useProfessorIntroduction({
     discoveryCount: game.globalScore,
     canPresent: narrativeCanPresent,
     ignoreNewDiscoveries: Boolean(game.timer || game.timedCountdown),
   });
+  useEffect(() => {
+    if (professor.incomingCall || professor.active) speech.stopListening();
+  }, [professor.active, professor.incomingCall, speech.stopListening]);
   const selectedEntryState = selectedPokemon
     ? getPokemonEntryState(getBrowserPokeVoiceSave(), selectedPokemon.id)
     : null;
@@ -113,11 +119,7 @@ export default function App() {
   };
 
   const openPokemonDetails = pokemon => {
-    if (game.guessed.has(pokemon.id) && professor.requestFromDetail(game.globalScore)) {
-      setSelectedPokemon(null);
-      closeNavigationLayers();
-      return;
-    }
+    if (game.guessed.has(pokemon.id)) professor.requestFromDetail(game.globalScore);
     setSelectedPokemon(pokemon);
   };
 
@@ -156,8 +158,16 @@ export default function App() {
 
   const openProfessorMissions = () => {
     closeNavigationLayers();
+    if (professor.answerCall()) return;
     if (professor.requestProfileSetup()) return;
     setProfessorMissionsOpen(true);
+  };
+
+  const answerProfessorCall = () => {
+    speech.stopListening();
+    setSelectedPokemon(null);
+    closeNavigationLayers();
+    professor.answerCall();
   };
 
   const closeModes = () => {
@@ -233,6 +243,9 @@ export default function App() {
           <button type="button" className="timed-mode-exit" aria-label="Finalizar Coleccionista" onClick={game.finishTimedEarly}>×</button>
         </div>
       )}
+      {!professor.active && professor.incomingCall && (
+        <ProfessorIncomingCall onAnswer={answerProfessorCall} />
+      )}
       {!professor.active && !speech.speechSupported && voiceSupportModalOpen && (
         <div className="pv-modal" id="voice-support-modal">
           <div className="pv-modal__backdrop" onClick={() => setVoiceSupportModalOpen(false)} />
@@ -265,6 +278,7 @@ export default function App() {
           imageStyle={imageStyle}
           cinematic={professor.active}
           discoveryConsole={{
+            generation: game.activeGeneration,
             listening: speech.listening,
             speechSupported: speech.speechSupported,
             voiceStatus: speech.voiceStatus,
@@ -272,6 +286,7 @@ export default function App() {
             onGuessText: game.setGuessText,
             onGuess: game.handleGuessSubmit,
             onMic: toggleMic,
+            onGenerationChange: selectGeneration,
             audioBlocked: game.audioBlocked,
             onEnableAudio: game.enableAudio,
           }}
@@ -305,6 +320,7 @@ export default function App() {
       <ProfessorMissionModal
         open={professorMissionsOpen && !professor.active}
         missionIds={knownProfessorMissionIds}
+        catalog={game.pokemonCatalog}
         onClose={() => setProfessorMissionsOpen(false)}
       />
       <NarrativeScene

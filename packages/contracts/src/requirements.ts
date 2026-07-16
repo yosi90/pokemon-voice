@@ -7,6 +7,7 @@ export type CounterComparison = 'eq' | 'gte' | 'lte' | 'gt' | 'lt';
 export type RequirementAtomV1 =
   | { kind: 'trainerLevel'; minimum: number }
   | { kind: 'registeredSpecies'; speciesId: PokemonSpeciesId }
+  | { kind: 'registeredSpeciesByTag'; tag: string; minimum: number }
   | { kind: 'sightedSpecies'; speciesId: PokemonSpeciesId }
   | { kind: 'researchStatus'; speciesId: PokemonSpeciesId; status: ResearchStatus }
   | { kind: 'researchField'; speciesId: PokemonSpeciesId; field: ResearchFieldKey }

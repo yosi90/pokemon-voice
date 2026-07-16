@@ -109,11 +109,15 @@ export type CompanionRequirementVisibility = 'public' | 'hinted' | 'secret';
 export interface CompanionRequirementV1 extends VersionedContractV1 {
   requirementId: StableId;
   formId?: PokemonFormId;
+  appearanceId?: StableId;
   speciesId: PokemonSpeciesId;
   minimumTrainerLevel: number;
+  /** Permite una excepción de lore a la diferencia general de cinco niveles. */
+  ignoreReferenceLevelGap?: boolean;
   requirement?: RequirementExpressionV1;
   visibility: CompanionRequirementVisibility;
   loreHint?: string;
+  rejectionText: string;
 }
 
 export interface CompanionBehaviorTriggerV1 extends VersionedContractV1 {

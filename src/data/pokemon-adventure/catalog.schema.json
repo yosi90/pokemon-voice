@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pokevoice.local/schemas/companion-generation-catalog-v1.json",
+  "title": "Catálogo de compañeros de PokeDiscover",
+  "type": "object",
+  "required": ["schemaVersion", "generation", "species"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generation": { "type": "integer", "minimum": 1, "maximum": 9 },
+    "species": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/species" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "traits": {
+      "type": "object",
+      "required": ["starter", "baby", "pseudoLegendary", "legendary", "mythical", "special"],
+      "properties": {
+        "starter": { "type": "boolean" },
+        "baby": { "type": "boolean" },
+        "pseudoLegendary": { "type": "boolean" },
+        "legendary": { "type": "boolean" },
+        "mythical": { "type": "boolean" },
+        "special": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "capability": {
+      "type": "object",
+      "required": ["id", "source"],
+      "properties": {
+        "id": { "enum": ["cut", "surf", "fly", "dig", "rock-smash", "light", "climb", "carry", "ride-ground", "ride-water", "ride-air"] },
+        "source": { "enum": ["biology", "move", "form", "story"] },
+        "strength": { "type": "number", "minimum": 0 },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "companion": {
+      "type": "object",
+      "required": ["minimumTrainerLevel", "balanceStatus", "visibility", "rejectionText"],
+      "properties": {
+        "minimumTrainerLevel": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "balanceStatus": { "enum": ["provisional", "curated"] },
+        "ignoreReferenceLevelGap": { "type": "boolean" },
+        "extraRequirement": { "type": "object" },
+        "visibility": { "enum": ["public", "hinted", "secret"] },
+        "loreHint": { "type": "string" },
+        "rejectionText": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "companionOverride": {
+      "type": "object",
+      "properties": {
+        "minimumTrainerLevel": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "balanceStatus": { "enum": ["provisional", "curated"] },
+        "ignoreReferenceLevelGap": { "type": "boolean" },
+        "extraRequirement": { "type": "object" },
+        "visibility": { "enum": ["public", "hinted", "secret"] },
+        "loreHint": { "type": "string" },
+        "rejectionText": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "appearance": {
+      "type": "object",
+      "required": ["schemaVersion", "appearanceId", "slug", "displayName", "kind", "assetId", "selectableCompanion", "narrativeTags", "additionalFieldCapabilities"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "appearanceId": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["default", "gender", "costume", "event", "seasonal"] },
+        "assetId": { "type": "string", "minLength": 1 },
+        "selectableCompanion": { "type": "boolean" },
+        "narrativeTags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "additionalFieldCapabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } },
+        "companionOverride": { "$ref": "#/$defs/companionOverride" }
+      },
+      "additionalProperties": false
+    },
+    "form": {
+      "type": "object",
+      "required": ["schemaVersion", "formId", "slug", "displayName", "kind", "assetId", "selectableCompanion", "types", "evolutionStage", "narrativeTags", "fieldCapabilities", "companion", "appearances"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "formId": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["default", "regional", "alternate", "battle"] },
+        "assetId": { "type": "string", "minLength": 1 },
+        "selectableCompanion": { "type": "boolean" },
+        "types": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+        "evolutionStage": { "enum": [1, 2, 3] },
+        "heightMeters": { "type": "number", "minimum": 0 },
+        "sizeClass": { "enum": ["tiny", "small", "medium", "large", "huge"] },
+        "narrativeTags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "fieldCapabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } },
+        "companion": { "$ref": "#/$defs/companion" },
+        "appearances": { "type": "array", "items": { "$ref": "#/$defs/appearance" } }
+      },
+      "additionalProperties": false
+    },
+    "species": {
+      "type": "object",
+      "required": ["schemaVersion", "speciesId", "slug", "displayName", "generation", "traits", "forms"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "speciesId": { "type": "integer", "minimum": 1, "maximum": 1025 },
+        "slug": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 1 },
+        "generation": { "type": "integer", "minimum": 1, "maximum": 9 },
+        "traits": { "$ref": "#/$defs/traits" },
+        "forms": { "type": "array", "items": { "$ref": "#/$defs/form" }, "minItems": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

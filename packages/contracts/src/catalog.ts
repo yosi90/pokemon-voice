@@ -1,12 +1,34 @@
 import type { PokemonFormId, PokemonSpeciesId, StableId, VersionedContractV1 } from './common.js';
 
 export type PokemonTypeId = string;
-export type FieldCapabilityId = string;
+export type FieldCapabilityId =
+  | 'cut'
+  | 'surf'
+  | 'fly'
+  | 'dig'
+  | 'rock-smash'
+  | 'light'
+  | 'climb'
+  | 'carry'
+  | 'ride-ground'
+  | 'ride-water'
+  | 'ride-air';
 export type PokemonSizeClass = 'tiny' | 'small' | 'medium' | 'large' | 'huge';
 export type EvolutionStage = 1 | 2 | 3;
 export type PokemonFormKind = 'default' | 'regional' | 'alternate' | 'battle';
 export type PokemonAppearanceKind = 'default' | 'gender' | 'costume' | 'event' | 'seasonal';
 export type PokemonSpeciesRelationKind = 'paradox' | 'convergent' | 'counterpart';
+export type CompanionCategoryId =
+  | 'mythical'
+  | 'legendary'
+  | 'special'
+  | 'pseudo-legendary'
+  | 'third-evolution'
+  | 'second-evolution'
+  | 'baby'
+  | 'starter'
+  | 'common';
+export type CompanionBalanceStatus = 'provisional' | 'curated';
 
 export interface PokemonSpeciesRelationV1 {
   relationId: StableId;
@@ -29,6 +51,8 @@ export interface PokemonFormV1 extends VersionedContractV1 {
   kind: PokemonFormKind;
   types: PokemonTypeId[];
   evolutionStage: EvolutionStage;
+  /** Nivel narrativo curado usado únicamente para decidir si acepta acompañar al jugador. */
+  companionReferenceLevel?: number;
   heightMeters?: number;
   sizeClass?: PokemonSizeClass;
   narrativeTags: string[];
