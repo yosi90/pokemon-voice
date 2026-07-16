@@ -159,6 +159,13 @@
   transition: transform .24s ease, opacity .2s ease;
 }
 
+.drawer-dismiss-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+  background: transparent;
+}
+
 .side-drawer--right {
   right: 10px;
   transform: translateX(115%);
@@ -282,6 +289,13 @@
   line-height: 1.45;
 }
 
+.mode-progress {
+  margin-top: 5px;
+  color: #facc15;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .acv-ach .date {
   font-family: "Press Start 2P", Inter, sans-serif;
   font-size: 8px;
@@ -361,6 +375,19 @@
   width: min(520px, 92vw);
 }
 
+#timed-modal .pv-modal__panel {
+  top: 50%;
+  display: flex;
+  max-height: calc(100dvh - 24px);
+  flex-direction: column;
+  transform: translate(-50%, -50%);
+}
+
+#timed-modal .pv-modal__body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .pv-modal__head,
 .pv-modal__foot {
   display: flex;
@@ -405,9 +432,21 @@
 
 .results-kpis {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.kpi--record {
+  border-color: rgba(250, 204, 21, .72);
+  background: linear-gradient(145deg, rgba(250, 204, 21, .2), rgba(245, 158, 11, .08));
+}
+
+.timed-results-detail {
+  margin: -2px 0 14px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 13px;
 }
 
 .kpi {
@@ -445,4 +484,3 @@
   text-align: center;
   font-weight: 900;
 }
-

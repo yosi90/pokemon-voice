@@ -82,6 +82,15 @@ export interface ModeProgressV1 {
   completed: boolean;
   completionCount: number;
   bestScore?: number;
+  lastScore?: number;
+  lastCompletedAt?: ISODateString;
+  /** Subretos permanentes ya superados dentro de un modo compuesto. */
+  completedChallengeIds?: StableId[];
+  /** Fecha civil local (AAAA-MM-DD) del último desafío diario cobrado. */
+  lastDailyCompletedOn?: string;
+  lastDailyChallengeId?: StableId;
+  dailyStreak?: number;
+  bestDailyStreak?: number;
 }
 
 export interface PokeDiscoverStateV1 extends VersionedContractV1 {
@@ -116,6 +125,17 @@ export interface ActiveModeSessionV1 extends VersionedContractV1 {
   runId: StableId;
   startedAt: ISODateString;
   durationSec: number;
+  /** Presente en sesiones nuevas; opcional para cargar partidas V1 anteriores. */
+  satisfiedAchievementIds?: StableId[];
+  /** Estadísticas opcionales para recuperar sesiones creadas antes de esta ampliación V1. */
+  attempts?: number;
+  failures?: number;
+  currentStreak?: number;
+  bestStreak?: number;
+  voiceDiscoveries?: number;
+  textDiscoveries?: number;
+  /** Run normal suspendida mientras un modo usa una Pokédex temporal aislada. */
+  suspendedPokedexRun?: PokedexRunStateV1;
 }
 
 export interface ActiveExpeditionSessionV1 extends VersionedContractV1 {

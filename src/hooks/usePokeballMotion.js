@@ -43,15 +43,9 @@ export function usePokeballMotion(gridRef) {
       animationFrameId = 0;
       if (!pendingPointer) return;
 
-      const { assembly, clientX, clientY } = pendingPointer;
+      const { assembly, normalizedX, normalizedY } = pendingPointer;
       pendingPointer = null;
       if (!assembly.isConnected) return;
-
-      const rect = assembly.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-
-      const normalizedX = clamp((clientX - rect.left) / rect.width * 2 - 1, -1, 1);
-      const normalizedY = clamp((clientY - rect.top) / rect.height * 2 - 1, -1, 1);
       assembly.style.setProperty('--ball-rotate-x', `${(-normalizedY * MAX_ROTATION_X).toFixed(2)}deg`);
       assembly.style.setProperty('--ball-rotate-y', `${(normalizedX * MAX_ROTATION_Y).toFixed(2)}deg`);
     };
@@ -62,13 +56,31 @@ export function usePokeballMotion(gridRef) {
         return;
       }
 
-      const card = event.target.closest('.pokemon-card');
+      const ball = event.target.closest?.('.pokemon-ball-card');
+      if (!ball || !grid.contains(ball)) {
+        clearActiveAssembly();
+        return;
+      }
+
+      const card = ball.closest('.pokemon-card');
       if (!card || card.classList.contains('revealing')) {
         clearActiveAssembly();
         return;
       }
 
-      const assembly = card.querySelector('.ball-assembly');
+      const rect = ball.getBoundingClientRect();
+      if (!rect.width || !rect.height) {
+        clearActiveAssembly();
+        return;
+      }
+      const normalizedX = clamp((event.clientX - rect.left) / rect.width * 2 - 1, -1, 1);
+      const normalizedY = clamp((event.clientY - rect.top) / rect.height * 2 - 1, -1, 1);
+      if (normalizedX ** 2 + normalizedY ** 2 > 1) {
+        clearActiveAssembly();
+        return;
+      }
+
+      const assembly = ball.querySelector('.ball-assembly');
       if (!assembly) return;
       if (activeAssembly !== assembly) {
         resetAssembly(activeAssembly);
@@ -76,14 +88,14 @@ export function usePokeballMotion(gridRef) {
         activeAssembly.classList.add('is-ball-tilting');
       }
 
-      pendingPointer = { assembly, clientX: event.clientX, clientY: event.clientY };
+      pendingPointer = { assembly, normalizedX, normalizedY };
       if (!animationFrameId) animationFrameId = requestAnimationFrame(applyPointerTilt);
     };
 
     const handlePointerOut = event => {
-      const originCard = event.target.closest('.pokemon-card');
-      const destinationCard = event.relatedTarget?.closest?.('.pokemon-card');
-      if (originCard && originCard !== destinationCard) clearActiveAssembly();
+      const originBall = event.target.closest?.('.pokemon-ball-card');
+      const destinationBall = event.relatedTarget?.closest?.('.pokemon-ball-card');
+      if (originBall && originBall !== destinationBall) clearActiveAssembly();
     };
 
     const handleMotionPreferenceChange = () => {

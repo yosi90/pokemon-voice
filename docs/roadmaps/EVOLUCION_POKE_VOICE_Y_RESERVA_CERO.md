@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0, 1, 2, 3, 4 y 5 completados; siguiente trabajo previsto en Hito 6.
+- Estado: Hitos 0, 1, 2, 3, 4, 5 y 6 completados; Hito 7 es el siguiente.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -248,22 +248,51 @@ Sexta entrega implementada el 16 de julio de 2026. Cada Pokéball conserva un ri
 
 Corrección de rendimiento del 16 de julio de 2026. Las pruebas en hardware real mostraron que componer muchas capas en movimiento seguía penalizando la experiencia pese a limitar la flotación por visibilidad. Se elimina por completo el vaivén genérico y el `IntersectionObserver` que ya no resulta necesario. En reposo las Pokéballs normales no animan ni declaran `will-change`; el único trabajo compartido ocurre al mover un cursor preciso sobre una tarjeta y afecta como máximo a una bola. Se conservan los comportamientos especiales diseñados como easter eggs de especies concretas, incluido Pikachu inquieto y sus chispas periódicas.
 
+Corrección de interacción del 16 de julio de 2026. La inclinación deja de utilizar la tarjeta completa como hitbox y exige que el cursor esté dentro del círculo real de la Pokéball. Las coordenadas se calculan contra el contenedor estable, no contra la capa ya transformada. Mientras el cursor se mueve no se encadenan transiciones: cada frame adopta la posición más reciente y solo la vuelta al reposo mantiene una transición breve. Salir hacia el espacio sobrante de la tarjeta cancela inmediatamente cualquier frame pendiente.
+
+Corrección de composición del 16 de julio de 2026. La sombra común deja de aplicarse al contenedor que reúne carcasa y efectos locales: al animar el easter egg de Pikachu, Chromium podía rasterizar esa superficie filtrada como un rectángulo y proyectar bandas oscuras sobre las tarjetas vecinas. La sombra pasa a ser un `box-shadow` circular exclusivo de `ball-assembly`; Pikachu conserva el temblor y las chispas sin generar capas rectangulares alrededor. Al abrirse una Pokéball, esa sombra cerrada se retira para no rellenar de negro el espacio transparente entre sus dos mitades; los cuatro modelos conservan sus bordes y su geometría abierta.
+
+Mejora eléctrica del 16 de julio de 2026. El destello cónico de Pikachu se sustituye por una descarga SVG local con siete rayos preparados y entre tres y seis activos por fotograma, todos con núcleo blanco, halo amarillo y posibles ramificaciones regeneradas durante cinco fotogramas breves. La Pokéball se sacude independientemente del campo eléctrico y añade destello interior y neblina energética. El SVG solo existe mientras Pikachu continúa sin descubrir, no aplica filtros al contenedor de la tarjeta, cancela sus temporizadores al ocultar la pestaña o desmontarse y permanece inactivo con movimiento reducido.
+
 ---
 
 ## Hito 6 — Modos ligeros
 
-- [ ] Crear `ModeDefinitionV1` con `runPolicy: preserve | resetPokedex`, usando `preserve` por defecto.
-- [ ] Configurar el contrarreloj con `runPolicy: resetPokedex`.
-- [ ] Permitir que futuros modos declaren explícitamente si necesitan una Pokédex vacía.
-- [ ] Mostrar confirmación antes de entrar en cualquier modo que reinicie la run.
-- [ ] Representar la finalización relevante de un modo mediante logros permanentes reutilizables como prerrequisitos.
-- [ ] Mejorar el contrarreloj con recuperación y estadísticas completas.
-- [ ] Crear `¿Quién es ese Pokémon?` con diez rondas, siluetas, pistas y voz/texto.
-- [ ] Crear retos temáticos por generación, tipo o familia.
-- [ ] Crear un desafío diario local, determinista y con racha persistente.
-- [ ] Permitir que estos modos registren Pokémon en la Pokédex.
-- [ ] Reservar la investigación completa para las misiones del profesor.
-- [ ] Añadir logros específicos sin conceder Puntos de Descubrimiento repetibles.
+- [x] Crear `ModeDefinitionV1` con `runPolicy: preserve | resetPokedex | isolatedPokedex`, usando `preserve` por defecto.
+- [x] Configurar el Coleccionista con `runPolicy: isolatedPokedex` y restauración de la run original.
+- [x] Permitir que futuros modos declaren explícitamente si necesitan una Pokédex vacía.
+- [x] Mostrar confirmación antes de entrar en cualquier modo que reinicie la run.
+- [x] Representar la finalización relevante de un modo mediante logros permanentes reutilizables como prerrequisitos.
+- [x] Mejorar el contrarreloj con recuperación y estadísticas completas.
+- [x] Crear `¿Quién es ese Pokémon?` como racha infinita, con siluetas, comodines y voz/texto.
+- [x] Crear retos temáticos por generación, tipo o familia.
+- [x] Crear un desafío diario local, determinista y con racha persistente.
+- [x] Permitir que estos modos registren Pokémon en la Pokédex.
+- [x] Reservar la investigación completa para las misiones del profesor.
+- [x] Añadir logros específicos sin conceder Puntos de Descubrimiento repetibles.
+- [x] Puntuar los logros del contrarreloj desde cero por sesión sin duplicar la colección permanente.
+
+Implementación de retos temáticos del 16 de julio de 2026. El modo conserva la run y ofrece desafíos declarativos por generación, tipo y familia con conjuntos de especies explícitos, por lo que funciona sin descargar índices completos de PokeAPI. `targetSpeciesIds` puede contener una cantidad arbitraria de respuestas válidas y `targetCount` declara cuántas respuestas distintas bastan para superarlo. Las respuestas pueden darse por voz o texto; una especie válida cuenta en la sesión aunque ya estuviera registrada, pero el descubrimiento, las recompensas y los logros permanentes siguen siendo idempotentes. `ModeProgressV1.completedChallengeIds` conserva los subretos superados, la interfaz permite repetirlos o cambiar de categoría y la primera tríada completa concede un logro específico sin PD ni investigación de profesor.
+
+Ampliación de Trivia Pokémon del 16 de julio de 2026. Se incorporan 27 exámenes adicionales —nueve de generación, nueve de tipo y nueve de familia— para un total de 30, almacenados como contenido JSON validado. El selector muestra seis exámenes por página y mezcla de forma estable dos de cada categoría en las cinco páginas de cada sesión. La Pokédex local y los rangos de novena generación se amplían del #1010 al #1025 para admitir respuestas del DLC de Paldea, y los nombres españoles de los Pokémon Paradoja se resuelven mediante alias hacia el catálogo canónico.
+
+Revisión de contenido del 16 de julio de 2026. Los exámenes cerrados que revelaban una de sus tres únicas respuestas se sustituyen por conjuntos más amplios sobre comida, gusanos, pseudolegendarios y Pokémon asociados con armaduras o espadas. Tyrogue y Applin dejan de aceptarse en los retos que ya los mencionan expresamente, y la descripción del examen de Ash se simplifica sin alterar sus respuestas válidas.
+
+Primera entrega implementada el 16 de julio de 2026. `ModeDefinitionV1` deja de ser un contrato aislado y pasa a gobernar un catálogo declarativo consumido por el drawer. `defineModeDefinition` aplica `preserve` cuando un modo no declara política; el contrarreloj utiliza explícitamente `resetPokedex` y su confirmación se deriva de esa política, enumerando lo que se vacía y lo que permanece en PokeDiscover. Cancelar no modifica la run ni cierra el drawer. El texto anterior que afirmaba borrar logros se corrige para reflejar la metaprogresión permanente, y el identificador del contrarreloj tiene una única fuente de verdad compartida por migración, sesión y presentación.
+
+Segunda entrega implementada el 16 de julio de 2026. El marcador del contrarreloj utiliza los logros satisfechos durante la sesión y no solo los recién añadidos a la cuenta. Un logro permanente vuelve a contar la primera vez que se cumple en el evento y muestra un aviso `Logro del reto`, pero no modifica la colección ni entrega recompensas otra vez; una segunda satisfacción en la misma sesión se ignora. Los IDs puntuados se guardan en `activeModeSession`, sobreviven a una recarga y reconstruyen el resumen final. Si el logro era nuevo, también conserva su primera obtención permanente con run y modo de origen.
+
+Tercera entrega implementada el 16 de julio de 2026. Las sesiones del Coleccionista guardan intentos, fallos, racha máxima y descubrimientos por voz o texto junto al cronómetro, por lo que el resumen conserva precisión y estadísticas incluso después de recargar. Finalizar concede una sola vez el logro permanente de modo `timed-collector-complete`, utilizable como prerrequisito narrativo futuro, mientras cada sesión puede volver a puntuarlo sin duplicar la colección. PokeDiscover mantiene partidas completadas, última puntuación y mejor número de logros; el drawer muestra el récord y el modal destaca cuándo se supera. El resumen limita su altura y desplaza solo el contenido para mantener las acciones accesibles en móvil.
+
+Cuarta entrega implementada el 16 de julio de 2026. `¿Quién es ese Pokémon?` propone diez especies distintas mediante una selección determinista por sesión y conserva la run actual. Cada silueta ofrece tres pistas progresivas —generación, longitud del nombre e inicial— y acepta respuestas por el mismo reconocimiento de voz y normalización de texto que la Pokédex principal. Acertar registra la especie en la run, pero no completa investigación ni concede experiencia o PD; fallar o pasar revela la respuesta y avanza sin penalización persistente. El resultado guarda partidas, última puntuación y récord sobre diez, concede logros permanentes por completar y por lograr un pleno, y atribuye ambos al modo sin duplicar recompensas ya obtenidas.
+
+Quinta entrega implementada el 16 de julio de 2026. El formato cerrado de diez rondas se sustituye por una racha sin límite que termina al fallar o rendirse. El catálogo completo se baraja por ciclos sin repetir especies dentro de un ciclo ni colocar al último Pokémon de uno como primero del siguiente; la mejor racha se guarda en cuanto se alcanza para no perderla al salir. Las ayudas pasan a ser comodines: cada silueta permite escuchar su grito una vez, la sesión comparte cinco pistas de texto progresivas y tres revelados de tipo. Alcanzar diez aciertos conserva el logro existente `whos-that-pokemon-perfect` por compatibilidad, ahora reinterpretado como hito de racha. La cabecera elimina los contadores redundantes, el drawer muestra la mejor racha y la salida recibe un control visible y accesible en escritorio y móvil.
+
+Sexta entrega implementada el 16 de julio de 2026. `Examen diario` reutiliza los 30 contenidos de Trivia Pokémon y selecciona uno mediante la fecha civil local, con una rotación estable que recorre todos los exámenes disponibles antes de repetir. Conserva la run, admite voz y texto y solo cobra una finalización por fecha; repetir el mismo día o atrasar el reloj no aumenta partidas, racha ni recompensas. `ModeProgressV1` guarda la fecha y el examen de la última aprobación, la racha actual y su récord, mientras el drawer muestra ambos valores. Los huecos reinician la racha sin borrar el máximo histórico y los logros permanentes reconocen el primer aprobado y una semana consecutiva. El flujo queda cubierto en escritorio y móvil, sin otorgar PD ni investigación de profesor.
+
+Séptima entrega implementada el 16 de julio de 2026. `Contrarreloj: Coleccionista de logros` pasa a llamarse `Coleccionista de logros` y utiliza la política explícita `isolatedPokedex`. Al comenzar suspende la run normal completa dentro de `ActiveModeSessionV1`, muestra una Pokédex temporal vacía y elimina la confirmación destructiva. Los Pokémon pueden descubrirse de nuevo durante los dos minutos para puntuar, pero al finalizar se restaura de forma atómica la Pokédex, el orden, las rachas y los contadores originales; los logros permanentes y el récord del modo sí permanecen en PokeDiscover. La suspensión sobrevive a recargas y también se restaura si el tiempo caduca durante la ausencia. El drawer de modos se cierra ahora con Escape o al pulsar fuera.
+
+Octava entrega implementada el 16 de julio de 2026. El Coleccionista comienza con una cuenta atrás centrada `3, 2, 1, ¡Ahora!`; los dos minutos y la run temporal no se crean hasta terminar esa secuencia. Durante la cuenta atrás y la partida se oculta la navegación principal. Un HUD independiente conserva visible el cronómetro y añade una salida roja grande en la esquina superior derecha; finalizar antes de tiempo produce el mismo resumen y la misma restauración atómica que agotar el reloj. El HUD se recoloca en móvil para no competir con la consola de descubrimiento ni sus avisos.
 
 ---
 
@@ -639,7 +668,7 @@ Los cuatro campos no tienen que estar disponibles en Reserva Cero. Cada mapa pod
 - [ ] Verificar que antes de `first-mission` únicamente Pikachu e iniciales base pueden acompañar.
 - [ ] Verificar que completar la primera misión desbloquea permanentemente `first-mission`.
 - [ ] Verificar que logros permanentes de modos y PokeDiscover pueden habilitar acompañantes y secretos.
-- [ ] Verificar que un modo `preserve` conserva la run y uno `resetPokedex` crea otra tras confirmar.
+- [ ] Verificar que `preserve` conserva la run, `resetPokedex` crea otra tras confirmar e `isolatedPokedex` restaura la original.
 - [ ] Verificar que el reset normal queda bloqueado durante una expedición.
 - [ ] Verificar que la migración conserva logros, fechas y la Pokédex actual como run inicial.
 - [ ] Verificar que solo el borrado total elimina PokeDiscover y logros permanentes.
@@ -689,7 +718,7 @@ Los cuatro campos no tienen que estar disponibles en Reserva Cero. Cada mapa pod
 
 - `PokeDiscover` será el nombre visible provisional de toda la metaprogresión permanente.
 - Una run de Pokédex es reiniciable; PokeDiscover no se borra con el reset normal.
-- El reset manual, el contrarreloj y cualquier modo con `runPolicy: resetPokedex` crean un `runId` nuevo.
+- El reset manual y cualquier modo con `runPolicy: resetPokedex` crean un `runId` normal nuevo; `isolatedPokedex` usa un `runId` temporal y restaura el original al terminar.
 - Los logros se evalúan con contadores limpios en cada run, pero solo su primera obtención se muestra y recompensa.
 - La investigación y las cualificaciones permanecen guardadas tras el reset, aunque se ocultan hasta redescubrir la especie.
 - Resetear nunca permite farmear recompensas ya registradas en el ledger.

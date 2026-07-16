@@ -12,10 +12,19 @@ import {
   parsePokeVoiceSave,
 } from '../../src/services/pokeVoiceSaveStorage.js';
 import {
+  completeBrowserDailyChallenge,
+  completeBrowserIsolatedMode,
+  completeBrowserThemedChallenge,
+  completeBrowserMode,
   deleteAllBrowserPokeVoiceData,
   getBrowserPokeVoiceSave,
+  recordBrowserModeBestScore,
+  setBrowserActiveModeSession,
+  startBrowserIsolatedModeSession,
   setBrowserActiveExpeditionSession,
   startNewPokedexRun,
+  updateBrowserActiveModeSession,
+  updateBrowserPokedexRun,
 } from '../../src/store/browserPokeVoiceSaveStore.js';
 
 const NOW = Date.UTC(2026, 6, 15, 12, 0, 0);
@@ -121,6 +130,7 @@ describe('guardado raíz y migración legacy', () => {
       runId: 'pokedex-run:timed',
       startedAt: new Date(startedAt).toISOString(),
       durationSec: 120,
+      satisfiedAchievementIds: [],
     });
   });
 
@@ -184,6 +194,151 @@ describe('guardado raíz y migración legacy', () => {
     expect(() => startNewPokedexRun({ runId: 'run:blocked' }))
       .toThrow('No se puede iniciar una nueva run durante una expedición activa.');
     expect(getBrowserPokeVoiceSave().pokedexRun.runId).not.toBe('run:blocked');
+  });
+
+  it('conserva estadísticas de una sesión y actualiza el récord sin rebajarlo', () => {
+    getBrowserPokeVoiceSave();
+    setBrowserActiveModeSession({
+      schemaVersion: 1,
+      modeId: TIMED_COLLECTOR_MODE_ID,
+      runId: 'run:timed-stats',
+      startedAt: new Date(NOW).toISOString(),
+      durationSec: 120,
+      attempts: 2,
+      failures: 1,
+      currentStreak: 0,
+      bestStreak: 1,
+      voiceDiscoveries: 1,
+      textDiscoveries: 0,
+    });
+    updateBrowserActiveModeSession(current => ({ ...current, attempts: 3, currentStreak: 1 }));
+
+    expect(getBrowserPokeVoiceSave().activeModeSession).toMatchObject({
+      attempts: 3,
+      failures: 1,
+      currentStreak: 1,
+      bestStreak: 1,
+      voiceDiscoveries: 1,
+    });
+
+    completeBrowserMode(TIMED_COLLECTOR_MODE_ID, 6, new Date(NOW).toISOString());
+    completeBrowserMode(TIMED_COLLECTOR_MODE_ID, 4, new Date(NOW + 1000).toISOString());
+
+    expect(getBrowserPokeVoiceSave().pokeDiscover.modeProgress[TIMED_COLLECTOR_MODE_ID]).toEqual({
+      modeId: TIMED_COLLECTOR_MODE_ID,
+      completed: true,
+      completionCount: 2,
+      bestScore: 6,
+      lastScore: 4,
+      lastCompletedAt: new Date(NOW + 1000).toISOString(),
+    });
+  });
+
+  it('guarda una mejor racha activa sin contar la partida como terminada', () => {
+    getBrowserPokeVoiceSave();
+
+    recordBrowserModeBestScore('whos-that-pokemon', 4);
+    recordBrowserModeBestScore('whos-that-pokemon', 2);
+
+    expect(getBrowserPokeVoiceSave().pokeDiscover.modeProgress['whos-that-pokemon']).toEqual({
+      modeId: 'whos-that-pokemon',
+      completed: false,
+      completionCount: 0,
+      bestScore: 4,
+    });
+
+    completeBrowserMode('whos-that-pokemon', 3, new Date(NOW).toISOString());
+    expect(getBrowserPokeVoiceSave().pokeDiscover.modeProgress['whos-that-pokemon']).toMatchObject({
+      completed: true,
+      completionCount: 1,
+      bestScore: 4,
+      lastScore: 3,
+    });
+  });
+
+  it('conserva una sola vez cada subreto temático aunque se repita la partida', () => {
+    getBrowserPokeVoiceSave();
+    completeBrowserThemedChallenge('themed-challenges', 'family:bulbasaur', 3, new Date(NOW).toISOString());
+    completeBrowserThemedChallenge('themed-challenges', 'family:bulbasaur', 3, new Date(NOW + 1000).toISOString());
+    completeBrowserThemedChallenge('themed-challenges', 'type:deep-roots', 3, new Date(NOW + 2000).toISOString());
+
+    expect(getBrowserPokeVoiceSave().pokeDiscover.modeProgress['themed-challenges']).toMatchObject({
+      completed: true,
+      completionCount: 3,
+      completedChallengeIds: ['family:bulbasaur', 'type:deep-roots'],
+      bestScore: 3,
+    });
+  });
+
+  it('mantiene una racha diaria idempotente y rechaza fechas atrasadas', () => {
+    getBrowserPokeVoiceSave();
+    const first = completeBrowserDailyChallenge(
+      'daily-trivia', '2026-07-14', 'type:first', 3, '2026-07-13', new Date(NOW).toISOString(),
+    );
+    const second = completeBrowserDailyChallenge(
+      'daily-trivia', '2026-07-15', 'type:second', 3, '2026-07-14', new Date(NOW + 1000).toISOString(),
+    );
+    const repeated = completeBrowserDailyChallenge(
+      'daily-trivia', '2026-07-15', 'type:second', 3, '2026-07-14', new Date(NOW + 2000).toISOString(),
+    );
+    const rollback = completeBrowserDailyChallenge(
+      'daily-trivia', '2026-07-13', 'type:old', 3, '2026-07-12', new Date(NOW + 3000).toISOString(),
+    );
+
+    expect(first).toMatchObject({ awarded: true, progress: { dailyStreak: 1 } });
+    expect(second).toMatchObject({ awarded: true, progress: { dailyStreak: 2, bestDailyStreak: 2 } });
+    expect(repeated.awarded).toBe(false);
+    expect(rollback.awarded).toBe(false);
+    expect(getBrowserPokeVoiceSave().pokeDiscover.modeProgress['daily-trivia']).toMatchObject({
+      completionCount: 2,
+      dailyStreak: 2,
+      bestDailyStreak: 2,
+      lastDailyCompletedOn: '2026-07-15',
+      lastDailyChallengeId: 'type:second',
+    });
+  });
+
+  it('aísla una run de modo y restaura íntegramente la Pokédex original al completarla', () => {
+    const original = getBrowserPokeVoiceSave().pokedexRun;
+    const originalWithPokemon = {
+      ...original,
+      registeredSpeciesIds: [25, 1],
+      discoveryOrder: [25, 1],
+      currentStreak: 2,
+    };
+    updateBrowserPokedexRun(() => originalWithPokemon);
+    startBrowserIsolatedModeSession({
+      schemaVersion: 1,
+      modeId: 'timed-collector',
+      runId: 'run:temporary',
+      startedAt: new Date(NOW).toISOString(),
+      durationSec: 120,
+    });
+    updateBrowserPokedexRun(current => ({
+      ...current,
+      registeredSpeciesIds: [2],
+      discoveryOrder: [2],
+    }));
+
+    const during = getBrowserPokeVoiceSave();
+    expect(during.pokedexRun).toMatchObject({ runId: 'run:temporary', registeredSpeciesIds: [2] });
+    expect(during.activeModeSession?.suspendedPokedexRun).toEqual(originalWithPokemon);
+
+    const result = completeBrowserIsolatedMode('timed-collector', 4, new Date(NOW + 1000).toISOString());
+    expect(result.restoredRun).toEqual(originalWithPokemon);
+    expect(getBrowserPokeVoiceSave()).toMatchObject({
+      pokedexRun: originalWithPokemon,
+      pokeDiscover: { modeProgress: { 'timed-collector': { completionCount: 1, bestScore: 4 } } },
+    });
+    expect(getBrowserPokeVoiceSave().activeModeSession).toBeUndefined();
+  });
+
+  it('reinicia la racha diaria tras un hueco pero conserva el récord', () => {
+    getBrowserPokeVoiceSave();
+    completeBrowserDailyChallenge('daily-trivia', '2026-07-10', 'one', 3, '2026-07-09');
+    completeBrowserDailyChallenge('daily-trivia', '2026-07-11', 'two', 3, '2026-07-10');
+    const afterGap = completeBrowserDailyChallenge('daily-trivia', '2026-07-14', 'three', 3, '2026-07-13');
+    expect(afterGap.progress).toMatchObject({ dailyStreak: 1, bestDailyStreak: 2 });
   });
 
   it('reserva el borrado total para progreso y preferencias sin eliminar cachés', () => {

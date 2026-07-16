@@ -5,6 +5,7 @@ export interface AchievementRecord {
   date: number;
   domain?: AchievementDomain;
   originRunId?: string;
+  originModeId?: string;
 }
 
 export interface AchievementRunSnapshot {
@@ -12,6 +13,7 @@ export interface AchievementRunSnapshot {
   startedAt: number;
   satisfiedIds: readonly string[];
   newlyUnlockedIds: readonly string[];
+  modeId?: string;
 }
 
 export interface AchievementProgressSnapshot {
@@ -37,12 +39,15 @@ interface CreateAchievementProgressOptions {
 interface StartAchievementRunOptions {
   runId: string;
   startedAt?: number;
+  modeId?: string;
+  satisfiedIds?: readonly string[];
 }
 
 interface SatisfyAchievementOptions {
   id: string;
   domain?: AchievementDomain;
   date?: number;
+  originModeId?: string;
 }
 
 const emptyRun = (startedAt: number): AchievementRunSnapshot => ({
@@ -59,6 +64,7 @@ function normalizeRecord(record: AchievementRecord, fallbackDate: number): Achie
     date: Number.isFinite(Number(record.date)) ? Number(record.date) : fallbackDate,
     ...(record.domain ? { domain: record.domain } : {}),
     ...(record.originRunId ? { originRunId: record.originRunId } : {}),
+    ...(record.originModeId ? { originModeId: record.originModeId } : {}),
   };
 }
 
@@ -97,8 +103,14 @@ export function createAchievementProgress({
     notify();
   };
 
-  const startRun = ({ runId, startedAt = now() }: StartAchievementRunOptions) => {
-    run = { runId, startedAt, satisfiedIds: [], newlyUnlockedIds: [] };
+  const startRun = ({ runId, startedAt = now(), modeId, satisfiedIds = [] }: StartAchievementRunOptions) => {
+    run = {
+      runId,
+      startedAt,
+      satisfiedIds: [...new Set(satisfiedIds.filter(id => permanent.has(id)))],
+      newlyUnlockedIds: [],
+      ...(modeId ? { modeId } : {}),
+    };
     notify();
   };
 
@@ -106,6 +118,7 @@ export function createAchievementProgress({
     id,
     domain = 'pokedex',
     date = now(),
+    originModeId,
   }: SatisfyAchievementOptions): AchievementSatisfactionResult => {
     if (run.satisfiedIds.includes(id)) {
       const record = permanent.get(id);
@@ -125,6 +138,7 @@ export function createAchievementProgress({
       date,
       domain,
       originRunId: run.runId,
+      ...(originModeId || run.modeId ? { originModeId: originModeId || run.modeId } : {}),
     };
     permanent.set(id, record);
     run = { ...run, newlyUnlockedIds: [...run.newlyUnlockedIds, id] };

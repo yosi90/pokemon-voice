@@ -35,4 +35,15 @@ describe('store de descubrimientos', () => {
     expect(store.getSnapshot().guessedIds.size).toBe(0);
     expect(persist).toHaveBeenLastCalledWith([]);
   });
+
+  it('reemplaza el snapshot para restaurar una run suspendida', () => {
+    const persist = vi.fn();
+    const store = createDiscoveryStore({ initialIds: [2], persist });
+
+    store.replace([25, 1, 25]);
+
+    expect(store.getSnapshot().discoveryOrder).toEqual([25, 1]);
+    expect([...store.getSnapshot().guessedIds]).toEqual([25, 1]);
+    expect(persist).toHaveBeenLastCalledWith([25, 1]);
+  });
 });

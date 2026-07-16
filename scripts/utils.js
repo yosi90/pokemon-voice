@@ -51,6 +51,16 @@ export const esAliases = new Map([
   ['charizar','charizard'], ['charisard','charizard'],
   ['gyarados','gyarados'], ['llarados','gyarados'],
   ['dito', 'ditto'], ['dido', 'ditto'], ['ditto', 'ditto'],
+  ['colmilargo', 'great-tusk'], ['colagrito', 'scream-tail'],
+  ['furioseta', 'brute-bonnet'], ['melenaleteo', 'flutter-mane'],
+  ['reptalada', 'slither-wing'], ['pelarena', 'sandy-shocks'],
+  ['ferrodada', 'iron-treads'], ['ferrosaco', 'iron-bundle'],
+  ['ferropalmas', 'iron-hands'], ['ferrocuello', 'iron-jugulis'],
+  ['ferropolilla', 'iron-moth'], ['ferropuas', 'iron-thorns'],
+  ['bramaluna', 'roaring-moon'], ['ferropaladin', 'iron-valiant'],
+  ['ondulagua', 'walking-wake'], ['ferroverdor', 'iron-leaves'],
+  ['flamariete', 'gouging-fire'], ['electrofuria', 'raging-bolt'],
+  ['ferromole', 'iron-boulder'], ['ferrotesta', 'iron-crown'],
 ]);
 
 // -------- Rutas/constantes --------
@@ -109,7 +119,7 @@ export const ROTOM_IMAGE_URLS = ROTOM_FORM_IDS.map(id => ART_URL(id));
 
 export const GEN_RANGES = {
   1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5: [494, 649],
-  6: [650, 721], 7: [722, 809], 8: [810, 898], 9: [899, 1010]
+  6: [650, 721], 7: [722, 809], 8: [810, 898], 9: [899, 1025]
 };
 
 export const GEN_NAME_TO_NUM = {

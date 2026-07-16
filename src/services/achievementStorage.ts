@@ -36,6 +36,9 @@ export function parseAchievementRecords(
         ...(typeof entry.originRunId === 'string' && entry.originRunId
           ? { originRunId: entry.originRunId }
           : {}),
+        ...(typeof entry.originModeId === 'string' && entry.originModeId
+          ? { originModeId: entry.originModeId }
+          : {}),
       }];
     });
   } catch {
@@ -49,6 +52,7 @@ export function serializeAchievementRecords(records: readonly AchievementRecord[
     date: record.date,
     ...(record.domain ? { domain: record.domain } : {}),
     ...(record.originRunId ? { originRunId: record.originRunId } : {}),
+    ...(record.originModeId ? { originModeId: record.originModeId } : {}),
   })));
 }
 

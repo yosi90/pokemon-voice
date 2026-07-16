@@ -113,9 +113,199 @@ export function startNewPokedexRun({
   return runId;
 }
 
+export function startBrowserIsolatedModeSession(
+  session: Omit<ActiveModeSessionV1, 'suspendedPokedexRun'>,
+) {
+  const current = readCurrentSave();
+  if (current.activeExpeditionSession) {
+    throw new Error('No se puede iniciar un modo aislado durante una expedición activa.');
+  }
+  const temporaryRun = createPokedexRunStateV1({
+    runId: session.runId,
+    startedAt: session.startedAt,
+    sourceModeId: session.modeId,
+  });
+  persist({
+    ...current,
+    pokedexRun: temporaryRun,
+    activeModeSession: {
+      ...session,
+      suspendedPokedexRun: current.pokedexRun,
+    },
+  });
+  return temporaryRun;
+}
+
 export function setBrowserActiveModeSession(session: ActiveModeSessionV1 | undefined) {
   const current = readCurrentSave();
   persist({ ...current, activeModeSession: session });
+}
+
+export function updateBrowserActiveModeSession(
+  updater: (current: ActiveModeSessionV1) => ActiveModeSessionV1,
+) {
+  const current = readCurrentSave();
+  if (!current.activeModeSession) return;
+  persist({ ...current, activeModeSession: updater(current.activeModeSession) });
+}
+
+export function completeBrowserMode(modeId: string, score: number, completedAt = new Date().toISOString()) {
+  const current = readCurrentSave();
+  const previous = current.pokeDiscover.modeProgress[modeId];
+  const progress = {
+    modeId,
+    completed: true,
+    completionCount: (previous?.completionCount ?? 0) + 1,
+    bestScore: Math.max(previous?.bestScore ?? 0, score),
+    lastScore: score,
+    lastCompletedAt: completedAt,
+  };
+  persist({
+    ...current,
+    pokeDiscover: {
+      ...current.pokeDiscover,
+      modeProgress: { ...current.pokeDiscover.modeProgress, [modeId]: progress },
+    },
+  });
+  return progress;
+}
+
+export function completeBrowserIsolatedMode(
+  modeId: string,
+  score: number,
+  completedAt = new Date().toISOString(),
+) {
+  const current = readCurrentSave();
+  const session = current.activeModeSession;
+  if (!session || session.modeId !== modeId) {
+    throw new Error(`No hay una sesión aislada activa para ${modeId}.`);
+  }
+  const previous = current.pokeDiscover.modeProgress[modeId];
+  const progress = {
+    ...previous,
+    modeId,
+    completed: true,
+    completionCount: (previous?.completionCount ?? 0) + 1,
+    bestScore: Math.max(previous?.bestScore ?? 0, score),
+    lastScore: score,
+    lastCompletedAt: completedAt,
+  };
+  const restoredRun = session.suspendedPokedexRun ?? current.pokedexRun;
+  persist({
+    ...current,
+    pokedexRun: restoredRun,
+    pokeDiscover: {
+      ...current.pokeDiscover,
+      modeProgress: { ...current.pokeDiscover.modeProgress, [modeId]: progress },
+    },
+    activeModeSession: undefined,
+  });
+  return { progress, restoredRun };
+}
+
+export function completeBrowserThemedChallenge(
+  modeId: string,
+  challengeId: string,
+  score: number,
+  completedAt = new Date().toISOString(),
+) {
+  const current = readCurrentSave();
+  const previous = current.pokeDiscover.modeProgress[modeId];
+  const completedChallengeIds = [...new Set([
+    ...(previous?.completedChallengeIds ?? []),
+    challengeId,
+  ])];
+  const progress = {
+    ...previous,
+    modeId,
+    completed: true,
+    completionCount: (previous?.completionCount ?? 0) + 1,
+    bestScore: Math.max(previous?.bestScore ?? 0, score),
+    lastScore: score,
+    lastCompletedAt: completedAt,
+    completedChallengeIds,
+  };
+  persist({
+    ...current,
+    pokeDiscover: {
+      ...current.pokeDiscover,
+      modeProgress: { ...current.pokeDiscover.modeProgress, [modeId]: progress },
+    },
+  });
+  return progress;
+}
+
+export function completeBrowserDailyChallenge(
+  modeId: string,
+  dateKey: string,
+  challengeId: string,
+  score: number,
+  previousDateKey: string,
+  completedAt = new Date().toISOString(),
+) {
+  const current = readCurrentSave();
+  const previous = current.pokeDiscover.modeProgress[modeId];
+  if (previous?.lastDailyCompletedOn && previous.lastDailyCompletedOn >= dateKey) {
+    return { progress: previous, awarded: false };
+  }
+  const dailyStreak = previous?.lastDailyCompletedOn === previousDateKey
+    ? (previous.dailyStreak ?? 0) + 1
+    : 1;
+  const progress = {
+    ...previous,
+    modeId,
+    completed: true,
+    completionCount: (previous?.completionCount ?? 0) + 1,
+    bestScore: Math.max(previous?.bestScore ?? 0, score),
+    lastScore: score,
+    lastCompletedAt: completedAt,
+    lastDailyCompletedOn: dateKey,
+    lastDailyChallengeId: challengeId,
+    dailyStreak,
+    bestDailyStreak: Math.max(previous?.bestDailyStreak ?? 0, dailyStreak),
+  };
+  persist({
+    ...current,
+    pokeDiscover: {
+      ...current.pokeDiscover,
+      modeProgress: { ...current.pokeDiscover.modeProgress, [modeId]: progress },
+    },
+  });
+  return { progress, awarded: true };
+}
+
+export function recordBrowserModeBestScore(modeId: string, score: number) {
+  const current = readCurrentSave();
+  const previous = current.pokeDiscover.modeProgress[modeId];
+  if ((previous?.bestScore ?? 0) >= score) return previous;
+  const progress = {
+    ...previous,
+    modeId,
+    completed: previous?.completed ?? false,
+    completionCount: previous?.completionCount ?? 0,
+    bestScore: score,
+  };
+  persist({
+    ...current,
+    pokeDiscover: {
+      ...current.pokeDiscover,
+      modeProgress: { ...current.pokeDiscover.modeProgress, [modeId]: progress },
+    },
+  });
+  return progress;
+}
+
+export function recordBrowserModeAchievement(achievementId: string) {
+  const current = readCurrentSave();
+  const session = current.activeModeSession;
+  if (!session || session.satisfiedAchievementIds?.includes(achievementId)) return;
+  persist({
+    ...current,
+    activeModeSession: {
+      ...session,
+      satisfiedAchievementIds: [...(session.satisfiedAchievementIds ?? []), achievementId],
+    },
+  });
 }
 
 export function setBrowserActiveExpeditionSession(session: ActiveExpeditionSessionV1 | undefined) {
@@ -141,6 +331,7 @@ export function syncBrowserAchievements(records: readonly AchievementRecord[]) {
       unlockedAt: new Date(record.date).toISOString(),
       ...(record.domain ? { domain: record.domain } : {}),
       ...(record.originRunId ? { originRunId: record.originRunId } : {}),
+      ...(record.originModeId ? { originModeId: record.originModeId } : {}),
     };
   }
   updateBrowserPokeDiscover(current => ({ ...current, achievements }));

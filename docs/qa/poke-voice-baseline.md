@@ -7,7 +7,7 @@ Referencia tomada el 15 de julio de 2026 antes de iniciar los refactors del road
 - Chromium de Playwright 1.61.1.
 - Escritorio: viewport de 1440 × 900 px.
 - Móvil: viewport de 390 × 844 px.
-- Catálogo completo obtenido de PokeAPI y limitado a las primeras 1010 entradas.
+- Catálogo completo obtenido de PokeAPI y limitado a las primeras 1025 entradas.
 
 ## Métricas observadas
 

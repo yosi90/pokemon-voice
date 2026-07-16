@@ -4,6 +4,7 @@ import { formatDex } from '../lib/pokemon.js';
 import { getPokemonSpecial } from '../lib/pokemonSpecials.js';
 import { usePokeballMotion } from '../hooks/usePokeballMotion.js';
 import { DiscoveryConsole } from './DiscoveryConsole.jsx';
+import { PikachuElectricBurst } from './PikachuElectricBurst.tsx';
 
 const getPokemonImageSrc = ({ pokemonId, imageStyle, spriteFallbackStep }) => {
   const spritePokemonId = pokemonId === 479 ? ROTOM_FORM_IDS[0] : pokemonId;
@@ -85,12 +86,16 @@ function PokemonBallCard({ pokemon, discovered, revealing, focused, registerRef,
           onClick={() => onOpenDetails(pokemon)}
           onKeyDown={handleKeyDown}
         >
-          <div className="ball-assembly" aria-hidden="true">
-            <div className="ball-shell ball-shell--top" />
-            <div className="ball-shell ball-shell--bottom" />
-            <div className="ball-band" />
-            <div className="ball-button" />
-            <div className="master-mark">M</div>
+          {pokemon.id === 25 && !discovered && <PikachuElectricBurst />}
+          <div className="ball-motion" aria-hidden="true">
+            <div className="ball-assembly">
+              <div className="ball-shell ball-shell--top" />
+              <div className="ball-shell ball-shell--bottom" />
+              <div className="ball-band" />
+              <div className="ball-button" />
+              <div className="master-mark">M</div>
+            </div>
+            {pokemon.id === 25 && !discovered && <div className="pikachu-inner-flash" />}
           </div>
           <div className="electric-burst" />
           {special.localEffects.map(effect => (

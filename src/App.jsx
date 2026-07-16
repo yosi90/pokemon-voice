@@ -9,12 +9,25 @@ import { PsyduckMode } from './components/PsyduckMode.jsx';
 import { SleepMode } from './components/SleepMode.jsx';
 import { SpecialEffectsLayer } from './components/SpecialEffectsLayer.jsx';
 import { TimedModal } from './components/TimedModal.jsx';
+import { WhosThatPokemonMode } from './components/WhosThatPokemonMode.tsx';
+import { ThemedChallengesMode } from './components/ThemedChallengesMode.tsx';
 import { Toast } from './components/Toast.jsx';
 import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
+import { useWhosThatPokemonMode } from './hooks/useWhosThatPokemonMode.ts';
+import { useThemedChallengesMode } from './hooks/useThemedChallengesMode.ts';
+import { useDailyTriviaMode } from './hooks/useDailyTriviaMode.ts';
 import { ACV } from '../scripts/achievements-logic.js';
 import { getPokemonEntryState } from './domain/research/pokemonEntryState.ts';
+import {
+  TIMED_COLLECTOR_MODE_ID,
+  DAILY_TRIVIA_MODE_ID,
+  THEMED_CHALLENGES_MODE_ID,
+  WHOS_THAT_POKEMON_MODE_ID,
+  confirmModeStart,
+  getModeDefinition,
+} from './domain/modes/modeDefinitions.ts';
 import { deleteAllBrowserPokeVoiceData, getBrowserPokeVoiceSave } from './store/browserPokeVoiceSaveStore.js';
 
 function formatTimer(left) {
@@ -31,9 +44,31 @@ export default function App() {
   const [imageStyle, setImageStyle] = useState('3d');
   const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
   const game = usePokemonGame();
+  const whosThatPokemon = useWhosThatPokemonMode({
+    resolveGuess: game.tryGuessTranscript,
+    discoverPokemon: game.discoverPokemon,
+    registerFailedGuess: game.registerFailedGuess,
+    showToast: game.showToast,
+  });
+  const themedChallenges = useThemedChallengesMode({
+    resolveGuess: game.tryGuessTranscript,
+    discoverPokemon: game.discoverPokemon,
+    showToast: game.showToast,
+  });
+  const dailyTrivia = useDailyTriviaMode({
+    resolveGuess: game.tryGuessTranscript,
+    discoverPokemon: game.discoverPokemon,
+    showToast: game.showToast,
+  });
   const speech = useSpeechRecognition({
     allPokemon: game.allPokemon,
-    guess: game.guess,
+    guess: dailyTrivia.active
+      ? dailyTrivia.submitAnswer
+      : themedChallenges.active
+        ? themedChallenges.submitAnswer
+        : whosThatPokemon.active
+          ? whosThatPokemon.submitAnswer
+          : game.guess,
     tryGuessTranscript: game.tryGuessTranscript,
     showToast: game.showToast,
   });
@@ -54,8 +89,13 @@ export default function App() {
     window.location.reload();
   };
 
-  const startTimed = () => {
-    if (game.startTimed()) setModesOpen(false);
+  const startMode = modeId => {
+    const definition = getModeDefinition(modeId);
+    if (!definition || !confirmModeStart(definition, message => window.confirm(message))) return;
+    if (modeId === TIMED_COLLECTOR_MODE_ID && game.startTimed()) setModesOpen(false);
+    if (modeId === WHOS_THAT_POKEMON_MODE_ID && whosThatPokemon.start(game.allPokemon)) setModesOpen(false);
+    if (modeId === THEMED_CHALLENGES_MODE_ID && themedChallenges.start(game.allPokemon)) setModesOpen(false);
+    if (modeId === DAILY_TRIVIA_MODE_ID && dailyTrivia.start(game.allPokemon)) setModesOpen(false);
   };
 
   const toggleModes = () => {
@@ -100,9 +140,24 @@ export default function App() {
     speech.toggleListening();
   };
 
+  const closeWhosThatPokemon = () => {
+    if (speech.listening) void speech.toggleListening();
+    whosThatPokemon.close();
+  };
+
+  const closeThemedChallenges = () => {
+    if (speech.listening) void speech.toggleListening();
+    themedChallenges.close();
+  };
+
+  const closeDailyTrivia = () => {
+    if (speech.listening) void speech.toggleListening();
+    dailyTrivia.close();
+  };
+
   return (
     <>
-      <Dock
+      {!game.timer && !game.timedCountdown && <Dock
         score={game.score}
         remaining={game.remaining}
         onModes={toggleModes}
@@ -112,7 +167,18 @@ export default function App() {
         onNavigate={game.navigateCards}
         timerText={game.timer ? formatTimer(game.timerLeft) : ''}
         timerDanger={game.timerLeft <= 10}
-      />
+      />}
+      {game.timedCountdown && (
+        <div className="timed-countdown" role="status" aria-live="assertive" aria-label="Cuenta atrás del Coleccionista">
+          <strong key={game.timedCountdown}>{game.timedCountdown}</strong>
+        </div>
+      )}
+      {game.timer && (
+        <div className="timed-mode-hud" aria-label="Controles del Coleccionista">
+          <span className={`chip timer-chip ${game.timerLeft <= 10 ? 'danger' : ''}`}>{formatTimer(game.timerLeft)}</span>
+          <button type="button" className="timed-mode-exit" aria-label="Finalizar Coleccionista" onClick={game.finishTimedEarly}>×</button>
+        </div>
+      )}
       {!speech.speechSupported && voiceSupportModalOpen && (
         <div className="pv-modal" id="voice-support-modal">
           <div className="pv-modal__backdrop" onClick={() => setVoiceSupportModalOpen(false)} />
@@ -180,12 +246,58 @@ export default function App() {
         onReset={resetWithConfirm}
       />
       <AchievementsDrawer />
-      <ModesDrawer open={modesOpen} onClose={closeModes} onStartTimed={startTimed} />
+      <ModesDrawer open={modesOpen} onClose={closeModes} onStartMode={startMode} />
       <TimedModal
         open={!!game.timedResults}
-        discovered={game.timedResults?.discovered || 0}
-        achievements={game.timedResults?.achievements || []}
+        results={game.timedResults}
         onClose={game.closeTimedResults}
+      />
+      <WhosThatPokemonMode
+        open={whosThatPokemon.active}
+        busy={whosThatPokemon.busy}
+        currentRound={whosThatPokemon.currentRound}
+        session={whosThatPokemon.session}
+        visibleHints={whosThatPokemon.visibleHints}
+        listening={speech.listening}
+        speechSupported={speech.speechSupported}
+        voiceStatus={speech.voiceStatus}
+        onAnswer={whosThatPokemon.submitAnswer}
+        onClose={closeWhosThatPokemon}
+        onCry={whosThatPokemon.requestCry}
+        onHint={whosThatPokemon.requestHint}
+        onMic={speech.toggleListening}
+        onNext={whosThatPokemon.nextRound}
+        onSkip={whosThatPokemon.skipRound}
+        onTypeHint={whosThatPokemon.requestTypeHint}
+      />
+      <ThemedChallengesMode
+        open={themedChallenges.active}
+        busy={themedChallenges.busy}
+        session={themedChallenges.session}
+        foundPokemon={themedChallenges.foundPokemon}
+        listening={speech.listening}
+        speechSupported={speech.speechSupported}
+        voiceStatus={speech.voiceStatus}
+        onAnswer={themedChallenges.submitAnswer}
+        onClose={closeThemedChallenges}
+        onMic={speech.toggleListening}
+        onReturnToSelection={themedChallenges.returnToSelection}
+        onSelectChallenge={themedChallenges.selectChallenge}
+      />
+      <ThemedChallengesMode
+        variant="daily"
+        open={dailyTrivia.active}
+        busy={dailyTrivia.busy}
+        session={dailyTrivia.session}
+        foundPokemon={dailyTrivia.foundPokemon}
+        listening={speech.listening}
+        speechSupported={speech.speechSupported}
+        voiceStatus={speech.voiceStatus}
+        onAnswer={dailyTrivia.submitAnswer}
+        onClose={closeDailyTrivia}
+        onMic={speech.toggleListening}
+        onReturnToSelection={closeDailyTrivia}
+        onSelectChallenge={() => {}}
       />
       <SpecialEffectsLayer
         effects={game.specialEffects}

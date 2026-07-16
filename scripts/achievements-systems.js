@@ -20,7 +20,7 @@ export const GEN_RANGES = {
     6: [650, 721],
     7: [722, 809],
     8: [810, 898],
-    9: [899, 1010]
+    9: [899, 1025]
 };
 
 export const STARTERS_BY_GEN = {

@@ -7,7 +7,7 @@ export const POKEMON_GENERATION_RANGES = Object.freeze({
   6: [650, 721],
   7: [722, 809],
   8: [810, 898],
-  9: [899, 1010],
+  9: [899, 1025],
 } as const);
 
 export type PokemonGenerationId = keyof typeof POKEMON_GENERATION_RANGES;

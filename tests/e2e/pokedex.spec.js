@@ -246,13 +246,17 @@ test('mantiene las Pokéballs quietas e inclina solo la que está bajo el cursor
   const secondCard = page.locator('.pokemon-card[data-id="2"]');
   const firstAssembly = firstCard.locator('.ball-assembly');
   await expect(firstAssembly).toHaveCSS('animation-name', 'none');
-  await expect(page.locator('.pokemon-card[data-id="25"] .pokemon-ball-card')).toHaveCSS('animation-name', 'pikachuRestless');
+  await expect(page.locator('.pokemon-card[data-id="25"] .pikachu-electric-field')).toHaveCount(1);
 
   if (page.viewportSize().width >= 900) {
+    const stageBox = await firstCard.locator('.pokemon-stage').boundingBox();
     const firstBox = await firstAssembly.boundingBox();
     const secondBox = await secondCard.locator('.ball-assembly').boundingBox();
-    await page.mouse.move(firstBox.x + firstBox.width - 2, firstBox.y + 2);
+    await page.mouse.move(stageBox.x + 2, stageBox.y + stageBox.height / 2);
+    await expect(firstAssembly).not.toHaveClass(/is-ball-tilting/);
+    await page.mouse.move(firstBox.x + firstBox.width * .85, firstBox.y + firstBox.height * .15);
     await expect(firstAssembly).toHaveClass(/is-ball-tilting/);
+    await expect(firstAssembly).toHaveCSS('transition-duration', '0s');
     await expect.poll(() => firstAssembly.evaluate(element => (
       element.style.getPropertyValue('--ball-rotate-y') !== ''
     ))).toBe(true);
@@ -265,13 +269,53 @@ test('mantiene las Pokéballs quietas e inclina solo la que está bajo el cursor
     expect(Math.abs(rotation.x)).toBeGreaterThan(5);
     expect(Math.abs(rotation.y)).toBeGreaterThan(7);
 
+    await page.mouse.move(firstBox.x + firstBox.width * .15, firstBox.y + firstBox.height * .85, { steps: 30 });
+    await page.mouse.move(stageBox.x + 2, stageBox.y + stageBox.height / 2);
+    await expect(firstAssembly).not.toHaveClass(/is-ball-tilting/);
+    await expect.poll(() => firstAssembly.evaluate(element => (
+      element.style.getPropertyValue('--ball-rotate-x') + element.style.getPropertyValue('--ball-rotate-y')
+    ))).toBe('');
+
     await page.mouse.move(secondBox.x + secondBox.width / 2, secondBox.y + secondBox.height / 2);
     await expect(secondCard.locator('.ball-assembly')).toHaveClass(/is-ball-tilting/);
     await expect(firstAssembly).not.toHaveClass(/is-ball-tilting/);
+
+    await page.mouse.move(stageBox.x + 2, stageBox.y + stageBox.height / 2);
+    await expect(secondCard.locator('.ball-assembly')).not.toHaveClass(/is-ball-tilting/);
+    await expect(secondCard.locator('.ball-assembly')).toHaveCSS('transition-duration', '0.18s');
   }
 
   await firstCard.getByRole('button', { name: 'Abrir ficha de #0001' }).click();
   await expect(page.getByRole('dialog', { name: 'DATOS CLASIFICADOS' })).toBeVisible();
+});
+
+test('aísla la sombra circular del contenedor animado de Pikachu', async ({ page }) => {
+  const pikachuCard = page.locator('.pokemon-card[data-id="25"]');
+  const animatedBall = pikachuCard.locator('.pokemon-ball-card');
+  const shell = pikachuCard.locator('.ball-assembly');
+
+  await expect(animatedBall).toHaveCSS('filter', 'none');
+  await expect(pikachuCard.locator('[data-pikachu-bolt]')).toHaveCount(7);
+  await expect(pikachuCard.locator('.pikachu-electricity path')).toHaveCount(28);
+  await expect.poll(() => animatedBall.evaluate(node => node.classList.contains('pikachu-burst'))).toBe(true);
+  await expect(pikachuCard.locator('.ball-motion')).toHaveCSS('animation-name', 'pikachuStruggle');
+  await expect(pikachuCard.locator('.pikachu-electricity')).toHaveCSS('filter', /pikachu-electric-glow/);
+  await expect(shell).toHaveCSS('box-shadow', /rgba\(0, 0, 0, 0\.4\)/);
+  expect(await page.evaluate(() => {
+    window.scrollTo({ left: 100, top: window.scrollY });
+    return window.scrollX;
+  })).toBe(0);
+});
+
+test('retira la sombra cerrada al separar las mitades de una Pokéball descubierta', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('squirtle');
+  await input.press('Enter');
+  await expect(page.getByRole('button', { name: 'Abrir ficha de squirtle' })).toBeVisible();
+
+  const card = page.locator('.pokemon-card[data-id="7"]');
+  await expect(card.locator('.ball-assembly')).toHaveCSS('box-shadow', 'none');
+  await expect(card.locator('.ball-shell--bottom')).toHaveCSS('clip-path', 'inset(50% 0px 0px)');
 });
 
 test('una Pokéball descubierta conserva el volumen pero deja de flotar', async ({ page }) => {
@@ -282,6 +326,7 @@ test('una Pokéball descubierta conserva el volumen pero deja de flotar', async 
   const card = page.locator('.pokemon-card[data-id="25"]');
   await expect(card.locator('.ball-assembly')).toHaveCount(1);
   await expect(card.locator('.ball-assembly')).toHaveCSS('animation-name', 'none');
+  await expect(card.locator('.pikachu-electric-field')).toHaveCount(0);
   await expect(card.locator('.pokemon-art')).toBeVisible();
 });
 
@@ -291,6 +336,8 @@ test('respeta movimiento reducido sin perder el volumen estático', async ({ pag
   const assembly = card.locator('.ball-assembly');
   await expect(assembly).toHaveCSS('animation-name', 'none');
   await expect(assembly).toHaveCSS('translate', 'none');
+  await expect(page.locator('.pokemon-card[data-id="25"] .pokemon-ball-card')).not.toHaveClass(/pikachu-burst/);
+  await expect(page.locator('.pokemon-card[data-id="25"] .pikachu-electricity .is-live')).toHaveCount(0);
 
   if (page.viewportSize().width >= 900) {
     const box = await assembly.boundingBox();
@@ -451,21 +498,270 @@ test('representa el progreso de generación y global con barras y porcentajes', 
   await expect(page.getByText('10%', { exact: true })).toBeVisible();
 });
 
-test('abre modos e inicia el contrarreloj tras confirmación', async ({ page }) => {
+test('cierra el drawer al pulsar fuera e inicia el Coleccionista sin confirmación', async ({ page }) => {
   await page.getByRole('button', { name: 'Modos' }).click();
   await expect(page.locator('#modes-drawer')).toHaveAttribute('aria-hidden', 'false');
-  page.once('dialog', dialog => dialog.accept());
+  const viewport = page.viewportSize();
+  await page.locator('.drawer-dismiss-layer').click({
+    position: { x: viewport.width - 2, y: Math.floor(viewport.height / 2) },
+  });
+  await expect(page.locator('#modes-drawer')).toHaveAttribute('aria-hidden', 'true');
 
-  await page.getByRole('button', { name: 'Empezar' }).click();
+  await page.getByRole('button', { name: 'Modos' }).click();
+  const collector = page.locator('[data-mode-id="timed-collector"]');
+  await expect(collector).toHaveAttribute('data-run-policy', 'isolatedPokedex');
+  await expect(collector).toContainText('Coleccionista de logros');
+  await expect(collector).toContainText('Tienes 2:00 minutos para obtener el máximo número de logros descubriendo Pokémon.');
 
+  await collector.getByRole('button', { name: 'Empezar' }).click();
+
+  const countdown = page.getByRole('status', { name: 'Cuenta atrás del Coleccionista' });
+  await expect(page.locator('#dock')).toHaveCount(0);
+  await expect(countdown).toHaveText('3');
+  await expect(countdown).toHaveText('2');
+  await expect(countdown).toHaveText('1');
+  await expect(countdown).toHaveText('¡Ahora!');
   await expect(page.locator('.timer-chip')).toContainText('2:00');
+  await expect(page.locator('#dock')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Finalizar Coleccionista' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('__pv_timer__'))).not.toBeNull();
+
+  await page.getByRole('button', { name: 'Finalizar Coleccionista' }).click();
+  await expect(page.getByRole('dialog', { name: 'Fin del contrarreloj' })).toBeVisible();
+  await expect(page.locator('#dock')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).activeModeSession ?? null
+  ))).toBeNull();
+});
+
+test('el Coleccionista oculta la Pokédex original dentro de su run temporal', async ({ page }) => {
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds.includes(25)
+  ))).toBe(true);
+  const before = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun);
+
+  await page.getByRole('button', { name: 'Modos' }).click();
+  await page.locator('[data-mode-id="timed-collector"]').getByRole('button', { name: 'Empezar' }).click();
+  await expect(page.getByRole('button', { name: 'Finalizar Coleccionista' })).toBeVisible();
+
+  await expect(page.locator('#modes-drawer')).toHaveAttribute('aria-hidden', 'true');
+  const after = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return { run: save.pokedexRun, activeModeSession: save.activeModeSession ?? null };
+  });
+  expect(after.run.runId).not.toBe(before.runId);
+  expect(after.run.registeredSpeciesIds).toEqual([]);
+  expect(after.activeModeSession.suspendedPokedexRun).toEqual(before);
+  await expect(page.getByRole('button', { name: 'Abrir ficha de #0025' })).toBeVisible();
+});
+
+test('mantiene una racha infinita, consume comodines de sesión y termina al fallar', async ({ page }) => {
+  const before = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return {
+      runId: save.pokedexRun.runId,
+      discoveryPoints: save.pokeDiscover.discoveryPoints,
+      researchBySpecies: save.pokeDiscover.researchBySpecies,
+    };
+  });
+
+  await page.getByRole('button', { name: 'Modos' }).click();
+  const modeCard = page.locator('[data-mode-id="whos-that-pokemon"]');
+  await expect(modeCard).toHaveAttribute('data-run-policy', 'preserve');
+  await modeCard.getByRole('button', { name: 'Empezar' }).click();
+
+  const mode = page.locator('.whos-mode');
+  await expect(mode).toBeVisible();
+  await expect(mode).toContainText('Racha: 0');
+  await expect(mode.getByRole('button', { name: 'Salir del modo' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.runId
+  ))).toBe(before.runId);
+
+  await mode.getByRole('button', { name: 'Pista de texto · 5' }).click();
+  await expect(mode.locator('.whos-mode__hints p')).toHaveCount(1);
+  await expect(mode.getByRole('button', { name: 'Pista de texto · 4' })).toBeVisible();
+  await mode.getByRole('button', { name: 'Revelar tipos · 3' }).click();
+  await expect(mode.locator('.whos-mode__types')).toBeVisible();
+  await expect(mode.getByRole('button', { name: 'Revelar tipos · 2' })).toBeDisabled();
+  await expect(mode.getByRole('button', { name: 'Escuchar grito' })).toBeVisible();
+  await expect(mode.getByRole('button', { name: 'Responder por voz' })).toBeVisible();
+  const firstTargetId = Number(await mode.locator('.whos-mode__portrait').getAttribute('data-target-id'));
+  const firstTarget = pokemonCatalogFixture.results.find(entry => entry.url.endsWith(`/pokemon/${firstTargetId}/`));
+  expect(firstTarget).toBeTruthy();
+  await mode.getByRole('textbox', { name: 'Respuesta Pokémon' }).fill(firstTarget.name);
+  await mode.getByRole('button', { name: 'Responder', exact: true }).click();
+  await expect(mode).toContainText('¡Correcto!');
+  await expect(mode).toContainText('Racha: 1');
+  await expect.poll(() => page.evaluate(id => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds.includes(id)
+  ), firstTargetId)).toBe(true);
+
+  await mode.getByRole('button', { name: 'Siguiente Pokémon' }).click();
+  await expect(mode.getByRole('button', { name: 'Pista de texto · 4' })).toBeVisible();
+  await expect(mode.getByRole('button', { name: 'Revelar tipos · 2' })).toBeEnabled();
+  await expect(mode.locator('.whos-mode__hints p')).toHaveCount(0);
+  await expect(mode.locator('.whos-mode__types')).toHaveCount(0);
+  await mode.getByRole('button', { name: 'Rendirse' }).click();
+  await expect(mode).toContainText('No era ese Pokémon.');
+  await mode.getByRole('button', { name: 'Ver resultado' }).click();
+
+  await expect(mode).toContainText('Racha final');
+  await expect(mode.locator('.whos-mode__results > strong')).toHaveText('1');
+  await expect(mode).toContainText('¡Nuevo récord personal!');
+  await expect.poll(() => page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return {
+      progress: save.pokeDiscover.modeProgress['whos-that-pokemon'],
+      achievement: save.pokeDiscover.achievements['whos-that-pokemon-complete'],
+      discoveryPoints: save.pokeDiscover.discoveryPoints,
+      researchBySpecies: save.pokeDiscover.researchBySpecies,
+    };
+  })).toMatchObject({
+    progress: { completed: true, completionCount: 1, bestScore: 1 },
+    achievement: { originModeId: 'whos-that-pokemon' },
+    discoveryPoints: before.discoveryPoints,
+    researchBySpecies: before.researchBySpecies,
+  });
+
+  await mode.getByRole('button', { name: 'Volver a la Pokédex' }).click();
+  await page.getByRole('button', { name: 'Modos' }).click();
+  await expect(page.locator('[data-mode-id="whos-that-pokemon"]')).toContainText('Mejor racha: 1 · 1 partida');
+});
+
+test('completa un reto temático sin reiniciar la run ni duplicar metaprogresión', async ({ page }) => {
+  const before = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return {
+      runId: save.pokedexRun.runId,
+      discoveryPoints: save.pokeDiscover.discoveryPoints,
+      researchBySpecies: save.pokeDiscover.researchBySpecies,
+    };
+  });
+
+  await page.getByRole('button', { name: 'Modos' }).click();
+  const modeCard = page.locator('[data-mode-id="themed-challenges"]');
+  await expect(modeCard).toHaveAttribute('data-run-policy', 'preserve');
+  await modeCard.getByRole('button', { name: 'Empezar' }).click();
+
+  const mode = page.locator('.themed-mode');
+  await expect(mode).toBeVisible();
+  await expect(mode.locator('.themed-challenge-card')).toHaveCount(3);
+  await mode.getByRole('button', { name: /La caja de Ash está a reventar/i }).click();
+  await expect(mode.getByLabel('Progreso del reto')).toHaveText('0/3');
+  await expect(mode.getByRole('button', { name: 'Responder al reto por voz' })).toBeVisible();
+
+  const answer = mode.getByRole('textbox', { name: 'Respuesta del reto temático' });
+  await answer.fill('mew');
+  await mode.getByRole('button', { name: 'Comprobar' }).click();
+  await expect(page.locator('.toast')).toContainText('no pertenece a este reto');
+  await expect(mode.getByLabel('Progreso del reto')).toHaveText('0/3');
+
+  for (const [name, progress] of [['bulbasaur', '1/3'], ['charmander', '2/3'], ['squirtle', '3/3']]) {
+    await answer.fill(name);
+    await mode.getByRole('button', { name: 'Comprobar' }).click();
+    await expect(mode.getByLabel('Progreso del reto')).toHaveText(progress);
+  }
+
+  await expect(mode).toContainText('¡Investigación completada!');
+  await expect.poll(() => page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return {
+      runId: save.pokedexRun.runId,
+      registered: save.pokedexRun.registeredSpeciesIds,
+      progress: save.pokeDiscover.modeProgress['themed-challenges'],
+      achievement: save.pokeDiscover.achievements['themed-challenge-complete'],
+      discoveryPoints: save.pokeDiscover.discoveryPoints,
+      researchBySpecies: save.pokeDiscover.researchBySpecies,
+    };
+  })).toMatchObject({
+    runId: before.runId,
+    registered: [1, 4, 7],
+    progress: {
+      completed: true,
+      completionCount: 1,
+      completedChallengeIds: ['family-ash-owned-pokemon'],
+    },
+    achievement: { originModeId: 'themed-challenges' },
+    discoveryPoints: before.discoveryPoints,
+    researchBySpecies: before.researchBySpecies,
+  });
+
+  await mode.getByRole('button', { name: 'Elegir otro reto' }).click();
+  await expect(mode.getByRole('button', { name: /La caja de Ash está a reventar/i })).toContainText('✓ Completado');
+  await mode.getByRole('button', { name: 'Salir de Trivia Pokémon' }).click();
+  await page.getByRole('button', { name: 'Modos' }).click();
+  await expect(page.locator('[data-mode-id="themed-challenges"]')).toContainText('1 reto superado · 1 partida');
+});
+
+test('aprueba una sola vez el examen diario y conserva una racha persistente', async ({ page }) => {
+  const before = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return {
+      runId: save.pokedexRun.runId,
+      discoveryPoints: save.pokeDiscover.discoveryPoints,
+      researchBySpecies: save.pokeDiscover.researchBySpecies,
+    };
+  });
+
+  await page.getByRole('button', { name: 'Modos' }).click();
+  const modeCard = page.locator('[data-mode-id="daily-trivia"]');
+  await expect(modeCard).toHaveAttribute('data-run-policy', 'preserve');
+  await modeCard.getByRole('button', { name: 'Empezar' }).click();
+
+  const mode = page.locator('.themed-mode[aria-label="Examen diario"]');
+  await expect(mode).toBeVisible();
+  const challengeId = await mode.locator('.themed-mode__game').getAttribute('data-challenge-id');
+  const answersByChallenge = {
+    'generation:kanto-icons': ['bulbasaur', 'charmander', 'squirtle'],
+    'type:deep-roots': ['bulbasaur', 'ivysaur', 'venusaur'],
+    'family-ash-owned-pokemon': ['bulbasaur', 'charmander', 'squirtle'],
+  };
+  const answers = answersByChallenge[challengeId];
+  expect(answers).toBeTruthy();
+  const answer = mode.getByRole('textbox', { name: 'Respuesta del reto temático' });
+  for (const name of answers) {
+    await answer.fill(name);
+    await mode.getByRole('button', { name: 'Comprobar' }).click();
+  }
+
+  await expect(mode).toContainText('¡Examen diario aprobado!');
+  await expect(mode).toContainText('Racha actual: 1');
+  await expect.poll(() => page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return {
+      runId: save.pokedexRun.runId,
+      progress: save.pokeDiscover.modeProgress['daily-trivia'],
+      achievement: save.pokeDiscover.achievements['daily-trivia-complete'],
+      discoveryPoints: save.pokeDiscover.discoveryPoints,
+      researchBySpecies: save.pokeDiscover.researchBySpecies,
+    };
+  })).toMatchObject({
+    runId: before.runId,
+    progress: { completionCount: 1, dailyStreak: 1, bestDailyStreak: 1 },
+    achievement: { originModeId: 'daily-trivia' },
+    discoveryPoints: before.discoveryPoints,
+    researchBySpecies: before.researchBySpecies,
+  });
+
+  await mode.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await page.getByRole('button', { name: 'Modos' }).click();
+  await expect(modeCard).toContainText('Racha: 1 · Mejor: 1 · 1 partida');
+  await modeCard.getByRole('button', { name: 'Empezar' }).click();
+  await expect(page.locator('.toast')).toContainText('Ya has aprobado el examen de hoy');
+  await expect(mode).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokeDiscover.modeProgress['daily-trivia'].completionCount
+  ))).toBe(1);
 });
 
 test('recupera el contrarreloj y su run al recargar', async ({ page }) => {
   await page.getByRole('button', { name: 'Modos' }).click();
-  page.once('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Empezar' }).click();
+  await page.locator('[data-mode-id="timed-collector"]').getByRole('button', { name: 'Empezar' }).click();
+  await expect(page.getByRole('button', { name: 'Finalizar Coleccionista' })).toBeVisible();
   const runId = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.runId);
 
   await page.reload();
@@ -479,8 +775,8 @@ test('recupera el contrarreloj y su run al recargar', async ({ page }) => {
 
 test('cierra al recargar un contrarreloj caducado durante la ausencia', async ({ page }) => {
   await page.getByRole('button', { name: 'Modos' }).click();
-  page.once('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Empezar' }).click();
+  await page.locator('[data-mode-id="timed-collector"]').getByRole('button', { name: 'Empezar' }).click();
+  await expect(page.getByRole('button', { name: 'Finalizar Coleccionista' })).toBeVisible();
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
     const expiredStartedAt = new Date(Date.now() - 121_000).toISOString();
@@ -497,16 +793,47 @@ test('cierra al recargar un contrarreloj caducado durante la ausencia', async ({
   ))).toBeNull();
 });
 
-test('cierra el contrarreloj con su resumen', async ({ page }) => {
+test('cierra el contrarreloj con estadísticas completas y guarda su récord', async ({ page }) => {
   await page.clock.install();
+  const normalInput = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await normalInput.fill('pikachu');
+  await normalInput.press('Enter');
+  await expect(page.getByRole('button', { name: 'Abrir ficha de pikachu' })).toBeVisible();
   await page.getByRole('button', { name: 'Modos' }).click();
-  page.once('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Empezar' }).click();
+  await page.locator('[data-mode-id="timed-collector"]').getByRole('button', { name: 'Empezar' }).click();
+  await page.clock.fastForward('00:04');
+  await expect(page.getByRole('button', { name: 'Finalizar Coleccionista' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir ficha de #0025' })).toBeVisible();
+
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('ivysaur');
+  await input.press('Enter');
+  await expect(page.getByRole('button', { name: 'Abrir ficha de ivysaur' })).toBeVisible();
+  await expect(page.locator('.toast')).toContainText('ivysaur descubierto');
+  await input.fill('esto no es un pokemon');
+  await input.press('Enter');
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).activeModeSession.failures
+  ))).toBe(1);
 
   await page.clock.fastForward('02:01');
 
-  await expect(page.getByRole('dialog', { name: 'Fin del contrarreloj' })).toBeVisible();
-  await expect(page.locator('#timed-modal')).toContainText('Descubiertos0');
+  const results = page.getByRole('dialog', { name: 'Fin del contrarreloj' });
+  await expect(results).toBeVisible();
+  await expect(results).toContainText('Descubiertos1');
+  await expect(results).toContainText('Precisión50%');
+  await expect(results).toContainText('Mejor racha×1');
+  await expect(results).toContainText('Fallos1');
+  await expect(results).toContainText('2 intentos');
+  await expect(results).toContainText('A contrarreloj');
+  await expect(page.getByRole('button', { name: 'Abrir ficha de pikachu' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir ficha de #0002' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokeDiscover.modeProgress['timed-collector']
+  ))).toMatchObject({ completed: true, completionCount: 1, bestScore: 2 });
+  await results.getByRole('button', { name: 'Aceptar' }).click();
+  await page.getByRole('button', { name: 'Modos' }).click();
+  await expect(page.locator('[data-mode-id="timed-collector"]')).toContainText('Récord: 2 logros · 1 partida');
 });
 
 test('explica el fallback cuando la voz no está disponible', async ({ page }) => {
@@ -566,6 +893,48 @@ test('silencia un logro permanente aunque vuelva a satisfacerlo en otra run', as
   ))).toBe(1);
   await page.getByRole('button', { name: 'Logros' }).click();
   await expect(page.locator('#acv-ach-list')).toContainText('Un inicio clásico');
+});
+
+test('el contrarreloj puntúa logros permanentes una vez y los recupera al recargar', async ({ page }) => {
+  await page.evaluate(() => {
+    localStorage.setItem('pokevoice-achievements-v1', JSON.stringify([
+      { id: 'first-blood', date: 100 },
+      { id: 'classic-start-pikachu', date: 200 },
+    ]));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Modos' }).click();
+  await page.locator('[data-mode-id="timed-collector"]').getByRole('button', { name: 'Empezar' }).click();
+  await expect(page.getByRole('button', { name: 'Finalizar Coleccionista' })).toBeVisible();
+  const input = page.getByPlaceholder('Escribe un nombre y pulsa Enter.');
+  await input.fill('pikachu');
+  await input.press('Enter');
+
+  await expect(page.locator('.acv-toast').filter({ hasText: 'Logro del reto' })).toHaveCount(2);
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).activeModeSession.satisfiedAchievementIds
+  ))).toEqual(expect.arrayContaining(['first-blood', 'classic-start-pikachu']));
+  expect(await page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-achievements-v1')).length
+  ))).toBe(2);
+
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.activeModeSession.startedAt = new Date(Date.now() - 121_000).toISOString();
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+
+  const results = page.getByRole('dialog', { name: 'Fin del contrarreloj' });
+  await expect(results).toBeVisible();
+  await expect(results).toContainText('Logros3');
+  await expect(results).toContainText('Primer paso');
+  await expect(results).toContainText('Un inicio clásico');
+  await expect(results).toContainText('A contrarreloj');
+  await expect(results).toContainText('Precisión100%');
+  await expect(results).toContainText('Mejor racha×1');
+  await expect(results).toContainText('1 intento');
 });
 
 test('reinicia solo la run y explica qué conserva PokeDiscover', async ({ page }) => {

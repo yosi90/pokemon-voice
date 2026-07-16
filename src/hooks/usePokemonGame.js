@@ -71,16 +71,25 @@ export function usePokemonGame() {
     guessedRef.current = browserDiscoveryStore.getSnapshot().guessedIds;
   }, []);
 
+  const restoreDiscovery = useCallback(ids => {
+    browserDiscoveryStore.replace(ids);
+    guessedRef.current = browserDiscoveryStore.getSnapshot().guessedIds;
+  }, []);
+
   const {
     closeTimedResults,
+    finishTimedEarly,
     recordTimedDiscovery,
+    recordTimedFailure,
     resetProgress,
     startTimed,
     timedResults,
+    timedCountdown,
     timer,
     timerLeft,
   } = useTimedMode({
     resetDiscovery,
+    restoreDiscovery,
     resetRevealEffects,
     resetEasterEggProgress,
     showToast,
@@ -112,6 +121,8 @@ export function usePokemonGame() {
     ACV.startRun({
       durationSec: persistedSave.activeModeSession?.durationSec ?? null,
       runId: persistedSave.pokedexRun.runId,
+      modeId: persistedSave.activeModeSession?.modeId,
+      satisfiedIds: persistedSave.activeModeSession?.satisfiedAchievementIds ?? [],
     });
     return () => {
       alive = false;
@@ -163,7 +174,7 @@ export function usePokemonGame() {
     if (!discovered) return false;
     guessedRef.current = browserDiscoveryStore.getSnapshot().guessedIds;
     markRevealed(id);
-    recordTimedDiscovery(id);
+    recordTimedDiscovery(id, source);
     playSuccessTone();
     playRevealAudio(id);
     await runSpecialReveal(special, id, SPECIAL_TIMING.AFTER_REVEAL);
@@ -185,6 +196,13 @@ export function usePokemonGame() {
     });
     return true;
   }, [allPokemon, enqueueSpecialEffect, getEasterEggState, markRevealed, playRevealAudio, recordTimedDiscovery, runSpecialReveal, scrollToPokemon, setActiveGeneration, updateEasterEggState]);
+
+  const registerFailedGuess = useCallback(async () => {
+    try {
+      await ACV.registerFail();
+    } catch {}
+    recordTimedFailure();
+  }, [recordTimedFailure]);
 
   const collectGimmighoulCoin = useCallback(async () => {
     const nextCoins = (easterEggState.gimmighoulCoins || 0) + 1;
@@ -224,9 +242,7 @@ export function usePokemonGame() {
     const result = tryGuessTranscript(raw, { fromSpeech });
     if (!result.matched) {
       showToast(`No encontré "${raw}"`, 'bad');
-      try {
-        await ACV.registerFail();
-      } catch {}
+      await registerFailedGuess();
       return false;
     }
 
@@ -248,7 +264,7 @@ export function usePokemonGame() {
       showToast(revealed ? `${raw}: ${revealed} forma(s) revelada(s)` : `Ya estaban descubiertas: ${raw}`, revealed ? 'ok' : 'info');
     }
     return true;
-  }, [enqueueSpecialEffect, hasDiscovered, revealPokemon, showToast, tryGuessTranscript]);
+  }, [enqueueSpecialEffect, hasDiscovered, registerFailedGuess, revealPokemon, showToast, tryGuessTranscript]);
 
   const handleGuessSubmit = useCallback(event => {
     event.preventDefault();
@@ -270,6 +286,7 @@ export function usePokemonGame() {
     cardSize,
     collectGimmighoulCoin,
     closeTimedResults,
+    finishTimedEarly,
     delibirdMode,
     dismissSpecialEffect,
     enableAudio,
@@ -288,6 +305,8 @@ export function usePokemonGame() {
     psyduckMode,
     remaining,
     replayPokemonCry,
+    discoverPokemon: revealPokemon,
+    registerFailedGuess,
     resetProgress,
     score,
     sleepMode,
@@ -300,6 +319,7 @@ export function usePokemonGame() {
     specialEffects,
     startTimed,
     timedResults,
+    timedCountdown,
     timer,
     timerLeft,
     toast,

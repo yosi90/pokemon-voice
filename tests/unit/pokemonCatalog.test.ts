@@ -47,11 +47,11 @@ describe('catálogo de Pokémon', () => {
     await expect(fetchPokemonCatalog({ fetchImpl: failedFetch })).rejects.toThrow('PokeAPI respondió 503');
   });
 
-  it('incluye localmente las 1010 entradas soportadas por la Pokédex', () => {
-    expect(LOCAL_POKEMON_CATALOG).toHaveLength(1010);
+  it('incluye localmente las 1025 entradas soportadas por la Pokédex', () => {
+    expect(LOCAL_POKEMON_CATALOG).toHaveLength(1025);
     expect(LOCAL_POKEMON_CATALOG[0]).toEqual(createDefaultCatalogRecord({ id: 1, name: 'bulbasaur' }));
     expect(LOCAL_POKEMON_CATALOG.at(-1)).toEqual(
-      createDefaultCatalogRecord({ id: 1010, name: 'iron-leaves' }),
+      createDefaultCatalogRecord({ id: 1025, name: 'pecharunt' }),
     );
   });
 
@@ -88,7 +88,7 @@ describe('catálogo de Pokémon', () => {
     });
 
     expect(result.source).toBe('local');
-    expect(result.records).toHaveLength(1010);
+    expect(result.records).toHaveLength(1025);
   });
 
   it('ignora una caché corrupta sin afectar otras claves locales', () => {

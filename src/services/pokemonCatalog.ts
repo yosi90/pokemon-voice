@@ -7,7 +7,7 @@ import {
 } from '../domain/catalog/pokemonCatalogModel.js';
 
 const POKEMON_LIST_URL = 'https://pokeapi.co/api/v2/pokemon?limit=20000';
-export const DEFAULT_MAX_POKEDEX_ID = 1010;
+export const DEFAULT_MAX_POKEDEX_ID = 1025;
 export const POKEMON_CATALOG_CACHE_KEY = 'pokevoice-pokemon-catalog-v1';
 
 export type PokemonListItem = PokemonCatalogSourceItem;

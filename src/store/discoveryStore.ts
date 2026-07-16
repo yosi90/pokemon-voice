@@ -11,6 +11,7 @@ export interface DiscoveryStore {
   subscribe: (listener: () => void) => () => void;
   discover: (speciesId: PokemonSpeciesId) => boolean;
   reset: () => void;
+  replace: (speciesIds: Iterable<number>) => void;
 }
 
 export interface CreateDiscoveryStoreOptions {
@@ -57,10 +58,17 @@ export function createDiscoveryStore({
     persist([]);
   };
 
+  const replace = (speciesIds: Iterable<number>) => {
+    const nextOrder = normalizeIds(speciesIds);
+    store.setState(createSnapshot(nextOrder));
+    persist(nextOrder);
+  };
+
   return {
     getSnapshot: store.getSnapshot,
     subscribe: store.subscribe,
     discover,
     reset,
+    replace,
   };
 }

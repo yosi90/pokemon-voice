@@ -57,6 +57,41 @@ describe('progreso puro de logros', () => {
     ]);
   });
 
+  it('restaura los logros satisfechos de una sesión sin volver a concederlos', () => {
+    const progress = createAchievementProgress({
+      initialRecords: [
+        { id: 'first-blood', date: 100 },
+        { id: 'classic-start-pikachu', date: 200 },
+      ],
+    });
+    progress.startRun({
+      runId: 'run:timed',
+      modeId: 'timed-collector',
+      satisfiedIds: ['first-blood', 'first-blood', 'missing'],
+    });
+
+    expect(progress.getSnapshot().run).toMatchObject({
+      modeId: 'timed-collector',
+      satisfiedIds: ['first-blood'],
+      newlyUnlockedIds: [],
+    });
+    expect(progress.satisfy({ id: 'first-blood' }).status).toBe('alreadySatisfiedThisRun');
+    expect(progress.satisfy({ id: 'classic-start-pikachu' }).status).toBe('alreadyPermanent');
+    expect(progress.getSnapshot().run.satisfiedIds).toEqual(['first-blood', 'classic-start-pikachu']);
+  });
+
+  it('guarda el modo de origen cuando el logro sí es nuevo para la cuenta', () => {
+    const progress = createAchievementProgress({ now: () => 500 });
+    progress.startRun({ runId: 'run:timed', modeId: 'timed-collector' });
+
+    progress.satisfy({ id: 'first-blood' });
+
+    expect(progress.getPermanentRecord('first-blood')).toMatchObject({
+      originRunId: 'run:timed',
+      originModeId: 'timed-collector',
+    });
+  });
+
   it('notifica a consumidores que no dependen de React', () => {
     const progress = createAchievementProgress();
     const listener = vi.fn();

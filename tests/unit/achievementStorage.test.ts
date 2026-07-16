@@ -21,6 +21,7 @@ describe('persistencia de logros', () => {
       date: 456,
       domain: 'pokedex',
       originRunId: 'run-456',
+      originModeId: 'timed-collector',
     }]);
 
     expect(parseAchievementRecords(serialized)).toEqual([{
@@ -28,6 +29,7 @@ describe('persistencia de logros', () => {
       date: 456,
       domain: 'pokedex',
       originRunId: 'run-456',
+      originModeId: 'timed-collector',
     }]);
   });
 

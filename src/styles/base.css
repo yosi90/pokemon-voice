@@ -30,6 +30,10 @@ body,
   margin: 0;
 }
 
+html {
+  overflow-x: clip;
+}
+
 body {
   min-width: 320px;
   /* background:
@@ -46,4 +50,3 @@ button,
 input {
   font: inherit;
 }
-

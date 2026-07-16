@@ -21,7 +21,10 @@ import {
 import {
     createBrowserAchievementStorage
 } from '../src/services/achievementStorage.ts';
-import { syncBrowserAchievements } from '../src/store/browserPokeVoiceSaveStore.ts';
+import {
+    recordBrowserModeAchievement,
+    syncBrowserAchievements
+} from '../src/store/browserPokeVoiceSaveStore.ts';
 
 export { achievementProgress } from '../src/store/achievementProgressStore.ts';
 
@@ -113,7 +116,7 @@ function resetRunState(clearPersistent = false) {
     }
 }
 
-function restartEngine(durationSec = null, runId) {
+function restartEngine(durationSec = null, runId, modeId, satisfiedIds = []) {
     _runToken++;
     _lastDurationSec = durationSec;
     engine.startRun({
@@ -122,26 +125,37 @@ function restartEngine(durationSec = null, runId) {
     });
     achievementProgress.startRun({
         runId: engine.ctx.runId,
-        startedAt: Date.now()
+        startedAt: Date.now(),
+        ...(modeId ? { modeId } : {}),
+        satisfiedIds
     });
     return engine.ctx.runId;
 }
 
-function awardAchievement(a) {
+function awardAchievement(a, explicitModeId) {
     const result = achievementProgress.satisfy({
         id: a.id,
         date: Date.now(),
-        domain: a.domain || 'pokedex'
+        domain: a.domain || 'pokedex',
+        ...(explicitModeId ? { originModeId: explicitModeId } : {})
     });
-    if (result.status !== 'newlyUnlocked') return false;
+    if (result.status === 'alreadySatisfiedThisRun') return false;
+
+    const modeId = explicitModeId || achievementProgress.getSnapshot().run.modeId;
+    if (!modeId && result.status === 'alreadyPermanent') return false;
+    if (modeId) recordBrowserModeAchievement(a.id);
 
     toastAch({
         id: a.id,
-        title: a.title,
+        title: modeId ? 'Logro del reto: ' + a.title : a.title,
         tier: a.tier,
-        desc: a.desc
+        desc: modeId
+            ? (result.status === 'newlyUnlocked'
+                ? a.desc + ' También se ha añadido a tu colección permanente.'
+                : a.desc + ' Cuenta para esta sesión sin duplicar tu colección permanente.')
+            : a.desc
     });
-    saveUnlockState();
+    if (result.status === 'newlyUnlocked') saveUnlockState();
     return true;
 }
 
@@ -161,26 +175,39 @@ async function unlockById(id) {
     return maybeUnlock(achievement, { id }, engine.ctx);
 }
 
+async function unlockForMode(id, modeId) {
+    const achievement = ACHIEVEMENTS.find(a => a.id === id && a.modeId === modeId);
+    if (!achievement) return false;
+    if (!await isAchievementSatisfied(achievement, { id }, engine.ctx)) return false;
+    return awardAchievement(achievement, modeId);
+}
+
 // ====== API pública esperada por tu app ======
 export const ACV = {
     // Inicia una nueva run (reinicia contadores/rachas/sets efímeros, carga persistido una vez)
+    /**
+     * @param {{durationSec?: number | null, runId?: string, modeId?: string, satisfiedIds?: string[]}} [options]
+     */
     startRun({
         durationSec = null,
-        runId
+        runId,
+        modeId,
+        satisfiedIds = []
     } = {}) {
         // Carga persistente una sola vez y pinta lo que haya.
         loadUnlockStateOnce();
-        restartEngine(durationSec, runId);
+        restartEngine(durationSec, runId, modeId, satisfiedIds);
         resetRunState(false); // false = NO borrar logros persistentes
     },
 
     resetRun({
-        durationSec
+        durationSec,
+        modeId
     } = {}) {
         // si no te pasan duration, reutiliza el último
         const dur = (durationSec !== undefined) ? durationSec : _lastDurationSec;
         // reinicia SOLO el estado de la run, no borra logros persistidos
-        return restartEngine(dur || null);
+        return restartEngine(dur || null, undefined, modeId);
         resetRunState(false);
     },
 
@@ -205,6 +232,10 @@ export const ACV = {
         return unlockById(id);
     },
 
+    async unlockForMode(id, modeId) {
+        return unlockForMode(id, modeId);
+    },
+
     // Borra TODO lo persistido (por si quieres un botón "reset global")
     resetAllPersistent({
         restartRun = false,
@@ -225,6 +256,7 @@ export const ACV = {
         .map(id => achievementProgress.getPermanentRecord(id))
         .filter(Boolean),
     getRunUnlocks,
+    getRunSatisfiedIds: () => [...achievementProgress.getSnapshot().run.satisfiedIds],
     getAchievementMeta(id) {
         return ACHIEVEMENTS.find(a => a.id === id) || null;
     }

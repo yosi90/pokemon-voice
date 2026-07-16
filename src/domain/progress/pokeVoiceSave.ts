@@ -7,11 +7,13 @@ import type {
   PokeVoicePreferencesV1,
   PokeVoiceSaveV1,
 } from '../../../packages/contracts/src/index.js';
+import { TIMED_COLLECTOR_MODE_ID } from '../modes/modeDefinitions.js';
+
+export { TIMED_COLLECTOR_MODE_ID } from '../modes/modeDefinitions.js';
 
 export const POKE_VOICE_SAVE_KEY = 'pokevoice-save-v1';
 export const DEFAULT_GENERATION_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 export const DEFAULT_CARD_SIZE = 128;
-export const TIMED_COLLECTOR_MODE_ID = 'timed-collector';
 
 const achievementDomains = new Set<AchievementDomain>([
   'pokedex',
@@ -211,6 +213,7 @@ export function createPokeVoiceSaveV1({ runId, now, legacy = {} }: CreateSaveOpt
         runId,
         startedAt,
         durationSec: timedMode.durationSec,
+        satisfiedAchievementIds: [],
       },
     } : {}),
   };
