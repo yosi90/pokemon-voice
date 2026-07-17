@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export const MAX_SPECIES_ID = 1025;
 export const CAPABILITY_IDS = new Set([
-  'cut', 'surf', 'fly', 'dig', 'rock-smash', 'light', 'climb', 'carry',
+  'cut', 'surf', 'fly', 'dig', 'archaeology', 'rock-smash', 'light', 'climb', 'carry',
   'ride-ground', 'ride-water', 'ride-air',
 ]);
 export const GENERATION_RANGES = [[1, 151], [152, 251], [252, 386], [387, 493], [494, 649], [650, 721], [722, 809], [810, 898], [899, 1025]];
@@ -31,6 +31,7 @@ export function validateCatalogs(catalogs) {
   const speciesIds = new Set();
   const formIds = new Set();
   const appearanceIds = new Set();
+  const companionResearchFactIds = new Set();
   for (const catalog of catalogs) {
     if (catalog?.schemaVersion !== 1 || catalog.generation < 1 || catalog.generation > 9 || !Array.isArray(catalog.species)) {
       errors.push(`generation-${catalog?.generation ?? 'unknown'}: cabecera inválida`);
@@ -45,6 +46,16 @@ export function validateCatalogs(catalogs) {
         if (typeof species.traits?.[key] !== 'boolean') errors.push(`#${species.speciesId}: rasgo ${key} ausente`);
       }
       if (!Array.isArray(species.forms) || !species.forms.some(form => form.formId === `pokemon-form:${species.speciesId}:default`)) errors.push(`#${species.speciesId}: falta forma por defecto`);
+      if (species.companionResearch) {
+        const fact = species.companionResearch;
+        if (fact.speciesId !== species.speciesId) errors.push(`#${species.speciesId}: investigación de convivencia enlazada a otra especie`);
+        if (!['behavior', 'habitat'].includes(fact.field)) errors.push(`#${species.speciesId}: campo de convivencia inválido`);
+        if (!['provisional', 'curated'].includes(fact.contentStatus)) errors.push(`#${species.speciesId}: estado de convivencia inválido`);
+        if (!String(fact.factId ?? '').trim()) errors.push(`#${species.speciesId}: factId de convivencia ausente`);
+        else if (companionResearchFactIds.has(fact.factId)) errors.push(`${fact.factId}: investigación de convivencia duplicada`);
+        else companionResearchFactIds.add(fact.factId);
+        if (!String(fact.text ?? '').trim()) errors.push(`#${species.speciesId}: texto de convivencia ausente`);
+      }
       for (const form of species.forms ?? []) {
         if (formIds.has(form.formId)) errors.push(`${form.formId}: forma duplicada`);
         formIds.add(form.formId);

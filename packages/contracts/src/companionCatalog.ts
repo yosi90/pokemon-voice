@@ -10,6 +10,7 @@ import type {
 } from './catalog.js';
 import type { CompanionRequirementVisibility } from './adventure.js';
 import type { RequirementExpressionV1 } from './requirements.js';
+import type { CompanionResearchFactV1 } from './research.js';
 
 export interface CompanionCategoryTraitsV1 {
   starter: boolean;
@@ -65,6 +66,8 @@ export interface CompanionSpeciesProfileV1 extends VersionedContractV1 {
   displayName: string;
   generation: number;
   traits: CompanionCategoryTraitsV1;
+  /** Obligatorio al habilitar esta especie como contenido investigable de PokeDiscover. */
+  companionResearch?: CompanionResearchFactV1;
   forms: CompanionFormProfileV1[];
 }
 

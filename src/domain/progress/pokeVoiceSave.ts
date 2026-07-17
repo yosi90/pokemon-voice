@@ -168,7 +168,9 @@ export function createPokeDiscoverStateV1({
     discoveredForms: {},
     discoveredAppearances: {},
     researchBySpecies: {},
+    anomalies: {},
     mapProgress: {},
+    activatedWorldEventIds: [],
     worldFlags: { ...worldFlags },
     globalCounters: { ...globalCounters },
     inventory: {
@@ -178,6 +180,7 @@ export function createPokeDiscoverStateV1({
       cosmeticIds: [],
       equippedCosmeticIds: [],
     },
+    purchaseLedger: {},
     achievements: { ...achievements },
     companionQualifications: [],
     modeProgress: {},

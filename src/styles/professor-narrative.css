@@ -484,6 +484,172 @@
   color: #214f40;
 }
 
+.pokediscover-shop {
+  display: grid;
+  gap: 14px;
+}
+
+.pokediscover-shop__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.pokediscover-shop__header > div:first-child > span,
+.pokediscover-shop-card__copy > span {
+  color: #5d866f;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.pokediscover-shop__header h4 {
+  margin: 7px 0 8px;
+  color: #234f41;
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+}
+
+.pokediscover-shop__header p {
+  max-width: 610px;
+  margin: 0;
+  color: #45685b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pokediscover-shop__balance {
+  min-width: 92px;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px 6px;
+  border: 3px solid #376d59;
+  border-radius: 16px;
+  padding: 10px;
+  background: #fff6b7;
+  color: #234f41;
+  box-shadow: 0 4px 0 #204b3c;
+}
+
+.pokediscover-shop__balance small { grid-column: 1 / -1; font-family: "Press Start 2P", monospace; font-size: 6px; text-align: center; }
+.pokediscover-shop__balance strong { font-family: "Press Start 2P", monospace; font-size: 17px; }
+.pokediscover-shop__balance span { font-size: 11px; font-weight: 800; }
+
+.pokediscover-shop__feedback {
+  margin: 0;
+  border: 1px solid #75a787;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, .58);
+  color: #315d4e;
+  font-size: 12px;
+}
+
+.pokediscover-shop__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pokediscover-shop-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  gap: 10px 12px;
+  border: 2px solid #8daa97;
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, .62);
+}
+
+.pokediscover-shop-card.is-owned {
+  border-color: #d0a31d;
+  background: rgba(255, 248, 201, .72);
+}
+
+.pokediscover-shop-card__icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #75a787;
+  border-radius: 14px;
+  background: #e8f2dc;
+  font-size: 26px;
+}
+
+.pokediscover-shop-card__copy h5 {
+  margin: 6px 0 7px;
+  color: #234f41;
+  font-size: 15px;
+}
+
+.pokediscover-shop-card__copy p,
+.pokediscover-shop-card__copy small {
+  margin: 0;
+  color: #45685b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pokediscover-shop-card__copy small {
+  display: block;
+  margin-top: 7px;
+  color: #657d70;
+  font-size: 10px;
+}
+
+.pokediscover-shop-card__action {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 34px;
+}
+
+.pokediscover-shop-card__action button {
+  min-height: 34px;
+  border: 2px solid #376d59;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #ffe16c;
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #204b3c;
+}
+
+.pokediscover-shop-card__action button:disabled {
+  border-color: #9aa59f;
+  background: #dfe4dd;
+  color: #6e7973;
+  box-shadow: none;
+  cursor: default;
+}
+
+.pokediscover-shop-card__action strong {
+  color: #337054;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+}
+
+@media (max-width: 720px) {
+  .pokediscover-shop__header { align-items: stretch; }
+  .pokediscover-shop__balance { min-width: 76px; }
+  .pokediscover-shop__grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .professor-missions__tabs { overflow-x: auto; }
+  .pokediscover-shop__header { flex-direction: column; }
+  .pokediscover-shop__balance { width: fit-content; }
+}
+
 .companion-selector {
   display: grid;
   gap: 14px;

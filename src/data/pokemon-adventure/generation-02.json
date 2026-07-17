@@ -2328,6 +2328,18 @@
         "mythical": false,
         "special": false
       },
+      "companionResearch": {
+        "schemaVersion": 1,
+        "factId": "research:pineco:companion:behavior",
+        "speciesId": 204,
+        "field": "behavior",
+        "text": "Al viajar con Pineco aprendes que permanece inmóvil durante largos periodos y reacciona de golpe si algo lo sobresalta.",
+        "contentStatus": "curated",
+        "rewards": [
+          { "kind": "trainerExperience", "amount": 5 },
+          { "kind": "discoveryPoints", "amount": 5 }
+        ]
+      },
       "forms": [
         {
           "schemaVersion": 1,

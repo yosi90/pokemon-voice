@@ -4,6 +4,7 @@ import type { RequirementExpressionV1 } from './requirements.js';
 
 export type AchievementDomain = 'pokedex' | 'pokeDiscover' | 'mode' | 'global';
 export type AchievementEvaluationCycle = 'pokedexRun' | 'modeSession' | 'persistent';
+export type AchievementTier = 'Pokeball' | 'Superball' | 'Ultraball' | 'MasterBall';
 
 export interface AchievementDefinitionV2 {
   schemaVersion: 2;
@@ -16,6 +17,8 @@ export interface AchievementDefinitionV2 {
   requirement: RequirementExpressionV1;
   rewards: RewardDefinitionV1[];
   modeId?: StableId;
+  /** Presentación compartida con el panel legacy; no interviene en la evaluación. */
+  tier?: AchievementTier;
 }
 
 export interface PermanentAchievementRecordV1 extends VersionedContractV1 {

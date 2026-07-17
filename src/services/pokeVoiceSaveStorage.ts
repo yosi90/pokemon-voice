@@ -62,6 +62,33 @@ function normalizeCompanionSelection(run: PokeVoiceSaveV1['pokedexRun']) {
   };
 }
 
+function normalizeInventory(inventory: PokeVoiceSaveV1['pokeDiscover']['inventory'] | undefined) {
+  if (!inventory) return {
+    toolIds: [], keyItemIds: [], permissionIds: [], cosmeticIds: [], equippedCosmeticIds: [],
+  };
+  const selectedToolId = typeof inventory.selectedToolId === 'string'
+    && inventory.toolIds.includes(inventory.selectedToolId)
+    ? inventory.selectedToolId
+    : undefined;
+  return {
+    ...inventory,
+    ...(selectedToolId ? { selectedToolId } : { selectedToolId: undefined }),
+  };
+}
+
+function normalizeActiveExpedition(session: PokeVoiceSaveV1['activeExpeditionSession']) {
+  if (!session) return undefined;
+  return {
+    ...session,
+    meaningfulInteractionIds: Array.isArray(session.meaningfulInteractionIds)
+      ? [...new Set(session.meaningfulInteractionIds.filter(id => typeof id === 'string' && id))]
+      : [],
+    meaningfulInteractionKinds: Array.isArray(session.meaningfulInteractionKinds)
+      ? [...session.meaningfulInteractionKinds]
+      : [],
+  };
+}
+
 export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
   const value = parseJson(raw);
   if (!isRecord(value)
@@ -90,7 +117,9 @@ export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
       narrativeProgress: normalizeNarrativeProgress(save.pokeDiscover.narrativeProgress),
       ...(trainerProfile ? { trainerProfile } : {}),
       ...normalizeTrainerProgress(save.pokeDiscover.trainerExperience),
+      inventory: normalizeInventory(save.pokeDiscover.inventory),
     },
+    activeExpeditionSession: normalizeActiveExpedition(save.activeExpeditionSession),
   };
 }
 

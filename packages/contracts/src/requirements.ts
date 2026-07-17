@@ -6,6 +6,9 @@ export type CounterComparison = 'eq' | 'gte' | 'lte' | 'gt' | 'lt';
 
 export type RequirementAtomV1 =
   | { kind: 'trainerLevel'; minimum: number }
+  | { kind: 'completedMaps'; minimum: number }
+  | { kind: 'unlockedSecrets'; minimum: number }
+  | { kind: 'completedResearchEntries'; minimum: number }
   | { kind: 'registeredSpecies'; speciesId: PokemonSpeciesId }
   | { kind: 'registeredSpeciesByTag'; tag: string; minimum: number }
   | { kind: 'sightedSpecies'; speciesId: PokemonSpeciesId }
@@ -24,6 +27,8 @@ export type RequirementAtomV1 =
   | { kind: 'knownNpc'; npcId: StableId }
   | { kind: 'conversation'; conversationId: StableId }
   | { kind: 'counter'; counterId: StableId; comparison: CounterComparison; value: number }
+  | { kind: 'missionCounter'; counterId: StableId; comparison: CounterComparison; value: number }
+  | { kind: 'missionFlag'; flagId: StableId; expected?: boolean | string | number }
   | { kind: 'inventoryItem'; itemId: StableId }
   | { kind: 'unlockedSecret'; secretId: StableId }
   | { kind: 'storyEvent'; eventId: StableId };

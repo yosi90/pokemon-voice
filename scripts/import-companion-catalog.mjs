@@ -281,6 +281,7 @@ const generatedSpecies = speciesPayloads.map((payload, index) => {
     displayName: humanize(source.name),
     generation,
     traits: existing?.traits ?? traits,
+    ...(existing?.companionResearch ? { companionResearch: existing.companionResearch } : {}),
     forms: mergedForms,
   };
 });

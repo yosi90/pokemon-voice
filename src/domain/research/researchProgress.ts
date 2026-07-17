@@ -5,6 +5,7 @@ import type {
   SpeciesResearchProgressV1,
 } from '../../../packages/contracts/src/index.js';
 import { claimPokeDiscoverRewards } from '../progress/rewardLedger.js';
+import { getBalancedPokeDiscoverRewards } from '../../data/adventure/rewardBalance.js';
 import { RESEARCH_FIELD_KEYS } from './pokemonEntryState.js';
 
 export interface DiscoverResearchFactContext {
@@ -131,6 +132,16 @@ export function discoverResearchFact(
     if (fact.contribution === 'fieldCompletion') progress.fields[fact.field].completed = true;
   }
   progress.status = calculateStatus(progress);
+
+  if (existingProgress.status !== 'complete' && progress.status === 'complete') {
+    rewardedState = claimPokeDiscoverRewards(rewardedState, {
+      originId: `reward:research-entry-complete:${fact.speciesId}`,
+      rewards: getBalancedPokeDiscoverRewards('completedResearchEntry'),
+      claimedAt: context.discoveredAt,
+      ...(context.runId ? { runId: context.runId } : {}),
+      ...(context.missionId ? { missionId: context.missionId } : {}),
+    }).state;
+  }
 
   return {
     status: 'discovered',

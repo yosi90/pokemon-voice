@@ -27,6 +27,8 @@ export interface RequirementEvaluationContext {
   save: PokeVoiceSaveV1;
   species?: readonly PokemonSpeciesV1[];
   companionForm?: PokemonFormV1;
+  /** Capacidades ya resueltas para el loadout completo; prevalecen sobre el fallback del compañero. */
+  expeditionCapabilities?: ReadonlyArray<{ id: string; strength?: number }>;
 }
 
 export interface RequirementEvaluationResult {
@@ -34,7 +36,10 @@ export interface RequirementEvaluationResult {
   unmetAtoms: RequirementAtomV1[];
 }
 
-function compare(value: number, comparison: RequirementAtomV1 & { kind: 'counter' }) {
+function compare(
+  value: number,
+  comparison: Extract<RequirementAtomV1, { kind: 'counter' | 'missionCounter' }>,
+) {
   switch (comparison.comparison) {
     case 'eq': return value === comparison.value;
     case 'gte': return value >= comparison.value;
@@ -59,6 +64,15 @@ function evaluateAtom(atom: RequirementAtomV1, context: RequirementEvaluationCon
   switch (atom.kind) {
     case 'trainerLevel':
       return pokeDiscover.trainerLevel >= atom.minimum;
+    case 'completedMaps':
+      return Object.values(pokeDiscover.mapProgress)
+        .filter(progress => progress.freeExpeditionUnlocked).length >= atom.minimum;
+    case 'unlockedSecrets':
+      return new Set(Object.values(pokeDiscover.mapProgress)
+        .flatMap(progress => progress.unlockedSecretIds)).size >= atom.minimum;
+    case 'completedResearchEntries':
+      return Object.values(pokeDiscover.researchBySpecies)
+        .filter(progress => progress.status === 'complete').length >= atom.minimum;
     case 'registeredSpecies':
       return pokedexRun.registeredSpeciesIds.includes(atom.speciesId);
     case 'registeredSpeciesByTag': {
@@ -85,7 +99,8 @@ function evaluateAtom(atom: RequirementAtomV1, context: RequirementEvaluationCon
       return atom.expected === undefined ? value === true : value === atom.expected;
     }
     case 'fieldCapability': {
-      const capability = companion?.fieldCapabilities.find(candidate => candidate.id === atom.capabilityId);
+      const capabilities = context.expeditionCapabilities ?? companion?.fieldCapabilities ?? [];
+      const capability = capabilities.find(candidate => candidate.id === atom.capabilityId);
       return Boolean(capability && (capability.strength ?? 1) >= (atom.minimumStrength ?? 1));
     }
     case 'companionSpecies':
@@ -107,6 +122,12 @@ function evaluateAtom(atom: RequirementAtomV1, context: RequirementEvaluationCon
       return includesInMapProgress(context, 'conversationIds', atom.conversationId);
     case 'counter':
       return compare(pokeDiscover.globalCounters[atom.counterId] ?? 0, atom);
+    case 'missionCounter':
+      return compare(context.save.activeExpeditionSession?.missionRuntime?.counters[atom.counterId] ?? 0, atom);
+    case 'missionFlag': {
+      const value = context.save.activeExpeditionSession?.missionRuntime?.flags[atom.flagId];
+      return atom.expected === undefined ? value === true : value === atom.expected;
+    }
     case 'inventoryItem':
       return [
         ...pokeDiscover.inventory.toolIds,

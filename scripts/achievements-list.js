@@ -1,6 +1,15 @@
 // ------- Definición de logros -------
 // Nota: todos cuentan dentro de la run actual. Se desbloquean y guardan con fecha.
 export const ACHIEVEMENTS = [{
+        id: 'typical-start',
+        title: 'Un comienzo típico',
+        desc: 'Empieza la primera misión sin compañero y recibe un Pokémon para entrenadores principiantes.',
+        tier: 'Superball',
+        domain: 'pokeDiscover',
+        scope: 'run',
+        event: 'manual',
+        check: (m) => m?.id === 'typical-start',
+    }, {
         id: 'first-mission',
         title: '¡Primera misión!',
         desc: 'Completa tu primer encargo de campo para el profesor Alcanfor.',

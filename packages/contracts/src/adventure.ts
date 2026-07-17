@@ -13,6 +13,7 @@ import type { ResearchFieldKey } from './research.js';
 export type TileLayerKind = 'ground' | 'decoration' | 'overlay' | 'collision';
 export type MissionStatus = 'locked' | 'available' | 'active' | 'completed';
 export type CompanionTriggerMode = 'prompt' | 'automatic' | 'ambient';
+export type CompanionTriggerRepeatPolicy = 'oncePerVisit' | 'persistent' | 'repeatable';
 export type ExpressionInputMethod = 'voice' | 'text' | 'contextAction';
 export type ExpressionIntent = 'compliment' | 'calm' | 'warn' | 'sing' | 'custom';
 
@@ -49,7 +50,8 @@ export interface RareEncounterDefinitionV1 {
   appearanceId?: StableId;
   requirement: RequirementExpressionV1;
   baseProbability: number;
-  guaranteedEligibleVisit: number;
+  /** Por defecto 3 cuando no se declara otro límite curado. */
+  guaranteedEligibleVisit?: number;
 }
 
 export interface AdventureMapV1 extends VersionedContractV1 {
@@ -69,11 +71,55 @@ export interface AdventureMapV1 extends VersionedContractV1 {
   requiredAssetIds: StableId[];
 }
 
+export type RoomTransitionKind = 'edge' | 'stairs' | 'door' | 'teleport';
+
+export interface AdventureRoomV1 extends VersionedContractV1 {
+  roomId: StableId;
+  tiledMapAssetId: StableId;
+  staticCamera: true;
+  spawnAnchorIds: StableId[];
+}
+
+export interface RoomTransitionV1 extends VersionedContractV1 {
+  transitionId: StableId;
+  kind: RoomTransitionKind;
+  fromRoomId: StableId;
+  fromAnchorId: StableId;
+  toRoomId: StableId;
+  toAnchorId: StableId;
+  destinationFacing?: 'up' | 'down' | 'left' | 'right';
+  requirement?: RequirementExpressionV1;
+}
+
+/** Mapa lógico multihabitación. La geometría vive exclusivamente en los .tmj enlazados. */
+export interface AdventureMapV2 {
+  schemaVersion: 2;
+  mapId: StableId;
+  title: string;
+  rooms: AdventureRoomV1[];
+  transitions: RoomTransitionV1[];
+  variants: MapVariantV1[];
+  missionIds: StableId[];
+  behaviorTriggers: CompanionBehaviorTriggerV1[];
+  expressionTriggers: ExpeditionExpressionTriggerV1[];
+  rareEncounters: RareEncounterDefinitionV1[];
+  requiredAssetIds: StableId[];
+}
+
 export interface MissionObjectiveV1 {
   objectiveId: StableId;
   description: string;
   requirement: RequirementExpressionV1;
   optional?: boolean;
+}
+
+export interface FieldNotebookHintV1 extends VersionedContractV1 {
+  hintId: StableId;
+  mapId: StableId;
+  title: string;
+  text: string;
+  sourceNpcId?: StableId;
+  relatedTriggerId?: StableId;
 }
 
 export interface MissionDefinitionV1 extends VersionedContractV1 {
@@ -86,6 +132,8 @@ export interface MissionDefinitionV1 extends VersionedContractV1 {
   mapVariantIds: StableId[];
   rewards: RewardDefinitionV1[];
   unlocksFreeExpedition: boolean;
+  /** Reservado al primer encargo real de campo presentado por Alcanfor. */
+  grantsFirstMissionAchievement?: true;
 }
 
 export type ResearchContributionKind = 'observation' | 'fieldCompletion' | 'additionalNote';
@@ -125,6 +173,8 @@ export interface CompanionBehaviorTriggerV1 extends VersionedContractV1 {
   mode: CompanionTriggerMode;
   requirement: RequirementExpressionV1;
   sequenceId: StableId;
+  /** `oncePerVisit` cuando no se especifica otro comportamiento. */
+  repeatPolicy?: CompanionTriggerRepeatPolicy;
   rewardOriginId?: StableId;
 }
 

@@ -1,0 +1,132 @@
+.pokediscover-map-preview-button {
+  width: fit-content;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  border: 2px solid #376d59;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #ffe16c;
+  color: #214f40;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #204b3c;
+}
+
+.pokediscover-map-preview-button:hover,
+.pokediscover-map-preview-button:focus-visible {
+  background: #fff2a1;
+  outline: 3px solid rgba(228, 173, 24, .25);
+  outline-offset: 2px;
+}
+
+.map-concept-preview__panel {
+  top: 50%;
+  width: min(1180px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  display: flex;
+  flex-direction: column;
+  transform: translate(-50%, -50%);
+  border: 3px solid #376d59;
+  border-radius: 18px;
+  background: #15251c;
+  color: #eff9e9;
+}
+
+.map-concept-preview__panel .pv-modal__head {
+  flex: 0 0 auto;
+  border-color: rgba(255, 255, 255, .14);
+  background: linear-gradient(180deg, #294f38, #183326);
+}
+
+.map-concept-preview__panel .pv-modal__head h3 {
+  margin-top: 7px;
+  color: #fff6b7;
+  font-family: "Press Start 2P", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.map-concept-preview__eyebrow {
+  color: #a8d7b3;
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.map-concept-preview__viewport {
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+  background: #09140e;
+}
+
+.map-concept-preview__viewport > img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.map-concept-preview__rattata {
+  position: absolute;
+  left: 47.2%;
+  top: 13.2%;
+  width: 4.42%;
+  height: auto;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .22));
+}
+
+.map-concept-preview__status {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid #ffe16c;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(13, 31, 21, .9);
+  color: #fff6b7;
+  font-size: 12px;
+}
+
+.map-concept-preview__note {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, .14);
+  color: #b7cdbd;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 680px) {
+  .map-concept-preview__panel {
+    width: calc(100vw - 12px);
+    max-height: calc(100dvh - 12px);
+  }
+
+  .map-concept-preview__panel .pv-modal__head {
+    padding: 11px 12px;
+  }
+
+  .map-concept-preview__panel .pv-modal__head h3 {
+    font-size: 9px;
+  }
+
+  .map-concept-preview__rattata {
+    left: 45.8%;
+    top: 12.8%;
+    width: 7%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pokediscover-map-preview-button {
+    transition: none;
+  }
+}

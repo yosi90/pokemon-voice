@@ -4,6 +4,7 @@ import { getCompanionCandidates } from '../domain/companions/companionCandidates
 import { getCompanionArtworkUrl } from '../domain/companions/companionGameplayCatalog.js';
 import { getBrowserPokeVoiceSave } from '../store/browserPokeVoiceSaveStore.js';
 import { CompanionSelector } from './CompanionSelector.js';
+import { PokeDiscoverShop } from './PokeDiscoverShop.js';
 
 const TRAINER_AVATARS = Object.freeze({
   achaman: 'assets/images/achaman/achaman-saludando.png',
@@ -14,10 +15,12 @@ function PokeDiscoverHome({
   catalog,
   missionIds,
   save,
+  onOpenMapPreview,
 }: {
   catalog: readonly PokemonCatalogRecord[];
   missionIds: readonly string[];
   save: ReturnType<typeof getBrowserPokeVoiceSave>;
+  onOpenMapPreview: () => void;
 }) {
   const { pokeDiscover } = save;
   const candidates = getCompanionCandidates(catalog, save);
@@ -82,6 +85,10 @@ function PokeDiscoverHome({
           ) : (
             <><h4>Preparando el primer encargo</h4><p>Alcanfor está organizando el material para tu primera expedición.</p></>
           )}
+          <button className="pokediscover-map-preview-button" type="button" onClick={onOpenMapPreview}>
+            <span aria-hidden="true">🗺</span>
+            Probar escenario
+          </button>
         </article>
       </section>
     </div>
@@ -92,15 +99,17 @@ export function ProfessorMissionModal({
   open,
   missionIds,
   catalog,
+  onOpenMapPreview = () => {},
   onClose,
 }: {
   open: boolean;
   missionIds: readonly string[];
   catalog: readonly PokemonCatalogRecord[];
+  onOpenMapPreview?: () => void;
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [section, setSection] = useState<'home' | 'missions' | 'companion'>('home');
+  const [section, setSection] = useState<'home' | 'missions' | 'companion' | 'shop'>('home');
   const [save, setSave] = useState(getBrowserPokeVoiceSave);
   useEffect(() => {
     if (!open) return undefined;
@@ -126,12 +135,15 @@ export function ProfessorMissionModal({
           <button type="button" className={section === 'home' ? 'is-active' : ''} aria-pressed={section === 'home'} onClick={() => setSection('home')}>Inicio</button>
           <button type="button" className={section === 'missions' ? 'is-active' : ''} aria-pressed={section === 'missions'} onClick={() => setSection('missions')}>Encargos</button>
           <button type="button" className={section === 'companion' ? 'is-active' : ''} aria-pressed={section === 'companion'} onClick={() => setSection('companion')}>Compañero</button>
+          <button type="button" className={section === 'shop' ? 'is-active' : ''} aria-pressed={section === 'shop'} onClick={() => setSection('shop')}>Tienda</button>
         </nav>
         <div className="pv-modal__body professor-missions__body">
           {section === 'home' ? (
-            <PokeDiscoverHome catalog={catalog} missionIds={missionIds} save={save} />
+            <PokeDiscoverHome catalog={catalog} missionIds={missionIds} save={save} onOpenMapPreview={onOpenMapPreview} />
           ) : section === 'companion' ? (
             <CompanionSelector catalog={catalog} onSaveChange={setSave} />
+          ) : section === 'shop' ? (
+            <PokeDiscoverShop save={save} onSaveChange={setSave} />
           ) : missionIds.length ? missionIds.map(missionId => (
             <article className="professor-mission-card" key={missionId}>
               <span>Encargo conocido</span>

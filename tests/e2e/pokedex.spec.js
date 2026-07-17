@@ -209,6 +209,41 @@ test('filtra compañeros por categoría y conserva forma y apariencia selecciona
   expect((await pokeDiscover.boundingBox()).height).toBe(homeHeight);
   await expect(page.getByText('Compañero actual')).toBeVisible();
   await expect(page.getByText('Pikachu surfista')).toBeVisible();
+  await page.getByRole('button', { name: 'Tienda' }).click();
+  expect((await pokeDiscover.boundingBox()).height).toBe(homeHeight);
+  await expect(page.getByText('Pala de campo')).toBeVisible();
+  await expect(page.getByText('Cepillo de arqueología')).toBeVisible();
+  await expect(page.getByText('Bote plegable')).toBeVisible();
+  expect(await pokeDiscover.locator('.professor-missions__body').evaluate(element => (
+    element.scrollWidth <= element.clientWidth
+  ))).toBe(true);
+});
+
+test('reconstruye la animación Idle de Rattata sobre el mapa conceptual', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+
+  const preview = page.getByRole('dialog', { name: 'Bahía Sharpedo · Rattata Idle' });
+  await expect(preview).toBeVisible();
+  await expect(preview.getByAltText('Mapa conceptual de Bahía Sharpedo')).toBeVisible();
+  await expect(preview.getByRole('status')).toHaveCount(0);
+  const canvas = preview.getByRole('img', { name: 'Rattata reproduciendo su animación Idle sobre la hierba' });
+  await expect(canvas).toHaveAttribute('width', '64');
+  await expect(canvas).toHaveAttribute('height', '64');
+  await expect(canvas).toHaveAttribute('data-frame', '0');
+  await expect.poll(() => canvas.getAttribute('data-frame'), { intervals: [20], timeout: 2000 }).not.toBe('0');
+
+  await page.keyboard.press('Escape');
+  await expect(preview).toHaveCount(0);
 });
 
 test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan', async ({ page }) => {

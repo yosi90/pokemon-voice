@@ -10,7 +10,51 @@ import type {
 } from '../../packages/contracts/src/index.js';
 import { LS_CARD_SCALE, LS_GENS, LS_KEY } from '../../scripts/utils.js';
 import type { AchievementRecord } from '../domain/achievements/achievementProgress.js';
+import {
+  POKE_DISCOVER_ACHIEVEMENT_EVENT,
+  unlockSatisfiedPokeDiscoverAchievements,
+} from '../domain/achievements/pokeDiscoverAchievements.js';
 import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
+import { purchaseShopOffer, selectFieldTool } from '../domain/economy/pokeDiscoverEconomy.js';
+import { recordMissingNoCommand } from '../domain/expeditions/anomalyResearch.js';
+import {
+  completeAdventureMission,
+  recordMapDiscovery,
+  type CompleteMissionRequest,
+  type MapDiscoveryKind,
+} from '../domain/expeditions/adventureMapProgress.js';
+import {
+  endExpeditionWithReport,
+  recordMeaningfulExpeditionInteraction,
+  type EndExpeditionOptions,
+  type RecordMeaningfulInteractionRequest,
+} from '../domain/expeditions/expeditionSession.js';
+import {
+  recordNpcHint,
+  type RecordNpcHintRequest,
+} from '../domain/expeditions/fieldNotebook.js';
+import {
+  executeCompanionBehavior,
+  type ExecuteCompanionBehaviorRequest,
+} from '../domain/expeditions/companionBehavior.js';
+import {
+  evaluateRareEncounterVisit,
+  type EvaluateRareEncounterRequest,
+} from '../domain/expeditions/rareEncounter.js';
+import {
+  resolveExpressionTrigger,
+  type ResolveExpressionTriggerRequest,
+} from '../domain/expeditions/expressionTriggers.js';
+import {
+  completeMissionDefinition,
+  startAdventureMission,
+  type MissionEvaluationContext,
+} from '../domain/expeditions/missionLifecycle.js';
+import { activateWorldEvent } from '../domain/expeditions/worldEvents.js';
+import {
+  identifyVisibleExpeditionSpecies,
+  type IdentifyVisibleSpeciesRequest,
+} from '../domain/expeditions/expeditionIdentification.js';
 import {
   createCompanionCatalogSpecies,
   type CompanionCandidate,
@@ -54,6 +98,20 @@ function persist(next: PokeVoiceSaveV1) {
   save = next;
   serializedSave = JSON.stringify(next);
   localStorage.setItem(POKE_VOICE_SAVE_KEY, serializedSave);
+}
+
+function persistWithPokeDiscoverAchievements(
+  next: PokeVoiceSaveV1,
+  unlockedAt = new Date().toISOString(),
+) {
+  const result = unlockSatisfiedPokeDiscoverAchievements(next, unlockedAt);
+  persist(result.save);
+  if (result.unlocked.length && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(POKE_DISCOVER_ACHIEVEMENT_EVENT, {
+      detail: { achievementIds: result.unlocked.map(item => item.achievementId) },
+    }));
+  }
+  return result;
 }
 
 export function getBrowserPokeVoiceSave() {
@@ -336,6 +394,180 @@ export function setBrowserActiveExpeditionSession(session: ActiveExpeditionSessi
   persist({ ...current, activeExpeditionSession: session });
 }
 
+export function endBrowserExpeditionWithReport(options: EndExpeditionOptions = {}) {
+  const current = readCurrentSave();
+  const result = endExpeditionWithReport(current, options);
+  if (result.save === current) return result;
+  const reconciled = persistWithPokeDiscoverAchievements(result.save);
+  return { ...result, save: reconciled.save };
+}
+
+export function recordBrowserMeaningfulExpeditionInteraction(
+  request: RecordMeaningfulInteractionRequest,
+) {
+  const current = readCurrentSave();
+  const next = recordMeaningfulExpeditionInteraction(current, request);
+  if (next !== current) persist(next);
+  return next.activeExpeditionSession;
+}
+
+export function identifyBrowserVisibleExpeditionSpecies(request: IdentifyVisibleSpeciesRequest) {
+  const current = readCurrentSave();
+  const result = identifyVisibleExpeditionSpecies(current, request);
+  if (result.save !== current) persist(result.save);
+  return result;
+}
+
+export function recordBrowserMapDiscovery(
+  mapId: string,
+  kind: MapDiscoveryKind,
+  stableId: string,
+) {
+  const current = readCurrentSave();
+  const result = recordMapDiscovery(current.pokeDiscover, mapId, kind, stableId);
+  if (result.state !== current.pokeDiscover) {
+    let next = { ...current, pokeDiscover: result.state };
+    if (next.activeExpeditionSession) {
+      const interactionKind = kind === 'conversation'
+        ? 'npcConversation'
+        : kind === 'secret' || kind === 'hint' || kind === 'collectible'
+          ? kind
+          : undefined;
+      if (interactionKind) next = recordMeaningfulExpeditionInteraction(next, {
+        interactionId: `${kind}:${stableId}`,
+        kind: interactionKind,
+      });
+    }
+    next = persistWithPokeDiscoverAchievements(next).save;
+  }
+  return result.state === current.pokeDiscover
+    ? result
+    : { ...result, state: getBrowserPokeVoiceSave().pokeDiscover };
+}
+
+export function recordBrowserNpcHint(request: RecordNpcHintRequest) {
+  const current = readCurrentSave();
+  const result = recordNpcHint(current.pokeDiscover, request);
+  if (result.state !== current.pokeDiscover) {
+    let next = { ...current, pokeDiscover: result.state };
+    if (next.activeExpeditionSession) next = recordMeaningfulExpeditionInteraction(next, {
+      interactionId: `hint:${request.hintId}`,
+      kind: 'hint',
+    });
+    persist(next);
+  }
+  return result;
+}
+
+export function recordBrowserMissingNoCommand(discoveredAt = new Date().toISOString()) {
+  const current = readCurrentSave();
+  const result = recordMissingNoCommand(current.pokeDiscover, discoveredAt);
+  if (result.state !== current.pokeDiscover) {
+    persist({ ...current, pokeDiscover: result.state });
+  }
+  return result;
+}
+
+export function purchaseBrowserShopOffer(
+  offer: import('../../packages/contracts/src/index.js').ShopOfferV1,
+  purchasedAt = new Date().toISOString(),
+) {
+  const current = readCurrentSave();
+  const result = purchaseShopOffer(current.pokeDiscover, offer, purchasedAt);
+  if (result.state !== current.pokeDiscover) {
+    persist({ ...current, pokeDiscover: result.state });
+  }
+  return result;
+}
+
+export function selectBrowserFieldTool(toolId: string) {
+  const current = readCurrentSave();
+  if (current.activeExpeditionSession) {
+    throw new Error('No se puede cambiar de herramienta durante una expedición activa.');
+  }
+  const next = selectFieldTool(current.pokeDiscover, toolId);
+  if (next !== current.pokeDiscover) persist({ ...current, pokeDiscover: next });
+  return next.inventory.selectedToolId;
+}
+
+export function completeBrowserAdventureMission(request: CompleteMissionRequest) {
+  const current = readCurrentSave();
+  const result = completeAdventureMission(current.pokeDiscover, {
+    ...request,
+    originRunId: request.originRunId ?? current.pokedexRun.runId,
+  });
+  if (result.state !== current.pokeDiscover) {
+    persistWithPokeDiscoverAchievements({ ...current, pokeDiscover: result.state }, request.completedAt);
+  }
+  return result.state === current.pokeDiscover
+    ? result
+    : { ...result, state: getBrowserPokeVoiceSave().pokeDiscover };
+}
+
+export function startBrowserAdventureMission(
+  mission: import('../../packages/contracts/src/index.js').MissionDefinitionV1,
+  context: MissionEvaluationContext = {},
+) {
+  const current = readCurrentSave();
+  const result = startAdventureMission(current, mission, context);
+  if (result.save !== current) persist(result.save);
+  return result;
+}
+
+export function completeBrowserMissionDefinition(
+  mission: import('../../packages/contracts/src/index.js').MissionDefinitionV1,
+  completedAt: string,
+  context: MissionEvaluationContext = {},
+) {
+  const current = readCurrentSave();
+  const result = completeMissionDefinition(current, mission, completedAt, context);
+  if (result.save === current) return result;
+  const reconciled = persistWithPokeDiscoverAchievements(result.save, completedAt);
+  return { ...result, save: reconciled.save };
+}
+
+export function evaluateBrowserRareEncounterVisit(request: EvaluateRareEncounterRequest) {
+  const current = readCurrentSave();
+  const result = evaluateRareEncounterVisit(current, request);
+  if (result.save !== current) persist(result.save);
+  return result;
+}
+
+export function activateBrowserWorldEvent(event: import('../../packages/contracts/src/index.js').WorldEventV1) {
+  const current = readCurrentSave();
+  const result = activateWorldEvent(current, event);
+  if (result.save !== current) persist(result.save);
+  return result;
+}
+
+export function executeBrowserCompanionBehavior(request: ExecuteCompanionBehaviorRequest) {
+  const current = readCurrentSave();
+  const result = executeCompanionBehavior(current, request);
+  let next = result.save;
+  if (result.status === 'executed' && next.activeExpeditionSession) {
+    next = recordMeaningfulExpeditionInteraction(next, {
+      interactionId: `companion-behavior:${request.trigger.triggerId}`,
+      kind: 'companionBehavior',
+    });
+  }
+  if (next !== current) persist(next);
+  return { ...result, save: next };
+}
+
+export function resolveBrowserExpressionTrigger(request: ResolveExpressionTriggerRequest) {
+  const current = readCurrentSave();
+  const result = resolveExpressionTrigger(current, request);
+  let next = result.save;
+  if (result.status === 'resolved' && next.activeExpeditionSession) {
+    next = recordMeaningfulExpeditionInteraction(next, {
+      interactionId: `expression:${request.trigger.triggerId}`,
+      kind: 'contextTrigger',
+    });
+  }
+  if (next !== current) persist(next);
+  return { ...result, save: next };
+}
+
 export function syncBrowserLegacyEasterEggState(legacyState: unknown) {
   const migrated = splitLegacyEasterEggState(legacyState);
   updateBrowserPokeDiscover(current => ({
@@ -370,7 +602,11 @@ export function claimBrowserPokeDiscoverRewards(request: RewardClaimRequest): Re
   const current = readCurrentSave();
   const result = claimPokeDiscoverRewards(current.pokeDiscover, request);
   if (result.status === 'claimed') {
-    persist({ ...current, pokeDiscover: result.state });
+    const reconciled = persistWithPokeDiscoverAchievements(
+      { ...current, pokeDiscover: result.state },
+      request.claimedAt,
+    );
+    return { ...result, state: reconciled.save.pokeDiscover };
   }
   return result;
 }
@@ -382,7 +618,13 @@ export function discoverBrowserResearchFact(
   const current = readCurrentSave();
   const result = discoverResearchFact(current.pokeDiscover, fact, context);
   if (result.status === 'discovered') {
-    persist({ ...current, pokeDiscover: result.state });
+    let next = { ...current, pokeDiscover: result.state };
+    if (next.activeExpeditionSession) next = recordMeaningfulExpeditionInteraction(next, {
+      interactionId: `research:${fact.factId}`,
+      kind: 'research',
+    });
+    next = persistWithPokeDiscoverAchievements(next, context.discoveredAt).save;
+    return { ...result, state: next.pokeDiscover };
   }
   return result;
 }

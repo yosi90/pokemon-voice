@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0, 1, 2, 3, 4, 5, 6 y 7 completados; Hito 8 pendiente de inicio.
+- Estado: Hitos 0–7 y 9 completados; base de dominio del Hito 8 completada con tareas visuales y de contenido aplazadas al pipeline; siguiente entrega: Hito 10.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -515,32 +515,33 @@ El jugador solo puede entrar con un acompañante registrado en la run actual cuy
 ### Checklist
 
 - [ ] Añadir el logro permanente `first-mission` y concederlo al completar la primera misión real del profesor.
-- [ ] Crear el registro de capacidades de campo por Pokémon o forma.
-- [ ] Diferenciar capacidades físicas genéricas de capacidades narrativas procedentes de movimientos concretos.
-- [ ] Crear `RequirementExpressionV1` con operadores `all`, `any` y condiciones atómicas tipadas.
-- [ ] Crear `ExpeditionExpressionTriggerV1` para frases, intenciones y propiedades acústicas simples.
-- [ ] Soportar requisitos por capacidad, compañero, especie, tipo, tamaño, evolución, NPC, contador, objeto y evento.
-- [ ] Crear requisitos compuestos para obstáculos, zonas, apariciones y secretos.
-- [ ] Persistir `unlockedSecretIds` por mapa y versión compatible.
-- [ ] Persistir `worldFlags`, contadores globales y conversaciones relevantes.
-- [ ] Separar `MissionDefinitionV1` del progreso persistente de `AdventureMapV1`.
-- [ ] Persistir el desbloqueo de expedición libre tras la primera misión del mapa.
-- [ ] Crear el cuaderno de campo con pistas conocidas y sin contador total de secretos.
-- [ ] Guardar en el cuaderno las pistas de NPC sobre expresiones que agradan, calman o ahuyentan a determinadas especies.
-- [ ] Crear el loadout de un acompañante y una herramienta, inmutable durante la visita.
-- [ ] Crear `CompanionBehaviorTriggerV1` y su ejecutor de secuencias contextuales.
-- [ ] Persistir secretos expresivos y diferenciar la resolución por voz, texto o acción contextual sin duplicar recompensas.
-- [ ] Persistir intentos elegibles y garantía de encuentros raros.
+- [x] Crear el registro de capacidades de campo por Pokémon o forma.
+- [x] Diferenciar capacidades físicas genéricas de capacidades narrativas procedentes de movimientos concretos.
+- [x] Crear `RequirementExpressionV1` con operadores `all`, `any` y condiciones atómicas tipadas.
+- [x] Crear `ExpeditionExpressionTriggerV1` para frases, intenciones y propiedades acústicas simples.
+- [x] Soportar requisitos por capacidad, compañero, especie, tipo, tamaño, evolución, NPC, contador, objeto y evento.
+- [x] Crear requisitos compuestos para obstáculos, zonas, apariciones y secretos.
+- [x] Persistir `unlockedSecretIds` por mapa y versión compatible.
+- [x] Persistir `worldFlags`, contadores globales y conversaciones relevantes.
+- [x] Separar `MissionDefinitionV1` del progreso persistente de `AdventureMapV1`.
+- [x] Resolver estados de misión, objetivos obligatorios y opcionales, entrega y recompensas idempotentes.
+- [x] Persistir el desbloqueo de expedición libre tras la primera misión del mapa.
+- [x] Crear el cuaderno de campo con pistas conocidas y sin contador total de secretos.
+- [x] Guardar en el cuaderno las pistas de NPC sobre expresiones que agradan, calman o ahuyentan a determinadas especies.
+- [x] Crear el loadout de un acompañante y una herramienta, inmutable durante la visita.
+- [x] Crear `CompanionBehaviorTriggerV1` y su ejecutor de secuencias contextuales.
+- [x] Persistir secretos expresivos y diferenciar la resolución por voz, texto o acción contextual sin duplicar recompensas.
+- [x] Persistir intentos elegibles y garantía de encuentros raros.
 - [ ] Representar visualmente rutas descubiertas y bloqueos todavía desconocidos.
 - [ ] Mostrar antes de entrar las capacidades del acompañante elegido sin revelar todos los secretos del mapa.
-- [ ] Añadir un resumen al salir: nuevos secretos, investigación, experiencia y Puntos de Descubrimiento.
-- [ ] Impedir pagos duplicados mediante el ledger.
-- [ ] Añadir tests de revisita con un acompañante distinto.
-- [ ] Añadir tests de secretos con herramienta y acompañante cubriendo requisitos diferentes.
-- [ ] Permitir inyectar encuentros nuevos en mapas anteriores después de activar un evento global.
+- [x] Añadir un resumen al salir: nuevos secretos, investigación, experiencia y Puntos de Descubrimiento.
+- [x] Impedir pagos duplicados mediante el ledger.
+- [x] Añadir tests de revisita con un acompañante distinto.
+- [x] Añadir tests de secretos con herramienta y acompañante cubriendo requisitos diferentes.
+- [x] Permitir inyectar encuentros nuevos en mapas anteriores después de activar un evento global.
 - [ ] Migrar el comando de MissingNo a una cadena de anomalía de PokeDiscover con recompensa única.
 - [ ] Crear y probar una variante de mapa corrupta que conserve el estado del mapa base.
-- [ ] Garantizar que cambiar de acompañante o herramienta requiere abandonar la expedición.
+- [x] Garantizar que cambiar de acompañante o herramienta requiere abandonar la expedición.
 
 ### Diseño reservado para eventos míticos
 
@@ -552,104 +553,113 @@ El jugador solo puede entrar con un acompañante registrado en la run actual cuy
 - Estos contenidos no se implementarán en Reserva Cero, pero el editor, el estado global y el cargador de mapas deberán poder representarlos.
 - MissingNo podrá reutilizar el mismo sistema de variantes para corromper mapas existentes sin pertenecer a la Pokédex reiniciable.
 
+### Estado de la base técnica
+
+Los contratos y la persistencia marcados como completados se entregaron durante los hitos anteriores para sostener acompañantes, investigación y metaprogresión. El trabajo restante de este hito consiste en convertirlos en un ciclo de expedición real y no en volver a definirlos.
+
+Primera entrega del Hito 8 implementada el 17 de julio de 2026. `ExpeditionLoadoutV1` conserva conjuntamente la variante exacta del acompañante y una herramienta propiedad del jugador. `beginExpedition` bloquea ese loadout, rechaza modos o expediciones incompatibles y `endExpedition` es la única transición que permite preparar otra combinación. El contrato anterior permanece legible para futuras migraciones de guardados provisionales.
+
+Segunda entrega del Hito 8 implementada el 17 de julio de 2026. El progreso de mapas dispone de operaciones idempotentes para secretos, NPC, conversaciones, coleccionables, pistas y rutas mediante IDs estables, con persistencia inmediata en el guardado raíz. Completar una misión conserva ese progreso, retira su estado activo y puede desbloquear la expedición libre. La concesión de `first-mission` queda preparada mediante una marca explícita reservada al primer encargo real de Alcanfor, evitando que una misión secundaria lo active por accidente; el check no se cerrará hasta que exista y se complete dicha misión.
+
+Tercera entrega del Hito 8 implementada el 17 de julio de 2026. Los encuentros raros cuentan únicamente visitas que satisfacen sus requisitos, aumentan linealmente su probabilidad y fuerzan la aparición en la tercera visita elegible salvo ajuste curado. Cada resultado se persiste dentro de la sesión activa para impedir nuevas tiradas al recargar o reevaluar el mismo encuentro; abandonar y comenzar otra expedición es la única forma de consumir una nueva visita elegible.
+
+Cuarta entrega del Hito 8 implementada el 17 de julio de 2026. `WorldEventV1` ya puede activarse de forma idempotente, establecer flags, inyectar encuentros en mapas visitados o futuros y activar variantes sin reemplazar el estado base. Las variantes temporales pueden retirarse después conservando secretos, rutas, encuentros inyectados y el registro permanente del evento, preparando los ciclos reversibles de Mew, Celebi, Hoopa y MissingNo sin implementar todavía sus contenidos.
+
+Quinta entrega del Hito 8 implementada el 17 de julio de 2026. El resolver de capacidades combina la forma y apariencia exactas del compañero con la única herramienta bloqueada en el loadout, conservando la procedencia de cada aporte y usando la fuerza máxima en lugar de sumar fuentes débiles. El evaluador puede resolver requisitos como bote con `surf` más compañero con `cut`, mientras especie, tipo, tamaño, etapa y etiquetas continúan dependiendo exclusivamente del Pokémon. `rock-tomb` queda registrado como capacidad narrativa distinta de `rock-smash` para evitar equivalencias técnicas no justificadas por el lore.
+
+Sexta entrega del Hito 8 implementada el 17 de julio de 2026. El ejecutor de `CompanionBehaviorTriggerV1` filtra requisitos y soporta escenas `prompt`, `automatic` y `ambient` con repetición `oncePerVisit`, `persistent` o `repeatable`. La secuencia automática de Rattata y Pikachu prueba la finalización persistente y el cobro único mediante ledger; las escenas de visita se reinician únicamente al regresar y entrar de nuevo, y todo cambio relevante se persiste inmediatamente en el guardado del navegador.
+
+Séptima entrega del Hito 8 implementada el 17 de julio de 2026. El resolvedor expresivo comparte una única resolución persistente para voz, texto y acción contextual, normaliza frases y alias curados, admite intenciones explícitas y procesa volumen, duración, nota sostenida o tarareo mediante métricas locales. El guardado conserva solamente trigger, método y fecha; nunca audio, transcripción ni métricas. «Tiburón bonito», sus variantes autorizadas, un grito y el fallback accesible prueban feedback interpretable y recompensa única sin aceptar expresiones ajenas.
+
+Octava entrega del Hito 8 implementada el 17 de julio de 2026. El cuaderno filtra definiciones por `knownHintIds` y nunca expone el catálogo completo ni un contador de secretos. Una conversación de NPC registra de forma atómica NPC, conversación y pista, con persistencia inmediata. Cada expedición captura al entrar una fotografía mínima de progreso y genera al regresar un informe diferencial de secretos, NPC, conversaciones, coleccionables, rutas, investigación, experiencia y PD, sin volver a presentar hallazgos de visitas anteriores.
+
+Novena entrega del Hito 8 implementada el 17 de julio de 2026. Una prueba de revisita confirma que cambiar de compañero tras regresar no altera rutas ni secretos persistentes. El comando real de MissingNo registra ahora la primera pista en una colección de anomalías separada de especies, conserva el efecto glitch existente y sobrevive a resets sin añadir registros, avistamientos, investigación Pokémon ni recompensas. La migración completa de la cadena y su recompensa permanece abierta hasta disponer del escenario corrupto y la misión de Porygon-Z.
+
+Décima entrega del Hito 8 implementada el 17 de julio de 2026. El ciclo declarativo de misiones resuelve `locked`, `available`, `active` y `completed`, separa objetivos obligatorios de opcionales y rechaza entregas prematuras. Una entrega válida completa el mapa, abre la expedición libre cuando corresponde, concede recompensas mediante ledger y puede activar explícitamente `first-mission` sin exigir investigación o secretos ajenos al objetivo. El check del logro permanece abierto hasta crear la primera misión real; la definición usada en pruebas no se considera contenido jugable.
+
 ---
 
 ## Hito 9 — Economía de descubrimiento y tienda
 
-- [ ] Usar una única moneda llamada `Puntos de Descubrimiento (PD)` y la clave interna `discoveryPoints`.
-- [ ] Conceder experiencia de entrenador y Puntos de Descubrimiento como recompensas separadas.
-- [ ] Mantener los importes en configuración y no dentro de escenas o componentes.
-- [ ] Conceder inicialmente 10 PD por observación única, 40 PD por ficha completa y 25 PD por misión completada.
-- [ ] Definir recompensas únicas para secretos de mapa y descubrimientos especiales durante el balance del prototipo.
-- [ ] Crear una tienda con una skin/paleta de avatar por 120 PD.
-- [ ] Crear un tema de Pokédex o Pokéballs por 180 PD.
-- [ ] Persistir compras y cosméticos equipados.
-- [ ] Usar permisos de misión para formas alternativas, paradojas y especies especiales.
-- [ ] No permitir comprar directamente un descubrimiento de Pokédex.
-- [ ] Añadir logros por nivel, secretos, mapas completados e investigación.
-- [ ] Crear un inventario permanente de herramientas compradas una sola vez.
-- [ ] Separar las compras en herramientas equipables, objetos clave pasivos, permisos de misión y cosméticos.
-- [ ] Añadir una pala que descubra entradas subterráneas y pueda abrir misiones de fósiles.
-- [ ] Añadir un cepillo de arqueología para ruinas, inscripciones y futuras investigaciones de Unown.
-- [ ] Añadir un bote que aporte la capacidad `surf` sin ocupar el espacio del acompañante.
-- [ ] Permitir que una herramienta abra directamente una misión nueva o satisfaga una parte de un requisito compuesto.
-- [ ] Equipar como máximo una herramienta de campo por expedición.
-- [ ] Permitir que objetos clave pasivos, como una Escama Dragón, formen parte de requisitos narrativos sin ocupar ese espacio.
-- [ ] Mostrar en la tienda qué tipo de contenido habilita una herramienta sin revelar secretos concretos.
-- [ ] Evitar consumibles y desgaste en el prototipo: las herramientas compradas serán permanentes.
-- [ ] Garantizar que ninguna compra sea obligatoria para continuar la historia principal; tienda y permisos abrirán contenido opcional.
+- [x] Usar una única moneda llamada `Puntos de Descubrimiento (PD)` y la clave interna `discoveryPoints`.
+- [x] Conceder experiencia de entrenador y Puntos de Descubrimiento como recompensas separadas.
+- [x] Mantener los importes en configuración y no dentro de escenas o componentes.
+- [x] Conceder inicialmente 10 PD por observación única, 40 PD por ficha completa y 25 PD por misión completada.
+- [x] Definir recompensas únicas para secretos de mapa y descubrimientos especiales durante el balance del prototipo.
+- [x] Crear una tienda con una skin/paleta de avatar por 120 PD.
+- [x] Crear un tema de Pokédex o Pokéballs por 180 PD.
+- [x] Persistir compras y cosméticos equipados.
+- [x] Usar permisos de misión para formas alternativas, paradojas y especies especiales.
+- [x] No permitir comprar directamente un descubrimiento de Pokédex.
+- [x] Añadir logros por nivel, secretos, mapas completados e investigación.
+- [x] Crear un inventario permanente de herramientas compradas una sola vez.
+- [x] Separar las compras en herramientas equipables, objetos clave pasivos, permisos de misión y cosméticos.
+- [x] Añadir una pala que descubra entradas subterráneas y pueda abrir misiones de fósiles.
+- [x] Añadir un cepillo de arqueología para ruinas, inscripciones y futuras investigaciones de Unown.
+- [x] Añadir un bote que aporte la capacidad `surf` sin ocupar el espacio del acompañante.
+- [x] Permitir que una herramienta abra directamente una misión nueva o satisfaga una parte de un requisito compuesto.
+- [x] Equipar como máximo una herramienta de campo opcional por expedición y recordar la última seleccionada.
+- [x] Permitir que objetos clave pasivos, como una Escama Dragón, formen parte de requisitos narrativos sin ocupar ese espacio.
+- [x] Mostrar en la tienda qué tipo de contenido habilita una herramienta sin revelar secretos concretos.
+- [x] Evitar consumibles y desgaste en el prototipo: las herramientas compradas serán permanentes.
+- [x] Garantizar que ninguna compra sea obligatoria para continuar la historia principal; tienda y permisos abrirán contenido opcional.
+
+Primera entrega del Hito 9 implementada el 18 de julio de 2026. Los importes base viven en `POKE_DISCOVER_REWARD_AMOUNTS`; experiencia y PD continúan siendo recompensas distintas. La tienda declara ofertas permanentes y exclusivamente opcionales, registra cada compra en un ledger propio, descuenta PD una sola vez y separa herramientas, objetos clave, permisos y cosméticos. Quedan sembradas la paleta de avatar de 120 PD y el tema de Pokédex/Pokéballs de 180 PD, con equipamiento persistente y rechazo transaccional ante saldo insuficiente.
+
+Segunda entrega del Hito 9 implementada el 18 de julio de 2026. Las herramientas dejan de ser un requisito de entrada: el loadout admite cero o una, valida propiedad cuando se indica y conserva la última selección para visitas posteriores. El acompañante continúa siendo obligatorio al comenzar el control jugable.
+
+Tercera entrega del Hito 9 implementada el 18 de julio de 2026. PokeDiscover incorpora una tienda con pala, cepillo de arqueología, bote, Escama Dragón, licencia de fenómenos especiales y los dos cosméticos existentes. Las compras son permanentes, la primera herramienta se equipa automáticamente y el catálogo separa capacidades, encargos opcionales y pistas sin spoilers. La pala publica una futura misión de fósiles, el cepillo una investigación de ruinas y el bote aporta `surf`; la Escama actúa como requisito pasivo y la licencia prepara contenido de formas, paradojas y especies especiales. La validación rechaza cualquier oferta que intente vender directamente especies, formas, apariencias o investigación.
+
+Cuarta entrega del Hito 9 implementada el 18 de julio de 2026. El balance central añade paquetes separados para secretos normales y descubrimientos especiales, ambos pagados una sola vez mediante el ledger. Las observaciones, la primera misión y el hallazgo de Pineco reutilizan la misma configuración; completar por primera vez los cuatro campos de una especie concede efectivamente el bonus de 40 PD y no solo lo declara. Ocho logros permanentes cubren nivel de entrenador, secretos únicos, mapas abiertos para expedición libre e investigaciones completas. Sus requisitos se calculan directamente desde PokeDiscover, se muestran en el panel común y producen feedback sin depender de contadores agregados duplicados.
+
+Hito 9 finalizado el 18 de julio de 2026. Economía, balance inicial, tienda, inventario permanente y logros de metaprogresión quedan preparados para recibir contenido del pipeline de mapas.
 
 ---
 
-## Hito 10 — Sideweb: editor de escenarios Pokémon
+## Hito 10 — Pipeline Tiled y primera carga jugable
 
 ### Objetivo
 
-Construir antes del juego de aventura una aplicación web independiente para centralizar tiles, sprites y mapas. El editor será la fuente oficial de escenarios y exportará exactamente el formato consumido por Poke-Voice.
+Establecer un pipeline pequeño y verificable para dibujar mapas en Tiled, cargarlos con Phaser y vincularlos con los contratos de PokeDiscover. Esta prueba se realizará antes de construir la sideweb y antes de pedir el primer mapa definitivo.
 
 ### Arquitectura
 
-- Aplicación Vite + React + TypeScript separada del juego principal.
-- Paquete compartido de esquemas, assets y validadores.
-- Render y preview con el mismo motor Phaser cargado por el juego.
-- Tiles base de 16×16 px y escalado entero sin suavizado.
-- Formato propio versionado `AdventureMapV1`, exportado como `.pvmap.json`.
-- Manifiesto de assets versionado con identificadores estables y rutas relativas.
-- Acceso local a carpetas mediante File System Access API en Chromium, con importación/descarga como fallback.
-- Contratos compartidos `MissionDefinitionV1`, `ResearchFactV1`, `CompanionRequirementV1`, `RequirementExpressionV1`, `CompanionBehaviorTriggerV1`, `ExpeditionExpressionTriggerV1`, `WorldEventV1` y `RewardLedgerEntryV1`.
+- Tiled será la fuente oficial del espacio del mapa: tiles, capas, colisiones, oclusión, puntos de anclaje y transiciones.
+- Los mapas se guardarán como JSON de Tiled (`.tmj`) legible por Git y Phaser.
+- `AdventureMapV2` será el sidecar lógico (`.adventure.json`): agrupa habitaciones estáticas enlazadas a `.tmj`, transiciones, encuentros, secretos, investigación, requisitos, variantes y recompensas.
+- Los objetos de ambos archivos se relacionarán mediante identificadores estables y no mediante el ID numérico accidental generado por Tiled.
+- Phaser será el único runtime visual tanto en Poke-Voice como en la futura previsualización de la sideweb.
+- Tiles base de 16×16 px, escalado entero y pixel art sin suavizado.
+- Los sprites PMD se convertirán en manifiestos reproducibles leyendo `AnimData.xml`; ni el juego ni la sideweb duplicarán a mano nombres, frames o duraciones.
+- Pokémon Essentials y RPG Maker XP no serán dependencias ni fuentes oficiales. Solo se admitirá una importación puntual y unidireccional de un mapa antiguo si alguna vez existe material previo que lo justifique.
 
-### Herramientas mínimas del editor
+### Checklist del pipeline
 
-- [ ] Crear, abrir, duplicar, renombrar y guardar mapas.
-- [ ] Registrar tilesets, sprites, retratos y animaciones en una biblioteca común.
-- [ ] Pintar, borrar, rellenar y seleccionar tiles.
-- [ ] Gestionar capas de suelo, decoración, superposición y colisión.
-- [ ] Colocar spawn del jugador, NPC, salidas y transiciones.
-- [ ] Dibujar zonas de hierba, encuentros y triggers.
-- [ ] Colocar obstáculos ligados a capacidades de acompañante.
-- [ ] Crear un editor visual de requisitos `all`/`any` para acompañantes, herramientas, NPC, contadores y eventos.
-- [ ] Colocar secretos persistentes con ID estable y recompensa única.
-- [ ] Configurar cambios de estado global que añadan o retiren encuentros de un mapa.
-- [ ] Configurar variantes temporales, dimensionales o narrativas de un mismo mapa base.
-- [ ] Previsualizar variantes corruptas y las modificaciones activadas por anomalías como MissingNo.
-- [ ] Configurar comportamientos del acompañante con modos `prompt`, `automatic` y `ambient`.
-- [ ] Configurar secretos expresivos con frases, alias, intención, volumen, duración, fallback y pistas asociadas.
-- [ ] Simular nivel, registro, investigación, acompañante, herramienta, objetos clave y flags de historia.
-- [ ] Simular transcripción, fuente `voice|text|contextAction` y propiedades acústicas sin necesitar un micrófono real.
-- [ ] Previsualizar reacciones genéricas y secuencias especiales del acompañante.
-- [ ] Crear una matriz especie × campo de investigación × mapa.
-- [ ] Advertir sobre especies completadas demasiado pronto y campos sin contenido planificado.
-- [ ] Asociar diálogos, objetivos, especies e interacciones de investigación.
-- [ ] Configurar encuentros de una forma concreta o de una apariencia de evento vinculada a una forma.
-- [ ] Validar referencias rotas, IDs duplicados, salidas inaccesibles y capas obligatorias.
-- [ ] Detectar dependencias circulares y requisitos de progreso imposibles.
-- [ ] Advertir si una interacción de voz obligatoria carece de fallback accesible o de pistas obtenibles.
-- [ ] Verificar que existe experiencia suficiente antes de cualquier nivel obligatorio de la historia.
-- [ ] Advertir si una compra o gasto pudiera bloquear progreso obligatorio.
-- [ ] Previsualizar movimiento, cámara, colisiones, capas y desbloqueos dentro del editor.
-- [ ] Exportar el mapa y su manifiesto de dependencias.
-- [ ] Importar de nuevo un mapa exportado sin pérdida de información.
-- [ ] Añadir tests de round-trip y compatibilidad con el cargador del juego.
+- [ ] Documentar el perfil Tiled de Poke-Voice: tamaño, nombres de capas, clases de objeto y propiedades obligatorias.
+- [x] Crear `AdventureMapV2` para referenciar habitaciones `.tmj` sin duplicar sus capas y coordenadas.
+- [x] Definir transiciones por borde, escalera, puerta o teletransporte mediante anclas estables.
+- [ ] Ejecutar habitaciones con cámara estática y transición breve entre ellas.
+- [ ] Crear un validador cruzado para el mapa Tiled y su sidecar de aventura.
+- [ ] Generar un manifiesto de animaciones PMD a partir de `AnimData.xml`.
+- [ ] Integrar Phaser de forma lazy-loaded sin penalizar la Pokédex principal.
+- [ ] Crear un mapa técnico mínimo, no definitivo, con suelo, colisión, capa superior y anclaje de encuentro.
+- [ ] Cargar el mapa técnico y colocar a Rattata mediante el sidecar.
+- [ ] Reproducir `Idle` desde el manifiesto PMD y respetar la oclusión de hierba.
+- [ ] Probar movimiento, cámara, colisiones y orden de profundidad.
+- [ ] Validar rutas de assets, IDs cruzados, capas obligatorias y animaciones inexistentes.
+- [ ] Añadir pruebas unitarias del validador y una prueba Playwright de carga.
+- [ ] Documentar el flujo exacto que seguirá el usuario al crear el primer mapa definitivo.
 
-### Contrato inicial de `AdventureMapV1`
+### División de archivos
 
-- Metadatos, versión, tamaño y tileset.
-- Capas de tiles y colisiones.
-- Spawn, NPC, portales y triggers.
-- Zonas de encuentro.
-- Secretos, requisitos de capacidad y estado visual desbloqueado.
-- Expresiones de requisitos, contadores globales, herramientas y flags de historia.
-- Variantes del mapa e inyecciones de encuentros condicionadas por el estado global.
-- Modificadores de anomalía para tiles, colisiones controladas, audio, diálogos y encuentros.
-- Comportamientos contextuales y automáticos del acompañante.
-- Interacciones expresivas, pistas de NPC, métodos de entrada admitidos y feedback de reconocimiento.
-- Encuentros deterministas, raros y su configuración de garantía.
-- Referencias a misiones, diálogos, especies y recompensas.
-- Lista de assets requeridos.
+- `<mapa>.tmj`: geometría, tilesets, capas visibles, colisiones y objetos-ancla.
+- `<mapa>.adventure.json`: identidad, misiones, encuentros, secretos, requisitos, investigación, variantes y assets lógicos.
+- Manifiesto PMD generado: especie, forma, animaciones, hojas, frames, direcciones, duraciones, offsets y créditos.
+- Los sidecars podrán cambiar sin volver a dibujar el mapa; retocar el mapa no invalidará secretos cuyos IDs estables continúen existiendo.
 
 ### Criterio de aceptación
 
-Un mapa creado completamente en la sideweb se exporta, valida y ejecuta en Poke-Voice sin editar manualmente su JSON.
+Un mapa técnico dibujado en Tiled se carga en Poke-Voice mediante Phaser, coloca un Pokémon animado desde datos declarativos y supera la validación cruzada sin depender de Essentials ni de JSON editado a mano para el flujo final.
 
 ---
 
@@ -679,7 +689,7 @@ Un mapa creado completamente en la sideweb se exporta, valida y ejecuta en Poke-
 - [ ] Ejecutar el fallback de texto o acción contextual sobre el mismo trigger y cambio persistente de mundo.
 - [ ] Crear estados de misión: bloqueada, disponible, en progreso y completada.
 - [ ] Desbloquear la expedición libre de un mapa al terminar su primera misión.
-- [ ] Preparar exactamente un acompañante y una herramienta antes de entrar.
+- [x] Preparar exactamente un acompañante y, opcionalmente, una herramienta antes de entrar.
 - [ ] Mantener el loadout bloqueado hasta abandonar el mapa.
 - [ ] Ejecutar prompts contextuales y secuencias automáticas de acompañante desde datos exportados por el editor.
 - [ ] Resolver capacidades narrativas de movimientos, como `rock-tomb`, desde los mismos requisitos declarativos.
@@ -690,11 +700,43 @@ Un mapa creado completamente en la sideweb se exporta, valida y ejecuta en Poke-
 - [ ] Permitir abandonar y regresar sin perder progreso.
 - [ ] Crear el modal del profesor con briefing, selector de misión, acompañante y recompensas.
 - [ ] Mostrar un informe de salida con experiencia, Puntos de Descubrimiento, observaciones y pistas nuevas.
+- [x] Registrar interacciones significativas durante la visita sin contar movimiento, espera ni cambios de habitación.
+- [x] Conceder una sola vez el campo curado de convivencia al salir con al menos una interacción significativa.
+- [x] Resolver la identificación contextual de una especie visible mediante voz o texto sobre el reconocedor compartido.
 - [ ] Excluir controles táctiles del prototipo; se evaluarán en el roadmap de expansión.
 
 ---
 
-## Hito 13 — Prototipo Reserva Cero
+## Hito 13 — Sideweb: configurador de contenido PokeDiscover
+
+### Objetivo
+
+Construir, después de validar el runtime, una aplicación Vite + React + TypeScript acotada que abra mapas Tiled existentes y permita poblarlos con contenido PokeDiscover. No pintará tiles, no editará colisiones y no implementará un motor alternativo.
+
+### Checklist
+
+- [ ] Abrir un `.tmj` y su `.adventure.json`, y mostrar ambos mediante el runtime Phaser compartido.
+- [ ] Leer el catálogo local de especies, formas, apariencias y capacidades.
+- [ ] Leer el manifiesto PMD y ofrecer solamente las animaciones disponibles para cada variante.
+- [ ] Colocar y previsualizar encuentros, NPC, portales, secretos y triggers sobre anclajes del mapa.
+- [ ] Crear un editor visual de requisitos `all`/`any`.
+- [ ] Configurar investigación, recompensas únicas, comportamientos del acompañante e interacciones expresivas.
+- [ ] Configurar encuentros deterministas, raros, variantes y eventos globales.
+- [ ] Simular nivel, registro, acompañante, herramienta, objetos, flags y métodos de entrada.
+- [ ] Crear la matriz especie × campo de investigación × mapa.
+- [ ] Mostrar en la matriz el campo reservado a convivencia y advertir si una especie depende de cuatro colocaciones obligatorias o duplica su `fieldCompletion`.
+- [ ] Detectar IDs duplicados, referencias rotas, dependencias circulares, objetivos inaccesibles y fallbacks de voz ausentes.
+- [ ] Advertir sobre experiencia insuficiente y compras que puedan bloquear progreso obligatorio.
+- [ ] Guardar o descargar únicamente el sidecar y los manifiestos propios; Tiled seguirá siendo dueño del escenario.
+- [ ] Verificar round-trip sin pérdida de información.
+
+### Criterio de aceptación
+
+Un mapa dibujado en Tiled se abre en la sideweb, se puebla usando catálogos y selectores visuales, y se ejecuta en Poke-Voice sin editar manualmente el sidecar.
+
+---
+
+## Hito 14 — Prototipo Reserva Cero
 
 ### Estructura
 
@@ -710,6 +752,23 @@ Cada especie tendrá entre 3 y 4 interacciones únicas que podrán revelar:
 - Flavor text excepcional.
 
 Los cuatro campos no tienen que estar disponibles en Reserva Cero. Cada mapa podrá publicar solo una parte de la investigación de una especie y el resto quedará para escenarios futuros.
+
+Como regla general, tres campos procederán de escenarios y uno de convivencia con el Pokémon como acompañante. Cada especie investigable reservará `conducta` o `alimentación/hábitat`; biometría y nota excepcional continuarán dependiendo del mundo. Rattata y Pineco son las primeras especies con datos curados en el catálogo.
+
+### Prólogo — ¡Ayuda al profesor Alcanfor!
+
+- [x] Definir el Bosque de Tegueste como `AdventureMapV2` de habitaciones estáticas.
+- [x] Definir la misión, tres actores Rattata, contador local, recompensas y apertura de expedición libre.
+- [x] Persistir checkpoints seguros para selección, cinemática, elección de inicial y comienzo de misión.
+- [x] Añadir el logro permanente `Un comienzo típico` y la elección de Bulbasaur, Charmander o Squirtle cuando no haya candidatos.
+- [x] Permitir ahuyentar Rattata mediante acción directa o reacción genérica del compañero en el dominio.
+- [x] Definir la observación de conducta de Rattata, el secreto de Pineco y su biometría con recompensa única.
+- [ ] Conectar la confirmación del perfil con el selector de compañero bloqueado y su diálogo urgente.
+- [ ] Dibujar y validar el mapa definitivo cuando el pipeline Tiled entregue la plantilla.
+- [ ] Representar asalto, caída de Poké Balls, elección de inicial, rescate, científicos y escena de Pineco en Phaser.
+- [ ] Aplicar siluetas a especies no registradas y reproducir revelación y grito dentro del mapa.
+- [ ] Abrir la ruta de científicos visualmente y conservar el arbusto de Corte para revisitas.
+- [ ] Cubrir el flujo visual completo con Playwright tras existir el runtime.
 
 ### Misiones
 
@@ -730,7 +789,7 @@ Los cuatro campos no tienen que estar disponibles en Reserva Cero. Cada mapa pod
 
 ---
 
-## Hito 14 — Validación y cierre
+## Hito 15 — Validación y cierre
 
 - [ ] Cubrir esquemas, migraciones, obediencia, capacidades y recompensas con tests unitarios.
 - [ ] Verificar que conseguir Pikachu primero, resetear y elegir un inicial primero conserva ambos logros permanentes.
@@ -757,6 +816,9 @@ Los cuatro campos no tienen que estar disponibles en Reserva Cero. Cada mapa pod
 - [ ] Verificar un requisito compuesto cubierto por un bote y un acompañante con `cut`.
 - [ ] Verificar que la tercera visita elegible garantiza un encuentro raro con la configuración por defecto.
 - [ ] Verificar que varios mapas aportan campos distintos y la ficha solo se completa al reunir los cuatro.
+- [x] Verificar que una salida vacía no concede investigación de convivencia.
+- [x] Verificar que una interacción significativa completa el campo del compañero y no vuelve a pagarlo.
+- [x] Verificar que voz y texto identifican una especie visible y que una especie ausente no se registra.
 - [ ] Verificar que gastar PD en cosméticos no puede bloquear la historia principal.
 - [ ] Verificar round-trip de mapas con requisitos, triggers, variantes y estado persistente.
 - [ ] Verificar que la anomalía de MissingNo persiste en PokeDiscover, no registra una especie normal y no altera irreversiblemente el mapa base.
@@ -797,8 +859,10 @@ Los cuatro campos no tienen que estar disponibles en Reserva Cero. Cada mapa pod
 - La investigación y las cualificaciones permanecen guardadas tras el reset, aunque se ocultan hasta redescubrir la especie.
 - Resetear nunca permite farmear recompensas ya registradas en el ledger.
 - Solo el borrado total de ajustes puede eliminar PokeDiscover.
-- El editor de escenarios se desarrollará antes que los mapas definitivos.
-- El formato propio del editor sustituye a Tiled como fuente principal; el juego y el editor compartirán el mismo contrato.
+- Tiled será la fuente principal del espacio del mapa; el formato propio describirá únicamente contenido PokeDiscover y enlazará objetos mediante IDs estables.
+- El pipeline y el runtime se validarán antes de construir la sideweb; la sideweb se limitará a poblar y validar mapas ya dibujados.
+- Phaser será el único runtime de expediciones y se compartirá con la previsualización de la sideweb.
+- Pokémon Essentials no formará parte del pipeline. Una conversión desde RPG Maker XP solo se contemplará como migración puntual y unidireccional.
 - La limitación de un acompañante convierte la elección previa y las revisitas en parte central de la aventura.
 - El progreso permanente se aplica a secretos y rutas descubiertas, no solo a fichas de Pokémon.
 - La experiencia sube el nivel de entrenador; `discoveryPoints` representa los Puntos de Descubrimiento y será la única moneda.

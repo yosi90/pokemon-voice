@@ -15,6 +15,7 @@ import { Toast } from './components/Toast.jsx';
 import { NarrativeScene } from './components/NarrativeScene.tsx';
 import { ProfessorMissionModal } from './components/ProfessorMissionModal.tsx';
 import { ProfessorIncomingCall } from './components/ProfessorIncomingCall.tsx';
+import { MapConceptPreview } from './components/MapConceptPreview.tsx';
 import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
@@ -48,6 +49,7 @@ export default function App() {
   const [imageStyle, setImageStyle] = useState('3d');
   const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
   const [professorMissionsOpen, setProfessorMissionsOpen] = useState(false);
+  const [mapConceptPreviewOpen, setMapConceptPreviewOpen] = useState(false);
   const game = usePokemonGame();
   const whosThatPokemon = useWhosThatPokemonMode({
     resolveGuess: game.tryGuessTranscript,
@@ -91,6 +93,7 @@ export default function App() {
     && !modesOpen
     && !controlsOpen
     && !professorMissionsOpen
+    && !mapConceptPreviewOpen
     && !game.lastRevealedId
     && game.specialEffects.length === 0
     && (!voiceSupportModalOpen || speech.speechSupported);
@@ -321,8 +324,13 @@ export default function App() {
         open={professorMissionsOpen && !professor.active}
         missionIds={knownProfessorMissionIds}
         catalog={game.pokemonCatalog}
+        onOpenMapPreview={() => {
+          setProfessorMissionsOpen(false);
+          setMapConceptPreviewOpen(true);
+        }}
         onClose={() => setProfessorMissionsOpen(false)}
       />
+      <MapConceptPreview open={mapConceptPreviewOpen && !professor.active} onClose={() => setMapConceptPreviewOpen(false)} />
       <NarrativeScene
         open={professor.active}
         sequence={professor.activeSequence}

@@ -57,8 +57,9 @@ describe('progreso de investigación distribuido', () => {
 
     expect(state.researchBySpecies[25].status).toBe('complete');
     expect(state.sightings).toEqual([25]);
-    expect(state.trainerExperience).toBe(20);
-    expect(state.discoveryPoints).toBe(12);
+    expect(state.trainerExperience).toBe(45);
+    expect(state.discoveryPoints).toBe(52);
+    expect(state.rewardLedger['reward:research-entry-complete:25']).toBeDefined();
   });
 
   it('una observación parcial no completa su campo', () => {

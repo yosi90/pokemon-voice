@@ -7,10 +7,11 @@ import type {
   VersionedContractV1,
 } from './common.js';
 import type { PermanentAchievementRecordV1 } from './achievements.js';
-import type { InventoryStateV1, RewardDefinitionV1 } from './economy.js';
+import type { InventoryStateV1, PurchaseRecordV1, RewardDefinitionV1 } from './economy.js';
 import type { SpeciesResearchProgressV1 } from './research.js';
 import type { NarrativeProgressV1, PokeDiscoverIntroductionStateV1 } from './narrative.js';
 import type { TrainerProfileV1 } from './narrative.js';
+import type { ExpressionInputMethod } from './adventure.js';
 
 export interface CompanionSelectionV1 extends VersionedContractV1 {
   formId: PokemonFormId;
@@ -85,6 +86,29 @@ export interface AdventureMapProgressV1 extends VersionedContractV1 {
   unlockedRouteIds: StableId[];
   eligibleEncounterVisits: Record<StableId, number>;
   activeVariantIds: StableId[];
+  /** Encuentros añadidos después de publicar el mapa mediante eventos globales. */
+  injectedEncounterIds?: StableId[];
+  /** Escenas de acompañante que no deben repetirse en visitas futuras. */
+  completedBehaviorTriggerIds?: StableId[];
+  /** No almacena audio ni transcripciones, solo el método de la primera resolución. */
+  resolvedExpressionTriggers?: Record<StableId, ExpressionResolutionRecordV1>;
+}
+
+export interface ExpressionResolutionRecordV1 extends VersionedContractV1 {
+  triggerId: StableId;
+  method: ExpressionInputMethod;
+  resolvedAt: ISODateString;
+}
+
+export type AnomalyResearchStatus = 'clueFound' | 'sighted' | 'resolved';
+
+export interface AnomalyResearchProgressV1 extends VersionedContractV1 {
+  anomalyId: StableId;
+  status: AnomalyResearchStatus;
+  discoveredClueIds: StableId[];
+  firstClueAt: ISODateString;
+  sightedAt?: ISODateString;
+  resolvedAt?: ISODateString;
 }
 
 export interface ModeProgressV1 {
@@ -114,10 +138,16 @@ export interface PokeDiscoverStateV1 extends VersionedContractV1 {
   discoveredForms: Record<PokemonFormId, FormDiscoveryRecordV1>;
   discoveredAppearances: Record<StableId, AppearanceDiscoveryRecordV1>;
   researchBySpecies: Record<PokemonSpeciesId, SpeciesResearchProgressV1>;
+  /** Investigación persistente que nunca crea una entrada de especie en la Pokédex. */
+  anomalies?: Record<StableId, AnomalyResearchProgressV1>;
   mapProgress: Record<StableId, AdventureMapProgressV1>;
+  /** Opcional únicamente al leer guardados anteriores a los eventos del Hito 8. */
+  activatedWorldEventIds?: StableId[];
   worldFlags: Record<StableId, JsonValue>;
   globalCounters: Record<StableId, number>;
   inventory: InventoryStateV1;
+  /** Opcional únicamente al leer guardados anteriores a la tienda del Hito 9. */
+  purchaseLedger?: Record<StableId, PurchaseRecordV1>;
   achievements: Record<StableId, PermanentAchievementRecordV1>;
   companionQualifications: CompanionAccessRecordV1[];
   modeProgress: Record<StableId, ModeProgressV1>;
@@ -151,12 +181,75 @@ export interface ActiveModeSessionV1 extends VersionedContractV1 {
   suspendedPokedexRun?: PokedexRunStateV1;
 }
 
+export interface ExpeditionLoadoutV1 extends VersionedContractV1 {
+  companion: CompanionSelectionV1;
+  toolId?: StableId;
+}
+
+export type MeaningfulExpeditionInteractionKind =
+  | 'npcConversation'
+  | 'inspection'
+  | 'pokemonInteraction'
+  | 'speciesIdentification'
+  | 'companionBehavior'
+  | 'contextTrigger'
+  | 'secret'
+  | 'hint'
+  | 'collectible'
+  | 'research';
+
+export interface MissionRuntimeStateV1 extends VersionedContractV1 {
+  missionId: StableId;
+  checkpointId: StableId;
+  flags: Record<StableId, JsonValue>;
+  counters: Record<StableId, number>;
+  resolvedActorIds: StableId[];
+}
+
+export type PendingMissionLaunchCheckpoint =
+  | 'awaitingCompanion'
+  | 'openingCinematic'
+  | 'awaitingStarter'
+  | 'ready';
+
+export interface PendingMissionLaunchV1 extends VersionedContractV1 {
+  missionId: StableId;
+  checkpoint: PendingMissionLaunchCheckpoint;
+  offeredAt: ISODateString;
+}
+
+export interface ExpeditionEntrySnapshotV1 extends VersionedContractV1 {
+  secretIds: StableId[];
+  npcIds: StableId[];
+  conversationIds: StableId[];
+  collectibleIds: StableId[];
+  hintIds: StableId[];
+  routeIds: StableId[];
+  researchFactIds: StableId[];
+  trainerExperience: number;
+  discoveryPoints: number;
+}
+
 export interface ActiveExpeditionSessionV1 extends VersionedContractV1 {
   mapId: StableId;
   enteredAt: ISODateString;
   missionId?: StableId;
+  /** Presente en todas las expediciones nuevas y bloqueado hasta abandonar el mapa. */
+  loadout?: ExpeditionLoadoutV1;
+  /** Compatibilidad de lectura con el contrato provisional anterior al Hito 8. */
   companionFormId?: PokemonFormId;
+  /** Compatibilidad de lectura con el contrato provisional anterior al Hito 8. */
   toolId?: StableId;
+  /** Resultado estable de cada encuentro evaluado durante esta visita. */
+  evaluatedEncounterResults?: Record<StableId, boolean>;
+  /** Escenas limitadas a una ejecución durante esta visita. */
+  completedBehaviorTriggerIds?: StableId[];
+  /** Interacciones útiles únicas realizadas durante esta visita. */
+  meaningfulInteractionIds?: StableId[];
+  meaningfulInteractionKinds?: MeaningfulExpeditionInteractionKind[];
+  missionRuntime?: MissionRuntimeStateV1;
+  /** Base mínima para construir el informe de regreso sin guardar eventos duplicados. */
+  entrySnapshot?: ExpeditionEntrySnapshotV1;
 }
 
 /** Raíz transaccional del guardado local. Las cachés de catálogo y audio no forman parte de ella. */
@@ -166,4 +259,5 @@ export interface PokeVoiceSaveV1 extends VersionedContractV1 {
   preferences: PokeVoicePreferencesV1;
   activeModeSession?: ActiveModeSessionV1;
   activeExpeditionSession?: ActiveExpeditionSessionV1;
+  pendingMissionLaunch?: PendingMissionLaunchV1;
 }

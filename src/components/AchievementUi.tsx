@@ -1,6 +1,11 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ACHIEVEMENTS } from '../../scripts/achievements-list.js';
 import { achievementProgress } from '../store/achievementProgressStore.js';
+import {
+  POKE_DISCOVER_ACHIEVEMENTS,
+  POKE_DISCOVER_ACHIEVEMENT_EVENT,
+} from '../domain/achievements/pokeDiscoverAchievements.js';
+import { getBrowserPokeVoiceSave } from '../store/browserPokeVoiceSaveStore.js';
 import {
   achievementUiStore,
   type AchievementToastNotice,
@@ -20,7 +25,15 @@ const TIER_CLASS: Record<string, string> = {
   MasterBall: 'masterball',
 };
 
-const achievementById = new Map(ACHIEVEMENTS.map(achievement => [achievement.id, achievement]));
+const achievementById = new Map<string, { title: string; desc: string; tier: string }>([
+  ...ACHIEVEMENTS.map(achievement => [achievement.id, achievement] as const),
+  ...POKE_DISCOVER_ACHIEVEMENTS.map(achievement => [achievement.achievementId, {
+    id: achievement.achievementId,
+    title: achievement.title,
+    desc: achievement.description,
+    tier: achievement.tier ?? 'Pokeball',
+  }] as const),
+]);
 const stampSrc = `${import.meta.env.BASE_URL}assets/images/ash-thumbs-up.png`;
 
 function AchievementToast({ toast }: { toast: AchievementToastNotice }) {
@@ -63,6 +76,24 @@ export function AchievementToasts() {
     achievementUiStore.getSnapshot,
   );
 
+  useEffect(() => {
+    const onPokeDiscoverAchievement = (event: Event) => {
+      const ids = (event as CustomEvent<{ achievementIds?: string[] }>).detail?.achievementIds ?? [];
+      for (const id of ids) {
+        const achievement = achievementById.get(id);
+        if (!achievement) continue;
+        achievementUiStore.enqueueToast({
+          achievementId: id,
+          title: achievement.title,
+          description: achievement.desc,
+          tier: achievement.tier,
+        });
+      }
+    };
+    window.addEventListener(POKE_DISCOVER_ACHIEVEMENT_EVENT, onPokeDiscoverAchievement);
+    return () => window.removeEventListener(POKE_DISCOVER_ACHIEVEMENT_EVENT, onPokeDiscoverAchievement);
+  }, []);
+
   return (
     <div id="acv-toast-container" aria-live="polite" aria-atomic="true">
       {toasts.map(toast => <AchievementToast key={toast.id} toast={toast} />)}
@@ -72,6 +103,7 @@ export function AchievementToasts() {
 
 export function AchievementsDrawer() {
   const drawerRef = useRef<HTMLElement>(null);
+  const [, setPokeDiscoverRevision] = useState(0);
   const { drawerOpen } = useSyncExternalStore(
     achievementUiStore.subscribe,
     achievementUiStore.getSnapshot,
@@ -93,7 +125,23 @@ export function AchievementsDrawer() {
     return () => document.removeEventListener('click', closeOutside);
   }, [drawerOpen]);
 
-  const entries = [...permanentRecords].sort((a, b) => a.date - b.date);
+  useEffect(() => {
+    const refresh = () => setPokeDiscoverRevision(value => value + 1);
+    window.addEventListener(POKE_DISCOVER_ACHIEVEMENT_EVENT, refresh);
+    return () => window.removeEventListener(POKE_DISCOVER_ACHIEVEMENT_EVENT, refresh);
+  }, []);
+
+  const entriesById = new Map(permanentRecords.map(record => [record.id, record]));
+  for (const record of Object.values(getBrowserPokeVoiceSave().pokeDiscover.achievements)) {
+    if (!entriesById.has(record.achievementId)) entriesById.set(record.achievementId, {
+      id: record.achievementId,
+      date: Date.parse(record.unlockedAt),
+      ...(record.domain ? { domain: record.domain } : {}),
+      ...(record.originRunId ? { originRunId: record.originRunId } : {}),
+      ...(record.originModeId ? { originModeId: record.originModeId } : {}),
+    });
+  }
+  const entries = [...entriesById.values()].sort((a, b) => a.date - b.date);
 
   return (
     <aside

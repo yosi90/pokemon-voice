@@ -8,7 +8,10 @@ import { getPokemonSpecial, matchSecretCommand, SPECIAL_REVEALS, SPECIAL_TIMING 
 import { LOCAL_POKEMON_CATALOG, loadPokemonCatalog } from '../services/pokemonCatalog.ts';
 import { processPostDiscovery } from '../services/postDiscovery.ts';
 import { browserDiscoveryStore } from '../store/browserDiscoveryStore.ts';
-import { getBrowserPokeVoiceSave } from '../store/browserPokeVoiceSaveStore.ts';
+import {
+  getBrowserPokeVoiceSave,
+  recordBrowserMissingNoCommand,
+} from '../store/browserPokeVoiceSaveStore.ts';
 import { useLegacyEasterEggState } from './useLegacyEasterEggState.ts';
 import { usePokedexPreferences } from './usePokedexPreferences.ts';
 import { usePokemonCardNavigation } from './usePokemonCardNavigation.ts';
@@ -222,6 +225,9 @@ export function usePokemonGame() {
   const guess = useCallback(async (raw, { fromSpeech = false } = {}) => {
     const secret = matchSecretCommand(raw);
     if (secret) {
+      if (secret.secretCommand === 'missingno') {
+        recordBrowserMissingNoCommand();
+      }
       if (secret.secretCommand === 'agua' && !hasDiscovered(185)) {
         showToast('Sudowoodo aún no está mirando.', 'info');
         setGuessText('');

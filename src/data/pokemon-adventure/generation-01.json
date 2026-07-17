@@ -1013,6 +1013,18 @@
         "mythical": false,
         "special": false
       },
+      "companionResearch": {
+        "schemaVersion": 1,
+        "factId": "research:rattata:companion:habitat",
+        "speciesId": 19,
+        "field": "habitat",
+        "text": "Viajando con Rattata descubres que encuentra alimento y refugio incluso en lugares muy transitados.",
+        "contentStatus": "curated",
+        "rewards": [
+          { "kind": "trainerExperience", "amount": 5 },
+          { "kind": "discoveryPoints", "amount": 5 }
+        ]
+      },
       "forms": [
         {
           "schemaVersion": 1,

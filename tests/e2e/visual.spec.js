@@ -253,6 +253,38 @@ test('selector de acompañante de Poke-Discover', async ({ page }) => {
   });
 });
 
+test('Rattata Idle sobre el mapa conceptual', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await mockPokemonApi(page);
+  await page.goto('/');
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.introduction = {
+      ...save.pokeDiscover.introduction,
+      status: 'accepted',
+      acceptedAt: new Date().toISOString(),
+    };
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+  const preview = page.getByRole('dialog', { name: 'Bahía Sharpedo · Rattata Idle' });
+  await expect(preview).toBeVisible();
+  await expect(preview.getByRole('status')).toHaveCount(0);
+  await page.evaluate(() => document.fonts.ready);
+
+  await expect(page).toHaveScreenshot('rattata-map-preview.png', {
+    animations: 'disabled',
+    caret: 'hide',
+    fullPage: false,
+    maxDiffPixelRatio: 0.02,
+  });
+});
+
 test('cuatro Pokéballs pseudo-3D de referencia', async ({ page }) => {
   await mockPokemonApi(page);
   await page.goto('/');
