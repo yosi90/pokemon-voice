@@ -1,5 +1,6 @@
 export * from './achievements.js';
 export * from './adventure.js';
+export * from './assets.js';
 export * from './catalog.js';
 export * from './companionCatalog.js';
 export * from './common.js';

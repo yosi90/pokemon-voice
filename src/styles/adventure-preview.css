@@ -59,27 +59,28 @@
 
 .map-concept-preview__viewport {
   position: relative;
+  display: grid;
+  place-items: center;
   min-height: 0;
-  overflow: auto;
+  flex: 1 1 auto;
+  overflow: hidden;
   background: #09140e;
 }
 
-.map-concept-preview__viewport > img {
+.map-concept-preview__runtime {
   width: 100%;
-  height: auto;
-  display: block;
-}
-
-.map-concept-preview__rattata {
-  position: absolute;
-  left: 47.2%;
-  top: 13.2%;
-  width: 4.42%;
-  height: auto;
-  aspect-ratio: 1;
+  min-height: min(64vh, 640px);
+  display: grid;
+  place-items: center;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .22));
+}
+
+.map-concept-preview__runtime canvas {
+  max-width: 100%;
+  max-height: min(64vh, 640px);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .map-concept-preview__status {
@@ -118,10 +119,12 @@
     font-size: 9px;
   }
 
-  .map-concept-preview__rattata {
-    left: 45.8%;
-    top: 12.8%;
-    width: 7%;
+  .map-concept-preview__runtime {
+    min-height: min(58vh, 460px);
+  }
+
+  .map-concept-preview__runtime canvas {
+    max-height: min(58vh, 460px);
   }
 }
 

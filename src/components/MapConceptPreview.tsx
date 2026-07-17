@@ -1,35 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { createTechnicalPhaserGame } from '../domain/maps/createTechnicalPhaserGame.js';
+import { loadAdventureMapBundle } from '../domain/maps/loadAdventureBundle.js';
 
-const MAP_PATH = 'assets/adventure/map-concepts/kanto/bahia-sharpedo/pruebas.png';
-const RATTATA_ROOT = 'assets/sprites/pokemon/pmd/0019-rattata/default';
-const IDLE_DIRECTION_ROW = 0;
-const SPRITE_SCALE = 2;
-
-function loadImage(source: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`No se pudo cargar ${source}`));
-    image.src = source;
-  });
-}
-
-function readIdleAnimation(xmlText: string) {
-  const documentNode = new DOMParser().parseFromString(xmlText, 'application/xml');
-  const animations = [...documentNode.querySelectorAll('Anim')];
-  const idle = animations.find(animation => animation.querySelector('Name')?.textContent === 'Idle');
-  if (!idle) throw new Error('AnimData.xml no contiene la animación Idle.');
-  const frameWidth = Number(idle.querySelector('FrameWidth')?.textContent);
-  const frameHeight = Number(idle.querySelector('FrameHeight')?.textContent);
-  const durations = [...idle.querySelectorAll('Durations > Duration')]
-    .map(duration => Number(duration.textContent))
-    .filter(duration => Number.isFinite(duration) && duration > 0);
-  if (!frameWidth || !frameHeight || !durations.length) throw new Error('La animación Idle está incompleta.');
-  return { frameWidth, frameHeight, durations };
-}
+const TECHNICAL_ADVENTURE_PATH = 'assets/adventure/maps/_technical/technical-test.adventure.json';
+const TECHNICAL_ROOM_ID = 'room:technical:clearing';
 
 export function MapConceptPreview({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
@@ -44,74 +21,46 @@ export function MapConceptPreview({ open, onClose }: { open: boolean; onClose: (
   }, [onClose, open]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || !hostRef.current) return undefined;
     let cancelled = false;
-    let frameTimer: number | undefined;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const baseUrl = import.meta.env.BASE_URL;
-    const sheetUrl = `${baseUrl}${RATTATA_ROOT}/Idle-Anim.png`;
-    const xmlUrl = `${baseUrl}${RATTATA_ROOT}/AnimData.xml`;
+    let game: import('phaser').Game | undefined;
+    const host = hostRef.current;
     setStatus('loading');
+    host.dataset.runtime = 'loading';
 
     Promise.all([
-      loadImage(sheetUrl),
-      fetch(xmlUrl).then(response => {
-        if (!response.ok) throw new Error('No se pudo cargar AnimData.xml.');
-        return response.text();
+      import('phaser'),
+      loadAdventureMapBundle({
+        adventurePath: TECHNICAL_ADVENTURE_PATH,
+        baseUrl: import.meta.env.BASE_URL,
       }),
-    ]).then(([sheet, xmlText]) => {
-      if (cancelled || !canvasRef.current) return;
-      const animation = readIdleAnimation(xmlText);
-      const canvas = canvasRef.current;
-      canvas.width = animation.frameWidth * SPRITE_SCALE;
-      canvas.height = animation.frameHeight * SPRITE_SCALE;
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('Canvas 2D no está disponible.');
-      context.imageSmoothingEnabled = false;
-      let frame = 0;
-
-      const drawFrame = () => {
-        canvas.dataset.frame = String(frame);
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.save();
-        context.globalAlpha = .28;
-        context.fillStyle = '#102316';
-        context.beginPath();
-        context.ellipse(canvas.width / 2, canvas.height * .82, canvas.width * .2, canvas.height * .08, 0, 0, Math.PI * 2);
-        context.fill();
-        context.restore();
-        context.drawImage(
-          sheet,
-          frame * animation.frameWidth,
-          IDLE_DIRECTION_ROW * animation.frameHeight,
-          animation.frameWidth,
-          animation.frameHeight,
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-        );
-      };
-
-      const scheduleNextFrame = () => {
-        drawFrame();
-        if (reducedMotion || cancelled) return;
-        const durationMs = animation.durations[frame] * (1000 / 60);
-        frameTimer = window.setTimeout(() => {
-          frame = (frame + 1) % animation.durations.length;
-          scheduleNextFrame();
-        }, durationMs);
-      };
-
-      scheduleNextFrame();
-      setStatus('ready');
-    }).catch(() => {
-      if (!cancelled) setStatus('error');
+    ]).then(([Phaser, bundle]) => {
+      if (cancelled) return;
+      game = createTechnicalPhaserGame({
+        Phaser,
+        parent: host,
+        bundle,
+        initialRoomId: TECHNICAL_ROOM_ID,
+        reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        onReady: () => {
+          if (cancelled) return;
+          host.dataset.runtime = 'ready';
+          host.dataset.mapId = bundle.adventure.mapId;
+          setStatus('ready');
+        },
+      });
+    }).catch(error => {
+      console.error('No se pudo iniciar la habitación técnica:', error);
+      if (!cancelled) {
+        host.dataset.runtime = 'error';
+        setStatus('error');
+      }
     });
 
     return () => {
       cancelled = true;
-      window.clearTimeout(frameTimer);
+      game?.destroy(true);
+      host.replaceChildren();
     };
   }, [open]);
 
@@ -122,27 +71,27 @@ export function MapConceptPreview({ open, onClose }: { open: boolean; onClose: (
       <section className="pv-modal__panel map-concept-preview__panel" role="dialog" aria-modal="true" aria-labelledby="map-concept-preview-title">
         <header className="pv-modal__head">
           <div>
-            <span className="map-concept-preview__eyebrow">Prototipo visual</span>
-            <h3 id="map-concept-preview-title">Bahía Sharpedo · Rattata Idle</h3>
+            <span className="map-concept-preview__eyebrow">Pipeline Tiled + Phaser</span>
+            <h3 id="map-concept-preview-title">Claro técnico · Rattata Idle</h3>
           </div>
           <button ref={closeRef} className="pv-modal__close" type="button" aria-label="Cerrar prueba de mapa" onClick={onClose}>×</button>
         </header>
         <div className="map-concept-preview__viewport">
-          <img src={`${import.meta.env.BASE_URL}${MAP_PATH}`} alt="Mapa conceptual de Bahía Sharpedo" />
-          <canvas
-            ref={canvasRef}
-            className="map-concept-preview__rattata"
+          <div
+            ref={hostRef}
+            className="map-concept-preview__runtime"
+            data-testid="technical-map-runtime"
             role="img"
-            aria-label="Rattata reproduciendo su animación Idle sobre la hierba"
+            aria-label="Habitación técnica de Tiled con Rattata animado entre la hierba"
           />
           {status !== 'ready' && (
             <div className="map-concept-preview__status" role="status">
-              {status === 'error' ? 'No se pudo reconstruir la animación.' : 'Preparando sprite PMD…'}
+              {status === 'error' ? 'No se pudo cargar el runtime técnico.' : 'Cargando Phaser y la habitación…'}
             </div>
           )}
         </div>
         <footer className="map-concept-preview__note">
-          Prueba provisional sobre imagen plana. El mapa definitivo separará tiles, colisiones y capas de oclusión.
+          Muévete con cursores o WASD. La cámara permanece fija; los bordes bloquean el paso y la hierba se dibuja sobre Rattata.
         </footer>
       </section>
     </div>

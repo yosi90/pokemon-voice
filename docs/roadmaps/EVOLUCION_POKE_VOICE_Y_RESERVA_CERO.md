@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0–7 y 9 completados; base de dominio del Hito 8 completada con tareas visuales y de contenido aplazadas al pipeline; siguiente entrega: Hito 10.
+- Estado: Hitos 0–7, 9 y 10 completados; base de dominio del Hito 8 completada con tareas visuales y de contenido aplazadas al pipeline; siguiente entrega: Hito 11.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -635,20 +635,20 @@ Establecer un pipeline pequeño y verificable para dibujar mapas en Tiled, carga
 
 ### Checklist del pipeline
 
-- [ ] Documentar el perfil Tiled de Poke-Voice: tamaño, nombres de capas, clases de objeto y propiedades obligatorias.
+- [x] Documentar el perfil Tiled de Poke-Voice: tamaño, nombres de capas, clases de objeto y propiedades obligatorias.
 - [x] Crear `AdventureMapV2` para referenciar habitaciones `.tmj` sin duplicar sus capas y coordenadas.
 - [x] Definir transiciones por borde, escalera, puerta o teletransporte mediante anclas estables.
-- [ ] Ejecutar habitaciones con cámara estática y transición breve entre ellas.
-- [ ] Crear un validador cruzado para el mapa Tiled y su sidecar de aventura.
-- [ ] Generar un manifiesto de animaciones PMD a partir de `AnimData.xml`.
-- [ ] Integrar Phaser de forma lazy-loaded sin penalizar la Pokédex principal.
-- [ ] Crear un mapa técnico mínimo, no definitivo, con suelo, colisión, capa superior y anclaje de encuentro.
-- [ ] Cargar el mapa técnico y colocar a Rattata mediante el sidecar.
-- [ ] Reproducir `Idle` desde el manifiesto PMD y respetar la oclusión de hierba.
-- [ ] Probar movimiento, cámara, colisiones y orden de profundidad.
-- [ ] Validar rutas de assets, IDs cruzados, capas obligatorias y animaciones inexistentes.
-- [ ] Añadir pruebas unitarias del validador y una prueba Playwright de carga.
-- [ ] Documentar el flujo exacto que seguirá el usuario al crear el primer mapa definitivo.
+- [x] Ejecutar habitaciones con cámara estática y transición breve entre ellas.
+- [x] Crear un validador cruzado para el mapa Tiled y su sidecar de aventura.
+- [x] Generar un manifiesto de animaciones PMD a partir de `AnimData.xml`.
+- [x] Integrar Phaser de forma lazy-loaded sin penalizar la Pokédex principal.
+- [x] Crear un mapa técnico mínimo, no definitivo, con suelo, colisión, capa superior y anclaje de encuentro.
+- [x] Cargar el mapa técnico y colocar a Rattata mediante el sidecar.
+- [x] Reproducir `Idle` desde el manifiesto PMD y respetar la oclusión de hierba.
+- [x] Probar movimiento, cámara, colisiones y orden de profundidad.
+- [x] Validar rutas de assets, IDs cruzados, capas obligatorias y animaciones inexistentes.
+- [x] Añadir pruebas unitarias del validador y una prueba Playwright de carga.
+- [x] Documentar el flujo exacto que seguirá el usuario al crear el primer mapa definitivo.
 
 ### División de archivos
 
@@ -660,6 +660,14 @@ Establecer un pipeline pequeño y verificable para dibujar mapas en Tiled, carga
 ### Criterio de aceptación
 
 Un mapa técnico dibujado en Tiled se carga en Poke-Voice mediante Phaser, coloca un Pokémon animado desde datos declarativos y supera la validación cruzada sin depender de Essentials ni de JSON editado a mano para el flujo final.
+
+Primera entrega del Hito 10 implementada el 18 de julio de 2026. El perfil oficial fija habitaciones ortogonales finitas de 16×16, las capas `Ground`, `Collision`, `Above` y `Anchors`, y clases semánticas cuyos nombres estables sustituyen los IDs numéricos de Tiled. La carpeta `_technical` aporta un tileset desechable, una habitación `.tmj` y un sidecar `.adventure.json` que coloca a Rattata sobre un `ActorAnchor`. `npm run maps:validate` comprueba rutas de TMJ, tilesets e imágenes, relaciones entre habitación y sidecar, clases, anclas, assets PMD y animaciones. `npm run assets:pmd:manifest` reconstruye de forma determinista 27 animaciones de los paquetes disponibles de Rattata y Pineco leyendo dimensiones, duraciones, direcciones y aliases `CopyOf` desde sus XML y hojas PNG. La carga visual permanece pendiente de la siguiente entrega con Phaser lazy-loaded.
+
+Segunda entrega del Hito 10 implementada el 18 de julio de 2026. La previsualización provisional deja de superponer un canvas sobre una imagen plana y ejecuta la habitación `.tmj` real. Phaser 4 se importa dinámicamente en un chunk separado, mientras un cargador incorpora en memoria los tilesets externos que el parser de Phaser no resuelve directamente. La escena coloca a Rattata desde `actorPlacements`, reproduce su `Idle` con las duraciones PMD, dibuja `Above` por delante, mantiene la cámara fija y permite mover un marcador de jugador con cursores o WASD contra colisiones Arcade. El runtime se destruye al cerrar el modal, pausa la animación con movimiento reducido y queda cubierto en escritorio y móvil. La transición entre habitaciones es el único bloque funcional pendiente para cerrar el pipeline técnico.
+
+Tercera entrega del Hito 10 implementada el 18 de julio de 2026. El sidecar técnico enlaza ahora un claro y un sendero mediante dos transiciones de borde reversibles. Las zonas `TransitionAnchor` son rectángulos editables en Tiled, lo que evita depender de acertar un único píxel y permite que el runtime reconstruya habitación, colisiones, capas, actores y punto de aparición tras un fundido breve. La prueba Playwright recorre la transición de ida y vuelta y confirma que Rattata solo existe en su habitación, la cámara continúa estática y no se pierde el control del jugador.
+
+Hito 10 finalizado el 18 de julio de 2026. El pipeline Tiled → validación cruzada → Phaser está listo para que el primer mapa definitivo se dibuje siguiendo el perfil documentado, sin depender de Pokémon Essentials ni de edición manual del JSON exportado por Tiled.
 
 ---
 

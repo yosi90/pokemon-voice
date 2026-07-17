@@ -80,6 +80,21 @@ export interface AdventureRoomV1 extends VersionedContractV1 {
   spawnAnchorIds: StableId[];
 }
 
+export interface TiledMapAssetReferenceV1 extends VersionedContractV1 {
+  assetId: StableId;
+  /** Ruta relativa a `public/`, portable entre Vite y la futura sideweb. */
+  path: string;
+}
+
+export interface AdventureActorPlacementV1 extends VersionedContractV1 {
+  placementId: StableId;
+  roomId: StableId;
+  anchorId: StableId;
+  assetId: StableId;
+  animation: string;
+  direction?: 'up' | 'down' | 'left' | 'right';
+}
+
 export interface RoomTransitionV1 extends VersionedContractV1 {
   transitionId: StableId;
   kind: RoomTransitionKind;
@@ -96,7 +111,9 @@ export interface AdventureMapV2 {
   schemaVersion: 2;
   mapId: StableId;
   title: string;
+  tiledMapAssets: TiledMapAssetReferenceV1[];
   rooms: AdventureRoomV1[];
+  actorPlacements: AdventureActorPlacementV1[];
   transitions: RoomTransitionV1[];
   variants: MapVariantV1[];
   missionIds: StableId[];

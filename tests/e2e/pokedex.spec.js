@@ -219,7 +219,7 @@ test('filtra compañeros por categoría y conserva forma y apariencia selecciona
   ))).toBe(true);
 });
 
-test('reconstruye la animación Idle de Rattata sobre el mapa conceptual', async ({ page }) => {
+test('carga la habitación Tiled con Phaser, Rattata, movimiento y colisiones', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
@@ -232,15 +232,59 @@ test('reconstruye la animación Idle de Rattata sobre el mapa conceptual', async
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
 
-  const preview = page.getByRole('dialog', { name: 'Bahía Sharpedo · Rattata Idle' });
+  const preview = page.getByRole('dialog', { name: 'Claro técnico · Rattata Idle' });
   await expect(preview).toBeVisible();
-  await expect(preview.getByAltText('Mapa conceptual de Bahía Sharpedo')).toBeVisible();
   await expect(preview.getByRole('status')).toHaveCount(0);
-  const canvas = preview.getByRole('img', { name: 'Rattata reproduciendo su animación Idle sobre la hierba' });
-  await expect(canvas).toHaveAttribute('width', '64');
-  await expect(canvas).toHaveAttribute('height', '64');
-  await expect(canvas).toHaveAttribute('data-frame', '0');
-  await expect.poll(() => canvas.getAttribute('data-frame'), { intervals: [20], timeout: 2000 }).not.toBe('0');
+  const runtime = preview.getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-map-id', 'map:technical:pmd-clearing');
+  await expect(runtime).toHaveAttribute('data-actor-id', 'actor-placement:technical:rattata');
+  await expect(runtime).toHaveAttribute('data-camera', 'static');
+  await expect(runtime).toHaveAttribute('data-collision', 'arcade');
+  await expect(runtime).toHaveAttribute('data-occlusion-layer', 'Above');
+  await expect(runtime).toHaveAttribute('data-animation', 'playing');
+  const canvas = runtime.locator('canvas');
+  await expect(canvas).toHaveCount(1);
+  await expect(canvas).toHaveAttribute('width', '160');
+  await expect(canvas).toHaveAttribute('height', '128');
+  const initialFrameChanges = Number(await runtime.getAttribute('data-actor-frame-changes'));
+  await expect.poll(async () => Number(await runtime.getAttribute('data-actor-frame-changes')), {
+    intervals: [50],
+    timeout: 2000,
+  }).toBeGreaterThan(initialFrameChanges);
+
+  const initialX = Number(await runtime.getAttribute('data-player-x'));
+  await page.keyboard.down('ArrowLeft');
+  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeLessThan(initialX);
+  await page.waitForTimeout(1400);
+  await page.keyboard.up('ArrowLeft');
+  expect(Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThanOrEqual(20);
+
+  await page.keyboard.down('ArrowUp');
+  await expect.poll(async () => Number(await runtime.getAttribute('data-player-y'))).toBeLessThanOrEqual(70);
+  await page.keyboard.up('ArrowUp');
+  if (Number(await runtime.getAttribute('data-player-y')) < 56) {
+    await page.keyboard.down('ArrowDown');
+    await expect.poll(async () => Number(await runtime.getAttribute('data-player-y'))).toBeGreaterThanOrEqual(58);
+    await page.keyboard.up('ArrowDown');
+  }
+  await page.keyboard.down('ArrowRight');
+  await expect.poll(() => runtime.getAttribute('data-room-id'), { timeout: 4000 })
+    .toBe('room:technical:path');
+  await page.keyboard.up('ArrowRight');
+  await expect(runtime).toHaveAttribute('data-transition-count', '1');
+  await expect(runtime).toHaveAttribute('data-last-transition-id', 'transition:technical:clearing-to-path');
+  await expect(runtime).toHaveAttribute('data-actor-id', '');
+  await expect(runtime).toHaveAttribute('data-animation', 'none');
+  expect(Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThan(16);
+
+  await page.keyboard.down('ArrowLeft');
+  await expect.poll(() => runtime.getAttribute('data-room-id'), { timeout: 4000 })
+    .toBe('room:technical:clearing');
+  await page.keyboard.up('ArrowLeft');
+  await expect(runtime).toHaveAttribute('data-transition-count', '2');
+  await expect(runtime).toHaveAttribute('data-actor-id', 'actor-placement:technical:rattata');
+  await expect(runtime).toHaveAttribute('data-animation', 'playing');
 
   await page.keyboard.press('Escape');
   await expect(preview).toHaveCount(0);

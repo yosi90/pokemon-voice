@@ -15,10 +15,13 @@
     "test:e2e:update": "playwright test --update-snapshots",
     "test:all": "npm run typecheck && npm run test && npm run test:e2e",
     "catalog:import": "node scripts/import-companion-catalog.mjs",
-    "catalog:validate": "node scripts/validate-companion-catalog.mjs"
+    "catalog:validate": "node scripts/validate-companion-catalog.mjs",
+    "assets:pmd:manifest": "node scripts/generate-pmd-manifest.mjs",
+    "maps:validate": "npm run assets:pmd:manifest && node scripts/validate-adventure-maps.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
+    "phaser": "^4.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "vite": "^7.3.6"

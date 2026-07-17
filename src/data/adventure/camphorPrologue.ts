@@ -22,6 +22,11 @@ export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
   schemaVersion: 2,
   mapId: CAMPHOR_FOREST_MAP_ID,
   title: 'Bosque de Tegueste',
+  tiledMapAssets: [{
+    schemaVersion: 1,
+    assetId: 'tiled-map:camphor-forest:ambush-clearing',
+    path: 'assets/adventure/maps/tegueste/camphor-forest/ambush-clearing.tmj',
+  }],
   rooms: [{
     schemaVersion: 1,
     roomId: 'room:camphor-forest:ambush-clearing',
@@ -33,6 +38,7 @@ export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
       'anchor:camphor-forest:cut-bush-exit',
     ],
   }],
+  actorPlacements: [],
   transitions: [],
   variants: [],
   missionIds: [CAMPHOR_PROLOGUE_MISSION_ID],

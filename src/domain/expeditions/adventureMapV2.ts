@@ -5,14 +5,32 @@ export function validateAdventureMapV2(map: AdventureMapV2) {
   if (!map.mapId?.trim()) errors.push('mapId ausente');
   if (!map.rooms.length) errors.push(`${map.mapId}: debe contener al menos una habitación`);
   const rooms = new Map<string, AdventureMapV2['rooms'][number]>();
+  const tiledAssets = new Map<string, AdventureMapV2['tiledMapAssets'][number]>();
+  const placements = new Set<string>();
   const transitions = new Set<string>();
+  for (const asset of map.tiledMapAssets) {
+    if (tiledAssets.has(asset.assetId)) errors.push(`${asset.assetId}: asset Tiled duplicado`);
+    tiledAssets.set(asset.assetId, asset);
+    if (!asset.path?.endsWith('.tmj')) errors.push(`${asset.assetId}: la ruta debe terminar en .tmj`);
+  }
   for (const room of map.rooms) {
     if (rooms.has(room.roomId)) errors.push(`${room.roomId}: habitación duplicada`);
     rooms.set(room.roomId, room);
     if (!room.tiledMapAssetId?.trim()) errors.push(`${room.roomId}: falta tiledMapAssetId`);
+    else if (!tiledAssets.has(room.tiledMapAssetId)) errors.push(`${room.roomId}: asset Tiled inexistente`);
     if (new Set(room.spawnAnchorIds).size !== room.spawnAnchorIds.length) {
       errors.push(`${room.roomId}: ancla de aparición duplicada`);
     }
+  }
+  for (const placement of map.actorPlacements) {
+    if (placements.has(placement.placementId)) errors.push(`${placement.placementId}: actor duplicado`);
+    placements.add(placement.placementId);
+    if (!rooms.has(placement.roomId)) errors.push(`${placement.placementId}: habitación inexistente`);
+    if (!placement.anchorId?.trim()) errors.push(`${placement.placementId}: ancla ausente`);
+    if (!map.requiredAssetIds.includes(placement.assetId)) {
+      errors.push(`${placement.placementId}: asset no declarado en requiredAssetIds`);
+    }
+    if (!placement.animation?.trim()) errors.push(`${placement.placementId}: animación ausente`);
   }
   for (const transition of map.transitions) {
     if (transitions.has(transition.transitionId)) errors.push(`${transition.transitionId}: transición duplicada`);

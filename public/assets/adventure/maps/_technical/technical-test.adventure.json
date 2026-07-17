@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "mapId": "map:technical:pmd-clearing",
+  "title": "Claro técnico PMD",
+  "tiledMapAssets": [
+    {
+      "schemaVersion": 1,
+      "assetId": "tiled-map:technical:clearing",
+      "path": "assets/adventure/maps/_technical/technical-clearing.tmj"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "tiled-map:technical:path",
+      "path": "assets/adventure/maps/_technical/technical-path.tmj"
+    }
+  ],
+  "rooms": [
+    {
+      "schemaVersion": 1,
+      "roomId": "room:technical:clearing",
+      "tiledMapAssetId": "tiled-map:technical:clearing",
+      "staticCamera": true,
+      "spawnAnchorIds": [
+        "anchor:technical:player-south",
+        "anchor:technical:clearing-east"
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "roomId": "room:technical:path",
+      "tiledMapAssetId": "tiled-map:technical:path",
+      "staticCamera": true,
+      "spawnAnchorIds": ["anchor:technical:path-west"]
+    }
+  ],
+  "actorPlacements": [
+    {
+      "schemaVersion": 1,
+      "placementId": "actor-placement:technical:rattata",
+      "roomId": "room:technical:clearing",
+      "anchorId": "anchor:technical:rattata-grass",
+      "assetId": "pmd:0019-rattata:default",
+      "animation": "Idle",
+      "direction": "down"
+    }
+  ],
+  "transitions": [
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:technical:clearing-to-path",
+      "kind": "edge",
+      "fromRoomId": "room:technical:clearing",
+      "fromAnchorId": "anchor:technical:clearing-east",
+      "toRoomId": "room:technical:path",
+      "toAnchorId": "anchor:technical:path-west",
+      "destinationFacing": "right"
+    },
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:technical:path-to-clearing",
+      "kind": "edge",
+      "fromRoomId": "room:technical:path",
+      "fromAnchorId": "anchor:technical:path-west",
+      "toRoomId": "room:technical:clearing",
+      "toAnchorId": "anchor:technical:clearing-east",
+      "destinationFacing": "left"
+    }
+  ],
+  "variants": [],
+  "missionIds": [],
+  "behaviorTriggers": [],
+  "expressionTriggers": [],
+  "rareEncounters": [],
+  "requiredAssetIds": ["pmd:0019-rattata:default"]
+}

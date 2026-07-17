@@ -1,0 +1,14 @@
+{
+  "columns": 4,
+  "image": "technical-tileset.svg",
+  "imageheight": 16,
+  "imagewidth": 64,
+  "margin": 0,
+  "name": "poke-voice-technical",
+  "spacing": 0,
+  "tilecount": 4,
+  "tileheight": 16,
+  "tilewidth": 16,
+  "type": "tileset",
+  "version": "1.10"
+}

@@ -1,0 +1,90 @@
+{
+  "compressionlevel": -1,
+  "height": 8,
+  "infinite": false,
+  "layers": [
+    {
+      "data": [
+        1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,
+        1,1,2,2,2,2,2,2,1,1,
+        1,1,2,2,2,2,2,2,1,1,
+        1,1,2,2,2,2,2,2,1,1,
+        1,1,2,2,2,2,2,2,1,1,
+        1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1
+      ],
+      "height": 8,
+      "id": 1,
+      "name": "Ground",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 10,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 2,
+      "name": "Collision",
+      "objects": [
+        { "class": "Collision", "height": 16, "id": 1, "name": "collision:technical-path:north", "rotation": 0, "visible": true, "width": 160, "x": 0, "y": 0 },
+        { "class": "Collision", "height": 16, "id": 2, "name": "collision:technical-path:south", "rotation": 0, "visible": true, "width": 160, "x": 0, "y": 112 },
+        { "class": "Collision", "height": 16, "id": 3, "name": "collision:technical-path:west-north", "rotation": 0, "visible": true, "width": 16, "x": 0, "y": 16 },
+        { "class": "Collision", "height": 16, "id": 4, "name": "collision:technical-path:west-south", "rotation": 0, "visible": true, "width": 16, "x": 0, "y": 96 },
+        { "class": "Collision", "height": 96, "id": 5, "name": "collision:technical-path:east", "rotation": 0, "visible": true, "width": 16, "x": 144, "y": 16 }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": false,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0
+      ],
+      "height": 8,
+      "id": 3,
+      "name": "Above",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 10,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 4,
+      "name": "Anchors",
+      "objects": [
+        { "class": "TransitionAnchor", "height": 64, "id": 6, "name": "anchor:technical:path-west", "rotation": 0, "visible": true, "width": 24, "x": 0, "y": 32 }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 5,
+  "nextobjectid": 7,
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "tiledversion": "1.11.2",
+  "tileheight": 16,
+  "tilesets": [{ "firstgid": 1, "source": "technical-tileset.tsj" }],
+  "tilewidth": 16,
+  "type": "map",
+  "version": "1.10",
+  "width": 10
+}

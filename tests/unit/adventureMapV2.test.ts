@@ -11,7 +11,9 @@ describe('mapas lógicos multihabitación', () => {
   it('detecta relaciones rotas sin depender de IDs numéricos de Tiled', () => {
     const broken: AdventureMapV2 = {
       ...CAMPHOR_FOREST_MAP,
+      tiledMapAssets: [...CAMPHOR_FOREST_MAP.tiledMapAssets],
       rooms: [...CAMPHOR_FOREST_MAP.rooms],
+      actorPlacements: [...CAMPHOR_FOREST_MAP.actorPlacements],
       transitions: [{
         schemaVersion: 1,
         transitionId: 'transition:test:stairs',
