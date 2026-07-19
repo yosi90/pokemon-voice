@@ -7,6 +7,7 @@ export function validateAdventureMapV2(map: AdventureMapV2) {
   const rooms = new Map<string, AdventureMapV2['rooms'][number]>();
   const tiledAssets = new Map<string, AdventureMapV2['tiledMapAssets'][number]>();
   const placements = new Set<string>();
+  const characterPlacements = new Set<string>();
   const transitions = new Set<string>();
   for (const asset of map.tiledMapAssets) {
     if (tiledAssets.has(asset.assetId)) errors.push(`${asset.assetId}: asset Tiled duplicado`);
@@ -31,6 +32,15 @@ export function validateAdventureMapV2(map: AdventureMapV2) {
       errors.push(`${placement.placementId}: asset no declarado en requiredAssetIds`);
     }
     if (!placement.animation?.trim()) errors.push(`${placement.placementId}: animación ausente`);
+  }
+  for (const placement of map.characterPlacements) {
+    if (characterPlacements.has(placement.placementId)) errors.push(`${placement.placementId}: personaje duplicado`);
+    characterPlacements.add(placement.placementId);
+    if (!rooms.has(placement.roomId)) errors.push(`${placement.placementId}: habitación inexistente`);
+    if (!placement.anchorId?.trim()) errors.push(`${placement.placementId}: ancla ausente`);
+    if (!map.requiredAssetIds.includes(placement.assetId)) {
+      errors.push(`${placement.placementId}: asset no declarado en requiredAssetIds`);
+    }
   }
   for (const transition of map.transitions) {
     if (transitions.has(transition.transitionId)) errors.push(`${transition.transitionId}: transición duplicada`);

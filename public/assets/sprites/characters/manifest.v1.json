@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "schemaVersion": 1,
+      "assetId": "character:trainer:achaman",
+      "role": "player",
+      "path": "assets/sprites/characters/achaman-walk.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "directionRows": { "down": 0, "left": 1, "right": 2, "up": 3 },
+      "idleFrame": 0,
+      "walkFrames": [0, 1, 2, 3],
+      "frameDurationMs": 140,
+      "renderScale": 0.6,
+      "source": "pack estructurado proporcionado por el usuario"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "character:trainer:guayota",
+      "role": "player",
+      "path": "assets/sprites/characters/guayota-walk.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 5,
+      "rows": 4,
+      "directionRows": { "down": 0, "left": 1, "right": 2, "up": 3 },
+      "idleFrame": 0,
+      "walkFrames": [0, 1, 2, 3, 4],
+      "frameDurationMs": 140,
+      "renderScale": 0.6,
+      "source": "pack estructurado proporcionado por el usuario"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "character:npc:professor-alcanfor-placeholder",
+      "role": "npc",
+      "path": "assets/sprites/characters/professor-alcanfor-placeholder.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "directionRows": { "down": 0, "left": 1, "right": 2, "up": 3 },
+      "idleFrame": 0,
+      "walkFrames": [0, 1, 2, 3],
+      "frameDurationMs": 160,
+      "renderScale": 0.6,
+      "source": "pack estructurado proporcionado por el usuario"
+    }
+  ]
+}

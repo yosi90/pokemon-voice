@@ -29,6 +29,8 @@ export interface PmdSpriteAssetV1 extends VersionedContractV1 {
   source: 'PMDCollab';
   basePath: string;
   shadowSize: number;
+  /** Escala visual común, curable por especie sin alterar el mapa. */
+  renderScale?: number;
   animations: PmdAnimationV1[];
   creditIds: StableId[];
 }
@@ -36,4 +38,25 @@ export interface PmdSpriteAssetV1 extends VersionedContractV1 {
 export interface PmdAnimationManifestV1 extends VersionedContractV1 {
   tickRate: 60;
   assets: PmdSpriteAssetV1[];
+}
+
+export interface CharacterSpriteAssetV1 extends VersionedContractV1 {
+  assetId: StableId;
+  role: 'player' | 'npc';
+  path: string;
+  frameWidth: number;
+  frameHeight: number;
+  columns: number;
+  rows: 4;
+  directionRows: Record<'down' | 'left' | 'right' | 'up', number>;
+  idleFrame: number;
+  walkFrames: number[];
+  frameDurationMs: number;
+  /** Escala visual curada; no altera el tamaño lógico de una celda. */
+  renderScale?: number;
+  source: string;
+}
+
+export interface CharacterSpriteManifestV1 extends VersionedContractV1 {
+  assets: CharacterSpriteAssetV1[];
 }

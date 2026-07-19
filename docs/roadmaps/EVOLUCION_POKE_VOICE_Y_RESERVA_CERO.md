@@ -673,15 +673,23 @@ Hito 10 finalizado el 18 de julio de 2026. El pipeline Tiled → validación cru
 
 ## Hito 11 — Manifiesto de assets
 
-- [ ] Crear una guía exacta para los assets que proporcionará el usuario.
+- [x] Crear una guía exacta para los assets que proporcionará el usuario.
 - [ ] Especificar tiles de agua, costa, árboles, hierba alta, caminos, cuevas, interiores, lluvia y obstáculos.
-- [ ] Especificar protagonista y protagonista femenina en cuatro direcciones y ciclos de movimiento.
+- [x] Especificar protagonista y protagonista femenina en cuatro direcciones y ciclos de movimiento.
 - [x] Especificar e integrar al profesor en retrato neutro, hablando y teniendo una idea.
 - [ ] Especificar NPC aldeano y elementos de suministros.
 - [ ] Especificar Pikachu, Snorlax, Charizard y Charmander en las poses necesarias para sus observaciones.
 - [ ] Relacionar cada pose solicitada con el dato de Pokédex que revelará.
-- [ ] Validar tamaños, transparencia, paleta, nombres de archivo y pivotes antes de integrarlos.
+- [x] Validar tamaños, transparencia, nombres de archivo y pivotes antes de integrar los primeros assets.
 - [ ] Importar todo mediante el editor para comprobar que el pipeline de assets funciona.
+
+Primera entrega del Hito 11 implementada el 19 de julio de 2026. La habitación `02-04` del Bosque de Tegueste sustituye al escenario técnico como prueba visual: conserva sus colisiones estáticas sin exigir IDs redundantes y clasifica 23 anclajes estables para jugador, profesor, transiciones, secretos y Pokémon. El sidecar coloca tres Rattata, dos Gyarados, Cramorant y Cottonee, manteniendo los Pineco ocultos hasta su futura escena. Achaman, Guayota y un Alcanfor provisional se normalizan en un manifiesto de personajes con frames, filas direccionales, pivote en los pies y ciclos de marcha; Phaser carga a Achaman y Alcanfor directamente desde esos datos. Los atlas irregulares con fondo magenta quedan como material fuente, no como assets de runtime.
+
+Segunda entrega del Hito 11 implementada el 19 de julio de 2026. La escala de protagonistas y NPC pasa a ser un dato curado del manifiesto y no una compensación dibujada en Tiled. Los Pokémon usan el centro de suelo declarado por el píxel blanco de cada hoja PMD `Shadow.png`, de modo que frames altos como Gyarados o con espacio transparente como Cramorant comparten la misma convención de ancla. Los `ActorAnchor` y `PlayerSpawn` de Tegueste quedan ajustados a la cuadrícula; el runtime admite como formato recomendado un rectángulo de 16×16 y toma su centro inferior. La prueba jugable añade siluetas para especies no registradas y movimiento cardinal en pasos indivisibles de 16 px.
+
+Tercera entrega del Hito 11 implementada el 19 de julio de 2026. La prueba adopta una carcasa inspirada en Nintendo DS que deja como únicos textos el título de misión y `Abandonar misión`; Enter permanece reservado al juego y no cierra el modal. Protagonistas y NPC quedan curados a escala `0.6`, mientras el manifiesto PMD aplica `renderScale: 0.8` de forma común a los Pokémon. El movimiento comprueba el destino completo antes de iniciar cada paso, por lo que una colisión o transición no disponible mantiene al personaje quieto sin invadir el obstáculo ni reproducir un retroceso. La pantalla superior respeta la proporción `3:2` de la habitación `30×20` sin bandas ni tiles de relleno. La inferior incorpora voz y fallback escrito contextuales: ambos resuelven nombres con el catálogo local completo, registran únicamente especies presentes en la habitación y colorean de inmediato todas sus instancias; cualquier Pokémon ausente se ignora sin modificar la Pokédex.
+
+Cuarta entrega del Hito 11 implementada el 19 de julio de 2026. NPC y Pokémon terrestres aportan una huella sólida de `16×16` centrada en sus pies y participan en la misma comprobación previa que los muros, sin rebotes ni invasión parcial. El sidecar puede declarar `collision: pass-through` para vuelo o levitación; Cottonee documenta la primera excepción, mientras Alcanfor y los otros seis Pokémon de la habitación bloquean el paso. El validador rechaza políticas desconocidas y Playwright comprueba el choque real del jugador contra Alcanfor. Los desplazamientos y secuencias automáticas de actores permanecen fuera de esta prueba y corresponden al Hito 12.
 
 ---
 

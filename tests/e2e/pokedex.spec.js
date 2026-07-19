@@ -219,7 +219,7 @@ test('filtra compañeros por categoría y conserva forma y apariencia selecciona
   ))).toBe(true);
 });
 
-test('carga la habitación Tiled con Phaser, Rattata, movimiento y colisiones', async ({ page }) => {
+test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisiones', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
@@ -232,62 +232,135 @@ test('carga la habitación Tiled con Phaser, Rattata, movimiento y colisiones', 
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
 
-  const preview = page.getByRole('dialog', { name: 'Claro técnico · Rattata Idle' });
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('status')).toHaveCount(0);
   const runtime = preview.getByTestId('technical-map-runtime');
   await expect(runtime).toHaveAttribute('data-runtime', 'ready');
-  await expect(runtime).toHaveAttribute('data-map-id', 'map:technical:pmd-clearing');
-  await expect(runtime).toHaveAttribute('data-actor-id', 'actor-placement:technical:rattata');
+  await expect(runtime).toHaveAttribute('data-map-id', 'map:tegueste:camphor-forest');
+  await expect(runtime).toHaveAttribute('data-room-id', 'room:tegueste-forest:02-04');
+  await expect(runtime).toHaveAttribute('data-actor-id', 'actor:rattata:left');
+  await expect(runtime).toHaveAttribute('data-actor-grounding', 'pmd-shadow');
+  await expect(runtime).toHaveAttribute('data-solid-actor-count', '7');
+  await expect(runtime).toHaveAttribute('data-player-asset-id', 'character:trainer:achaman');
+  await expect(runtime).toHaveAttribute('data-movement', 'grid');
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '7');
   await expect(runtime).toHaveAttribute('data-camera', 'static');
   await expect(runtime).toHaveAttribute('data-collision', 'arcade');
   await expect(runtime).toHaveAttribute('data-occlusion-layer', 'Above');
   await expect(runtime).toHaveAttribute('data-animation', 'playing');
   const canvas = runtime.locator('canvas');
   await expect(canvas).toHaveCount(1);
-  await expect(canvas).toHaveAttribute('width', '160');
-  await expect(canvas).toHaveAttribute('height', '128');
+  await expect(canvas).toHaveAttribute('width', '480');
+  await expect(canvas).toHaveAttribute('height', '320');
   const initialFrameChanges = Number(await runtime.getAttribute('data-actor-frame-changes'));
   await expect.poll(async () => Number(await runtime.getAttribute('data-actor-frame-changes')), {
-    intervals: [50],
-    timeout: 2000,
+    intervals: [100],
+    timeout: 6000,
   }).toBeGreaterThan(initialFrameChanges);
+
+  await page.keyboard.down('ArrowRight');
+  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThan(184);
+  await page.keyboard.up('ArrowRight');
+  await expect(runtime).toHaveAttribute('data-step', 'idle');
+  expect(Number(await runtime.getAttribute('data-player-x'))).toBe(200);
+  await page.keyboard.down('ArrowUp');
+  await expect.poll(async () => Number(await runtime.getAttribute('data-player-y')), {
+    intervals: [100],
+    timeout: 4000,
+  }).toBe(176);
+  await page.waitForTimeout(250);
+  expect(Number(await runtime.getAttribute('data-player-y'))).toBe(176);
+  await page.keyboard.up('ArrowUp');
+
+  await preview.getByRole('button', { name: 'Abandonar misión' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
 
   const initialX = Number(await runtime.getAttribute('data-player-x'));
   await page.keyboard.down('ArrowLeft');
   await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeLessThan(initialX);
-  await page.waitForTimeout(1400);
+  await page.waitForTimeout(500);
+  const blockedX = Number(await runtime.getAttribute('data-player-x'));
+  await page.waitForTimeout(250);
+  expect(Number(await runtime.getAttribute('data-player-x'))).toBe(blockedX);
+  await expect(runtime).toHaveAttribute('data-last-blocked-step', 'preflight');
   await page.keyboard.up('ArrowLeft');
-  expect(Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThanOrEqual(20);
+  await expect(runtime).toHaveAttribute('data-step', 'idle');
+  expect(Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThanOrEqual(0);
+  expect((Number(await runtime.getAttribute('data-player-x')) - 8) % 16).toBe(0);
 
+  const initialY = Number(await runtime.getAttribute('data-player-y'));
   await page.keyboard.down('ArrowUp');
-  await expect.poll(async () => Number(await runtime.getAttribute('data-player-y'))).toBeLessThanOrEqual(70);
+  await expect.poll(async () => Number(await runtime.getAttribute('data-player-y'))).toBeLessThan(initialY);
   await page.keyboard.up('ArrowUp');
-  if (Number(await runtime.getAttribute('data-player-y')) < 56) {
-    await page.keyboard.down('ArrowDown');
-    await expect.poll(async () => Number(await runtime.getAttribute('data-player-y'))).toBeGreaterThanOrEqual(58);
-    await page.keyboard.up('ArrowDown');
-  }
-  await page.keyboard.down('ArrowRight');
-  await expect.poll(() => runtime.getAttribute('data-room-id'), { timeout: 4000 })
-    .toBe('room:technical:path');
-  await page.keyboard.up('ArrowRight');
-  await expect(runtime).toHaveAttribute('data-transition-count', '1');
-  await expect(runtime).toHaveAttribute('data-last-transition-id', 'transition:technical:clearing-to-path');
-  await expect(runtime).toHaveAttribute('data-actor-id', '');
-  await expect(runtime).toHaveAttribute('data-animation', 'none');
-  expect(Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThan(16);
+  await expect(runtime).toHaveAttribute('data-step', 'idle');
+  expect(Number(await runtime.getAttribute('data-player-y')) % 16).toBe(0);
+  await expect(runtime).toHaveAttribute('data-transition-count', '0');
 
-  await page.keyboard.down('ArrowLeft');
-  await expect.poll(() => runtime.getAttribute('data-room-id'), { timeout: 4000 })
-    .toBe('room:technical:clearing');
-  await page.keyboard.up('ArrowLeft');
-  await expect(runtime).toHaveAttribute('data-transition-count', '2');
-  await expect(runtime).toHaveAttribute('data-actor-id', 'actor-placement:technical:rattata');
-  await expect(runtime).toHaveAttribute('data-animation', 'playing');
-
-  await page.keyboard.press('Escape');
+  await page.keyboard.press('Enter');
+  await expect(preview).toBeVisible();
+  await preview.getByRole('button', { name: 'Abandonar misión' }).click();
   await expect(preview).toHaveCount(0);
+});
+
+test('voz y texto de expedición solo identifican especies presentes en la habitación', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__mapSpeechInstances = [];
+    class FakeSpeechRecognition {
+      constructor() { window.__mapSpeechInstances.push(this); }
+      start() { this.started = true; }
+      stop() { this.started = false; this.onend?.(); }
+      emit(transcript) {
+        const result = [{ transcript, confidence: 1 }];
+        result.isFinal = true;
+        this.onresult?.({ resultIndex: 0, results: [result] });
+      }
+    }
+    window.SpeechRecognition = FakeSpeechRecognition;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }) },
+    });
+  });
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  const runtime = preview.getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await preview.getByRole('button', { name: 'Identificar Pokémon por voz' }).click();
+  await expect(preview.getByRole('button', { name: 'Detener identificación por voz' })).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => window.__mapSpeechInstances[0].emit('rattata'));
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '4');
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds
+  ))).toContain(19);
+
+  const writtenName = preview.getByLabel('Nombre del Pokémon visible');
+  await writtenName.fill('cottonee');
+  await writtenName.press('Enter');
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '3');
+  await expect.poll(() => page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds
+  ))).toContain(546);
+
+  await writtenName.fill('pikachu');
+  await writtenName.press('Enter');
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds
+  ))).not.toContain(25);
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '3');
 });
 
 test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan', async ({ page }) => {

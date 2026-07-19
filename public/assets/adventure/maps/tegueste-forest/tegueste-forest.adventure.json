@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "mapId": "map:tegueste:camphor-forest",
+  "title": "Bosque de Tegueste",
+  "tiledMapAssets": [{
+    "schemaVersion": 1,
+    "assetId": "tiled-map:tegueste-forest:02-04",
+    "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-02-04.tmj"
+  }],
+  "rooms": [{
+    "schemaVersion": 1,
+    "roomId": "room:tegueste-forest:02-04",
+    "tiledMapAssetId": "tiled-map:tegueste-forest:02-04",
+    "staticCamera": true,
+    "spawnAnchorIds": [
+      "anchor:player:entrance-south",
+      "anchor:transition:east",
+      "anchor:transition:north",
+      "anchor:transition:south"
+    ]
+  }],
+  "actorPlacements": [
+    { "schemaVersion": 1, "placementId": "actor:rattata:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:left", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "right" },
+    { "schemaVersion": 1, "placementId": "actor:rattata:middle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:middle", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "up" },
+    { "schemaVersion": 1, "placementId": "actor:rattata:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:right", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "left" },
+    { "schemaVersion": 1, "placementId": "actor:gyarados:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:left", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "right" },
+    { "schemaVersion": 1, "placementId": "actor:gyarados:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:right", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "left" },
+    { "schemaVersion": 1, "placementId": "actor:cramorant", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cramorant", "assetId": "pmd:0845-cramorant:default", "animation": "Idle", "direction": "down" },
+    { "schemaVersion": 1, "placementId": "actor:cottonee", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cottonee", "assetId": "pmd:0546-cottonee:default", "animation": "Idle", "direction": "down", "collision": "pass-through" }
+  ],
+  "characterPlacements": [
+    { "schemaVersion": 1, "placementId": "character:player", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:player:entrance-south", "assetId": "character:trainer:achaman", "direction": "up", "controllable": true },
+    { "schemaVersion": 1, "placementId": "character:professor-alcanfor", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor", "assetId": "character:npc:professor-alcanfor-placeholder", "direction": "down" }
+  ],
+  "transitions": [],
+  "variants": [],
+  "missionIds": ["mission:tegueste:help-professor-camphor"],
+  "behaviorTriggers": [],
+  "expressionTriggers": [],
+  "rareEncounters": [],
+  "requiredAssetIds": [
+    "pmd:0019-rattata:default",
+    "pmd:0130-gyarados:default",
+    "pmd:0546-cottonee:default",
+    "pmd:0845-cramorant:default",
+    "pmd:0204-pineco:default",
+    "character:trainer:achaman",
+    "character:npc:professor-alcanfor-placeholder"
+  ]
+}

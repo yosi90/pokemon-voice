@@ -16,6 +16,7 @@ export type CompanionTriggerMode = 'prompt' | 'automatic' | 'ambient';
 export type CompanionTriggerRepeatPolicy = 'oncePerVisit' | 'persistent' | 'repeatable';
 export type ExpressionInputMethod = 'voice' | 'text' | 'contextAction';
 export type ExpressionIntent = 'compliment' | 'calm' | 'warn' | 'sing' | 'custom';
+export type AdventureActorCollision = 'solid' | 'pass-through';
 
 export interface AdventureTileLayerV1 {
   layerId: StableId;
@@ -93,6 +94,19 @@ export interface AdventureActorPlacementV1 extends VersionedContractV1 {
   assetId: StableId;
   animation: string;
   direction?: 'up' | 'down' | 'left' | 'right';
+  /** Los actores terrestres son sólidos por defecto; declarar pass-through para vuelo o levitación. */
+  collision?: AdventureActorCollision;
+}
+
+export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
+  placementId: StableId;
+  roomId: StableId;
+  anchorId: StableId;
+  assetId: StableId;
+  direction?: 'up' | 'down' | 'left' | 'right';
+  controllable?: true;
+  /** Los NPC son sólidos por defecto. */
+  collision?: AdventureActorCollision;
 }
 
 export interface RoomTransitionV1 extends VersionedContractV1 {
@@ -114,6 +128,7 @@ export interface AdventureMapV2 {
   tiledMapAssets: TiledMapAssetReferenceV1[];
   rooms: AdventureRoomV1[];
   actorPlacements: AdventureActorPlacementV1[];
+  characterPlacements: AdventureCharacterPlacementV1[];
   transitions: RoomTransitionV1[];
   variants: MapVariantV1[];
   missionIds: StableId[];

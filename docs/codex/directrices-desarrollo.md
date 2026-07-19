@@ -69,14 +69,36 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - Nunca relacionar sidecar y Tiled mediante los IDs numéricos internos de Tiled; usar el nombre estable del objeto.
 - Phaser solo se importa al abrir una misión o previsualización; no incluirlo en el bundle inicial de la Pokédex.
 - Los tilesets externos `.tsj` se conservan como fuente y se incorporan en memoria antes de entregarlos al parser de Phaser.
+- El movimiento cardinal comprueba la huella de destino antes de iniciar cada paso de 16 px. Una colisión bloqueada no debe comenzar una interpolación ni corregirse mediante retroceso visual.
+- La identificación dentro de una expedición resuelve nombres contra el catálogo local completo y después restringe el resultado a las especies presentes en la habitación. Nombrar una especie ausente no modifica la run ni muestra un error.
+- Voz y texto reutilizan el mismo resolutor contextual dentro de una expedición. La pantalla del runtime debe ofrecer siempre el fallback escrito sin transferir sus pulsaciones al movimiento del canvas.
+- La pantalla conserva la proporción real de la habitación; no se ensancha un mapa ni se añaden tiles de relleno para adaptarlo a la carcasa de la interfaz.
+- Los NPC y Pokémon colocados son sólidos por defecto con una huella de un tile centrada en sus pies. Vuelo, levitación u otros actores atravesables deben declarar `collision: pass-through` en el sidecar; nunca se infiere por el tamaño o el dibujo del sprite.
+
+## Sidewebs de desarrollo
+
+- Las herramientas auxiliares viven bajo `tools/<nombre>/index.html` como entradas independientes de Vite y su código bajo `src/sidewebs/<nombre>/`.
+- Deben reutilizar los catálogos y contratos locales del juego; no mantener copias paralelas ni depender de PokeAPI durante la ejecución para decidir resultados.
+- No deben añadir navegación ni peso al bundle inicial de Poke-Voice salvo que exista una necesidad explícita dentro del juego.
 
 ## Sprites de expedición PMD
 
 - Conservar los paquetes originales bajo `public/assets/sprites/pokemon/pmd/<numero>-<slug>/<forma>/`.
 - No renombrar `AnimData.xml` ni las hojas `*-Anim.png`, `*-Offsets.png` y `*-Shadow.png`; el importador resolverá las animaciones mediante sus nombres PMD.
 - Leer dimensiones, copias, puntos de impacto y duraciones desde `AnimData.xml` en lugar de duplicarlas manualmente en componentes.
+- Usar el píxel blanco de `*-Shadow.png` como pivote de suelo de cada animación; no usar el borde del frame ni compensaciones manuales en el mapa.
 - Mantener el pixel art sin suavizado y respetar `prefers-reduced-motion` en cualquier previsualización HTML.
 - Registrar por separado la atribución indicada por PMDCollab para cada especie o forma antes de publicar sus sprites.
+
+## Sprites de protagonistas y NPC
+
+- Guardar las hojas normalizadas de runtime en `public/assets/sprites/characters/` y declararlas en `manifest.v1.json`.
+- Usar PNG transparente dividido en frames regulares. El formato inicial es 32×48 px por frame, con una fila por dirección en el orden abajo, izquierda, derecha y arriba.
+- El número de columnas puede variar entre hojas; `columns`, `walkFrames` e `idleFrame` deben declararlo explícitamente en el manifiesto.
+- El pivote visual y la colisión se sitúan en los pies. No añadir margen inferior que desplace artificialmente al personaje respecto al ancla de Tiled.
+- La escala visual se declara mediante `renderScale` en el manifiesto; nunca se corrige agrandando o reduciendo el ancla en Tiled.
+- Los manifiestos PMD también admiten `renderScale`; el generador conserva actualmente `0.8` como escala común y cualquier excepción futura deberá declararse en datos, no en el runtime.
+- Los atlas recopilatorios irregulares o con fondo magenta pueden conservarse como material fuente, pero no deben cargarse directamente en Phaser.
 
 ## Pruebas
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Dock } from './components/Dock.jsx';
 import { DelibirdMode } from './components/DelibirdMode.jsx';
 import { AchievementsDrawer, AchievementToasts } from './components/AchievementUi.js';
@@ -34,6 +34,12 @@ import {
   getModeDefinition,
 } from './domain/modes/modeDefinitions.ts';
 import { deleteAllBrowserPokeVoiceData, getBrowserPokeVoiceSave } from './store/browserPokeVoiceSaveStore.js';
+import { browserDiscoveryStore } from './store/browserDiscoveryStore.ts';
+import { LOCAL_POKEMON_CATALOG } from './services/pokemonCatalog.ts';
+import { createPokemonNameIndex, resolveGuessTranscript } from './domain/discovery/resolvePokemonGuess.ts';
+import { toLegacyPokemonList } from './domain/catalog/pokemonCatalogModel.ts';
+
+const localPokemonNameIndex = createPokemonNameIndex(toLegacyPokemonList(LOCAL_POKEMON_CATALOG));
 
 function formatTimer(left) {
   const safe = Math.max(0, Math.round(left || 0));
@@ -50,7 +56,26 @@ export default function App() {
   const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
   const [professorMissionsOpen, setProfessorMissionsOpen] = useState(false);
   const [mapConceptPreviewOpen, setMapConceptPreviewOpen] = useState(false);
+  const [mapVisibleSpeciesIds, setMapVisibleSpeciesIds] = useState([]);
   const game = usePokemonGame();
+  const resolveMapPokemon = useCallback((raw, { fromSpeech = false } = {}) => (
+    resolveGuessTranscript(raw, localPokemonNameIndex, new Set(mapVisibleSpeciesIds), { fromSpeech })
+  ), [mapVisibleSpeciesIds]);
+  const identifyMapPokemon = useCallback(async (raw, { fromSpeech = false } = {}) => {
+    const result = resolveMapPokemon(raw, { fromSpeech });
+    if (!result.matched) return false;
+    const visible = new Set(mapVisibleSpeciesIds);
+    const candidates = result.sequence.filter(speciesId => visible.has(speciesId));
+    if (!candidates.length) return true;
+    for (const speciesId of candidates) {
+      const discovered = browserDiscoveryStore.discover(speciesId);
+      if (discovered) {
+        const name = game.allPokemon.find(pokemon => pokemon.id === speciesId)?.name ?? raw;
+        game.showToast(`¡${name} identificado en la expedición!`, 'ok');
+      }
+    }
+    return true;
+  }, [game.allPokemon, game.showToast, resolveMapPokemon]);
   const whosThatPokemon = useWhosThatPokemonMode({
     resolveGuess: game.tryGuessTranscript,
     discoverPokemon: game.discoverPokemon,
@@ -69,14 +94,16 @@ export default function App() {
   });
   const speech = useSpeechRecognition({
     allPokemon: game.allPokemon,
-    guess: dailyTrivia.active
+    guess: mapConceptPreviewOpen
+      ? identifyMapPokemon
+      : dailyTrivia.active
       ? dailyTrivia.submitAnswer
       : themedChallenges.active
         ? themedChallenges.submitAnswer
         : whosThatPokemon.active
           ? whosThatPokemon.submitAnswer
           : game.guess,
-    tryGuessTranscript: game.tryGuessTranscript,
+    tryGuessTranscript: mapConceptPreviewOpen ? resolveMapPokemon : game.tryGuessTranscript,
     showToast: game.showToast,
   });
   const narrativeCanPresent = !game.timer
@@ -330,7 +357,19 @@ export default function App() {
         }}
         onClose={() => setProfessorMissionsOpen(false)}
       />
-      <MapConceptPreview open={mapConceptPreviewOpen && !professor.active} onClose={() => setMapConceptPreviewOpen(false)} />
+      <MapConceptPreview
+        open={mapConceptPreviewOpen && !professor.active}
+        listening={speech.listening}
+        speechSupported={speech.speechSupported}
+        onMic={toggleMic}
+        onIdentifyText={identifyMapPokemon}
+        onVisibleSpeciesIdsChange={setMapVisibleSpeciesIds}
+        onClose={() => {
+          speech.stopListening();
+          setMapVisibleSpeciesIds([]);
+          setMapConceptPreviewOpen(false);
+        }}
+      />
       <NarrativeScene
         open={professor.active}
         sequence={professor.activeSequence}

@@ -39,6 +39,7 @@ export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
     ],
   }],
   actorPlacements: [],
+  characterPlacements: [],
   transitions: [],
   variants: [],
   missionIds: [CAMPHOR_PROLOGUE_MISSION_ID],

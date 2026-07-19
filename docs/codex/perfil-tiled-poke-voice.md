@@ -27,7 +27,7 @@ El campo `name` de Tiled es el identificador estable. El ID numérico de Tiled n
 
 Clases admitidas en `Collision`:
 
-- `Collision`: rectángulo o polígono que bloquea el movimiento.
+- `Collision`: rectángulo o polígono que bloquea el movimiento. Las colisiones estáticas no necesitan nombre ni clase individual; solo los obstáculos persistentes o referenciados desde el sidecar requieren un ID estable.
 
 Clases admitidas en `Anchors`:
 
@@ -44,6 +44,8 @@ Prefijos recomendados:
 - `collision:<mapa>:<zona>` para colisiones.
 
 Todos los objetos deben tener un nombre único dentro de la habitación. Las coordenadas pertenecen exclusivamente a Tiled; el sidecar solo conserva el identificador estable.
+
+Para colocar protagonistas, NPC y Pokémon se recomienda dibujar un rectángulo de 16×16 exactamente sobre la celda que ocupan. El runtime interpreta su centro inferior como el punto de suelo. También se admite un objeto de punto, pero debe colocarse en el centro inferior de la celda con el ajuste a cuadrícula activo. El ancla nunca compensa el tamaño o el espacio transparente del sprite: el manifiesto de personajes y las hojas `Shadow.png` de PMD resuelven automáticamente escala y pivote.
 
 ## Sidecar de aventura
 

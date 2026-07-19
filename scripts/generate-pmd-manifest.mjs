@@ -133,6 +133,7 @@ const assets = readdirSync(spriteRoot, { withFileTypes: true })
           source: 'PMDCollab',
           basePath: publicPath(formDirectory),
           shadowSize: parsed.shadowSize,
+          renderScale: 0.8,
           animations: parsed.animations,
           creditIds: [],
         };

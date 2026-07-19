@@ -57,6 +57,15 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
   const speechRestartDelayRef = useRef(350);
   const speechFatalRef = useRef(false);
   const listeningRef = useRef(false);
+  const guessRef = useRef(guess);
+  const tryGuessTranscriptRef = useRef(tryGuessTranscript);
+
+  // SpeechRecognition conserva sus callbacks durante toda la sesión. Actualizar
+  // estas referencias durante el render evita que un resultado que llegue justo
+  // después de cambiar de contexto (por ejemplo, al abrir una expedición) use el
+  // handler anterior de la Pokédex general.
+  guessRef.current = guess;
+  tryGuessTranscriptRef.current = tryGuessTranscript;
 
   useEffect(() => {
     listeningRef.current = listening;
@@ -90,16 +99,16 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
       const candidates = alternatives.map(a => (a.transcript || '').trim()).filter(Boolean);
       if (!candidates.length) continue;
       setVoiceStatus({ message: `Oído: ${candidates[0]}`, kind: 'info' });
-      const selected = candidates.find(transcript => tryGuessTranscript(transcript, { fromSpeech: true }).matched);
+      const selected = candidates.find(transcript => tryGuessTranscriptRef.current(transcript, { fromSpeech: true }).matched);
       if (selected) {
         setVoiceStatus({ message: `Usando: ${selected}`, kind: 'ok' });
-        await guess(selected, { fromSpeech: true });
+        await guessRef.current(selected, { fromSpeech: true });
         continue;
       }
       const fused = candidates.join(' ');
-      if (tryGuessTranscript(fused, { fromSpeech: true }).matched) {
+      if (tryGuessTranscriptRef.current(fused, { fromSpeech: true }).matched) {
         setVoiceStatus({ message: `Usando: ${fused}`, kind: 'ok' });
-        await guess(fused, { fromSpeech: true });
+        await guessRef.current(fused, { fromSpeech: true });
         continue;
       }
       setVoiceStatus({ message: `No reconocido: ${candidates[0]}`, kind: 'bad' });
@@ -108,7 +117,7 @@ export function useSpeechRecognition({ allPokemon, guess, tryGuessTranscript, sh
         await ACV.registerFail();
       } catch {}
     }
-  }, [guess, showToast, tryGuessTranscript]);
+  }, [showToast]);
 
   const initSpeech = useCallback(() => {
     const SR = getSpeechRecognitionCtor();

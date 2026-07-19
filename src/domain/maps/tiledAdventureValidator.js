@@ -50,20 +50,21 @@ function validateTiledRoom(assetId, tiled) {
   const names = new Set();
   const anchors = new Map();
   for (const object of objects) {
-    if (!object.name?.trim()) {
-      errors.push(`${assetId}: objeto de ${object.layerName} sin nombre estable`);
-      continue;
-    }
-    if (names.has(object.name)) errors.push(`${assetId}: objeto duplicado ${object.name}`);
-    names.add(object.name);
     const klass = objectClass(object);
     if (object.layerName === 'Collision') {
-      if (klass !== 'Collision') errors.push(`${assetId}: ${object.name} debe usar la clase Collision`);
+      const label = object.name?.trim() || `colisión #${object.id ?? '?'}`;
+      if (klass && klass !== 'Collision') errors.push(`${assetId}: ${label} usa una clase distinta de Collision`);
       if (!(object.polygon || (object.width > 0 && object.height > 0))) {
-        errors.push(`${assetId}: ${object.name} necesita rectángulo o polígono de colisión`);
+        errors.push(`${assetId}: ${label} necesita rectángulo o polígono de colisión`);
       }
     }
     if (object.layerName === 'Anchors') {
+      if (!object.name?.trim()) {
+        errors.push(`${assetId}: objeto de Anchors sin nombre estable`);
+        continue;
+      }
+      if (names.has(object.name)) errors.push(`${assetId}: objeto duplicado ${object.name}`);
+      names.add(object.name);
       if (!anchorClassSet.has(klass)) errors.push(`${assetId}: clase de ancla desconocida ${klass || '(vacía)'}`);
       else {
         if (klass === 'TransitionAnchor' && !(object.width > 0 && object.height > 0)) {
@@ -76,7 +77,7 @@ function validateTiledRoom(assetId, tiled) {
   return { errors, anchors };
 }
 
-export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest }) {
+export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest, characterManifest }) {
   const errors = [];
   const rooms = new Map((adventure.rooms ?? []).map(room => [room.roomId, room]));
   const tiledAssets = new Map();
@@ -108,10 +109,14 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   }
 
   const pmdAssets = new Map((pmdManifest?.assets ?? []).map(asset => [asset.assetId, asset]));
+  const characterAssets = new Map((characterManifest?.assets ?? []).map(asset => [asset.assetId, asset]));
   const placements = new Set();
   for (const placement of adventure.actorPlacements ?? []) {
     if (placements.has(placement.placementId)) errors.push(`${placement.placementId}: colocación duplicada`);
     placements.add(placement.placementId);
+    if (placement.collision && !['solid', 'pass-through'].includes(placement.collision)) {
+      errors.push(`${placement.placementId}: colisión de actor desconocida ${placement.collision}`);
+    }
     if (!rooms.has(placement.roomId)) {
       errors.push(`${placement.placementId}: habitación inexistente`);
       continue;
@@ -128,6 +133,35 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
       errors.push(`${placement.placementId}: animación inexistente ${placement.animation}`);
     }
   }
+
+  const characterPlacements = new Set();
+  let controllableCount = 0;
+  for (const placement of adventure.characterPlacements ?? []) {
+    if (characterPlacements.has(placement.placementId)) errors.push(`${placement.placementId}: personaje duplicado`);
+    characterPlacements.add(placement.placementId);
+    if (placement.collision && !['solid', 'pass-through'].includes(placement.collision)) {
+      errors.push(`${placement.placementId}: colisión de personaje desconocida ${placement.collision}`);
+    }
+    if (!rooms.has(placement.roomId)) {
+      errors.push(`${placement.placementId}: habitación inexistente`);
+      continue;
+    }
+    const anchor = roomAnchors.get(placement.roomId)?.get(placement.anchorId);
+    if (!anchor) errors.push(`${placement.placementId}: ancla inexistente ${placement.anchorId}`);
+    else if (placement.controllable && anchor.class !== 'PlayerSpawn') {
+      errors.push(`${placement.placementId}: el personaje controlable necesita PlayerSpawn`);
+    } else if (!placement.controllable && anchor.class !== 'ActorAnchor') {
+      errors.push(`${placement.placementId}: ${placement.anchorId} no es ActorAnchor`);
+    }
+    if (!(adventure.requiredAssetIds ?? []).includes(placement.assetId)) {
+      errors.push(`${placement.placementId}: asset ausente en requiredAssetIds`);
+    }
+    if (!characterAssets.has(placement.assetId)) {
+      errors.push(`${placement.placementId}: asset de personaje inexistente ${placement.assetId}`);
+    }
+    if (placement.controllable) controllableCount += 1;
+  }
+  if (controllableCount > 1) errors.push(`${adventure.mapId}: solo puede existir un personaje controlable por habitación`);
 
   for (const transition of adventure.transitions ?? []) {
     const from = roomAnchors.get(transition.fromRoomId)?.get(transition.fromAnchorId);

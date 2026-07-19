@@ -253,7 +253,7 @@ test('selector de acompañante de Poke-Discover', async ({ page }) => {
   });
 });
 
-test('Rattata Idle en la habitación técnica de Phaser', async ({ page }) => {
+test('primera habitación del Bosque de Tegueste en Phaser', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await mockPokemonApi(page);
   await page.goto('/');
@@ -272,7 +272,7 @@ test('Rattata Idle en la habitación técnica de Phaser', async ({ page }) => {
   if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
-  const preview = page.getByRole('dialog', { name: 'Claro técnico · Rattata Idle' });
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('status')).toHaveCount(0);
   const runtime = preview.getByTestId('technical-map-runtime');
@@ -280,7 +280,7 @@ test('Rattata Idle en la habitación técnica de Phaser', async ({ page }) => {
   await expect(runtime).toHaveAttribute('data-animation', 'paused');
   await page.evaluate(() => document.fonts.ready);
 
-  await expect(page).toHaveScreenshot('rattata-map-preview.png', {
+  await expect(page).toHaveScreenshot('tegueste-forest-preview.png', {
     animations: 'disabled',
     caret: 'hide',
     fullPage: false,

@@ -1,5 +1,7 @@
 import type {
   AdventureMapV2,
+  CharacterSpriteAssetV1,
+  CharacterSpriteManifestV1,
   PmdAnimationManifestV1,
   PmdSpriteAssetV1,
 } from '../../../packages/contracts/src/index.js';
@@ -23,12 +25,14 @@ export interface LoadedAdventureRoomBundle {
   tilesets: LoadedTiledTileset[];
   pmdManifest: PmdAnimationManifestV1;
   actorAssets: Map<string, PmdSpriteAssetV1>;
+  characterAssets: Map<string, CharacterSpriteAssetV1>;
 }
 
 export interface LoadedAdventureMapBundle {
   adventure: AdventureMapV2;
   rooms: LoadedAdventureRoomBundle[];
   pmdManifest: PmdAnimationManifestV1;
+  characterManifest: CharacterSpriteManifestV1;
 }
 
 function assetUrl(path: string, baseUrl: string) {
@@ -95,11 +99,12 @@ export async function loadAdventureMapBundle({
   baseUrl: string;
 }): Promise<LoadedAdventureMapBundle> {
   const adventure = await fetchJson<AdventureMapV2>(assetUrl(adventurePath, baseUrl));
-  const pmdManifest = await fetchJson<PmdAnimationManifestV1>(assetUrl(
-    'assets/sprites/pokemon/pmd/manifest.v1.json',
-    baseUrl,
-  ));
+  const [pmdManifest, characterManifest] = await Promise.all([
+    fetchJson<PmdAnimationManifestV1>(assetUrl('assets/sprites/pokemon/pmd/manifest.v1.json', baseUrl)),
+    fetchJson<CharacterSpriteManifestV1>(assetUrl('assets/sprites/characters/manifest.v1.json', baseUrl)),
+  ]);
   const pmdById = new Map(pmdManifest.assets.map(asset => [asset.assetId, asset]));
+  const charactersById = new Map(characterManifest.assets.map(asset => [asset.assetId, asset]));
   const rooms = await Promise.all(adventure.rooms.map(async room => {
     const tiledReference = adventure.tiledMapAssets
       .find(candidate => candidate.assetId === room.tiledMapAssetId);
@@ -116,6 +121,12 @@ export async function loadAdventureMapBundle({
       }
       actorAssets.set(asset.assetId, asset);
     }
+    const characterAssets = new Map<string, CharacterSpriteAssetV1>();
+    for (const placement of adventure.characterPlacements.filter(item => item.roomId === room.roomId)) {
+      const asset = charactersById.get(placement.assetId);
+      if (!asset) throw new Error(`Asset de personaje inexistente: ${placement.assetId}.`);
+      characterAssets.set(asset.assetId, asset);
+    }
     return {
       adventure,
       room,
@@ -123,12 +134,14 @@ export async function loadAdventureMapBundle({
       tilesets: resolved.tilesets,
       pmdManifest,
       actorAssets,
+      characterAssets,
     };
   }));
   return {
     adventure,
     rooms,
     pmdManifest,
+    characterManifest,
   };
 }
 
