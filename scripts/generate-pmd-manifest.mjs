@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PNG } from 'pngjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const spriteRoot = join(root, 'public', 'assets', 'sprites', 'pokemon', 'pmd');
@@ -31,6 +32,25 @@ function pngSize(path) {
 
 function publicPath(path) {
   return relative(join(root, 'public'), path).split(sep).join('/');
+}
+
+function readGroundOrigins(shadowSheetPath, frameWidth, frameHeight, directionCount) {
+  const png = PNG.sync.read(readFileSync(shadowSheetPath));
+  return Array.from({ length: directionCount }, (_, directionIndex) => {
+    const rowStart = directionIndex * frameHeight;
+    for (let y = 0; y < frameHeight; y += 1) {
+      for (let x = 0; x < frameWidth; x += 1) {
+        const pixel = ((rowStart + y) * png.width + x) * 4;
+        if (png.data[pixel] === 255
+          && png.data[pixel + 1] === 255
+          && png.data[pixel + 2] === 255
+          && png.data[pixel + 3] === 255) {
+          return { x: x / frameWidth, y: y / frameHeight };
+        }
+      }
+    }
+    return { x: .5, y: 1 };
+  });
 }
 
 function readAnimations(formDirectory) {
@@ -100,6 +120,7 @@ function readAnimations(formDirectory) {
       frameCount,
       directionCount,
       durationTicks,
+      groundOrigins: readGroundOrigins(shadowSheet, frameWidth, frameHeight, directionCount),
       ...(animation.copyOf ? { copyOf: animation.copyOf } : {}),
       animationSheetPath: publicPath(animationSheet),
       offsetsSheetPath: publicPath(offsetsSheet),

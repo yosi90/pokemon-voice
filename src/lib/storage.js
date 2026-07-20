@@ -1,5 +1,5 @@
 import { LS_CARD_SCALE, LS_KEY } from '../../scripts/utils.js';
-import { CARD_SIZE_DEFAULT, CARD_SIZE_MAX, CARD_SIZE_MIN } from './constants.js';
+import { normalizeCardSize } from '../domain/progress/pokeVoiceSave.js';
 
 export function readJson(key, fallback) {
   try {
@@ -12,10 +12,7 @@ export function readJson(key, fallback) {
 
 export function readCardSize() {
   const saved = Number(localStorage.getItem(LS_CARD_SCALE));
-  if (!Number.isFinite(saved)) return CARD_SIZE_DEFAULT;
-  if (saved > 0 && saved <= 2) return CARD_SIZE_DEFAULT;
-  if (saved < 112) return CARD_SIZE_DEFAULT;
-  return Math.min(CARD_SIZE_MAX, Math.max(CARD_SIZE_MIN, saved));
+  return normalizeCardSize(saved);
 }
 
 export function saveGuessed(next) {

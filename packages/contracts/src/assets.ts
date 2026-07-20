@@ -13,6 +13,8 @@ export interface PmdAnimationV1 {
   frameCount: number;
   directionCount: number;
   durationTicks: number[];
+  /** Pivote de suelo normalizado del primer frame de cada dirección, calculado al generar el manifiesto. */
+  groundOrigins: Array<{ x: number; y: number }>;
   copyOf?: string;
   animationSheetPath: string;
   offsetsSheetPath: string;

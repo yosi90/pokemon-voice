@@ -60,6 +60,7 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - `tile` designa exclusivamente una celda de 16×16; cada pantalla estática jugable se denomina `room` o habitación.
 - `AdventureMapV2` agrupa habitaciones Tiled y transiciones por borde, escalera, puerta o teletransporte sin duplicar geometría en el sidecar.
 - Una expedición exige compañero cuando comienza el control. La herramienta es opcional y, una vez elegida, se recuerda para las siguientes expediciones.
+- Las rutas de mapas ya desbloqueados deben crear una `activeExpeditionSession` antes de abrir Phaser. Abandonar termina la sesión mediante `endExpeditionWithReport`, conserva PokeDiscover y muestra el resumen; una previsualización técnica nunca debe fingir progreso de expedición.
 - La tienda solo ofrece contenido opcional y permanente. Nunca debe vender directamente especies, formas, apariencias ni hechos de investigación.
 - Herramientas, objetos clave, permisos y cosméticos son categorías distintas: solo las herramientas ocupan el slot opcional del loadout.
 - Los importes de experiencia y PD viven en `src/data/adventure/rewardBalance.ts`; escenas, secretos y misiones deben reutilizar sus paquetes de balance.
@@ -68,12 +69,27 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - Todo mapa nuevo debe respetar `docs/codex/perfil-tiled-poke-voice.md` y superar `npm run maps:validate`.
 - Nunca relacionar sidecar y Tiled mediante los IDs numéricos internos de Tiled; usar el nombre estable del objeto.
 - Phaser solo se importa al abrir una misión o previsualización; no incluirlo en el bundle inicial de la Pokédex.
+- Misiones y expediciones usan rutas hash (`#/missions/<id>` y `#/expeditions/<mapId>/<roomId>`) con cada ID codificado como un segmento. Así admiten enlaces directos y navegación Atrás sin exigir configuración de rutas al alojamiento estático.
+- Cada `MissionDefinitionV1` declara un `loadingText` narrativo propio. La interfaz lo muestra mientras carga Phaser y reserva los mensajes genéricos para errores reales.
+- El catálogo `src/data/adventure/missionCatalog.ts` decide qué definiciones puede presentar PokeDiscover. Las misiones bloqueadas permanecen ocultas salvo que exista una referencia persistente explícita; la UI nunca muestra el ID técnico como título cuando conoce su definición.
 - Los tilesets externos `.tsj` se conservan como fuente y se incorporan en memoria antes de entregarlos al parser de Phaser.
 - El movimiento cardinal comprueba la huella de destino antes de iniciar cada paso de 16 px. Una colisión bloqueada no debe comenzar una interpolación ni corregirse mediante retroceso visual.
 - La identificación dentro de una expedición resuelve nombres contra el catálogo local completo y después restringe el resultado a las especies presentes en la habitación. Nombrar una especie ausente no modifica la run ni muestra un error.
 - Voz y texto reutilizan el mismo resolutor contextual dentro de una expedición. La pantalla del runtime debe ofrecer siempre el fallback escrito sin transferir sus pulsaciones al movimiento del canvas.
 - La pantalla conserva la proporción real de la habitación; no se ensancha un mapa ni se añaden tiles de relleno para adaptarlo a la carcasa de la interfaz.
 - Los NPC y Pokémon colocados son sólidos por defecto con una huella de un tile centrada en sus pies. Vuelo, levitación u otros actores atravesables deben declarar `collision: pass-through` en el sidecar; nunca se infiere por el tamaño o el dibujo del sprite.
+- `Above` solo puede contener overlays con transparencia real. Troncos, suelo y bases opacas pertenecen a `Ground`; no se elimina ningún color de fondo durante la ejecución.
+- Las máscaras parciales se dibujan en la capa opcional `Occlusion` mediante `ActorOccluder` y se relacionan con actores por `occlusionGroup`, nunca por coordenadas hardcodeadas en Phaser.
+- Los `ActorOccluder` rectangulares que cubren la base completa del actor deben resolverse mediante recorte de sprite. No usar filtros WebGL dinámicos para agua, hierba o franjas horizontales comunes.
+- Las rutas ambientales se dibujan como `AmbientPath` en `Paths`; las secuencias y animaciones viven en `ambientSequences` del sidecar. Una misión o interacción contextual siempre puede suspenderlas mediante el controlador compartido.
+- Las coreografías ambientales reinician al entrar en la habitación, se pausan completas ante un bloqueo y no escriben progreso. Con movimiento reducido permanecen en la pose base.
+- Los pivotes PMD se calculan al generar el manifiesto; el runtime no debe recorrer hojas de sombra. La carga bloqueante incluye solo las animaciones base y las hojas ambientales se deduplican por su fuente `CopyOf`, se preparan en segundo plano y activan la coreografía al completarse.
+- Al mantener una dirección, los pasos consecutivos de 16 px se encadenan en el mismo frame lógico; no insertar una pose `Idle` entre tiles transitables.
+- Las interacciones contextuales se declaran en `interactions` y sus textos en `dialogues` del sidecar. Phaser resuelve proximidad, dirección y prioridad de control; el prompt y el diálogo se renderizan como HTML accesible sobre el canvas.
+- Espacio, E y el botón contextual ejecutan la misma interacción. Mientras exista un diálogo activo se detienen jugador y coreografías ambientales; cerrar o completar devuelve el control sin alterar la posición.
+- Los triggers expresivos ejecutables en el mapa declaran conjuntamente `roomId`, `target` y `prompt` dentro de `expressionTriggers`. Comparten la resolución cardinal de las interacciones normales, pero solo se habilitan cuando existe una sesión de expedición real; una previsualización nunca debe crear progreso.
+- Voz, texto y `contextAction` resuelven el mismo `triggerId` persistente. La interfaz muestra el texto normalizado que entendió, conserva abierto el prompt tras un intento fallido y nunca deja una ruta obligatoria dependiente exclusivamente del micrófono.
+- Las condiciones `acoustic` solo pueden activar una captura tras una acción explícita del jugador. El análisis local puede resumir volumen, duración y estabilidad tonal, pero debe detener todas las pistas al terminar o cancelar y nunca persistir audio, transcripciones ni métricas acústicas.
 
 ## Sidewebs de desarrollo
 
@@ -92,11 +108,14 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 
 ## Sprites de protagonistas y NPC
 
+- Los packs aún sin uso viven en `asset-library/unassigned-sprites/` y las fuentes raw de personajes identificados en `asset-library/character-sources/<personaje>/raw`, siempre fuera de `public`; solo un sprite normalizado y registrado en un manifiesto puede pasar a la carpeta activa.
 - Guardar las hojas normalizadas de runtime en `public/assets/sprites/characters/` y declararlas en `manifest.v1.json`.
-- Usar PNG transparente dividido en frames regulares. El formato inicial es 32×48 px por frame, con una fila por dirección en el orden abajo, izquierda, derecha y arriba.
+- Usar PNG transparente dividido en frames regulares. El formato activo es 16×24 px por frame, con una fila por dirección en el orden abajo, izquierda, derecha y arriba; una fuente ampliada puede conservarse únicamente en el almacén.
 - El número de columnas puede variar entre hojas; `columns`, `walkFrames` e `idleFrame` deben declararlo explícitamente en el manifiesto.
 - El pivote visual y la colisión se sitúan en los pies. No añadir margen inferior que desplace artificialmente al personaje respecto al ancla de Tiled.
 - La escala visual se declara mediante `renderScale` en el manifiesto; nunca se corrige agrandando o reduciendo el ancla en Tiled.
+- En pixel art, preferir frames nativos de 16×24 con `renderScale: 1`. Evitar escalas fraccionarias en runtime aunque el resultado matemático sea entero, porque el canvas puede mezclar píxeles al componer la escena.
+- Si una hoja ya fue ampliada al doble, generar una copia de runtime nativa de 16×24 con vecino más próximo y usar `renderScale: 1`; reducirla dentro de WebGL puede mezclar píxeles aun con una escala matemática exacta.
 - Los manifiestos PMD también admiten `renderScale`; el generador conserva actualmente `0.8` como escala común y cualquier excepción futura deberá declararse en datos, no en el runtime.
 - Los atlas recopilatorios irregulares o con fondo magenta pueden conservarse como material fuente, pero no deben cargarse directamente en Phaser.
 

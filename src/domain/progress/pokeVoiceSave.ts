@@ -12,12 +12,13 @@ import {
   createNarrativeProgressV1,
   createProfessorIntroductionStateV1,
 } from '../narrative/professorIntroduction.js';
+import { CARD_SIZE_DEFAULT, CARD_SIZE_MAX, CARD_SIZE_MIN } from '../../lib/constants.js';
 
 export { TIMED_COLLECTOR_MODE_ID } from '../modes/modeDefinitions.js';
 
 export const POKE_VOICE_SAVE_KEY = 'pokevoice-save-v1';
 export const DEFAULT_GENERATION_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-export const DEFAULT_CARD_SIZE = 128;
+export const DEFAULT_CARD_SIZE = CARD_SIZE_DEFAULT;
 
 const achievementDomains = new Set<AchievementDomain>([
   'pokedex',
@@ -68,10 +69,14 @@ function normalizeGenerationIds(value: unknown) {
   return ids.length ? ids : [...DEFAULT_GENERATION_IDS];
 }
 
-function normalizeCardSize(value: unknown) {
+export function normalizeCardSize(value: unknown) {
   const size = Number(value);
-  if (!Number.isFinite(size) || size < 112) return DEFAULT_CARD_SIZE;
-  return Math.min(176, Math.max(96, size));
+  if (value === null || value === '' || !Number.isFinite(size) || size <= 2) return DEFAULT_CARD_SIZE;
+
+  // Los valores persistidos con la escala anterior (96-176 px) se migran
+  // proporcionalmente al nuevo rango, que mide exactamente la mitad.
+  const migratedSize = size > CARD_SIZE_MAX ? size / 2 : size;
+  return Math.min(CARD_SIZE_MAX, Math.max(CARD_SIZE_MIN, migratedSize));
 }
 
 function isJsonValue(value: unknown): value is JsonValue {

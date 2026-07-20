@@ -46,20 +46,93 @@ function bundle() {
   };
 }
 
+function teguesteBundle() {
+  return {
+    adventure: structuredClone(teguesteAdventure),
+    tiledMaps: {
+      'tiled-map:tegueste-forest:02-04': structuredClone(teguesteRoom),
+    },
+    pmdManifest: structuredClone(pmdManifest),
+    characterManifest: structuredClone(characterManifest),
+  };
+}
+
 describe('validador cruzado Tiled + aventura + PMD', () => {
   it('acepta la primera habitación definitiva del Bosque de Tegueste', () => {
-    expect(validateTiledAdventureBundle({
-      adventure: structuredClone(teguesteAdventure),
-      tiledMaps: {
-        'tiled-map:tegueste-forest:02-04': structuredClone(teguesteRoom),
-      },
-      pmdManifest: structuredClone(pmdManifest),
-      characterManifest: structuredClone(characterManifest),
-    })).toEqual([]);
+    expect(validateTiledAdventureBundle(teguesteBundle())).toEqual([]);
     expect(teguesteAdventure.actorPlacements).toHaveLength(7);
     expect(teguesteAdventure.characterPlacements).toHaveLength(2);
+    expect(teguesteAdventure.interactions).toHaveLength(1);
+    expect(teguesteAdventure.dialogues).toHaveLength(1);
     expect(teguesteAdventure.actorPlacements.find(placement => placement.placementId === 'actor:cottonee'))
       .toMatchObject({ collision: 'pass-through' });
+    expect(characterManifest.assets.map(asset => asset.renderScale)).toEqual([1, 1, 1]);
+  });
+
+  it('rechaza interacciones con objetivos o páginas de diálogo rotas', () => {
+    const broken = teguesteBundle() as any;
+    broken.adventure.interactions[0].target.placementId = 'character:missing';
+    broken.adventure.dialogues[0].pages[0].nextPageId = 'dialogue-page:missing';
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'interaction:tegueste:talk-professor-camphor: placement objetivo inexistente character:missing',
+      'dialogue-page:tegueste:professor-warning:1: página siguiente inexistente dialogue-page:missing',
+    ]));
+  });
+
+  it('valida el contexto espacial de las interacciones expresivas', () => {
+    const broken = teguesteBundle() as any;
+    const trigger = broken.adventure.expressionTriggers[0];
+    trigger.target.placementId = 'actor:missing';
+    trigger.rangeTiles = 0;
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'expression:tegueste:compliment-cottonee: placement objetivo inexistente actor:missing',
+      'expression:tegueste:compliment-cottonee: rangeTiles debe ser un entero positivo',
+    ]));
+  });
+
+  it('rechaza umbrales acústicos imposibles o sin entrada de voz', () => {
+    const broken = teguesteBundle() as any;
+    const trigger = broken.adventure.expressionTriggers
+      .find((candidate: { triggerId: string }) => candidate.triggerId === 'expression:tegueste:scare-cramorant');
+    trigger.inputMethods = ['contextAction'];
+    trigger.matchAny[0].minimumLevel = 2;
+    trigger.matchAny[0].minimumDurationMs = -1;
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'expression:tegueste:scare-cramorant: una condición acústica necesita el método voice',
+      'expression:tegueste:scare-cramorant: minimumLevel acústico debe estar entre 0 y 1',
+      'expression:tegueste:scare-cramorant: minimumDurationMs acústico debe ser positivo',
+    ]));
+  });
+
+  it('valida rutas, animaciones y una única acción ambiental por actor y beat', () => {
+    const broken = teguesteBundle() as any;
+    const sequence = broken.adventure.ambientSequences[0];
+    sequence.beats[0].actions.push(structuredClone(sequence.beats[0].actions[0]));
+    sequence.beats[2].actions[0].pathId = 'path:missing';
+    sequence.beats[1].actions[0].animation = 'SplashForever';
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'beat:gyarados:challenge: más de una acción para actor:gyarados:left',
+      'beat:gyarados:advance: ruta inexistente path:missing',
+      'beat:gyarados:first-strike: animación inexistente SplashForever para actor:gyarados:left',
+    ]));
+  });
+
+  it('rechaza polígonos de oclusión inválidos y grupos sin actores', () => {
+    const broken = teguesteBundle() as any;
+    const occlusion = broken.tiledMaps['tiled-map:tegueste-forest:02-04'].layers
+      .find((layer: TestTiledLayer) => layer.name === 'Occlusion');
+    const object = occlusion.objects[0];
+    object.polygon = [{ x: 0, y: 0 }, { x: 16, y: 0 }];
+    object.properties.find((property: { name: string }) => property.name === 'occlusionGroup').value = 'occlusion-group:missing';
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'tiled-map:tegueste-forest:02-04: occluder:tegueste:water-surface necesita rectángulo o polígono de oclusión',
+      'occluder:tegueste:water-surface: grupo de oclusión sin actores occlusion-group:missing',
+    ]));
   });
 
   it('acepta la habitación técnica y coloca a Rattata desde el sidecar', () => {
@@ -69,6 +142,8 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
       .find(asset => asset.assetId === 'pmd:0019-rattata:default')
       ?.animations.find(animation => animation.name === 'Idle');
     expect(idle).toMatchObject({ frameWidth: 32, frameHeight: 32, frameCount: 8, directionCount: 8 });
+    expect(idle?.groundOrigins).toHaveLength(8);
+    expect(idle?.groundOrigins[0]).toEqual({ x: .5, y: .625 });
   });
 
   it('detecta capas, anclas y animaciones rotas con mensajes accionables', () => {

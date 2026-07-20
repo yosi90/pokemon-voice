@@ -3,6 +3,8 @@ import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel
 import { getCompanionCandidates } from '../domain/companions/companionCandidates.js';
 import { getCompanionArtworkUrl } from '../domain/companions/companionGameplayCatalog.js';
 import { getBrowserPokeVoiceSave } from '../store/browserPokeVoiceSaveStore.js';
+import { getPokeDiscoverMission } from '../data/adventure/missionCatalog.js';
+import { getMissionStatus } from '../domain/expeditions/missionLifecycle.js';
 import { CompanionSelector } from './CompanionSelector.js';
 import { PokeDiscoverShop } from './PokeDiscoverShop.js';
 
@@ -99,21 +101,27 @@ export function ProfessorMissionModal({
   open,
   missionIds,
   catalog,
+  initialSection = 'home',
+  selectedMissionId,
+  onOpenMission = () => {},
   onOpenMapPreview = () => {},
   onClose,
 }: {
   open: boolean;
   missionIds: readonly string[];
   catalog: readonly PokemonCatalogRecord[];
+  initialSection?: 'home' | 'missions' | 'companion' | 'shop';
+  selectedMissionId?: string;
+  onOpenMission?: (missionId: string) => void;
   onOpenMapPreview?: () => void;
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [section, setSection] = useState<'home' | 'missions' | 'companion' | 'shop'>('home');
+  const [section, setSection] = useState<'home' | 'missions' | 'companion' | 'shop'>(initialSection);
   const [save, setSave] = useState(getBrowserPokeVoiceSave);
   useEffect(() => {
     if (!open) return undefined;
-    setSection('home');
+    setSection(initialSection);
     setSave(getBrowserPokeVoiceSave());
     closeRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
@@ -121,7 +129,7 @@ export function ProfessorMissionModal({
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose, open]);
+  }, [initialSection, onClose, open]);
   if (!open) return null;
   return (
     <div className="pv-modal professor-missions" data-testid="professor-missions">
@@ -144,12 +152,30 @@ export function ProfessorMissionModal({
             <CompanionSelector catalog={catalog} onSaveChange={setSave} />
           ) : section === 'shop' ? (
             <PokeDiscoverShop save={save} onSaveChange={setSave} />
-          ) : missionIds.length ? missionIds.map(missionId => (
-            <article className="professor-mission-card" key={missionId}>
-              <span>Encargo conocido</span>
-              <strong>{missionId}</strong>
-            </article>
-          )) : (
+          ) : missionIds.length ? missionIds.map(missionId => {
+            const mission = getPokeDiscoverMission(missionId);
+            const status = mission ? getMissionStatus(save, mission) : 'available';
+            const statusLabels = {
+              locked: 'Bloqueado',
+              available: 'Disponible',
+              active: 'En curso',
+              completed: 'Completado',
+            } as const;
+            return (
+              <article
+                className={`professor-mission-card professor-mission-card--${status} ${selectedMissionId === missionId ? 'is-selected' : ''}`}
+                key={missionId}
+                aria-current={selectedMissionId === missionId ? 'page' : undefined}
+              >
+                <span className="professor-mission-card__status">{statusLabels[status]}</span>
+                <strong>{mission?.title ?? missionId}</strong>
+                {mission && <p>{mission.briefing}</p>}
+                <button type="button" onClick={() => onOpenMission(missionId)}>
+                  {status === 'active' ? 'Continuar encargo' : status === 'completed' ? 'Volver al mapa' : 'Ver encargo'}
+                </button>
+              </article>
+            );
+          }) : (
             <div className="professor-missions__empty">
               <img className="camphor-leaf-mark" src={`${import.meta.env.BASE_URL}assets/icons/profesor-alcanfor/hoja-alcanforero.png`} alt="" aria-hidden="true" />
               <h4>Preparando el primer encargo</h4>

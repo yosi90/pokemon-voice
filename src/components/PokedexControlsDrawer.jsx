@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { CARD_SIZE_MAX, CARD_SIZE_MIN } from '../lib/constants.js';
+import { ImageStyleControl } from './ImageStyleControl.jsx';
 
 const GENERATION_LABELS = {
   1: 'Generación I',
@@ -128,17 +129,12 @@ export function PokedexControlsDrawer({
             />
             <span className="size-icon size-icon--large" />
           </label>
-          <fieldset className="image-style-control" aria-label="Estilo de imagen">
-            <legend>Imagen</legend>
-            <label className={`image-style-option ${imageStyle === '3d' ? 'active' : ''}`}>
-              <input type="radio" name="imageStyle" value="3d" checked={imageStyle === '3d'} onChange={() => onImageStyle('3d')} />
-              <span>3D</span>
-            </label>
-            <label className={`image-style-option ${imageStyle === 'sprite' ? 'active' : ''}`}>
-              <input type="radio" name="imageStyle" value="sprite" checked={imageStyle === 'sprite'} onChange={() => onImageStyle('sprite')} />
-              <span>Sprite</span>
-            </label>
-          </fieldset>
+          <ImageStyleControl
+            className="image-style-control--drawer"
+            imageStyle={imageStyle}
+            name="drawerImageStyle"
+            onImageStyle={onImageStyle}
+          />
         </section>
 
         <section className="drawer-section drawer-section--danger" aria-labelledby="data-controls-title">

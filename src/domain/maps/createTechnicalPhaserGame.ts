@@ -1,11 +1,75 @@
 import type { LoadedAdventureMapBundle, LoadedAdventureRoomBundle } from './loadAdventureBundle.js';
 import { findTiledObject } from './loadAdventureBundle.js';
+import type {
+  AmbientActorActionV1,
+  AmbientSequenceV1,
+  ExpeditionDialogueV1,
+  ExpeditionExpressionTriggerV1,
+  ExpeditionInteractionV1,
+  MillisecondRangeV1,
+} from '../../../packages/contracts/src/index.js';
+import {
+  facingTowardTarget,
+  findFacingInteraction,
+  findFacingSpatialDefinition,
+} from './expeditionInteractionRuntime.js';
 
 type PhaserModule = typeof import('phaser');
 type Facing = 'up' | 'down' | 'left' | 'right';
 
 const DIRECTION_ROWS = Object.freeze({ down: 0, right: 2, up: 4, left: 6 });
 export const MAP_SPECIES_IDENTIFIED_EVENT = 'pokevoice:map-species-identified';
+export const MAP_AMBIENT_CONTROL_EVENT = 'pokevoice:map-ambient-control';
+export const MAP_INTERACTION_AVAILABLE_EVENT = 'pokevoice:map-interaction-available';
+export const MAP_INTERACTION_REQUEST_EVENT = 'pokevoice:map-interaction-request';
+export const MAP_INTERACTION_STARTED_EVENT = 'pokevoice:map-interaction-started';
+export const MAP_INTERACTION_CONTROL_EVENT = 'pokevoice:map-interaction-control';
+export const MAP_INTERACTION_COMPLETED_EVENT = 'pokevoice:map-interaction-completed';
+export const MAP_EXPRESSION_AVAILABLE_EVENT = 'pokevoice:map-expression-available';
+export const MAP_EXPRESSION_REQUEST_EVENT = 'pokevoice:map-expression-request';
+export const MAP_EXPRESSION_STARTED_EVENT = 'pokevoice:map-expression-started';
+export const MAP_EXPRESSION_CONTROL_EVENT = 'pokevoice:map-expression-control';
+
+export interface MapInteractionPresentation {
+  interaction: ExpeditionInteractionV1;
+  dialogue: ExpeditionDialogueV1;
+}
+
+type Bounds = { x: number; y: number; width: number; height: number };
+type TiledPoint = { x: number; y: number };
+
+interface ActiveActorState {
+  placementId: string;
+  sprite: import('phaser').GameObjects.Sprite;
+  collision: 'solid' | 'pass-through';
+  direction: Facing;
+  baseX: number;
+  baseY: number;
+  baseDirection: Facing;
+  currentAnimation?: string;
+  cropOccluders?: Bounds[];
+  cropHeight?: number;
+  baseAnimation?: string;
+  asset?: LoadedAdventureRoomBundle['actorAssets'] extends Map<string, infer Asset> ? Asset : never;
+  characterAsset?: LoadedAdventureRoomBundle['characterAssets'] extends Map<string, infer Asset> ? Asset : never;
+}
+
+interface AmbientActionState {
+  action: AmbientActorActionV1;
+  remainingMs?: number;
+  points?: TiledPoint[];
+  pointIndex?: number;
+  complete: boolean;
+}
+
+interface AmbientSequenceState {
+  definition: AmbientSequenceV1;
+  beatIndex: number;
+  actionStates: AmbientActionState[];
+  pauseRemainingMs: number;
+  phase: 'start' | 'actions' | 'pause' | 'complete';
+  cycles: number;
+}
 
 function requiredNumber(object: Record<string, unknown> | undefined, key: string, label: string) {
   const value = Number(object?.[key]);
@@ -21,6 +85,32 @@ function tiledObjectBounds(object: Record<string, unknown> | undefined, label: s
   return { x, y, width, height, centerX: x + width / 2, centerY: y + height / 2 };
 }
 
+function tiledProperties(object: Record<string, unknown>) {
+  const properties = Array.isArray(object.properties)
+    ? object.properties as Array<Record<string, unknown>>
+    : [];
+  return new Map(properties.map(property => [String(property.name), property.value]));
+}
+
+function stableIdList(value: unknown) {
+  return String(value ?? '').split(',').map(item => item.trim()).filter(Boolean);
+}
+
+function overlap(left: Bounds, right: Bounds) {
+  return left.x < right.x + right.width && left.x + left.width > right.x
+    && left.y < right.y + right.height && left.y + left.height > right.y;
+}
+
+function actorFootprint(x: number, y: number): Bounds {
+  return { x: x - 8, y: y - 16, width: 16, height: 16 };
+}
+
+export function sampleMilliseconds(value: number | MillisecondRangeV1 | undefined, random = Math.random) {
+  if (value === undefined) return 0;
+  if (typeof value === 'number') return Math.max(0, value);
+  return value.min + (value.max - value.min) * random();
+}
+
 function sheetUrl(path: string) {
   return new URL(path, new URL(import.meta.env.BASE_URL, window.location.href)).href;
 }
@@ -32,6 +122,8 @@ export function createTechnicalPhaserGame({
   initialRoomId,
   reducedMotion,
   registeredSpeciesIds,
+  expressionsEnabled = false,
+  resolvedExpressionTriggerIds = new Set<string>(),
   onReady,
 }: {
   Phaser: PhaserModule;
@@ -40,6 +132,8 @@ export function createTechnicalPhaserGame({
   initialRoomId: string;
   reducedMotion: boolean;
   registeredSpeciesIds: ReadonlySet<number>;
+  expressionsEnabled?: boolean;
+  resolvedExpressionTriggerIds?: ReadonlySet<string>;
   onReady: () => void;
 }) {
   const initialRoom = bundle.rooms.find(candidate => candidate.room.roomId === initialRoomId);
@@ -48,11 +142,13 @@ export function createTechnicalPhaserGame({
   const canvasHeight = initialRoom.tilemap.height * initialRoom.tilemap.tileheight;
   const mapKey = (roomId: string) => `technical-map:${roomId}`;
   const tilesetKey = (name: string) => `technical-tileset:${name}`;
-  const actorSheetKey = (assetId: string, animation: string) => `technical-actor:${assetId}:${animation}`;
-  const actorShadowKey = (assetId: string, animation: string) => `technical-actor-shadow:${assetId}:${animation}`;
+  const actorSheetKey = (assetId: string, animation: string, copyOf?: string) => (
+    `technical-actor:${assetId}:${copyOf ?? animation}`
+  );
   const characterSheetKey = (assetId: string) => `technical-character:${assetId}`;
   const characterAnimationKey = (assetId: string, facing: Facing) => `technical-character-animation:${assetId}:${facing}`;
   const revealedSpeciesIds = new Set(registeredSpeciesIds);
+  const completedExpressionTriggerIds = new Set(resolvedExpressionTriggerIds);
 
   class TechnicalRoomScene extends Phaser.Scene {
     constructor() {
@@ -74,19 +170,18 @@ export function createTechnicalPhaserGame({
         for (const placement of bundle.adventure.actorPlacements
           .filter(candidate => candidate.roomId === roomBundle.room.roomId)) {
           const asset = roomBundle.actorAssets.get(placement.assetId);
-          const animation = asset?.animations.find(candidate => candidate.name === placement.animation);
-          if (!asset || !animation) throw new Error(`Actor sin manifiesto: ${placement.placementId}.`);
-          const key = actorSheetKey(asset.assetId, animation.name);
-          if (loadedActorSheets.has(key)) continue;
-          loadedActorSheets.add(key);
-          this.load.spritesheet(key, sheetUrl(animation.animationSheetPath), {
-            frameWidth: animation.frameWidth,
-            frameHeight: animation.frameHeight,
-          });
-          this.load.spritesheet(actorShadowKey(asset.assetId, animation.name), sheetUrl(animation.shadowSheetPath), {
-            frameWidth: animation.frameWidth,
-            frameHeight: animation.frameHeight,
-          });
+          if (!asset) throw new Error(`Actor sin manifiesto: ${placement.placementId}.`);
+          for (const animationName of [placement.animation]) {
+            const animation = asset.animations.find(candidate => candidate.name === animationName);
+            if (!animation) throw new Error(`Animación sin manifiesto: ${placement.placementId}/${animationName}.`);
+            const key = actorSheetKey(asset.assetId, animation.name, animation.copyOf);
+            if (loadedActorSheets.has(key)) continue;
+            loadedActorSheets.add(key);
+            this.load.spritesheet(key, sheetUrl(animation.animationSheetPath), {
+              frameWidth: animation.frameWidth,
+              frameHeight: animation.frameHeight,
+            });
+          }
         }
         for (const placement of bundle.adventure.characterPlacements
           .filter(candidate => candidate.roomId === roomBundle.room.roomId)) {
@@ -116,22 +211,51 @@ export function createTechnicalPhaserGame({
       let primaryActor: import('phaser').GameObjects.Sprite | undefined;
       let transitioning = false;
       let transitionCount = 0;
+      let chainedStepCount = 0;
       let transitionCooldownUntil = 0;
       let stepTarget: { x: number; y: number; startX: number; startY: number; facing: Facing } | undefined;
       let activeObjects: import('phaser').GameObjects.GameObject[] = [];
       let activeColliders: import('phaser').Physics.Arcade.Collider[] = [];
-      let activeCollisionBounds: Array<{ x: number; y: number; width: number; height: number }> = [];
+      let staticCollisionBounds: Bounds[] = [];
       let activeActorSpritesBySpecies = new Map<number, import('phaser').GameObjects.Sprite[]>();
+      let activeActorsByPlacement = new Map<string, ActiveActorState>();
+      let ambientSequenceStates: AmbientSequenceState[] = [];
+      let ambientSuppressed = false;
+      let ambientAnimationsPaused = false;
+      let ambientAccumulatorMs = 0;
       let solidActorCount = 0;
+      let occludedActorCount = 0;
+      let filterOccludedActorCount = 0;
+      let availableInteraction: ExpeditionInteractionV1 | undefined;
+      let activeInteraction: ExpeditionInteractionV1 | undefined;
+      let availableExpression: ExpeditionExpressionTriggerV1 | undefined;
+      let activeExpression: ExpeditionExpressionTriggerV1 | undefined;
+      const completedVisitInteractionIds = new Set<string>();
 
       const clearRoom = () => {
         activeColliders.forEach(collider => collider.destroy());
         activeObjects.forEach(object => object.destroy());
         activeColliders = [];
         activeObjects = [];
-        activeCollisionBounds = [];
+        staticCollisionBounds = [];
         activeActorSpritesBySpecies = new Map();
+        activeActorsByPlacement = new Map();
+        ambientSequenceStates = [];
         solidActorCount = 0;
+        occludedActorCount = 0;
+        filterOccludedActorCount = 0;
+        ambientAnimationsPaused = false;
+        ambientAccumulatorMs = 0;
+        availableInteraction = undefined;
+        activeInteraction = undefined;
+        availableExpression = undefined;
+        activeExpression = undefined;
+        delete parent.dataset.interactionId;
+        delete parent.dataset.interactionPrompt;
+        delete parent.dataset.expressionTriggerId;
+        delete parent.dataset.expressionPrompt;
+        delete parent.dataset.dialogueId;
+        parent.dataset.controlPriority = 'player';
         currentMap?.destroy();
         currentMap = undefined;
         primaryActor = undefined;
@@ -140,18 +264,10 @@ export function createTechnicalPhaserGame({
         stepTarget = undefined;
       };
 
-      const actorGroundOrigin = (assetId: string, animation: { name: string; frameWidth: number; frameHeight: number }, frame: number) => {
-        const key = actorShadowKey(assetId, animation.name);
-        for (let y = 0; y < animation.frameHeight; y += 1) {
-          for (let x = 0; x < animation.frameWidth; x += 1) {
-            const color = this.textures.getPixel(x, y, key, frame);
-            if (color?.red === 255 && color.green === 255 && color.blue === 255 && color.alpha === 255) {
-              return { x: x / animation.frameWidth, y: y / animation.frameHeight };
-            }
-          }
-        }
-        return { x: 0.5, y: 1 };
-      };
+      const actorGroundOrigin = (
+        animation: { frameCount: number; groundOrigins: Array<{ x: number; y: number }> },
+        frame: number,
+      ) => animation.groundOrigins[Math.floor(frame / animation.frameCount)] ?? { x: .5, y: 1 };
 
       const groundPoint = (bounds: ReturnType<typeof tiledObjectBounds>) => ({
         x: bounds.centerX,
@@ -188,6 +304,147 @@ export function createTechnicalPhaserGame({
         return key;
       };
 
+      const layerObjects = (room: LoadedAdventureRoomBundle, layerName: string) => {
+        const layer = room.tilemap.layers.find(candidate => candidate.name === layerName);
+        return Array.isArray(layer?.objects) ? layer.objects as Array<Record<string, unknown>> : [];
+      };
+
+      const ambientPathPoints = (room: LoadedAdventureRoomBundle, pathId: string) => {
+        const path = layerObjects(room, 'Paths').find(object => object.name === pathId);
+        const polyline = Array.isArray(path?.polyline) ? path.polyline as Array<Record<string, unknown>> : [];
+        const originX = requiredNumber(path, 'x', pathId);
+        const originY = requiredNumber(path, 'y', pathId);
+        return polyline.map((point, index) => ({
+          x: originX + requiredNumber(point, 'x', `${pathId}[${index}]`),
+          y: originY + requiredNumber(point, 'y', `${pathId}[${index}]`),
+        }));
+      };
+
+      const setActorFacing = (state: ActiveActorState, direction: Facing) => {
+        state.direction = direction;
+        if (state.characterAsset) {
+          state.sprite.stop();
+          state.sprite.setFrame(
+            state.characterAsset.directionRows[direction] * state.characterAsset.columns
+              + state.characterAsset.idleFrame,
+          );
+        }
+      };
+
+      const startActorAnimation = (
+        state: ActiveActorState,
+        animationName: string,
+        direction: Facing,
+        repetitions: number,
+      ) => {
+        if (!state.asset) {
+          setActorFacing(state, direction);
+          return 0;
+        }
+        const animation = state.asset.animations.find(candidate => candidate.name === animationName);
+        if (!animation) return 0;
+        const row = DIRECTION_ROWS[direction];
+        const frames = Array.from({ length: animation.frameCount }, (_, index) => row * animation.frameCount + index);
+        const origin = actorGroundOrigin(animation, frames[0]);
+        const animationKey = `ambient-animation:${state.placementId}:${animationName}:${direction}:${repetitions}`;
+        if (!this.anims.exists(animationKey)) this.anims.create({
+          key: animationKey,
+          frames: frames.map((frame, index) => ({
+            key: actorSheetKey(state.asset!.assetId, animation.name, animation.copyOf),
+            frame,
+            duration: animation.durationTicks[index] * (1000 / bundle.pmdManifest.tickRate),
+          })),
+          repeat: repetitions < 0 ? -1 : Math.max(0, repetitions - 1),
+        });
+        state.direction = direction;
+        state.currentAnimation = animationName;
+        state.sprite.stop();
+        state.sprite.setTexture(actorSheetKey(state.asset.assetId, animation.name, animation.copyOf), frames[0]);
+        state.sprite.setOrigin(origin.x, origin.y).setScale(state.asset.renderScale ?? 1);
+        state.cropHeight = undefined;
+        updateActorCropOcclusion(state);
+        if (!reducedMotion) state.sprite.play(animationKey);
+        const oneCycleMs = animation.durationTicks.reduce((total, ticks) => total + ticks, 0)
+          * (1000 / bundle.pmdManifest.tickRate);
+        return repetitions < 0 ? Number.POSITIVE_INFINITY : oneCycleMs * repetitions;
+      };
+
+      const applyActorOcclusion = (room: LoadedAdventureRoomBundle, state: ActiveActorState, groupIds: readonly string[]) => {
+        if (!groupIds.length) return;
+        const occluders = layerObjects(room, 'Occlusion').filter(object => {
+          const properties = tiledProperties(object);
+          const groupId = String(properties.get('occlusionGroup') ?? '');
+          const included = stableIdList(properties.get('includePlacementIds'));
+          const excluded = stableIdList(properties.get('excludePlacementIds'));
+          return !excluded.includes(state.placementId)
+            && (included.includes(state.placementId) || groupIds.includes(groupId));
+        });
+        if (!occluders.length) return;
+        const rectangularOccluders = occluders.filter(occluder => !Array.isArray(occluder.polygon));
+        state.cropOccluders = rectangularOccluders.map(occluder => ({
+          x: requiredNumber(occluder, 'x', String(occluder.name)),
+          y: requiredNumber(occluder, 'y', String(occluder.name)),
+          width: requiredNumber(occluder, 'width', String(occluder.name)),
+          height: requiredNumber(occluder, 'height', String(occluder.name)),
+        }));
+        const polygonOccluders = occluders.filter(occluder => Array.isArray(occluder.polygon));
+        if (!polygonOccluders.length) {
+          occludedActorCount += 1;
+          return;
+        }
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0xffffff, 1);
+        for (const occluder of polygonOccluders) {
+          const x = requiredNumber(occluder, 'x', String(occluder.name));
+          const y = requiredNumber(occluder, 'y', String(occluder.name));
+          if (Array.isArray(occluder.polygon)) {
+            const points = (occluder.polygon as Array<Record<string, unknown>>).map((point, index) => new Phaser.Math.Vector2(
+              x + requiredNumber(point, 'x', `${String(occluder.name)}[${index}]`),
+              y + requiredNumber(point, 'y', `${String(occluder.name)}[${index}]`),
+            ));
+            graphics.fillPoints(points, true);
+          } else {
+            graphics.fillRect(
+              x,
+              y,
+              requiredNumber(occluder, 'width', String(occluder.name)),
+              requiredNumber(occluder, 'height', String(occluder.name)),
+            );
+          }
+        }
+        this.children.remove(graphics);
+        state.sprite.enableFilters();
+        state.sprite.filters!.external.addMask(graphics, true);
+        activeObjects.push(graphics);
+        occludedActorCount += 1;
+        filterOccludedActorCount += 1;
+      };
+
+      const updateActorCropOcclusion = (state: ActiveActorState) => {
+        if (!state.cropOccluders?.length) return;
+        const scaleX = Math.abs(state.sprite.scaleX) || 1;
+        const scaleY = Math.abs(state.sprite.scaleY) || 1;
+        const frameWidth = state.sprite.frame.realWidth;
+        const frameHeight = state.sprite.frame.realHeight;
+        const left = state.sprite.x - state.sprite.displayOriginX * scaleX;
+        const right = left + frameWidth * scaleX;
+        const top = state.sprite.y - state.sprite.displayOriginY * scaleY;
+        const bottom = top + frameHeight * scaleY;
+        const waterline = state.cropOccluders
+          .filter(occluder => occluder.x < right && occluder.x + occluder.width > left
+            && occluder.y > top && occluder.y < bottom)
+          .reduce<number | undefined>((nearest, occluder) => (
+            nearest === undefined ? occluder.y : Math.min(nearest, occluder.y)
+          ), undefined);
+        const nextHeight = waterline === undefined
+          ? frameHeight
+          : Math.max(0, Math.min(frameHeight, (waterline - top) / scaleY));
+        if (Math.abs((state.cropHeight ?? -1) - nextHeight) < .01) return;
+        state.cropHeight = nextHeight;
+        if (nextHeight >= frameHeight) state.sprite.setCrop();
+        else state.sprite.setCrop(0, 0, frameWidth, nextHeight);
+      };
+
       const renderRoom = (roomId: string, spawnAnchorId?: string, facing?: Facing) => {
         const nextRoom = bundle.rooms.find(candidate => candidate.room.roomId === roomId);
         if (!nextRoom) throw new Error(`Habitación no cargada: ${roomId}.`);
@@ -210,10 +467,10 @@ export function createTechnicalPhaserGame({
           if (!asset || !animation || !anchor) throw new Error(`Actor incompleto: ${placement.placementId}.`);
           const row = DIRECTION_ROWS[placement.direction ?? 'down'];
           const frames = Array.from({ length: animation.frameCount }, (_, index) => row * animation.frameCount + index);
-          const sheetKey = actorSheetKey(asset.assetId, animation.name);
+          const sheetKey = actorSheetKey(asset.assetId, animation.name, animation.copyOf);
           const anchorBounds = tiledObjectBounds(anchor, placement.anchorId);
           const anchorPoint = groundPoint(anchorBounds);
-          const origin = actorGroundOrigin(asset.assetId, animation, frames[0]);
+          const origin = actorGroundOrigin(animation, frames[0]);
           const sprite = this.add.sprite(
             anchorPoint.x,
             anchorPoint.y,
@@ -229,15 +486,22 @@ export function createTechnicalPhaserGame({
           activeActorSpritesBySpecies.set(asset.speciesId, speciesSprites);
           sprite.setName(placement.placementId);
           activeObjects.push(sprite);
-          if (placement.collision !== 'pass-through') {
-            activeCollisionBounds.push({
-              x: anchorPoint.x - 8,
-              y: anchorPoint.y - 16,
-              width: 16,
-              height: 16,
-            });
-            solidActorCount += 1;
-          }
+          const actorState: ActiveActorState = {
+            placementId: placement.placementId,
+            sprite,
+            collision: placement.collision ?? 'solid',
+            direction: placement.direction ?? 'down',
+            baseX: anchorPoint.x,
+            baseY: anchorPoint.y,
+            baseDirection: placement.direction ?? 'down',
+            baseAnimation: placement.animation,
+            currentAnimation: placement.animation,
+            asset,
+          };
+          activeActorsByPlacement.set(placement.placementId, actorState);
+          applyActorOcclusion(nextRoom, actorState, placement.occlusionGroupIds ?? []);
+          updateActorCropOcclusion(actorState);
+          if (actorState.collision === 'solid') solidActorCount += 1;
           primaryActor ??= sprite;
           if (!reducedMotion) {
             const animationKey = `animation:${placement.placementId}:${animation.name}`;
@@ -271,15 +535,20 @@ export function createTechnicalPhaserGame({
           ).setOrigin(.5, 1).setScale(asset.renderScale ?? 1).setDepth(anchorPoint.y);
           sprite.setName(placement.placementId);
           activeObjects.push(sprite);
-          if (placement.collision !== 'pass-through') {
-            activeCollisionBounds.push({
-              x: anchorPoint.x - 8,
-              y: anchorPoint.y - 16,
-              width: 16,
-              height: 16,
-            });
-            solidActorCount += 1;
-          }
+          const actorState: ActiveActorState = {
+            placementId: placement.placementId,
+            sprite,
+            collision: placement.collision ?? 'solid',
+            direction,
+            baseX: anchorPoint.x,
+            baseY: anchorPoint.y,
+            baseDirection: direction,
+            characterAsset: asset,
+          };
+          activeActorsByPlacement.set(placement.placementId, actorState);
+          applyActorOcclusion(nextRoom, actorState, placement.occlusionGroupIds ?? []);
+          updateActorCropOcclusion(actorState);
+          if (actorState.collision === 'solid') solidActorCount += 1;
         }
 
         const resolvedSpawnId = spawnAnchorId ?? nextRoom.room.spawnAnchorIds[0];
@@ -332,7 +601,7 @@ export function createTechnicalPhaserGame({
             width,
             height,
           };
-          activeCollisionBounds.push(collisionBounds);
+          staticCollisionBounds.push(collisionBounds);
           const obstacle = this.add.rectangle(
             collisionBounds.x + width / 2,
             collisionBounds.y + height / 2,
@@ -350,10 +619,14 @@ export function createTechnicalPhaserGame({
         this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
         this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
         this.cameras.main.setRoundPixels(true);
+        ambientSequenceStates = [];
         parent.dataset.roomId = roomId;
         parent.dataset.actorId = placements[0]?.placementId ?? '';
         parent.dataset.actorGrounding = 'pmd-shadow';
         parent.dataset.solidActorCount = String(solidActorCount);
+        parent.dataset.occludedActorCount = String(occludedActorCount);
+        parent.dataset.occlusionFilterCount = String(filterOccludedActorCount);
+        parent.dataset.ambientTickRate = '30';
         parent.dataset.undiscoveredActorCount = String(placements
           .filter(placement => {
             const asset = nextRoom.actorAssets.get(placement.assetId);
@@ -365,7 +638,32 @@ export function createTechnicalPhaserGame({
         parent.dataset.animation = primaryActor ? (reducedMotion ? 'paused' : 'playing') : 'none';
         parent.dataset.actorFrameChanges = '0';
         parent.dataset.transition = 'idle';
+        parent.dataset.ambientSequenceCount = '0';
+        parent.dataset.ambientState = reducedMotion ? 'reduced-motion' : 'loading';
+        parent.dataset.ambientAssets = reducedMotion ? 'skipped' : 'loading';
+        parent.dataset.ambientCycle = '0';
         transitionCooldownUntil = this.time.now + 350;
+        chainedStepCount = 0;
+        parent.dataset.chainedStepCount = '0';
+        queueRoomAmbientAssets(nextRoom, placements);
+      };
+
+      const syncAmbientActorTelemetry = () => {
+        const placementIds = new Set(ambientSequenceStates
+          .flatMap(sequence => sequence.definition.beats)
+          .flatMap(beat => beat.actions.map(action => action.placementId)));
+        parent.dataset.ambientActors = JSON.stringify([...placementIds].map(placementId => {
+          const actor = activeActorsByPlacement.get(placementId);
+          return actor ? {
+            placementId,
+            x: Math.round(actor.sprite.x * 100) / 100,
+            y: Math.round(actor.sprite.y * 100) / 100,
+            direction: actor.direction,
+            animation: actor.currentAnimation ?? actor.baseAnimation ?? null,
+            cropHeight: actor.cropHeight ?? null,
+            frameHeight: actor.sprite.frame.realHeight,
+          } : { placementId, missing: true };
+        }));
       };
 
       const movingOutward = (anchor: Record<string, unknown>, facing?: Facing) => {
@@ -382,16 +680,455 @@ export function createTechnicalPhaserGame({
       const canOccupyGroundPoint = (x: number, y: number) => {
         const mapWidth = currentRoom.tilemap.width * currentRoom.tilemap.tilewidth;
         const mapHeight = currentRoom.tilemap.height * currentRoom.tilemap.tileheight;
-        const footprint = { left: x - 5, right: x + 5, top: y - 10, bottom: y };
-        if (footprint.left < 0 || footprint.right > mapWidth || footprint.top < 0 || footprint.bottom > mapHeight) {
+        const footprint = { x: x - 5, y: y - 10, width: 10, height: 10 };
+        if (footprint.x < 0 || footprint.x + footprint.width > mapWidth
+          || footprint.y < 0 || footprint.y + footprint.height > mapHeight) {
           return false;
         }
-        return !activeCollisionBounds.some(collision => (
-          footprint.right > collision.x
-          && footprint.left < collision.x + collision.width
-          && footprint.bottom > collision.y
-          && footprint.top < collision.y + collision.height
+        if (staticCollisionBounds.some(collision => overlap(footprint, collision))) return false;
+        return ![...activeActorsByPlacement.values()].some(actor => (
+          actor.collision === 'solid' && overlap(footprint, actorFootprint(actor.sprite.x, actor.sprite.y))
         ));
+      };
+
+      const facingForDelta = (dx: number, dy: number, fallback: Facing): Facing => {
+        if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
+        if (Math.abs(dy) > 0) return dy > 0 ? 'down' : 'up';
+        return fallback;
+      };
+
+      const ambientPlacementIds = () => new Set(ambientSequenceStates
+        .flatMap(sequence => sequence.definition.beats)
+        .flatMap(beat => beat.actions.map(action => action.placementId)));
+
+      const setAmbientAnimationsPaused = (paused: boolean) => {
+        if (ambientAnimationsPaused === paused) return;
+        ambientAnimationsPaused = paused;
+        for (const placementId of ambientPlacementIds()) {
+          const actor = activeActorsByPlacement.get(placementId);
+          if (!actor?.sprite.anims.isPlaying) continue;
+          if (paused) actor.sprite.anims.pause();
+          else actor.sprite.anims.resume();
+        }
+      };
+
+      const startAmbientBeat = (sequence: AmbientSequenceState) => {
+        const beat = sequence.definition.beats[sequence.beatIndex];
+        parent.dataset.ambientBeatId = beat.beatId;
+        sequence.actionStates = beat.actions.map(action => {
+          const actor = activeActorsByPlacement.get(action.placementId);
+          if (!actor) return { action, complete: true };
+          if (action.kind === 'face') {
+            setActorFacing(actor, action.direction);
+            return { action, complete: true };
+          }
+          if (action.kind === 'playAnimation') {
+            const repetitions = action.repetitions ?? 1;
+            const remainingMs = startActorAnimation(
+              actor,
+              action.animation,
+              action.direction ?? actor.direction,
+              repetitions,
+            );
+            return { action, remainingMs, complete: remainingMs <= 0 };
+          }
+          const rawPoints = ambientPathPoints(currentRoom, action.pathId);
+          const orderedPoints = action.reverse ? [...rawPoints].reverse() : rawPoints;
+          const first = orderedPoints[0];
+          const points = first && Math.hypot(actor.sprite.x - first.x, actor.sprite.y - first.y) > .5
+            ? [{ x: actor.sprite.x, y: actor.sprite.y }, ...orderedPoints]
+            : orderedPoints;
+          const next = points[1] ?? points[0];
+          const direction = next
+            ? facingForDelta(next.x - actor.sprite.x, next.y - actor.sprite.y, actor.direction)
+            : actor.direction;
+          if (action.animation) startActorAnimation(actor, action.animation, direction, -1);
+          else if (actor.characterAsset && !reducedMotion) {
+            actor.sprite.play(ensureCharacterAnimation(actor.characterAsset, direction), true);
+          }
+          actor.direction = direction;
+          return { action, points, pointIndex: 1, complete: points.length < 2 };
+        });
+        sequence.phase = sequence.actionStates.every(action => action.complete) ? 'pause' : 'actions';
+        syncAmbientActorTelemetry();
+      };
+
+      const proposedMove = (state: AmbientActionState, actor: ActiveActorState, deltaMs: number) => {
+        if (state.action.kind !== 'movePath' || !state.points || state.complete) return undefined;
+        const target = state.points[state.pointIndex ?? 1];
+        if (!target) return { x: actor.sprite.x, y: actor.sprite.y, complete: true, pointIndex: state.pointIndex ?? 1 };
+        const dx = target.x - actor.sprite.x;
+        const dy = target.y - actor.sprite.y;
+        const distance = Math.hypot(dx, dy);
+        const travel = state.action.speedPixelsPerSecond * (deltaMs / 1000);
+        if (distance <= Math.max(.001, travel)) {
+          const nextIndex = (state.pointIndex ?? 1) + 1;
+          return { x: target.x, y: target.y, complete: nextIndex >= state.points.length, pointIndex: nextIndex };
+        }
+        return {
+          x: actor.sprite.x + dx / distance * travel,
+          y: actor.sprite.y + dy / distance * travel,
+          complete: false,
+          pointIndex: state.pointIndex ?? 1,
+        };
+      };
+
+      const canAmbientActorOccupy = (
+        actor: ActiveActorState,
+        x: number,
+        y: number,
+        proposals: Map<string, { x: number; y: number }>,
+      ) => {
+        const mapWidth = currentRoom.tilemap.width * currentRoom.tilemap.tilewidth;
+        const mapHeight = currentRoom.tilemap.height * currentRoom.tilemap.tileheight;
+        const footprint = actorFootprint(x, y);
+        if (footprint.x < 0 || footprint.y < 0
+          || footprint.x + footprint.width > mapWidth || footprint.y + footprint.height > mapHeight) return false;
+        if (actor.collision === 'pass-through') return true;
+        if (staticCollisionBounds.some(collision => overlap(footprint, collision))) return false;
+        if (overlap(footprint, { x: player.x - 5, y: player.y - 10, width: 10, height: 10 })) return false;
+        return ![...activeActorsByPlacement.values()].some(other => {
+          if (other.placementId === actor.placementId || other.collision === 'pass-through') return false;
+          const proposed = proposals.get(other.placementId);
+          return overlap(footprint, actorFootprint(proposed?.x ?? other.sprite.x, proposed?.y ?? other.sprite.y));
+        });
+      };
+
+      const updateAmbientSequence = (sequence: AmbientSequenceState, deltaMs: number) => {
+        if (sequence.phase === 'complete') return;
+        if (sequence.phase === 'pause') {
+          sequence.pauseRemainingMs = Math.max(0, sequence.pauseRemainingMs - deltaMs);
+          if (sequence.pauseRemainingMs === 0) sequence.phase = 'start';
+          return;
+        }
+        if (sequence.phase === 'start') startAmbientBeat(sequence);
+        if (sequence.phase !== 'actions') return;
+
+        const proposals = new Map<string, { x: number; y: number; complete: boolean; pointIndex: number }>();
+        for (const actionState of sequence.actionStates) {
+          if (actionState.action.kind !== 'movePath' || actionState.complete) continue;
+          const actor = activeActorsByPlacement.get(actionState.action.placementId);
+          if (!actor) continue;
+          const proposal = proposedMove(actionState, actor, deltaMs);
+          if (proposal) proposals.set(actor.placementId, proposal);
+        }
+        const blocked = [...proposals].some(([placementId, proposal]) => {
+          const actor = activeActorsByPlacement.get(placementId);
+          return actor ? !canAmbientActorOccupy(actor, proposal.x, proposal.y, proposals) : false;
+        });
+        if (blocked) {
+          parent.dataset.ambientState = 'blocked';
+          setAmbientAnimationsPaused(true);
+          return;
+        }
+        setAmbientAnimationsPaused(false);
+        parent.dataset.ambientState = 'running';
+        for (const actionState of sequence.actionStates) {
+          const actor = activeActorsByPlacement.get(actionState.action.placementId);
+          if (!actor || actionState.complete) continue;
+          if (actionState.action.kind === 'playAnimation') {
+            actionState.remainingMs = Math.max(0, (actionState.remainingMs ?? 0) - deltaMs);
+            actionState.complete = actionState.remainingMs === 0;
+          } else if (actionState.action.kind === 'movePath') {
+            const proposal = proposals.get(actor.placementId);
+            if (!proposal) continue;
+            actor.sprite.setPosition(proposal.x, proposal.y).setDepth(proposal.y);
+            updateActorCropOcclusion(actor);
+            actionState.pointIndex = proposal.pointIndex;
+            actionState.complete = proposal.complete;
+            const next = actionState.points?.[proposal.pointIndex];
+            if (next) {
+              const direction = facingForDelta(next.x - proposal.x, next.y - proposal.y, actor.direction);
+              if (direction !== actor.direction) {
+                actor.direction = direction;
+                if (actor.characterAsset && !reducedMotion) {
+                  actor.sprite.play(ensureCharacterAnimation(actor.characterAsset, direction), true);
+                }
+              }
+            }
+            if (actionState.complete && actor.characterAsset) setActorFacing(actor, actor.direction);
+          }
+        }
+
+        if (!sequence.actionStates.every(action => action.complete)) return;
+        const beat = sequence.definition.beats[sequence.beatIndex];
+        const lastBeat = sequence.beatIndex >= sequence.definition.beats.length - 1;
+        if (lastBeat) {
+          if (!sequence.definition.loop) {
+            sequence.phase = 'complete';
+            return;
+          }
+          sequence.beatIndex = 0;
+          sequence.cycles += 1;
+          parent.dataset.ambientCycle = String(sequence.cycles);
+          sequence.pauseRemainingMs = sampleMilliseconds(beat.pauseAfterMs)
+            + sampleMilliseconds(sequence.definition.loopPauseMs);
+        } else {
+          sequence.beatIndex += 1;
+          sequence.pauseRemainingMs = sampleMilliseconds(beat.pauseAfterMs);
+        }
+        sequence.phase = sequence.pauseRemainingMs > 0 ? 'pause' : 'start';
+      };
+
+      const activateRoomAmbientSequences = (roomId: string) => {
+        if (currentRoom.room.roomId !== roomId || reducedMotion) return;
+        ambientSequenceStates = bundle.adventure.ambientSequences
+          .filter(sequence => sequence.roomId === roomId)
+          .map(definition => ({
+            definition,
+            beatIndex: 0,
+            actionStates: [],
+            pauseRemainingMs: 0,
+            phase: 'start' as const,
+            cycles: 0,
+          }));
+        parent.dataset.ambientAssets = 'ready';
+        parent.dataset.ambientSequenceCount = String(ambientSequenceStates.length);
+        parent.dataset.ambientState = ambientSuppressed
+          ? 'suppressed'
+          : ambientSequenceStates.length ? 'running' : 'none';
+        syncAmbientActorTelemetry();
+      };
+
+      const queueRoomAmbientAssets = (
+        room: LoadedAdventureRoomBundle,
+        placements: LoadedAdventureMapBundle['adventure']['actorPlacements'],
+      ) => {
+        if (reducedMotion) return;
+        const definitions = bundle.adventure.ambientSequences
+          .filter(sequence => sequence.roomId === room.room.roomId);
+        const placementsById = new Map(placements.map(placement => [placement.placementId, placement]));
+        const pending = new Map<string, {
+          url: string;
+          frameWidth: number;
+          frameHeight: number;
+        }>();
+        for (const action of definitions.flatMap(sequence => sequence.beats).flatMap(beat => beat.actions)) {
+          if (action.kind !== 'playAnimation' && action.kind !== 'movePath') continue;
+          if (!action.animation) continue;
+          const placement = placementsById.get(action.placementId);
+          const asset = placement ? room.actorAssets.get(placement.assetId) : undefined;
+          const animation = asset?.animations.find(candidate => candidate.name === action.animation);
+          if (!asset || !animation) continue;
+          const key = actorSheetKey(asset.assetId, animation.name, animation.copyOf);
+          if (this.textures.exists(key) || pending.has(key)) continue;
+          pending.set(key, {
+            url: sheetUrl(animation.animationSheetPath),
+            frameWidth: animation.frameWidth,
+            frameHeight: animation.frameHeight,
+          });
+        }
+        parent.dataset.ambientTextureCount = String(pending.size);
+        if (!pending.size) {
+          activateRoomAmbientSequences(room.room.roomId);
+          return;
+        }
+        for (const [key, file] of pending) {
+          this.load.spritesheet(key, file.url, {
+            frameWidth: file.frameWidth,
+            frameHeight: file.frameHeight,
+          });
+        }
+        const roomId = room.room.roomId;
+        this.load.once(Phaser.Loader.Events.COMPLETE, () => activateRoomAmbientSequences(roomId));
+        if (!this.load.isLoading()) this.load.start();
+      };
+
+      const resolveSpatialTarget = (definition: { target: ExpeditionInteractionV1['target'] }) => {
+        if (definition.target.kind === 'placement') {
+          const actor = activeActorsByPlacement.get(definition.target.placementId);
+          return actor ? { x: actor.sprite.x, y: actor.sprite.y, placementId: actor.placementId } : undefined;
+        }
+        const anchor = findTiledObject(currentRoom.tilemap, 'Anchors', definition.target.anchorId);
+        if (!anchor) return undefined;
+        const point = groundPoint(tiledObjectBounds(anchor, definition.target.anchorId));
+        return { ...point, anchorId: definition.target.anchorId };
+      };
+
+      const publishAvailableInteraction = (interaction?: ExpeditionInteractionV1) => {
+        if (availableInteraction?.interactionId === interaction?.interactionId) return;
+        availableInteraction = interaction;
+        if (interaction) {
+          parent.dataset.interactionId = interaction.interactionId;
+          parent.dataset.interactionPrompt = interaction.prompt;
+        } else {
+          delete parent.dataset.interactionId;
+          delete parent.dataset.interactionPrompt;
+        }
+        parent.dispatchEvent(new CustomEvent(MAP_INTERACTION_AVAILABLE_EVENT, {
+          detail: interaction ? { interaction } : undefined,
+        }));
+      };
+
+      const publishAvailableExpression = (expression?: ExpeditionExpressionTriggerV1) => {
+        if (availableExpression?.triggerId === expression?.triggerId) return;
+        availableExpression = expression;
+        if (expression) {
+          parent.dataset.expressionTriggerId = expression.triggerId;
+          parent.dataset.expressionPrompt = expression.prompt ?? '';
+        } else {
+          delete parent.dataset.expressionTriggerId;
+          delete parent.dataset.expressionPrompt;
+        }
+        parent.dispatchEvent(new CustomEvent(MAP_EXPRESSION_AVAILABLE_EVENT, {
+          detail: expression ? { trigger: expression } : undefined,
+        }));
+      };
+
+      const refreshAvailableInteraction = () => {
+        if (activeInteraction || activeExpression || stepTarget || transitioning) {
+          publishAvailableInteraction();
+          publishAvailableExpression();
+          return undefined;
+        }
+        const interaction = findFacingInteraction({
+          interactions: (bundle.adventure.interactions ?? []).filter(candidate => (
+            candidate.repeatPolicy !== 'oncePerVisit' || !completedVisitInteractionIds.has(candidate.interactionId)
+          )),
+          roomId: currentRoom.room.roomId,
+          player: { x: player.x, y: player.y },
+          facing: playerFacing,
+          resolveTarget: resolveSpatialTarget,
+        });
+        publishAvailableInteraction(interaction);
+        if (interaction || !expressionsEnabled) {
+          publishAvailableExpression();
+          return interaction;
+        }
+        const spatialExpressions = bundle.adventure.expressionTriggers.filter((trigger): trigger is ExpeditionExpressionTriggerV1 & {
+          roomId: string;
+          target: ExpeditionInteractionV1['target'];
+        } => Boolean(
+          trigger.roomId
+          && trigger.target
+          && trigger.prompt
+          && !completedExpressionTriggerIds.has(trigger.triggerId),
+        ));
+        const expression = findFacingSpatialDefinition({
+          definitions: spatialExpressions,
+          roomId: currentRoom.room.roomId,
+          player: { x: player.x, y: player.y },
+          facing: playerFacing,
+          resolveTarget: resolveSpatialTarget,
+        });
+        publishAvailableExpression(expression);
+        return expression;
+      };
+
+      const setPlayerIdle = () => {
+        playerBody.setVelocity(0, 0);
+        stepTarget = undefined;
+        if (!playerCharacterSprite || !playerCharacterAsset) return;
+        playerCharacterSprite.stop();
+        playerCharacterSprite.setFrame(
+          playerCharacterAsset.directionRows[playerFacing] * playerCharacterAsset.columns
+            + playerCharacterAsset.idleFrame,
+        );
+      };
+
+      const beginInteraction = (interaction: ExpeditionInteractionV1) => {
+        if (activeInteraction) return;
+        const dialogue = (bundle.adventure.dialogues ?? [])
+          .find(candidate => candidate.dialogueId === interaction.dialogueId);
+        if (!dialogue) return;
+        const target = resolveSpatialTarget(interaction);
+        if (target?.placementId) {
+          const actor = activeActorsByPlacement.get(target.placementId);
+          if (actor) setActorFacing(actor, facingTowardTarget(target, { x: player.x, y: player.y }));
+        }
+        activeInteraction = interaction;
+        publishAvailableInteraction();
+        setPlayerIdle();
+        setAmbientAnimationsPaused(true);
+        parent.dataset.controlPriority = 'interaction';
+        parent.dataset.dialogueId = dialogue.dialogueId;
+        parent.dataset.step = 'idle';
+        parent.dispatchEvent(new CustomEvent<MapInteractionPresentation>(MAP_INTERACTION_STARTED_EVENT, {
+          detail: { interaction, dialogue },
+        }));
+      };
+
+      const finishInteraction = (completed: boolean) => {
+        const interaction = activeInteraction;
+        if (!interaction) return;
+        if (completed) {
+          if (interaction.repeatPolicy === 'oncePerVisit') completedVisitInteractionIds.add(interaction.interactionId);
+          parent.dispatchEvent(new CustomEvent(MAP_INTERACTION_COMPLETED_EVENT, { detail: { interaction } }));
+        }
+        activeInteraction = undefined;
+        delete parent.dataset.dialogueId;
+        parent.dataset.controlPriority = 'player';
+        if (!document.hidden && !ambientSuppressed && !reducedMotion) {
+          setAmbientAnimationsPaused(false);
+          parent.dataset.ambientState = ambientSequenceStates.length ? 'running' : 'none';
+        }
+        refreshAvailableInteraction();
+      };
+
+      const requestInteraction = (event: Event) => {
+        const interactionId = (event as CustomEvent<{ interactionId?: string }>).detail?.interactionId;
+        refreshAvailableInteraction();
+        if (availableInteraction && (!interactionId || availableInteraction.interactionId === interactionId)) {
+          beginInteraction(availableInteraction);
+        }
+      };
+
+      const controlInteraction = (event: Event) => {
+        const command = (event as CustomEvent<{ command?: string }>).detail?.command;
+        if (command === 'complete') finishInteraction(true);
+        if (command === 'dismiss') finishInteraction(false);
+      };
+
+      const requestInteractionFromKeyboard = () => {
+        refreshAvailableInteraction();
+        if (availableInteraction) beginInteraction(availableInteraction);
+      };
+
+      const beginExpression = (trigger: ExpeditionExpressionTriggerV1) => {
+        if (activeInteraction || activeExpression) return;
+        activeExpression = trigger;
+        publishAvailableExpression();
+        setPlayerIdle();
+        setAmbientAnimationsPaused(true);
+        parent.dataset.controlPriority = 'expression';
+        parent.dataset.activeExpressionTriggerId = trigger.triggerId;
+        parent.dataset.step = 'idle';
+        parent.dispatchEvent(new CustomEvent(MAP_EXPRESSION_STARTED_EVENT, { detail: { trigger } }));
+      };
+
+      const finishExpression = (completed: boolean) => {
+        const trigger = activeExpression;
+        if (!trigger) return;
+        if (completed) completedExpressionTriggerIds.add(trigger.triggerId);
+        activeExpression = undefined;
+        delete parent.dataset.activeExpressionTriggerId;
+        parent.dataset.controlPriority = 'player';
+        if (!document.hidden && !ambientSuppressed && !reducedMotion) {
+          setAmbientAnimationsPaused(false);
+          parent.dataset.ambientState = ambientSequenceStates.length ? 'running' : 'none';
+        }
+        refreshAvailableInteraction();
+      };
+
+      const requestExpression = (event: Event) => {
+        const triggerId = (event as CustomEvent<{ triggerId?: string }>).detail?.triggerId;
+        refreshAvailableInteraction();
+        if (availableExpression && (!triggerId || availableExpression.triggerId === triggerId)) {
+          beginExpression(availableExpression);
+        }
+      };
+
+      const controlExpression = (event: Event) => {
+        const command = (event as CustomEvent<{ command?: string }>).detail?.command;
+        if (command === 'complete') finishExpression(true);
+        if (command === 'dismiss') finishExpression(false);
+      };
+
+      const requestContextActionFromKeyboard = () => {
+        const contextual = refreshAvailableInteraction();
+        if (!contextual) return;
+        if ('interactionId' in contextual) beginInteraction(contextual);
+        else beginExpression(contextual);
       };
 
       const beginTransition = (transition: LoadedAdventureMapBundle['adventure']['transitions'][number]) => {
@@ -427,15 +1164,91 @@ export function createTechnicalPhaserGame({
         }).length);
       };
       parent.addEventListener(MAP_SPECIES_IDENTIFIED_EVENT, identifyVisibleSpecies);
-      this.events.once('shutdown', () => parent.removeEventListener(MAP_SPECIES_IDENTIFIED_EVENT, identifyVisibleSpecies));
+      const controlAmbient = (event: Event) => {
+        const command = (event as CustomEvent<{ command?: string }>).detail?.command;
+        if (command === 'pause') {
+          ambientSuppressed = true;
+          setAmbientAnimationsPaused(true);
+        }
+        if (command === 'resume') {
+          ambientSuppressed = false;
+          if (!activeInteraction && !activeExpression) setAmbientAnimationsPaused(false);
+        }
+        if (command === 'reset') {
+          ambientSuppressed = false;
+          for (const placementId of ambientPlacementIds()) {
+            const actor = activeActorsByPlacement.get(placementId);
+            if (!actor) continue;
+            actor.sprite.setPosition(actor.baseX, actor.baseY).setDepth(actor.baseY);
+            actor.direction = actor.baseDirection;
+            if (actor.asset && actor.baseAnimation) {
+              startActorAnimation(actor, actor.baseAnimation, actor.baseDirection, -1);
+            } else setActorFacing(actor, actor.baseDirection);
+          }
+          ambientSequenceStates.forEach(sequence => {
+            sequence.beatIndex = 0;
+            sequence.actionStates = [];
+            sequence.pauseRemainingMs = 0;
+            sequence.phase = 'start';
+            sequence.cycles = 0;
+          });
+          parent.dataset.ambientCycle = '0';
+          parent.dataset.ambientState = ambientSequenceStates.length ? 'running' : 'none';
+        }
+      };
+      const syncVisibilityState = () => {
+        if (document.hidden) {
+          parent.dataset.ambientState = 'hidden';
+          setAmbientAnimationsPaused(true);
+        } else if (!ambientSuppressed && !activeInteraction && !activeExpression) {
+          parent.dataset.ambientState = ambientSequenceStates.length ? 'running' : 'none';
+          setAmbientAnimationsPaused(false);
+        }
+      };
+      parent.addEventListener(MAP_AMBIENT_CONTROL_EVENT, controlAmbient);
+      parent.addEventListener(MAP_INTERACTION_REQUEST_EVENT, requestInteraction);
+      parent.addEventListener(MAP_INTERACTION_CONTROL_EVENT, controlInteraction);
+      parent.addEventListener(MAP_EXPRESSION_REQUEST_EVENT, requestExpression);
+      parent.addEventListener(MAP_EXPRESSION_CONTROL_EVENT, controlExpression);
+      this.input.keyboard?.on('keydown-E', requestContextActionFromKeyboard);
+      this.input.keyboard?.on('keydown-SPACE', requestContextActionFromKeyboard);
+      document.addEventListener('visibilitychange', syncVisibilityState);
+      this.events.once('shutdown', () => {
+        parent.removeEventListener(MAP_SPECIES_IDENTIFIED_EVENT, identifyVisibleSpecies);
+        parent.removeEventListener(MAP_AMBIENT_CONTROL_EVENT, controlAmbient);
+        parent.removeEventListener(MAP_INTERACTION_REQUEST_EVENT, requestInteraction);
+        parent.removeEventListener(MAP_INTERACTION_CONTROL_EVENT, controlInteraction);
+        parent.removeEventListener(MAP_EXPRESSION_REQUEST_EVENT, requestExpression);
+        parent.removeEventListener(MAP_EXPRESSION_CONTROL_EVENT, controlExpression);
+        this.input.keyboard?.off('keydown-E', requestContextActionFromKeyboard);
+        this.input.keyboard?.off('keydown-SPACE', requestContextActionFromKeyboard);
+        document.removeEventListener('visibilitychange', syncVisibilityState);
+      });
       parent.dataset.camera = 'static';
       parent.dataset.collision = 'arcade';
       parent.dataset.occlusionLayer = 'Above';
       parent.dataset.transitionCount = '0';
+      parent.dataset.controlPriority = 'player';
       onReady();
 
-      this.events.on('update', () => {
+      this.events.on('update', (_time: number, delta: number) => {
         if (!playerBody || transitioning) return;
+        if (!document.hidden && !ambientSuppressed && !activeInteraction && !activeExpression && !reducedMotion) {
+          ambientAccumulatorMs = Math.min(100, ambientAccumulatorMs + delta);
+          if (ambientAccumulatorMs >= 1000 / 30) {
+            ambientSequenceStates.forEach(sequence => updateAmbientSequence(sequence, ambientAccumulatorMs));
+            ambientAccumulatorMs = 0;
+          }
+        } else if (activeInteraction) parent.dataset.ambientState = 'interaction';
+        else if (activeExpression) parent.dataset.ambientState = 'expression';
+        else if (ambientSuppressed) parent.dataset.ambientState = 'suppressed';
+
+        refreshAvailableInteraction();
+        if (activeInteraction || activeExpression) {
+          setPlayerIdle();
+          parent.dataset.step = 'idle';
+          return;
+        }
         const requestedFacing: Facing | undefined = cursors?.up.isDown || wasd?.W?.isDown ? 'up'
           : cursors?.down.isDown || wasd?.S?.isDown ? 'down'
             : cursors?.left.isDown || wasd?.A?.isDown ? 'left'
@@ -459,29 +1272,7 @@ export function createTechnicalPhaserGame({
           }
         }
 
-        if (!stepTarget && requestedFacing) {
-          const delta = requestedFacing === 'left' ? { x: -16, y: 0 }
-            : requestedFacing === 'right' ? { x: 16, y: 0 }
-              : requestedFacing === 'up' ? { x: 0, y: -16 }
-                : { x: 0, y: 16 };
-          const destination = { x: player.x + delta.x, y: player.y + delta.y };
-          playerFacing = requestedFacing;
-          if (!canOccupyGroundPoint(destination.x, destination.y)) {
-            playerBody.setVelocity(0, 0);
-            parent.dataset.lastBlockedStep = 'preflight';
-          } else {
-            stepTarget = {
-            x: destination.x,
-            y: destination.y,
-            startX: player.x,
-            startY: player.y,
-            facing: requestedFacing,
-            };
-            delete parent.dataset.lastBlockedStep;
-            playerBody.setVelocity(delta.x === 0 ? 0 : Math.sign(delta.x) * 96, delta.y === 0 ? 0 : Math.sign(delta.y) * 96);
-          }
-        }
-
+        let completedStepThisFrame = false;
         if (stepTarget) {
           const blocked = stepTarget.facing === 'left' ? playerBody.blocked.left
             : stepTarget.facing === 'right' ? playerBody.blocked.right
@@ -497,8 +1288,39 @@ export function createTechnicalPhaserGame({
           } else if (reached) {
             playerBody.reset(stepTarget.x, stepTarget.y);
             stepTarget = undefined;
+            completedStepThisFrame = true;
           }
-        } else {
+        }
+
+        if (!stepTarget && requestedFacing) {
+          const delta = requestedFacing === 'left' ? { x: -16, y: 0 }
+            : requestedFacing === 'right' ? { x: 16, y: 0 }
+              : requestedFacing === 'up' ? { x: 0, y: -16 }
+                : { x: 0, y: 16 };
+          const destination = { x: player.x + delta.x, y: player.y + delta.y };
+          playerFacing = requestedFacing;
+          if (!canOccupyGroundPoint(destination.x, destination.y)) {
+            playerBody.setVelocity(0, 0);
+            parent.dataset.lastBlockedStep = 'preflight';
+          } else {
+            stepTarget = {
+              x: destination.x,
+              y: destination.y,
+              startX: player.x,
+              startY: player.y,
+              facing: requestedFacing,
+            };
+            delete parent.dataset.lastBlockedStep;
+            playerBody.setVelocity(
+              delta.x === 0 ? 0 : Math.sign(delta.x) * 96,
+              delta.y === 0 ? 0 : Math.sign(delta.y) * 96,
+            );
+            if (completedStepThisFrame) {
+              chainedStepCount += 1;
+              parent.dataset.chainedStepCount = String(chainedStepCount);
+            }
+          }
+        } else if (!stepTarget) {
           playerBody.setVelocity(0, 0);
         }
         parent.dataset.step = stepTarget ? 'moving' : 'idle';

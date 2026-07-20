@@ -425,31 +425,35 @@
 
 .size-control {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(12px, 18px) minmax(24px, 1fr) minmax(16px, 28px);
   align-items: center;
-  gap: 12px;
+  gap: clamp(4px, 3cqi, 12px);
   width: min(100%, 340px);
   justify-self: start;
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(0, 0, 0, .2);
+  container-type: inline-size;
 }
 
 .size-icon--small {
-  width: 18px;
-  height: 18px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
 }
 
 .size-icon--large {
-  width: 28px;
-  height: 28px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
 }
 
 .size-control input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
+  min-width: 0;
   height: 28px;
   margin: 0;
   background: transparent;
@@ -696,6 +700,10 @@ main {
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(var(--card-size) + 56px), 1fr));
-  gap: clamp(20px, 2.2vw, 34px);
+  gap: clamp(
+    calc(var(--card-size) * .22),
+    2.2vw,
+    calc(var(--card-size) * .39)
+  );
   align-items: start;
 }

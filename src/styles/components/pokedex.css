@@ -20,6 +20,10 @@
 }
 
 .pokemon-ball-card {
+  --ball-outline: clamp(1px, calc(var(--card-size) * .0227), 4px);
+  --ball-outer-outline: clamp(2px, calc(var(--card-size) * .028), 4px);
+  --ball-shell-inset: clamp(2px, calc(var(--card-size) * .02), 3px);
+  --ball-accent-outline: clamp(1px, calc(var(--card-size) * .017), 3px);
   position: relative;
   width: var(--card-size);
   aspect-ratio: 1;
@@ -67,9 +71,9 @@
 }
 
 .ball-assembly::after {
-  inset: 1px;
+  inset: 0;
   z-index: 6;
-  border: 2px solid rgba(255, 255, 255, .1);
+  border: var(--ball-outer-outline) solid #111;
   box-shadow:
     inset 4px 2px 6px rgba(255, 255, 255, .2),
     inset -5px -4px 8px rgba(0, 0, 0, .22);
@@ -116,6 +120,11 @@
   border-radius: 50%;
 }
 
+.ball-shell {
+  inset: var(--ball-shell-inset);
+  background-clip: padding-box;
+}
+
 .ball-shell--top {
   z-index: 2;
   clip-path: inset(0 0 50% 0);
@@ -123,7 +132,7 @@
   background:
     radial-gradient(circle at 35% 20%, rgba(255, 255, 255, .72), transparent 18%),
     linear-gradient(145deg, #ff5b38 0%, var(--red) 52%, var(--red-dark) 100%);
-  border: 4px solid #111;
+  border: var(--ball-outline) solid #111;
 }
 
 .ball-shell--top::before,
@@ -139,7 +148,7 @@
   background:
     radial-gradient(circle at 35% 76%, rgba(255, 255, 255, .98), transparent 20%),
     linear-gradient(145deg, #fff 0%, #f4f4f4 55%, #d9d9d9 100%);
-  border: 4px solid #111;
+  border: var(--ball-outline) solid #111;
 }
 
 .ball-band {
@@ -157,7 +166,7 @@
   height: 30%;
   transform: translate(-50%, -50%) translateZ(calc(var(--card-size) * .09));
   background: radial-gradient(circle at center, #fff 0 42%, #d6d6d6 43% 58%, #111 59% 70%, #fff 71% 100%);
-  box-shadow: 0 0 0 3px #111;
+  box-shadow: 0 0 0 var(--ball-accent-outline) #111;
   z-index: 3;
 }
 
@@ -188,7 +197,7 @@
   top: 5%;
   width: 25%;
   height: 82%;
-  border: 3px solid #111;
+  border: var(--ball-accent-outline) solid #111;
   border-radius: 58% 42% 58% 42%;
   background:
     radial-gradient(ellipse at 42% 28%, rgba(255, 190, 217, .85), transparent 24%),
@@ -335,7 +344,7 @@
 .pokemon-caption {
   position: relative;
   z-index: 10;
-  min-height: 34px;
+  min-height: clamp(24px, calc(var(--card-size) * .53125), 34px);
   width: calc(var(--card-size) + 68px);
   max-width: 100%;
   text-align: center;
@@ -348,16 +357,19 @@
   align-items: center;
   justify-content: center;
   max-width: 100%;
-  min-height: 24px;
+  min-height: clamp(18px, calc(var(--card-size) * .375), 24px);
   border-radius: 999px;
-  padding: 6px 8px 4px;
+  padding: clamp(3px, calc(var(--card-size) * .09375), 6px)
+    clamp(5px, calc(var(--card-size) * .125), 8px)
+    clamp(2px, calc(var(--card-size) * .0625), 4px);
   background: rgba(0, 0, 0, .5);
   border: 1px solid rgba(255, 255, 255, .16);
   color: #fff;
   font-family: "Press Start 2P", Inter, sans-serif;
-  font-size: clamp(9px, calc(var(--card-size) * .075), 12px);
+  font-size: clamp(6px, calc(3px + var(--card-size) * .09375), 9px);
   line-height: 1.2;
   text-transform: capitalize;
+  white-space: nowrap;
   word-break: normal;
   overflow-wrap: anywhere;
   hyphens: none;
@@ -476,7 +488,7 @@
   top: -5%;
   width: 19%;
   height: 42%;
-  border: 3px solid #111;
+  border: var(--ball-accent-outline) solid #111;
   background:
     radial-gradient(ellipse at 38% 20%, rgba(255, 196, 196, .86), transparent 24%),
     linear-gradient(145deg, #ff6b6f 0%, #f02f38 56%, #b71322 100%);

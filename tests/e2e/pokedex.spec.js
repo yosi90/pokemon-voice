@@ -229,14 +229,23 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await page.reload();
   const voiceModal = page.locator('#voice-support-modal');
   if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.route('**/tegueste-forest.adventure.json', async route => {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    await route.continue();
+  }, { times: 1 });
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(
+    '#/expeditions/map%3Ategueste%3Acamphor-forest/room%3Ategueste-forest%3A02-04',
+  );
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   await expect(preview).toBeVisible();
-  await expect(preview.getByRole('status')).toHaveCount(0);
+  await expect(preview.getByRole('status')).toHaveText('¡Corriendo a ayudar al profesor!');
   const runtime = preview.getByTestId('technical-map-runtime');
   await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(preview.getByRole('status')).toHaveCount(0);
+  await expect(runtime).toHaveAttribute('data-animation', 'playing');
   await expect(runtime).toHaveAttribute('data-map-id', 'map:tegueste:camphor-forest');
   await expect(runtime).toHaveAttribute('data-room-id', 'room:tegueste-forest:02-04');
   await expect(runtime).toHaveAttribute('data-actor-id', 'actor:rattata:left');
@@ -248,6 +257,26 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await expect(runtime).toHaveAttribute('data-camera', 'static');
   await expect(runtime).toHaveAttribute('data-collision', 'arcade');
   await expect(runtime).toHaveAttribute('data-occlusion-layer', 'Above');
+  await expect(runtime).toHaveAttribute('data-occluded-actor-count', '2');
+  await expect(runtime).toHaveAttribute('data-occlusion-filter-count', '2');
+  await expect(runtime).toHaveAttribute('data-ambient-tick-rate', '30');
+  await expect(runtime).toHaveAttribute('data-ambient-assets', 'ready');
+  await expect(runtime).toHaveAttribute('data-ambient-texture-count', '4');
+  await expect(runtime).toHaveAttribute('data-ambient-sequence-count', '1');
+  await expect.poll(async () => JSON.parse(await runtime.getAttribute('data-ambient-actors') || '[]')
+    .some(actor => actor.animation !== 'Idle')).toBe(true);
+  await expect(runtime).toHaveAttribute('data-ambient-beat-id', 'beat:gyarados:first-strike', { timeout: 10000 });
+  expect(JSON.parse(await runtime.getAttribute('data-ambient-actors') || '[]')
+    .filter(actor => actor.placementId.startsWith('actor:gyarados:'))
+    .every(actor => !actor.missing && actor.frameHeight > 0)).toBe(true);
+  await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-ambient-control', {
+    detail: { command: 'pause' },
+  })));
+  await expect(runtime).toHaveAttribute('data-ambient-state', 'suppressed');
+  await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-ambient-control', {
+    detail: { command: 'resume' },
+  })));
+  await expect(runtime).toHaveAttribute('data-ambient-state', 'running');
   await expect(runtime).toHaveAttribute('data-animation', 'playing');
   const canvas = runtime.locator('canvas');
   await expect(canvas).toHaveCount(1);
@@ -267,25 +296,28 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await page.keyboard.down('ArrowUp');
   await expect.poll(async () => Number(await runtime.getAttribute('data-player-y')), {
     intervals: [100],
-    timeout: 4000,
+    timeout: 10000,
   }).toBe(176);
   await page.waitForTimeout(250);
   expect(Number(await runtime.getAttribute('data-player-y'))).toBe(176);
   await page.keyboard.up('ArrowUp');
+  expect(Number(await runtime.getAttribute('data-chained-step-count'))).toBeGreaterThan(0);
 
   await preview.getByRole('button', { name: 'Abandonar misión' }).click();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('');
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
   await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-ambient-cycle', '0');
 
   const initialX = Number(await runtime.getAttribute('data-player-x'));
   await page.keyboard.down('ArrowLeft');
   await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeLessThan(initialX);
-  await page.waitForTimeout(500);
+  await expect(runtime).toHaveAttribute('data-last-blocked-step', 'preflight', { timeout: 10000 });
+  await expect(runtime).toHaveAttribute('data-step', 'idle');
   const blockedX = Number(await runtime.getAttribute('data-player-x'));
   await page.waitForTimeout(250);
   expect(Number(await runtime.getAttribute('data-player-x'))).toBe(blockedX);
-  await expect(runtime).toHaveAttribute('data-last-blocked-step', 'preflight');
   await page.keyboard.up('ArrowLeft');
   await expect(runtime).toHaveAttribute('data-step', 'idle');
   expect(Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThanOrEqual(0);
@@ -303,6 +335,272 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await expect(preview).toBeVisible();
   await preview.getByRole('button', { name: 'Abandonar misión' }).click();
   await expect(preview).toHaveCount(0);
+});
+
+test('la expedición libre crea una sesión y al abandonarla muestra el informe sin borrar progreso', async ({ page }) => {
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    save.pokedexRun.registeredSpeciesIds = [25];
+    save.pokedexRun.discoveryOrder = [25];
+    save.pokedexRun.selectedCompanion = { schemaVersion: 1, formId: 'pokemon-form:25:default' };
+    save.pokedexRun.selectedCompanionFormId = 'pokemon-form:25:default';
+    save.pokeDiscover.mapProgress['map:tegueste:camphor-forest'] = {
+      schemaVersion: 1,
+      mapId: 'map:tegueste:camphor-forest',
+      freeExpeditionUnlocked: true,
+      completedMissionIds: ['mission:tegueste:help-professor-camphor'],
+      unlockedSecretIds: [],
+      knownNpcIds: [],
+      conversationIds: [],
+      collectibleIds: [],
+      knownHintIds: [],
+      unlockedRouteIds: [],
+      eligibleEncounterVisits: {},
+      activeVariantIds: [],
+      injectedEncounterIds: [],
+      completedBehaviorTriggerIds: [],
+      resolvedExpressionTriggers: {},
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  await expect(preview.getByTestId('technical-map-runtime')).toHaveAttribute('data-runtime', 'ready');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).activeExpeditionSession)).toMatchObject({
+    mapId: 'map:tegueste:camphor-forest',
+    loadout: { companion: { formId: 'pokemon-form:25:default' } },
+  });
+
+  await preview.getByRole('button', { name: 'Abandonar misión' }).click();
+  const report = page.getByRole('dialog', { name: 'De vuelta con Alcanfor' });
+  await expect(report).toBeVisible();
+  await expect(report).toContainText('conserva todo el progreso anterior');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).activeExpeditionSession)).toBeUndefined();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1'))
+    .pokeDiscover.mapProgress['map:tegueste:camphor-forest'].freeExpeditionUnlocked)).toBe(true);
+});
+
+test('resuelve expresiones por texto y análisis acústico local sin conservar audio', async ({ page }) => {
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    save.pokedexRun.registeredSpeciesIds = [25];
+    save.pokedexRun.discoveryOrder = [25];
+    save.pokedexRun.selectedCompanion = { schemaVersion: 1, formId: 'pokemon-form:25:default' };
+    save.pokedexRun.selectedCompanionFormId = 'pokemon-form:25:default';
+    save.pokeDiscover.mapProgress['map:tegueste:camphor-forest'] = {
+      schemaVersion: 1,
+      mapId: 'map:tegueste:camphor-forest',
+      freeExpeditionUnlocked: true,
+      completedMissionIds: ['mission:tegueste:help-professor-camphor'],
+      unlockedSecretIds: [],
+      knownNpcIds: [],
+      conversationIds: [],
+      collectibleIds: [],
+      knownHintIds: [],
+      unlockedRouteIds: [],
+      eligibleEncounterVisits: {},
+      activeVariantIds: [],
+      injectedEncounterIds: [],
+      completedBehaviorTriggerIds: [],
+      resolvedExpressionTriggers: {},
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  const runtime = preview.getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-expression-started', {
+    detail: { trigger: {
+      schemaVersion: 1,
+      triggerId: 'expression:tegueste:compliment-cottonee',
+      activationRequirement: { kind: 'trainerLevel', minimum: 1 },
+      inputMethods: ['voice', 'text', 'contextAction'],
+      matchAny: [{ kind: 'intent', intent: 'compliment', examples: ['eres adorable'] }],
+      knownHintIds: [],
+      successSequenceId: 'sequence:tegueste:cottonee-happy',
+      fallbackActionId: 'action:tegueste:smile-at-cottonee',
+      fallbackLabel: 'Sonreír y saludar',
+      prompt: 'Hablarle a Cottonee',
+      successText: 'Cottonee gira feliz: parece que le ha gustado.',
+    } },
+  })));
+
+  await expect(preview.getByText('Puedes hablar, escribir o usar la alternativa accesible.')).toBeVisible();
+  const input = preview.getByPlaceholder('Dile algo…');
+  await input.fill('eres adorable');
+  await input.press('Enter');
+  await expect(preview.getByText(/He entendido: “eres adorable”/)).toBeVisible();
+  await expect.poll(() => page.evaluate(() => Boolean(JSON.parse(localStorage.getItem('pokevoice-save-v1'))
+    .pokeDiscover.mapProgress['map:tegueste:camphor-forest']
+    .resolvedExpressionTriggers['expression:tegueste:compliment-cottonee']))).toBe(true);
+  await expect(preview.getByText('Hablarle a Cottonee')).toHaveCount(0, { timeout: 3000 });
+
+  await page.evaluate(() => {
+    window.__acousticTracksStopped = 0;
+    window.__acousticContextClosed = false;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: async () => ({
+          getTracks: () => [{ stop: () => { window.__acousticTracksStopped += 1; } }],
+        }),
+      },
+    });
+    class FakeAudioContext {
+      sampleRate = 48000;
+      createAnalyser() {
+        return {
+          fftSize: 2048,
+          smoothingTimeConstant: 0,
+          getFloatTimeDomainData(samples) {
+            for (let index = 0; index < samples.length; index += 1) {
+              samples[index] = Math.sin(2 * Math.PI * 240 * index / 48000) * 0.3;
+            }
+          },
+          disconnect() {},
+        };
+      }
+      createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
+      async close() { window.__acousticContextClosed = true; }
+    }
+    window.AudioContext = FakeAudioContext;
+  });
+
+  await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-expression-started', {
+    detail: { trigger: {
+      schemaVersion: 1,
+      triggerId: 'expression:tegueste:scare-cramorant',
+      activationRequirement: { kind: 'trainerLevel', minimum: 1 },
+      inputMethods: ['voice', 'contextAction'],
+      matchAny: [{ kind: 'acoustic', feature: 'loudness', minimumLevel: 0.62, minimumDurationMs: 500 }],
+      knownHintIds: [],
+      successSequenceId: 'sequence:tegueste:cramorant-startled',
+      fallbackActionId: 'action:tegueste:wave-arms-at-cramorant',
+      fallbackLabel: 'Agitar los brazos',
+      prompt: 'Espantar a Cramorant',
+      successText: 'Cramorant da un respingo y se aparta, muy ofendido.',
+    } },
+  })));
+  await expect(preview.getByText(/El análisis dura menos de dos segundos/)).toBeVisible();
+  await expect(preview.getByPlaceholder('Dile algo…')).toHaveCount(0);
+  const acousticButton = preview.getByRole('button', { name: 'Analizar sonido localmente' });
+  await acousticButton.click();
+  await expect(acousticButton).toBeDisabled();
+  await expect(preview.getByText(/Volumen \d+%/)).toBeVisible({ timeout: 5000 });
+  await expect(preview.getByText(/Cramorant da un respingo/)).toBeVisible();
+  await expect.poll(() => page.evaluate(() => ({
+    stopped: window.__acousticTracksStopped,
+    closed: window.__acousticContextClosed,
+  }))).toEqual(expect.objectContaining({ stopped: 1, closed: true }));
+  const acousticRecord = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1'))
+    .pokeDiscover.mapProgress['map:tegueste:camphor-forest']
+    .resolvedExpressionTriggers['expression:tegueste:scare-cramorant']);
+  expect(acousticRecord).toMatchObject({ method: 'voice' });
+  expect(JSON.stringify(acousticRecord)).not.toContain('loudness');
+  expect(await preview.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+});
+
+test('movimiento reducido conserva overlays y poses ambientales estáticas', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  const runtime = preview.getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-ambient-state', 'reduced-motion');
+  await expect(runtime).toHaveAttribute('data-ambient-assets', 'skipped');
+  await expect(runtime).toHaveAttribute('data-ambient-sequence-count', '0');
+  await expect(runtime).toHaveAttribute('data-occluded-actor-count', '2');
+  await expect(runtime).toHaveAttribute('data-ambient-cycle', '0');
+});
+
+test('habla con Alcanfor mediante la interacción contextual y bloquea el mapa durante el diálogo', async ({ page }) => {
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  const runtime = preview.getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await page.keyboard.down('ArrowRight');
+  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThan(184);
+  await page.keyboard.up('ArrowRight');
+  await expect(runtime).toHaveAttribute('data-step', 'idle');
+  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBe(200);
+  await page.keyboard.down('ArrowUp');
+  const prompt = preview.getByRole('button', { name: /Hablar con Alcanfor/ });
+  await expect(prompt).toBeVisible({ timeout: 10000 });
+  await page.keyboard.up('ArrowUp');
+
+  await page.keyboard.press('e');
+  const dialogue = preview.getByRole('dialog', { name: 'Conversación con Profesor Alcanfor' });
+  await expect(dialogue).toContainText('Esos Rattata llevan un rato siguiendo mi mochila');
+  const dialogueLayout = await dialogue.evaluate(element => {
+    const viewport = element.closest('.map-concept-preview__viewport').getBoundingClientRect();
+    const box = element.getBoundingClientRect();
+    return {
+      leftMargin: box.left - viewport.left,
+      rightMargin: viewport.right - box.right,
+      bottomMargin: viewport.bottom - box.bottom,
+      nameFont: Number.parseFloat(getComputedStyle(element.querySelector('strong')).fontSize),
+      textFont: Number.parseFloat(getComputedStyle(element.querySelector('p')).fontSize),
+      buttonFont: Number.parseFloat(getComputedStyle(element.querySelector('button')).fontSize),
+    };
+  });
+  expect(dialogueLayout.leftMargin).toBeGreaterThanOrEqual(8);
+  expect(dialogueLayout.rightMargin).toBeGreaterThanOrEqual(8);
+  expect(dialogueLayout.bottomMargin).toBeGreaterThanOrEqual(8);
+  expect(dialogueLayout.nameFont).toBeGreaterThanOrEqual(8);
+  expect(dialogueLayout.textFont).toBeGreaterThanOrEqual(8);
+  expect(dialogueLayout.buttonFont).toBeGreaterThanOrEqual(7);
+  await expect(runtime).toHaveAttribute('data-control-priority', 'interaction');
+  await expect(runtime).toHaveAttribute('data-ambient-state', 'interaction');
+  const lockedX = await runtime.getAttribute('data-player-x');
+  await page.keyboard.press('ArrowLeft');
+  await expect(runtime).toHaveAttribute('data-player-x', lockedX ?? '');
+
+  await dialogue.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(dialogue).toContainText('Tu compañero también podrá ayudarte');
+  await dialogue.getByRole('button', { name: 'Terminar' }).click();
+  await expect(dialogue).toHaveCount(0);
+  await expect(runtime).toHaveAttribute('data-control-priority', 'player');
+  await expect(runtime).toHaveAttribute('data-ambient-state', 'running');
+
+  await expect(prompt).toBeVisible();
+  await prompt.click();
+  await expect(dialogue).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialogue).toHaveCount(0);
+  await expect(preview).toBeVisible();
 });
 
 test('voz y texto de expedición solo identifican especies presentes en la habitación', async ({ page }) => {
@@ -911,7 +1209,27 @@ test('reúne generación, estadísticas y ajustes en un único drawer', async ({
   await expect(progress).toBeVisible();
   await expect(progress.getByRole('progressbar')).toHaveCount(2);
   await expect(progress.getByText('0%', { exact: true })).toHaveCount(2);
-  await expect(drawer.getByLabel('Tamaño de Pokéballs')).toBeVisible();
+  const sizeSlider = drawer.getByLabel('Tamaño de Pokéballs');
+  await expect(sizeSlider).toBeVisible();
+  const sizeControl = drawer.locator('.size-control');
+  await sizeControl.evaluate(element => { element.style.width = '90px'; });
+  expect(await sizeControl.evaluate(element => {
+    const controlBounds = element.getBoundingClientRect();
+    const icons = [...element.querySelectorAll('.size-icon')];
+    return element.scrollWidth <= element.clientWidth
+      && icons.every(icon => {
+        const bounds = icon.getBoundingClientRect();
+        return bounds.left >= controlBounds.left - 1 && bounds.right <= controlBounds.right + 1;
+      });
+  })).toBe(true);
+  await sizeControl.evaluate(element => { element.style.width = ''; });
+  await sizeSlider.fill('32');
+  expect(await page.locator('.pokemon-card[data-id="1"] .ball-assembly').evaluate(element => (
+    Number.parseFloat(getComputedStyle(element, '::after').borderTopWidth)
+  ))).toBeGreaterThanOrEqual(2);
+  expect(await page.locator('.pokemon-card[data-id="1"] .ball-shell--top').evaluate(element => (
+    Number.parseFloat(getComputedStyle(element).insetBlockStart)
+  ))).toBeGreaterThanOrEqual(2);
   await expect(page.locator('.secondary-menu')).toHaveCount(0);
   const activeAppearance = await trigger.evaluate(element => {
     const style = getComputedStyle(element);

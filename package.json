@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "assets:camphor:normalize": "node scripts/normalize-camphor-raw.mjs",
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5173",
@@ -34,6 +35,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "jsdom": "^28.1.0",
+    "pngjs": "^7.0.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }

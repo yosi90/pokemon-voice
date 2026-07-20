@@ -23,20 +23,126 @@
     { "schemaVersion": 1, "placementId": "actor:rattata:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:left", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "right" },
     { "schemaVersion": 1, "placementId": "actor:rattata:middle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:middle", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "up" },
     { "schemaVersion": 1, "placementId": "actor:rattata:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:right", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "left" },
-    { "schemaVersion": 1, "placementId": "actor:gyarados:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:left", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "right" },
-    { "schemaVersion": 1, "placementId": "actor:gyarados:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:right", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "left" },
+    { "schemaVersion": 1, "placementId": "actor:gyarados:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:left", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "right", "occlusionGroupIds": ["occlusion-group:water-actors"] },
+    { "schemaVersion": 1, "placementId": "actor:gyarados:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:right", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "left", "occlusionGroupIds": ["occlusion-group:water-actors"] },
     { "schemaVersion": 1, "placementId": "actor:cramorant", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cramorant", "assetId": "pmd:0845-cramorant:default", "animation": "Idle", "direction": "down" },
     { "schemaVersion": 1, "placementId": "actor:cottonee", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cottonee", "assetId": "pmd:0546-cottonee:default", "animation": "Idle", "direction": "down", "collision": "pass-through" }
   ],
   "characterPlacements": [
     { "schemaVersion": 1, "placementId": "character:player", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:player:entrance-south", "assetId": "character:trainer:achaman", "direction": "up", "controllable": true },
-    { "schemaVersion": 1, "placementId": "character:professor-alcanfor", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor", "assetId": "character:npc:professor-alcanfor-placeholder", "direction": "down" }
+    { "schemaVersion": 1, "placementId": "character:professor-alcanfor", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor", "assetId": "character:npc:professor-alcanfor", "direction": "down" }
   ],
   "transitions": [],
   "variants": [],
   "missionIds": ["mission:tegueste:help-professor-camphor"],
   "behaviorTriggers": [],
-  "expressionTriggers": [],
+  "expressionTriggers": [{
+    "schemaVersion": 1,
+    "triggerId": "expression:tegueste:compliment-cottonee",
+    "roomId": "room:tegueste-forest:02-04",
+    "target": { "kind": "placement", "placementId": "actor:cottonee" },
+    "prompt": "Hablarle a Cottonee",
+    "rangeTiles": 1,
+    "activationRequirement": { "kind": "trainerLevel", "minimum": 1 },
+    "inputMethods": ["voice", "text", "contextAction"],
+    "matchAny": [{
+      "kind": "phrase",
+      "phrases": ["qué suave eres", "eres muy suave"],
+      "aliases": ["algodoncito bonito"]
+    }, {
+      "kind": "intent",
+      "intent": "compliment",
+      "examples": ["eres precioso", "qué bonito eres", "eres adorable"]
+    }],
+    "knownHintIds": [],
+    "successSequenceId": "sequence:tegueste:cottonee-happy",
+    "fallbackActionId": "action:tegueste:smile-at-cottonee",
+    "fallbackLabel": "Sonreír y saludar",
+    "successText": "Cottonee gira feliz: parece que le ha gustado.",
+    "retryText": "Cottonee ladea la cabeza. Quizá esperaba algo más amable."
+  }, {
+    "schemaVersion": 1,
+    "triggerId": "expression:tegueste:scare-cramorant",
+    "roomId": "room:tegueste-forest:02-04",
+    "target": { "kind": "placement", "placementId": "actor:cramorant" },
+    "prompt": "Espantar a Cramorant",
+    "rangeTiles": 1,
+    "activationRequirement": { "kind": "trainerLevel", "minimum": 1 },
+    "inputMethods": ["voice", "contextAction"],
+    "matchAny": [{
+      "kind": "acoustic",
+      "feature": "loudness",
+      "minimumLevel": 0.62,
+      "minimumDurationMs": 500
+    }],
+    "knownHintIds": [],
+    "successSequenceId": "sequence:tegueste:cramorant-startled",
+    "fallbackActionId": "action:tegueste:wave-arms-at-cramorant",
+    "fallbackLabel": "Agitar los brazos",
+    "successText": "Cramorant da un respingo y se aparta, muy ofendido.",
+    "retryText": "Cramorant ni se inmuta. Tendrás que hacerlo con más decisión."
+  }],
+  "interactions": [{
+    "schemaVersion": 1,
+    "interactionId": "interaction:tegueste:talk-professor-camphor",
+    "roomId": "room:tegueste-forest:02-04",
+    "target": { "kind": "placement", "placementId": "character:professor-alcanfor" },
+    "prompt": "Hablar con Alcanfor",
+    "dialogueId": "dialogue:tegueste:professor-warning",
+    "meaningfulKind": "npcConversation",
+    "repeatPolicy": "repeatable"
+  }],
+  "dialogues": [{
+    "schemaVersion": 1,
+    "dialogueId": "dialogue:tegueste:professor-warning",
+    "initialPageId": "dialogue-page:tegueste:professor-warning:1",
+    "pages": [{
+      "schemaVersion": 1,
+      "pageId": "dialogue-page:tegueste:professor-warning:1",
+      "speakerName": "Profesor Alcanfor",
+      "text": "¡Menos mal que has venido! Esos Rattata llevan un rato siguiendo mi mochila.",
+      "nextPageId": "dialogue-page:tegueste:professor-warning:2"
+    }, {
+      "schemaVersion": 1,
+      "pageId": "dialogue-page:tegueste:professor-warning:2",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Acércate a ellos y pulsa Espacio o E para ahuyentarlos. Tu compañero también podrá ayudarte."
+    }]
+  }],
+  "ambientSequences": [{
+    "schemaVersion": 1,
+    "sequenceId": "ambient:tegueste:gyarados-duel",
+    "roomId": "room:tegueste-forest:02-04",
+    "loop": true,
+    "blockedPolicy": "pauseSequence",
+    "loopPauseMs": { "min": 700, "max": 1400 },
+    "beats": [
+      { "schemaVersion": 1, "beatId": "beat:gyarados:challenge", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "RearUp", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Rumble", "direction": "left" }
+      ], "pauseAfterMs": { "min": 250, "max": 500 } },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:first-strike", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Attack", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Strike", "direction": "left" }
+      ], "pauseAfterMs": 180 },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:advance", "actions": [
+        { "kind": "movePath", "placementId": "actor:gyarados:left", "pathId": "path:gyarados:left-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Charge" },
+        { "kind": "movePath", "placementId": "actor:gyarados:right", "pathId": "path:gyarados:right-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Charge" }
+      ], "pauseAfterMs": { "min": 160, "max": 320 } },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:answer", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Rumble", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "RearUp", "direction": "left" }
+      ], "pauseAfterMs": 220 },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:retreat", "actions": [
+        { "kind": "movePath", "placementId": "actor:gyarados:left", "pathId": "path:gyarados:left-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Walk", "reverse": true },
+        { "kind": "movePath", "placementId": "actor:gyarados:right", "pathId": "path:gyarados:right-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Walk", "reverse": true }
+      ] },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:counter", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Strike", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Attack", "direction": "left" }
+      ], "pauseAfterMs": { "min": 350, "max": 700 } }
+    ]
+  }],
   "rareEncounters": [],
   "requiredAssetIds": [
     "pmd:0019-rattata:default",
@@ -45,6 +151,6 @@
     "pmd:0845-cramorant:default",
     "pmd:0204-pineco:default",
     "character:trainer:achaman",
-    "character:npc:professor-alcanfor-placeholder"
+    "character:npc:professor-alcanfor"
   ]
 }

@@ -77,7 +77,7 @@ function matchesAcoustic(
   }
 }
 
-function matchesAttempt(trigger: ExpeditionExpressionTriggerV1, attempt: ExpressionAttemptV1) {
+export function matchesExpressionAttempt(trigger: ExpeditionExpressionTriggerV1, attempt: ExpressionAttemptV1) {
   if (attempt.method === 'contextAction') {
     return attempt.contextActionId === trigger.fallbackActionId;
   }
@@ -129,7 +129,7 @@ export function resolveExpressionTrigger(
   const understoodText = request.attempt.transcript === undefined
     ? undefined
     : normalizeExpressionText(request.attempt.transcript);
-  if (!matchesAttempt(request.trigger, request.attempt)) {
+  if (!matchesExpressionAttempt(request.trigger, request.attempt)) {
     return {
       status: 'notMatched',
       save,

@@ -18,6 +18,9 @@ describe('persistencia local existente', () => {
   it('normaliza tamaños de carta fuera del rango permitido', () => {
     localStorage.setItem('pokevoice-card-scale', '9999');
 
-    expect(readCardSize()).toBe(176);
+    expect(readCardSize()).toBe(88);
+
+    localStorage.setItem('pokevoice-card-scale', '16');
+    expect(readCardSize()).toBe(32);
   });
 });

@@ -62,7 +62,7 @@ describe('guardado raíz y migración legacy', () => {
     });
     expect(result.save.preferences).toMatchObject({
       selectedGenerationIds: [1, 3, 9],
-      cardSize: 144,
+      cardSize: 72,
     });
     expect(result.save.pokeDiscover.globalCounters).toEqual({
       meowthCoins: 8,
@@ -210,7 +210,7 @@ describe('guardado raíz y migración legacy', () => {
     expect(source).toBe('legacy');
     expect(save.pokedexRun.registeredSpeciesIds).toEqual([]);
     expect(save.preferences.selectedGenerationIds).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    expect(save.preferences.cardSize).toBe(176);
+    expect(save.preferences.cardSize).toBe(88);
     expect(save.pokeDiscover.worldFlags).toEqual({ invalid: null });
   });
 

@@ -11,7 +11,7 @@ describe('adaptadores de persistencia legacy', () => {
     const { result } = renderHook(() => usePokedexPreferences());
 
     expect(result.current.activeGeneration).toBe(1);
-    expect(result.current.cardSize).toBe(150);
+    expect(result.current.cardSize).toBe(75);
 
     act(() => {
       result.current.setActiveGeneration(2);
@@ -19,7 +19,7 @@ describe('adaptadores de persistencia legacy', () => {
     });
 
     await waitFor(() => expect(JSON.parse(localStorage.getItem(LS_GENS)!)).toEqual([2]));
-    expect(localStorage.getItem(LS_CARD_SCALE)).toBe('160');
+    expect(localStorage.getItem(LS_CARD_SCALE)).toBe('80');
   });
 
   it('encadena cambios de easter eggs y los conserva al reiniciar la run', () => {

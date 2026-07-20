@@ -6,7 +6,6 @@ import {
 } from '../domain/discovery/planSpecialReveal.js';
 import { sleep } from '../lib/pokemon.js';
 import { playGengarScareTone, playPokemonCry, primeAudio } from '../lib/pokemonAudio.js';
-import { getPokemonSpecial, SPECIAL_TIMING } from '../lib/pokemonSpecials.js';
 
 interface SpecialEffectView extends SpecialEffectPayload {
   key: string;
@@ -30,8 +29,8 @@ export function usePokemonRevealEffects({ isDiscovered }: PokemonRevealEffectsOp
     return enabled;
   }, []);
 
-  const playRevealAudio = useCallback((pokemonId: number) => {
-    void playPokemonCry(pokemonId).catch(error => {
+  const playRevealAudio = useCallback((pokemonId: number, options: { delay?: number; volume?: number } = {}) => {
+    void playPokemonCry(pokemonId, options).catch(error => {
       if (error?.name === 'NotAllowedError') {
         setAudioBlocked(true);
         return;
@@ -80,18 +79,11 @@ export function usePokemonRevealEffects({ isDiscovered }: PokemonRevealEffectsOp
     }, 1400);
   }, []);
 
-  const replayPokemonCry = useCallback(async (
-    pokemonId: number,
-    effectOptions: Record<string, unknown> = {},
-  ) => {
+  const replayPokemonCry = useCallback(async (pokemonId: number) => {
     if (!isDiscovered(pokemonId)) return;
     await primeAudio();
-    const special = getPokemonSpecial(pokemonId);
-    await runSpecialReveal(special, pokemonId, SPECIAL_TIMING.BEFORE_REVEAL, effectOptions);
-    markRevealed(pokemonId);
-    playRevealAudio(pokemonId);
-    await runSpecialReveal(special, pokemonId, SPECIAL_TIMING.AFTER_REVEAL, effectOptions);
-  }, [isDiscovered, markRevealed, playRevealAudio, runSpecialReveal]);
+    playRevealAudio(pokemonId, { delay: 0 });
+  }, [isDiscovered, playRevealAudio]);
 
   const resetRevealEffects = useCallback(() => {
     clearSpecialEffects();

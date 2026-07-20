@@ -15,7 +15,12 @@ import { Toast } from './components/Toast.jsx';
 import { NarrativeScene } from './components/NarrativeScene.tsx';
 import { ProfessorMissionModal } from './components/ProfessorMissionModal.tsx';
 import { ProfessorIncomingCall } from './components/ProfessorIncomingCall.tsx';
-import { MapConceptPreview } from './components/MapConceptPreview.tsx';
+import { ExpeditionReportModal } from './components/ExpeditionReportModal.tsx';
+import {
+  MapConceptPreview,
+  TEGUESTE_FOREST_PREVIEW_MAP_ID,
+  TEGUESTE_FOREST_PREVIEW_ROOM_ID,
+} from './components/MapConceptPreview.tsx';
 import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js';
@@ -33,11 +38,26 @@ import {
   confirmModeStart,
   getModeDefinition,
 } from './domain/modes/modeDefinitions.ts';
-import { deleteAllBrowserPokeVoiceData, getBrowserPokeVoiceSave } from './store/browserPokeVoiceSaveStore.js';
+import {
+  beginBrowserExpedition,
+  deleteAllBrowserPokeVoiceData,
+  endBrowserExpeditionWithReport,
+  getBrowserPokeVoiceSave,
+  resolveBrowserExpressionTrigger,
+} from './store/browserPokeVoiceSaveStore.js';
 import { browserDiscoveryStore } from './store/browserDiscoveryStore.ts';
 import { LOCAL_POKEMON_CATALOG } from './services/pokemonCatalog.ts';
 import { createPokemonNameIndex, resolveGuessTranscript } from './domain/discovery/resolvePokemonGuess.ts';
 import { toLegacyPokemonList } from './domain/catalog/pokemonCatalogModel.ts';
+import { CAMPHOR_PROLOGUE_MISSION } from './data/adventure/camphorPrologue.ts';
+import { getKnownPokeDiscoverMissionIds } from './data/adventure/missionCatalog.ts';
+import {
+  buildExpeditionHash,
+  buildMissionHash,
+  buildPokeDiscoverHash,
+  parseAdventureHashRoute,
+  replaceWithPokedexRoute,
+} from './domain/expeditions/adventureHashRoutes.ts';
 
 const localPokemonNameIndex = createPokemonNameIndex(toLegacyPokemonList(LOCAL_POKEMON_CATALOG));
 
@@ -57,7 +77,18 @@ export default function App() {
   const [professorMissionsOpen, setProfessorMissionsOpen] = useState(false);
   const [mapConceptPreviewOpen, setMapConceptPreviewOpen] = useState(false);
   const [mapVisibleSpeciesIds, setMapVisibleSpeciesIds] = useState([]);
+  const [mapExpression, setMapExpression] = useState(null);
+  const [mapExpressionFeedback, setMapExpressionFeedback] = useState(null);
+  const [expeditionReport, setExpeditionReport] = useState();
+  const [adventureRoute, setAdventureRoute] = useState(() => parseAdventureHashRoute(window.location.hash));
   const game = usePokemonGame();
+
+  useEffect(() => {
+    const syncHashRoute = () => setAdventureRoute(parseAdventureHashRoute(window.location.hash));
+    window.addEventListener('hashchange', syncHashRoute);
+    return () => window.removeEventListener('hashchange', syncHashRoute);
+  }, []);
+
   const resolveMapPokemon = useCallback((raw, { fromSpeech = false } = {}) => (
     resolveGuessTranscript(raw, localPokemonNameIndex, new Set(mapVisibleSpeciesIds), { fromSpeech })
   ), [mapVisibleSpeciesIds]);
@@ -76,6 +107,68 @@ export default function App() {
     }
     return true;
   }, [game.allPokemon, game.showToast, resolveMapPokemon]);
+  const resolveMapInput = useCallback((raw, options = {}) => {
+    if (mapExpression && String(raw ?? '').trim()) return { matched: true, sequence: [] };
+    return resolveMapPokemon(raw, options);
+  }, [mapExpression, resolveMapPokemon]);
+  const submitMapInput = useCallback(async (raw, { fromSpeech = false } = {}) => {
+    if (!mapExpression) return identifyMapPokemon(raw, { fromSpeech });
+    const result = resolveBrowserExpressionTrigger({
+      mapId: TEGUESTE_FOREST_PREVIEW_MAP_ID,
+      trigger: mapExpression,
+      attempt: { method: fromSpeech ? 'voice' : 'text', transcript: raw },
+      resolvedAt: new Date().toISOString(),
+    });
+    const successful = result.status === 'resolved' || result.status === 'alreadyResolved';
+    setMapExpressionFeedback({
+      status: result.status,
+      understoodText: result.understoodText,
+      message: successful
+        ? (mapExpression.successText ?? 'El Pokémon ha reaccionado a tus palabras.')
+        : result.status === 'notMatched'
+          ? (mapExpression.retryText ?? 'No parece ser lo que esperaba oír.')
+          : 'Ahora mismo no puedes resolver esta interacción de esa forma.',
+      nonce: Date.now(),
+    });
+    return true;
+  }, [identifyMapPokemon, mapExpression]);
+  const useMapExpressionFallback = useCallback(() => {
+    if (!mapExpression?.fallbackActionId) return;
+    const result = resolveBrowserExpressionTrigger({
+      mapId: TEGUESTE_FOREST_PREVIEW_MAP_ID,
+      trigger: mapExpression,
+      attempt: { method: 'contextAction', contextActionId: mapExpression.fallbackActionId },
+      resolvedAt: new Date().toISOString(),
+    });
+    const successful = result.status === 'resolved' || result.status === 'alreadyResolved';
+    setMapExpressionFeedback({
+      status: result.status,
+      message: successful
+        ? (mapExpression.successText ?? 'El Pokémon ha reaccionado a tu gesto.')
+        : 'Ahora mismo no puedes resolver esta interacción de esa forma.',
+      nonce: Date.now(),
+    });
+  }, [mapExpression]);
+  const submitMapAcousticExpression = useCallback(features => {
+    if (!mapExpression) return;
+    const result = resolveBrowserExpressionTrigger({
+      mapId: TEGUESTE_FOREST_PREVIEW_MAP_ID,
+      trigger: mapExpression,
+      attempt: { method: 'voice', acoustic: features },
+      resolvedAt: new Date().toISOString(),
+    });
+    const successful = result.status === 'resolved' || result.status === 'alreadyResolved';
+    setMapExpressionFeedback({
+      status: result.status,
+      message: successful
+        ? (mapExpression.successText ?? 'El Pokémon ha reaccionado al sonido.')
+        : result.status === 'notMatched'
+          ? (mapExpression.retryText ?? 'El sonido no ha producido la reacción esperada.')
+          : 'Ahora mismo no puedes resolver esta interacción de esa forma.',
+      acoustic: features,
+      nonce: Date.now(),
+    });
+  }, [mapExpression]);
   const whosThatPokemon = useWhosThatPokemonMode({
     resolveGuess: game.tryGuessTranscript,
     discoverPokemon: game.discoverPokemon,
@@ -95,7 +188,7 @@ export default function App() {
   const speech = useSpeechRecognition({
     allPokemon: game.allPokemon,
     guess: mapConceptPreviewOpen
-      ? identifyMapPokemon
+      ? submitMapInput
       : dailyTrivia.active
       ? dailyTrivia.submitAnswer
       : themedChallenges.active
@@ -103,9 +196,19 @@ export default function App() {
         : whosThatPokemon.active
           ? whosThatPokemon.submitAnswer
           : game.guess,
-    tryGuessTranscript: mapConceptPreviewOpen ? resolveMapPokemon : game.tryGuessTranscript,
+    tryGuessTranscript: mapConceptPreviewOpen ? resolveMapInput : game.tryGuessTranscript,
     showToast: game.showToast,
   });
+  const startMapExpression = useCallback(trigger => {
+    speech.stopListening();
+    setMapExpression(trigger);
+    setMapExpressionFeedback(null);
+  }, [speech.stopListening]);
+  const endMapExpression = useCallback(() => {
+    speech.stopListening();
+    setMapExpression(null);
+    setMapExpressionFeedback(null);
+  }, [speech.stopListening]);
   const narrativeCanPresent = !game.timer
     && !game.timedCountdown
     && !whosThatPokemon.active
@@ -130,16 +233,32 @@ export default function App() {
     ignoreNewDiscoveries: Boolean(game.timer || game.timedCountdown),
   });
   useEffect(() => {
+    if (professor.active) return;
+    if (adventureRoute.kind === 'pokeDiscover' || adventureRoute.kind === 'mission') {
+      setMapConceptPreviewOpen(false);
+      setProfessorMissionsOpen(true);
+      return;
+    }
+    if (
+      adventureRoute.kind === 'expedition'
+      && adventureRoute.mapId === TEGUESTE_FOREST_PREVIEW_MAP_ID
+      && adventureRoute.roomId === TEGUESTE_FOREST_PREVIEW_ROOM_ID
+    ) {
+      setProfessorMissionsOpen(false);
+      setMapConceptPreviewOpen(true);
+      return;
+    }
+    setProfessorMissionsOpen(false);
+    setMapConceptPreviewOpen(false);
+  }, [adventureRoute, professor.active]);
+  useEffect(() => {
     if (professor.incomingCall || professor.active) speech.stopListening();
   }, [professor.active, professor.incomingCall, speech.stopListening]);
   const selectedEntryState = selectedPokemon
     ? getPokemonEntryState(getBrowserPokeVoiceSave(), selectedPokemon.id)
     : null;
   const professorProgress = getBrowserPokeVoiceSave().pokeDiscover;
-  const knownProfessorMissionIds = [...new Set([
-    ...professorProgress.activeMissionIds,
-    ...Object.values(professorProgress.mapProgress).flatMap(progress => progress.completedMissionIds),
-  ])];
+  const knownProfessorMissionIds = getKnownPokeDiscoverMissionIds(getBrowserPokeVoiceSave());
 
   const closeNavigationLayers = () => {
     setModesOpen(false);
@@ -147,6 +266,52 @@ export default function App() {
     setProfessorMissionsOpen(false);
     ACV.closeDrawer?.();
   };
+
+  const navigateAdventure = useCallback(hash => {
+    if (window.location.hash === hash) {
+      setAdventureRoute(parseAdventureHashRoute(hash));
+      return;
+    }
+    window.location.hash = hash;
+  }, []);
+
+  const closeAdventureRoute = useCallback(() => {
+    setAdventureRoute(replaceWithPokedexRoute());
+  }, []);
+
+  const openTeguesteForest = useCallback(() => {
+    const save = getBrowserPokeVoiceSave();
+    const progress = save.pokeDiscover.mapProgress[TEGUESTE_FOREST_PREVIEW_MAP_ID];
+    if (progress?.freeExpeditionUnlocked && !save.activeExpeditionSession) {
+      try {
+        beginBrowserExpedition({
+          mapId: TEGUESTE_FOREST_PREVIEW_MAP_ID,
+          enteredAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        game.showToast(error instanceof Error ? error.message : 'No se pudo preparar la expedición.', 'bad');
+        navigateAdventure(buildPokeDiscoverHash());
+        return;
+      }
+    }
+    navigateAdventure(buildExpeditionHash(
+      TEGUESTE_FOREST_PREVIEW_MAP_ID,
+      TEGUESTE_FOREST_PREVIEW_ROOM_ID,
+    ));
+  }, [game.showToast, navigateAdventure]);
+
+  const leaveTeguesteForest = useCallback(() => {
+    speech.stopListening();
+    setMapVisibleSpeciesIds([]);
+    setMapExpression(null);
+    setMapExpressionFeedback(null);
+    const save = getBrowserPokeVoiceSave();
+    if (save.activeExpeditionSession?.mapId === TEGUESTE_FOREST_PREVIEW_MAP_ID) {
+      const result = endBrowserExpeditionWithReport({ exitedAt: new Date().toISOString() });
+      setExpeditionReport(result.report);
+    }
+    closeAdventureRoute();
+  }, [closeAdventureRoute, speech.stopListening]);
 
   const openPokemonDetails = pokemon => {
     if (game.guessed.has(pokemon.id)) professor.requestFromDetail(game.globalScore);
@@ -190,7 +355,7 @@ export default function App() {
     closeNavigationLayers();
     if (professor.answerCall()) return;
     if (professor.requestProfileSetup()) return;
-    setProfessorMissionsOpen(true);
+    navigateAdventure(buildPokeDiscoverHash());
   };
 
   const answerProfessorCall = () => {
@@ -319,6 +484,8 @@ export default function App() {
             onGenerationChange: selectGeneration,
             audioBlocked: game.audioBlocked,
             onEnableAudio: game.enableAudio,
+            imageStyle,
+            onImageStyle: setImageStyle,
           }}
         />
       )}
@@ -351,25 +518,29 @@ export default function App() {
         open={professorMissionsOpen && !professor.active}
         missionIds={knownProfessorMissionIds}
         catalog={game.pokemonCatalog}
-        onOpenMapPreview={() => {
-          setProfessorMissionsOpen(false);
-          setMapConceptPreviewOpen(true);
-        }}
-        onClose={() => setProfessorMissionsOpen(false)}
+        initialSection={adventureRoute.kind === 'mission' ? 'missions' : 'home'}
+        selectedMissionId={adventureRoute.kind === 'mission' ? adventureRoute.missionId : undefined}
+        onOpenMission={missionId => navigateAdventure(buildMissionHash(missionId))}
+        onOpenMapPreview={openTeguesteForest}
+        onClose={closeAdventureRoute}
       />
       <MapConceptPreview
         open={mapConceptPreviewOpen && !professor.active}
         listening={speech.listening}
         speechSupported={speech.speechSupported}
         onMic={toggleMic}
-        onIdentifyText={identifyMapPokemon}
+        onSubmitText={submitMapInput}
         onVisibleSpeciesIdsChange={setMapVisibleSpeciesIds}
-        onClose={() => {
-          speech.stopListening();
-          setMapVisibleSpeciesIds([]);
-          setMapConceptPreviewOpen(false);
-        }}
+        onInteractionStart={speech.stopListening}
+        onExpressionStart={startMapExpression}
+        onExpressionEnd={endMapExpression}
+        onExpressionFallback={useMapExpressionFallback}
+        onExpressionAcoustic={submitMapAcousticExpression}
+        expressionFeedback={mapExpressionFeedback}
+        loadingText={CAMPHOR_PROLOGUE_MISSION.loadingText}
+        onClose={leaveTeguesteForest}
       />
+      <ExpeditionReportModal report={expeditionReport} onClose={() => setExpeditionReport(undefined)} />
       <NarrativeScene
         open={professor.active}
         sequence={professor.activeSequence}

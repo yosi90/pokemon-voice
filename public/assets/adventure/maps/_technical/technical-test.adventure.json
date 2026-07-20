@@ -71,6 +71,7 @@
   "missionIds": [],
   "behaviorTriggers": [],
   "expressionTriggers": [],
+  "ambientSequences": [],
   "rareEncounters": [],
   "requiredAssetIds": ["pmd:0019-rattata:default"]
 }

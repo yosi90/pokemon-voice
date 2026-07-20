@@ -24,8 +24,10 @@ import {
   type MapDiscoveryKind,
 } from '../domain/expeditions/adventureMapProgress.js';
 import {
+  beginExpedition,
   endExpeditionWithReport,
   recordMeaningfulExpeditionInteraction,
+  type BeginExpeditionRequest,
   type EndExpeditionOptions,
   type RecordMeaningfulInteractionRequest,
 } from '../domain/expeditions/expeditionSession.js';
@@ -392,6 +394,13 @@ export function recordBrowserModeAchievement(achievementId: string) {
 export function setBrowserActiveExpeditionSession(session: ActiveExpeditionSessionV1 | undefined) {
   const current = readCurrentSave();
   persist({ ...current, activeExpeditionSession: session });
+}
+
+export function beginBrowserExpedition(request: BeginExpeditionRequest) {
+  const current = readCurrentSave();
+  const next = beginExpedition(current, request);
+  persist(next);
+  return next.activeExpeditionSession!;
 }
 
 export function endBrowserExpeditionWithReport(options: EndExpeditionOptions = {}) {

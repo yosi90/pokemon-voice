@@ -143,13 +143,23 @@ main {
 }
 
 .discovery-console__controls {
-  width: min(780px, 100%);
+  width: min(980px, 100%);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(112px, auto) auto minmax(0, 1fr);
+  grid-template-columns: minmax(112px, auto) auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 10px;
   pointer-events: auto;
+}
+
+.discovery-console__image-style {
+  min-height: 50px;
+  background: rgba(0, 0, 0, .5);
+}
+
+.discovery-console__image-style .image-style-option {
+  min-width: 62px;
+  min-height: 38px;
 }
 
 .discovery-console__region-picker {
@@ -427,6 +437,10 @@ main {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
+  .discovery-console__image-style {
+    display: none;
+  }
+
   .discovery-console__region-picker {
     display: none;
   }
@@ -543,6 +557,12 @@ main {
 
   .pokedex-controls-drawer {
     bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom) + 10px);
+  }
+}
+
+@media (min-width: 900px) {
+  .pokedex-controls-drawer .image-style-control--drawer {
+    display: none;
   }
 }
 

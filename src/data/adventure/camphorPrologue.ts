@@ -45,6 +45,7 @@ export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
   missionIds: [CAMPHOR_PROLOGUE_MISSION_ID],
   behaviorTriggers: [],
   expressionTriggers: [],
+  ambientSequences: [],
   rareEncounters: [],
   requiredAssetIds: [
     'pmd:0019-rattata:default',
@@ -60,6 +61,7 @@ export const CAMPHOR_PROLOGUE_MISSION = Object.freeze<MissionDefinitionV1>({
   missionId: CAMPHOR_PROLOGUE_MISSION_ID,
   mapId: CAMPHOR_FOREST_MAP_ID,
   title: '¡Ayuda al profesor Alcanfor!',
+  loadingText: '¡Corriendo a ayudar al profesor!',
   briefing: 'Tres Pokémon han asaltado al profesor Alcanfor para robarle la comida. Ahuyéntalos.',
   availability: { kind: 'worldFlag', flagId: 'story:camphor-prologue-offered' },
   objectives: [{

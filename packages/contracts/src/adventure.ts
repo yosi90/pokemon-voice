@@ -9,6 +9,7 @@ import type {
 import type { RewardDefinitionV1 } from './economy.js';
 import type { RequirementExpressionV1 } from './requirements.js';
 import type { ResearchFieldKey } from './research.js';
+import type { MeaningfulExpeditionInteractionKind } from './progress.js';
 
 export type TileLayerKind = 'ground' | 'decoration' | 'overlay' | 'collision';
 export type MissionStatus = 'locked' | 'available' | 'active' | 'completed';
@@ -17,6 +18,12 @@ export type CompanionTriggerRepeatPolicy = 'oncePerVisit' | 'persistent' | 'repe
 export type ExpressionInputMethod = 'voice' | 'text' | 'contextAction';
 export type ExpressionIntent = 'compliment' | 'calm' | 'warn' | 'sing' | 'custom';
 export type AdventureActorCollision = 'solid' | 'pass-through';
+export type AmbientMovementStyle = 'grid' | 'continuous';
+
+export interface MillisecondRangeV1 {
+  min: number;
+  max: number;
+}
 
 export interface AdventureTileLayerV1 {
   layerId: StableId;
@@ -96,6 +103,8 @@ export interface AdventureActorPlacementV1 extends VersionedContractV1 {
   direction?: 'up' | 'down' | 'left' | 'right';
   /** Los actores terrestres son sólidos por defecto; declarar pass-through para vuelo o levitación. */
   collision?: AdventureActorCollision;
+  /** Grupos de máscaras dibujadas en Tiled que pueden ocultar partes del sprite. */
+  occlusionGroupIds?: StableId[];
 }
 
 export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
@@ -107,6 +116,52 @@ export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
   controllable?: true;
   /** Los NPC son sólidos por defecto. */
   collision?: AdventureActorCollision;
+  occlusionGroupIds?: StableId[];
+}
+
+export interface AmbientPlayAnimationActionV1 {
+  kind: 'playAnimation';
+  placementId: StableId;
+  animation: string;
+  direction?: 'up' | 'down' | 'left' | 'right';
+  repetitions?: number;
+}
+
+export interface AmbientFaceActionV1 {
+  kind: 'face';
+  placementId: StableId;
+  direction: 'up' | 'down' | 'left' | 'right';
+}
+
+export interface AmbientMovePathActionV1 {
+  kind: 'movePath';
+  placementId: StableId;
+  pathId: StableId;
+  movementStyle: AmbientMovementStyle;
+  speedPixelsPerSecond: number;
+  animation?: string;
+  reverse?: boolean;
+}
+
+export type AmbientActorActionV1 =
+  | AmbientPlayAnimationActionV1
+  | AmbientFaceActionV1
+  | AmbientMovePathActionV1;
+
+export interface AmbientBeatV1 extends VersionedContractV1 {
+  beatId: StableId;
+  actions: AmbientActorActionV1[];
+  pauseAfterMs?: number | MillisecondRangeV1;
+}
+
+export interface AmbientSequenceV1 extends VersionedContractV1 {
+  sequenceId: StableId;
+  roomId: StableId;
+  loop: boolean;
+  /** Todas las acciones se pausan juntas cuando una ruta queda bloqueada. */
+  blockedPolicy: 'pauseSequence';
+  loopPauseMs?: number | MillisecondRangeV1;
+  beats: AmbientBeatV1[];
 }
 
 export interface RoomTransitionV1 extends VersionedContractV1 {
@@ -118,6 +173,35 @@ export interface RoomTransitionV1 extends VersionedContractV1 {
   toAnchorId: StableId;
   destinationFacing?: 'up' | 'down' | 'left' | 'right';
   requirement?: RequirementExpressionV1;
+}
+
+export interface ExpeditionDialoguePageV1 extends VersionedContractV1 {
+  pageId: StableId;
+  speakerName: string;
+  text: string;
+  nextPageId?: StableId;
+}
+
+export interface ExpeditionDialogueV1 extends VersionedContractV1 {
+  dialogueId: StableId;
+  initialPageId: StableId;
+  pages: ExpeditionDialoguePageV1[];
+}
+
+export type ExpeditionInteractionTargetV1 =
+  | { kind: 'placement'; placementId: StableId }
+  | { kind: 'anchor'; anchorId: StableId };
+
+export interface ExpeditionInteractionV1 extends VersionedContractV1 {
+  interactionId: StableId;
+  roomId: StableId;
+  target: ExpeditionInteractionTargetV1;
+  prompt: string;
+  dialogueId: StableId;
+  meaningfulKind: MeaningfulExpeditionInteractionKind;
+  /** Distancia cardinal máxima; un tile cuando se omite. */
+  rangeTiles?: number;
+  repeatPolicy?: 'oncePerVisit' | 'repeatable';
 }
 
 /** Mapa lógico multihabitación. La geometría vive exclusivamente en los .tmj enlazados. */
@@ -134,6 +218,9 @@ export interface AdventureMapV2 {
   missionIds: StableId[];
   behaviorTriggers: CompanionBehaviorTriggerV1[];
   expressionTriggers: ExpeditionExpressionTriggerV1[];
+  interactions?: ExpeditionInteractionV1[];
+  dialogues?: ExpeditionDialogueV1[];
+  ambientSequences: AmbientSequenceV1[];
   rareEncounters: RareEncounterDefinitionV1[];
   requiredAssetIds: StableId[];
 }
@@ -158,6 +245,8 @@ export interface MissionDefinitionV1 extends VersionedContractV1 {
   missionId: StableId;
   mapId: StableId;
   title: string;
+  /** Frase temática mostrada mientras se prepara el runtime de la misión. */
+  loadingText: string;
   briefing: string;
   availability?: RequirementExpressionV1;
   objectives: MissionObjectiveV1[];
@@ -222,12 +311,20 @@ export type ExpressionMatcherV1 =
 
 export interface ExpeditionExpressionTriggerV1 extends VersionedContractV1 {
   triggerId: StableId;
+  /** Contexto espacial; obligatorio para prompts ejecutados dentro de Phaser. */
+  roomId?: StableId;
+  target?: ExpeditionInteractionTargetV1;
+  prompt?: string;
+  rangeTiles?: number;
   activationRequirement: RequirementExpressionV1;
   inputMethods: ExpressionInputMethod[];
   matchAny: ExpressionMatcherV1[];
   knownHintIds: StableId[];
   successSequenceId: StableId;
   fallbackActionId: StableId;
+  fallbackLabel?: string;
+  successText?: string;
+  retryText?: string;
   rewardOriginId?: StableId;
 }
 

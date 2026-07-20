@@ -3,6 +3,7 @@ import type { PokeVoiceSaveV1 } from '../../packages/contracts/src/index.js';
 import {
   POKE_VOICE_SAVE_KEY,
   createPokeVoiceSaveV1,
+  normalizeCardSize,
   type LegacyTimedModeSnapshot,
 } from '../domain/progress/pokeVoiceSave.js';
 import { TIMER_KEY } from '../lib/constants.js';
@@ -111,6 +112,10 @@ export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
   return {
     ...save,
     pokedexRun: normalizeCompanionSelection(save.pokedexRun),
+    preferences: {
+      ...save.preferences,
+      cardSize: normalizeCardSize(save.preferences.cardSize),
+    },
     pokeDiscover: {
       ...pokeDiscoverWithoutTrainerProfile,
       introduction: normalizeProfessorIntroduction(save.pokeDiscover.introduction),

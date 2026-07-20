@@ -23,7 +23,7 @@
     linear-gradient(90deg, rgba(255, 255, 255, .08), transparent 2% 98%, rgba(0, 0, 0, .36)),
     linear-gradient(145deg, #20252d, #0e1117 62%, color-mix(in srgb, var(--type-secondary) 24%, #0e1117));
   box-shadow: 0 0 0 7px #16191f, 0 0 0 10px var(--type-secondary), 0 28px 80px rgba(0, 0, 0, .72), 0 0 46px var(--type-glow);
-  animation: pokemonDexOpen .38s cubic-bezier(.2, .85, .25, 1.08) both;
+  animation: pokemonDexOpen .38s cubic-bezier(.2, .85, .25, 1.08);
 }
 
 .pokemon-detail-panel::before {

@@ -681,6 +681,7 @@ Hito 10 finalizado el 18 de julio de 2026. El pipeline Tiled → validación cru
 - [ ] Especificar Pikachu, Snorlax, Charizard y Charmander en las poses necesarias para sus observaciones.
 - [ ] Relacionar cada pose solicitada con el dato de Pokédex que revelará.
 - [x] Validar tamaños, transparencia, nombres de archivo y pivotes antes de integrar los primeros assets.
+- [x] Fijar la convención multicapa con overlays transparentes para copas, agua y elementos que pasan por delante de actores.
 - [ ] Importar todo mediante el editor para comprobar que el pipeline de assets funciona.
 
 Primera entrega del Hito 11 implementada el 19 de julio de 2026. La habitación `02-04` del Bosque de Tegueste sustituye al escenario técnico como prueba visual: conserva sus colisiones estáticas sin exigir IDs redundantes y clasifica 23 anclajes estables para jugador, profesor, transiciones, secretos y Pokémon. El sidecar coloca tres Rattata, dos Gyarados, Cramorant y Cottonee, manteniendo los Pineco ocultos hasta su futura escena. Achaman, Guayota y un Alcanfor provisional se normalizan en un manifiesto de personajes con frames, filas direccionales, pivote en los pies y ciclos de marcha; Phaser carga a Achaman y Alcanfor directamente desde esos datos. Los atlas irregulares con fondo magenta quedan como material fuente, no como assets de runtime.
@@ -691,35 +692,64 @@ Tercera entrega del Hito 11 implementada el 19 de julio de 2026. La prueba adopt
 
 Cuarta entrega del Hito 11 implementada el 19 de julio de 2026. NPC y Pokémon terrestres aportan una huella sólida de `16×16` centrada en sus pies y participan en la misma comprobación previa que los muros, sin rebotes ni invasión parcial. El sidecar puede declarar `collision: pass-through` para vuelo o levitación; Cottonee documenta la primera excepción, mientras Alcanfor y los otros seis Pokémon de la habitación bloquean el paso. El validador rechaza políticas desconocidas y Playwright comprueba el choque real del jugador contra Alcanfor. Los desplazamientos y secuencias automáticas de actores permanecen fuera de esta prueba y corresponden al Hito 12.
 
+Quinta entrega del Hito 11 implementada el 19 de julio de 2026. `Above` deja de reutilizar tiles con cuadrados de césped y pasa a un tileset auxiliar con transparencia real para copas y espuma. La capa opcional `Occlusion` permite recortar fragmentos de sprites por grupos y excepciones de colocación, manteniendo intactos escala, silueta y animación. El Bosque de Tegueste demuestra la convención con copas transitables y dos Gyarados parcialmente sumergidos. No existe chroma key ni ajuste específico por especie en runtime.
+
+Corrección de rendimiento del 19 de julio de 2026. La oclusión rectangular deja de usar máscaras WebGL dinámicas y recorta directamente el sprite contra la línea de agua. Las coreografías actualizan su lógica a 30 Hz, cachean los pivotes PMD y solo publican telemetría al cambiar de beat. Los Gyarados se desplazan ocho píxeles hacia abajo y la ruta derecha evita la roca del agua, manteniendo el bucle sincronizado sin alterar las colisiones del jugador.
+
+Segunda corrección de rendimiento del 19 de julio de 2026. Los pivotes PMD pasan a calcularse una vez al generar el manifiesto, eliminando los recorridos de píxeles durante el juego y el calentamiento masivo que prolongaba la apertura. La carga bloqueante conserva únicamente mapas, personajes y animaciones base; las hojas ambientales se deduplican por su fuente `CopyOf`, se cargan en segundo plano mientras los `Idle` ya se reproducen y solo entonces activan la coreografía. Los pasos mantenidos del protagonista se encadenan sin un frame intermedio de parada. Rattata y Cottonee bajan medio tile, Cramorant un tile y los Gyarados un tile y medio; sus rutas acompañan el ajuste y la oclusión acuática se mantiene aunque un frame ancho sobresalga parcialmente del rectángulo de agua.
+
+Corrección visual final del 19 de julio de 2026. Todos los actores Pokémon suben medio tile respecto a la iteración anterior y las rutas de los Gyarados se desplazan con sus anclas, sin alterar la oclusión acuática ya validada. Protagonistas y NPC pasan de la escala fraccionaria `0.6` a `0.5`: sus frames de 32×48 se muestran a 16×24 píxeles exactos y recuperan un pixel art uniforme.
+
 ---
 
 ## Hito 12 — Motor de expediciones
 
-- [ ] Integrar Phaser de forma lazy-loaded para no penalizar la Pokédex principal.
-- [ ] Añadir rutas hash para misiones y expediciones manteniendo el despliegue estático.
-- [ ] Crear movimiento con WASD/flechas e interacción con Espacio/E.
-- [ ] Crear cámara, colisiones, capas, triggers, NPC y diálogos.
-- [ ] Mantener voz y texto como interfaz HTML accesible sobre el canvas.
-- [ ] Crear prompts contextuales de expresión que reutilicen el reconocimiento existente y muestren la transcripción interpretada.
-- [ ] Añadir detección local y opt-in de volumen o duración para gritos, notas sostenidas y tarareo sencillo.
-- [ ] Ejecutar el fallback de texto o acción contextual sobre el mismo trigger y cambio persistente de mundo.
-- [ ] Crear estados de misión: bloqueada, disponible, en progreso y completada.
-- [ ] Desbloquear la expedición libre de un mapa al terminar su primera misión.
+- [x] Integrar Phaser de forma lazy-loaded para no penalizar la Pokédex principal.
+- [x] Añadir rutas hash para misiones y expediciones manteniendo el despliegue estático.
+- [x] Crear movimiento con WASD/flechas e interacción con Espacio/E.
+- [x] Crear cámara, colisiones, capas, triggers, NPC y diálogos.
+- [x] Ejecutar coreografías ambientales declarativas por beats con animación, giro, rutas de cuadrícula o continuas, pausas variables y sincronización paralela.
+- [x] Pausar una secuencia ambiental completa ante colisiones, al ocultar la pestaña o cuando otra capa de control toma prioridad; reiniciarla al entrar en la habitación.
+- [x] Aplicar oclusión parcial por grupos desde áreas declaradas en Tiled sin alterar siluetas, tintes ni orden de profundidad por Y.
+- [x] Mantener voz y texto como interfaz HTML accesible sobre el canvas.
+- [x] Crear prompts contextuales de expresión que reutilicen el reconocimiento existente y muestren la transcripción interpretada.
+- [x] Añadir detección local y opt-in de volumen o duración para gritos, notas sostenidas y tarareo sencillo.
+- [x] Ejecutar el fallback de texto o acción contextual sobre el mismo trigger y cambio persistente de mundo.
+- [x] Crear estados de misión: bloqueada, disponible, en progreso y completada.
+- [x] Desbloquear la expedición libre de un mapa al terminar su primera misión.
 - [x] Preparar exactamente un acompañante y, opcionalmente, una herramienta antes de entrar.
-- [ ] Mantener el loadout bloqueado hasta abandonar el mapa.
+- [x] Mantener el loadout bloqueado hasta abandonar el mapa.
 - [ ] Ejecutar prompts contextuales y secuencias automáticas de acompañante desde datos exportados por el editor.
 - [ ] Resolver capacidades narrativas de movimientos, como `rock-tomb`, desde los mismos requisitos declarativos.
 - [ ] Guardar inmediatamente observaciones, secretos y recompensas.
 - [ ] Guardar una sola vez el descubrimiento y procedencia de formas y apariencias encontradas.
 - [ ] Guardar pistas del cuaderno, conversaciones únicas, coleccionables e intentos elegibles de encuentros raros.
 - [ ] Guardar pistas de expresiones conocidas, secretos resueltos y el método de primera resolución.
-- [ ] Permitir abandonar y regresar sin perder progreso.
+- [x] Permitir abandonar y regresar sin perder progreso.
 - [ ] Crear el modal del profesor con briefing, selector de misión, acompañante y recompensas.
-- [ ] Mostrar un informe de salida con experiencia, Puntos de Descubrimiento, observaciones y pistas nuevas.
+- [x] Mostrar un informe de salida con experiencia, Puntos de Descubrimiento, observaciones y pistas nuevas.
 - [x] Registrar interacciones significativas durante la visita sin contar movimiento, espera ni cambios de habitación.
 - [x] Conceder una sola vez el campo curado de convivencia al salir con al menos una interacción significativa.
 - [x] Resolver la identificación contextual de una especie visible mediante voz o texto sobre el reconocedor compartido.
 - [ ] Excluir controles táctiles del prototipo; se evaluarán en el roadmap de expansión.
+
+Primera entrega formal del Hito 12 implementada el 19 de julio de 2026. La auditoría del prototipo confirma que Phaser ya se carga únicamente al abrir la expedición, el movimiento cardinal y la entrada contextual por voz o texto funcionan sobre el canvas y el dominio mantiene el loadout inmutable durante la visita. PokeDiscover, los encargos y las expediciones incorporan rutas hash reversibles y compatibles con alojamiento estático; los IDs estables se codifican por segmento, Atrás restaura la pantalla anterior y abandonar elimina la ruta sin recargar la Pokédex.
+
+Segunda entrega del Hito 12 implementada el 19 de julio de 2026. El sidecar incorpora contratos declarativos para interacciones y diálogos paginados, validados contra habitaciones, actores, anclas e IDs estables. El runtime detecta el objetivo situado frente al jugador y unifica Espacio, E y el botón contextual; durante la conversación bloquea movimiento, detiene coreografías y orienta al NPC hacia el protagonista. El diálogo permanece como HTML accesible sobre Phaser, admite teclado, clic, toque y Escape, y registra la interacción significativa cuando existe una sesión real. Alcanfor proporciona la primera demostración sin hardcodear texto ni coordenadas en el motor.
+
+Ajuste narrativo del 19 de julio de 2026. Cada definición de misión exige una frase temática de carga en lugar del mensaje genérico `Cargando…`. El prólogo utiliza `¡Corriendo a ayudar al profesor!`; futuras misiones aportarán su propio texto desde datos sin modificar el componente del runtime.
+
+Tercera entrega del Hito 12 implementada el 19 de julio de 2026. El centro de encargos consume un catálogo único de definiciones y presenta título, briefing y estado narrativo en lugar de IDs técnicos. Las misiones bloqueadas continúan ocultas hasta ser ofrecidas; una referencia persistente activa, completada o pendiente impide que un encargo ya conocido desaparezca. Alcanfor usa además una hoja nativa de 16×24 a escala 1 para evitar la mezcla de píxeles que deformaba su cara al reducirla dentro de WebGL.
+
+Ajuste de assets del 19 de julio de 2026. Los 316 sprites de packs todavía sin asignar salen de `public` y se conservan en `asset-library/unassigned-sprites`, evitando que formen parte del despliegue antes de normalizarlos. La carpeta activa de personajes documenta inequívocamente las hojas de Achaman, Guayota y Alcanfor. La futura caída del profesor se reserva como una acción frontal independiente de seis o más frames de 16×24, preparada para incorporarse a la secuencia narrativa del prólogo sin deformar el ciclo de marcha.
+
+Segunda revisión de personajes del 19 de julio de 2026. Las nuevas fuentes grandes de Alcanfor se procesan mediante `npm run assets:camphor:normalize`: el conversor elimina el falso tablero conectado al fondo sin borrar la bata ni el pelo blancos, separa la cuadrícula, reordena direcciones, alinea los pies y produce borradores de 16×24 con alfa real. La nueva hoja de marcha sustituye visualmente al placeholder y cuatro poses quedan preparadas para la caída. Raw y borradores permanecen fuera de `public` en `asset-library/character-sources`; las hojas activas se organizan por personaje y son las únicas que llegan al juego.
+
+Cuarta entrega del Hito 12 implementada el 19 de julio de 2026. Un mapa cuya primera misión ya abrió la expedición libre crea ahora una sesión persistente real al entrar, reutilizando el compañero y la herramienta preparados. Abandonar elimina únicamente la sesión, conserva todo el progreso permanente y presenta un informe con interacciones, investigación, experiencia, PD y cantidad de hallazgos sin exponer IDs internos. Antes del desbloqueo, el botón del Bosque de Tegueste continúa actuando como previsualización técnica para no confundirla con una expedición válida.
+
+Quinta entrega del Hito 12 implementada el 20 de julio de 2026. Los triggers expresivos pueden declarar habitación, objetivo, rango y prompt en el sidecar, y el runtime los ofrece únicamente al mirar al actor durante una expedición real. Cottonee inaugura el flujo completo: voz y texto reutilizan el reconocimiento existente, la interfaz muestra la transcripción normalizada y el feedback curado, y «Sonreír y saludar» aporta una alternativa accesible sobre el mismo secreto. La primera resolución se guarda inmediatamente con ID y método estables, registra una interacción significativa y elimina el prompt en visitas futuras; la previsualización técnica no escribe progreso. El validador cruza los objetivos expresivos con Tiled y Playwright verifica el flujo en escritorio y móvil.
+
+Sexta entrega del Hito 12 implementada el 20 de julio de 2026. Los prompts con condiciones acústicas ofrecen una captura local y voluntaria de 1,8 segundos que calcula RMS, duración y estabilidad aproximada de frecuencia sin grabar ni transmitir audio. La pista y el `AudioContext` se cierran al terminar, cancelar o desmontar la escena; el guardado conserva únicamente trigger, método y fecha, nunca métricas ni muestras. El resumen distingue sonidos fuertes, notas sostenidas y tarareos sencillos mediante reglas deterministas. Cramorant demuestra un secreto resuelto con un grito o el fallback «Agitar los brazos», y la interfaz explica el análisis, su progreso y el resultado tanto en escritorio como en móvil.
 
 ---
 
@@ -734,6 +764,8 @@ Construir, después de validar el runtime, una aplicación Vite + React + TypeSc
 - [ ] Abrir un `.tmj` y su `.adventure.json`, y mostrar ambos mediante el runtime Phaser compartido.
 - [ ] Leer el catálogo local de especies, formas, apariencias y capacidades.
 - [ ] Leer el manifiesto PMD y ofrecer solamente las animaciones disponibles para cada variante.
+- [ ] Leer las capas `Paths` y `Occlusion` del `.tmj` y mostrar sus IDs como opciones, sin editar su geometría.
+- [ ] Crear un editor por beats para actor, animación, dirección, ruta, estilo de movimiento, velocidad y pausa con previsualización Phaser.
 - [ ] Colocar y previsualizar encuentros, NPC, portales, secretos y triggers sobre anclajes del mapa.
 - [ ] Crear un editor visual de requisitos `all`/`any`.
 - [ ] Configurar investigación, recompensas únicas, comportamientos del acompañante e interacciones expresivas.

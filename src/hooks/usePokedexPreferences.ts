@@ -4,6 +4,7 @@ import {
   isPokemonGenerationId,
   type PokemonGenerationId,
 } from '../domain/catalog/pokemonGeneration.js';
+import { normalizeCardSize } from '../domain/progress/pokeVoiceSave.js';
 import { getBrowserPokeVoiceSave, updateBrowserPreferences } from '../store/browserPokeVoiceSaveStore.js';
 
 function readInitialGeneration(): PokemonGenerationId {
@@ -16,7 +17,7 @@ function readInitialGeneration(): PokemonGenerationId {
 
 export function usePokedexPreferences() {
   const [activeGeneration, setActiveGenerationState] = useState<PokemonGenerationId>(readInitialGeneration);
-  const [cardSize, setCardSize] = useState(() => getBrowserPokeVoiceSave().preferences.cardSize);
+  const [cardSize, setCardSizeState] = useState(() => normalizeCardSize(getBrowserPokeVoiceSave().preferences.cardSize));
 
   useEffect(() => {
     document.documentElement.style.setProperty('--card-size', `${cardSize}px`);
@@ -38,6 +39,10 @@ export function usePokedexPreferences() {
     if (!isPokemonGenerationId(generation)) return false;
     setActiveGenerationState(generation);
     return true;
+  }, []);
+
+  const setCardSize = useCallback((size: number) => {
+    setCardSizeState(normalizeCardSize(size));
   }, []);
 
   return { activeGeneration, cardSize, setActiveGeneration, setCardSize };

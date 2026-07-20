@@ -3,6 +3,7 @@ import {
   POKEMON_GENERATION_REGIONS,
   getPokemonGenerationRegion,
 } from '../domain/catalog/pokemonGeneration.ts';
+import { ImageStyleControl } from './ImageStyleControl.jsx';
 
 export function DiscoveryConsole({
   generation,
@@ -16,6 +17,8 @@ export function DiscoveryConsole({
   audioBlocked,
   onEnableAudio,
   onGenerationChange,
+  imageStyle,
+  onImageStyle,
 }) {
   const region = getPokemonGenerationRegion(generation);
   const [regionsOpen, setRegionsOpen] = useState(false);
@@ -99,6 +102,12 @@ export function DiscoveryConsole({
             <span className="control-icon" aria-hidden="true">🔍</span>
           </button>
         </form>
+        <ImageStyleControl
+          className="discovery-console__image-style"
+          imageStyle={imageStyle}
+          name="consoleImageStyle"
+          onImageStyle={onImageStyle}
+        />
         <div className="discovery-console__feedback" aria-live="polite">
           {voiceStatus?.message && (
             <span className={`chip voice-status voice-status--${voiceStatus.kind || 'info'}`}>

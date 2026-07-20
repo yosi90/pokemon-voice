@@ -13,6 +13,8 @@ const defaultProps = {
   onMic: vi.fn(),
   audioBlocked: false,
   onEnableAudio: vi.fn(),
+  imageStyle: '3d',
+  onImageStyle: vi.fn(),
 };
 
 describe('selector rápido de regiones', () => {
@@ -42,5 +44,15 @@ describe('selector rápido de regiones', () => {
     await user.click(trigger);
     await user.click(document.body);
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('permite cambiar entre imagen 3D y sprite junto al buscador', async () => {
+    const user = userEvent.setup();
+    const onImageStyle = vi.fn();
+    render(<DiscoveryConsole {...defaultProps} onGenerationChange={() => {}} onImageStyle={onImageStyle} />);
+
+    await user.click(screen.getByRole('radio', { name: 'Sprite' }));
+
+    expect(onImageStyle).toHaveBeenCalledWith('sprite');
   });
 });

@@ -1137,6 +1137,95 @@
   background: rgba(255,255,255,.55);
 }
 
+.professor-mission-card__status {
+  justify-self: start;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: #2f7652;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.professor-mission-card--active .professor-mission-card__status {
+  color: #a35b0b;
+}
+
+.professor-mission-card--completed .professor-mission-card__status {
+  color: #3565a8;
+}
+
+.professor-mission-card p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.expedition-report__panel {
+  width: min(620px, calc(100vw - 32px));
+}
+
+.expedition-report__eyebrow {
+  color: #3c7f5d;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.expedition-report__body {
+  display: grid;
+  gap: 18px;
+}
+
+.expedition-report__body > p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.expedition-report__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.expedition-report__stats article {
+  display: grid;
+  gap: 5px;
+  border: 2px solid #80aa8d;
+  border-radius: 12px;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, .55);
+  text-align: center;
+}
+
+.expedition-report__stats span {
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.expedition-report__stats strong {
+  color: #285f45;
+  font-size: 1.25rem;
+}
+
+.expedition-report__companion {
+  border-left: 4px solid #f2c744;
+  padding: 8px 12px;
+  background: #fff7c9;
+}
+
+.expedition-report__continue {
+  justify-self: end;
+}
+
+@media (max-width: 560px) {
+  .expedition-report__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 680px) {
   .professor-call {
     top: 12px;

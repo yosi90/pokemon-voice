@@ -21,6 +21,7 @@ const firstMission: MissionDefinitionV1 = {
   missionId: 'mission:first-field-trip',
   mapId: 'map:kanto:test-meadow',
   title: 'Primeras huellas',
+  loadingText: 'Siguiendo las primeras huellas…',
   briefing: 'Sigue las huellas sin necesidad de investigar todo el prado.',
   availability: { kind: 'worldFlag', flagId: 'professor:first-mission-offered' },
   objectives: [

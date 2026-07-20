@@ -35,6 +35,21 @@ const pmdManifest = json(manifestPath);
 if (!existsSync(characterManifestPath)) throw new Error('Falta el manifiesto de personajes.');
 const characterManifest = json(characterManifestPath);
 const errors = [];
+for (const asset of pmdManifest.assets ?? []) {
+  for (const animation of asset.animations ?? []) {
+    if (!Array.isArray(animation.groundOrigins)
+      || animation.groundOrigins.length !== Number(animation.directionCount)) {
+      errors.push(`${asset.assetId}/${animation.name}: groundOrigins no cubre todas las direcciones`);
+      continue;
+    }
+    animation.groundOrigins.forEach((origin, directionIndex) => {
+      if (!Number.isFinite(origin?.x) || !Number.isFinite(origin?.y)
+        || origin.x < 0 || origin.x > 1 || origin.y < 0 || origin.y > 1) {
+        errors.push(`${asset.assetId}/${animation.name}: pivote inválido en dirección ${directionIndex}`);
+      }
+    });
+  }
+}
 for (const asset of characterManifest.assets ?? []) {
   const path = join(publicRoot, ...String(asset.path).split('/'));
   if (!existsSync(path)) {
