@@ -133,13 +133,28 @@ function readAnimations(formDirectory) {
   return { shadowSize, animations };
 }
 
-const assets = readdirSync(spriteRoot, { withFileTypes: true })
-  .filter(entry => entry.isDirectory() && /^\d{4}-/.test(entry.name))
-  .sort((a, b) => a.name.localeCompare(b.name))
+const speciesDirectories = readdirSync(spriteRoot, { withFileTypes: true })
+  .filter(entry => entry.isDirectory())
+  .flatMap(entry => {
+    if (/^\d{4}-/.test(entry.name)) {
+      return [{ name: entry.name, path: join(spriteRoot, entry.name) }];
+    }
+    if (!/^gen\d+$/.test(entry.name)) return [];
+    const generationDirectory = join(spriteRoot, entry.name);
+    return readdirSync(generationDirectory, { withFileTypes: true })
+      .filter(speciesEntry => speciesEntry.isDirectory() && /^\d{4}-/.test(speciesEntry.name))
+      .map(speciesEntry => ({
+        name: speciesEntry.name,
+        path: join(generationDirectory, speciesEntry.name),
+      }));
+  })
+  .sort((left, right) => left.name.localeCompare(right.name));
+
+const assets = speciesDirectories
   .flatMap(speciesEntry => {
     const match = speciesEntry.name.match(/^(\d{4})-(.+)$/);
     const speciesId = Number(match[1]);
-    const speciesDirectory = join(spriteRoot, speciesEntry.name);
+    const speciesDirectory = speciesEntry.path;
     return readdirSync(speciesDirectory, { withFileTypes: true })
       .filter(entry => entry.isDirectory() && existsSync(join(speciesDirectory, entry.name, 'AnimData.xml')))
       .sort((a, b) => a.name.localeCompare(b.name))

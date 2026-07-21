@@ -34,6 +34,8 @@ describe('economía de PokeDiscover', () => {
       mapSecretDiscoveryPoints: 15,
       specialDiscoveryTrainerExperience: 25,
       specialDiscoveryDiscoveryPoints: 30,
+      companionSecretTrainerExperience: 10,
+      companionSecretDiscoveryPoints: 10,
     });
   });
 

@@ -64,6 +64,13 @@ export const POKE_DISCOVER_PROGRESS_ACHIEVEMENTS = Object.freeze([
   progressAchievement('expedition-maps-5', 'Cartógrafo Pokémon', 'Abre cinco mapas para expediciones libres.', { kind: 'completedMaps', minimum: 5 }, 'Superball'),
   progressAchievement('first-research-entry', 'Ficha de sobresaliente', 'Completa los cuatro campos de una especie.', { kind: 'completedResearchEntries', minimum: 1 }, 'Pokeball'),
   progressAchievement('research-entries-10', 'Enciclopedia ambulante', 'Completa la investigación de diez especies.', { kind: 'completedResearchEntries', minimum: 10 }, 'Superball'),
+  progressAchievement(
+    'cold-blooded',
+    'Sangre fría',
+    'Ahuyenta a los Rattata de sus madrigueras con un Pokémon serpiente.',
+    { kind: 'unlockedSecret', secretId: 'secret:tegueste-forest:burrow-intimidation' },
+    'Pokeball',
+  ),
 ]);
 
 export const POKE_DISCOVER_ACHIEVEMENTS = Object.freeze([

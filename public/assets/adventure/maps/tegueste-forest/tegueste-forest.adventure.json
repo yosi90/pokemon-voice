@@ -5,7 +5,7 @@
   "tiledMapAssets": [{
     "schemaVersion": 1,
     "assetId": "tiled-map:tegueste-forest:02-04",
-    "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-02-04.tmj"
+    "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-02-05.tmj"
   }],
   "rooms": [{
     "schemaVersion": 1,
@@ -20,9 +20,9 @@
     ]
   }],
   "actorPlacements": [
-    { "schemaVersion": 1, "placementId": "actor:rattata:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:left", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "right" },
-    { "schemaVersion": 1, "placementId": "actor:rattata:middle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:middle", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "up" },
-    { "schemaVersion": 1, "placementId": "actor:rattata:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:right", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "left" },
+    { "schemaVersion": 1, "placementId": "actor:rattata:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:left", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "right", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:rattata:middle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:middle", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "up", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:rattata:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:right", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "left", "initiallyHidden": true },
     { "schemaVersion": 1, "placementId": "actor:gyarados:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:left", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "right", "occlusionGroupIds": ["occlusion-group:water-actors"] },
     { "schemaVersion": 1, "placementId": "actor:gyarados:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:right", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "left", "occlusionGroupIds": ["occlusion-group:water-actors"] },
     { "schemaVersion": 1, "placementId": "actor:cramorant", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cramorant", "assetId": "pmd:0845-cramorant:default", "animation": "Idle", "direction": "down" },
@@ -35,7 +35,166 @@
   "transitions": [],
   "variants": [],
   "missionIds": ["mission:tegueste:help-professor-camphor"],
-  "behaviorTriggers": [],
+  "behaviorTriggers": [
+    {
+      "schemaVersion": 1,
+      "triggerId": "behavior:tegueste:burrow-left:snake-intimidation",
+      "mode": "automatic",
+      "actionLabel": "Investigar los ruidos de la madriguera",
+      "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
+      "requirement": { "any": [
+        { "kind": "companionSpecies", "speciesId": 23 },
+        { "kind": "companionSpecies", "speciesId": 24 },
+        { "kind": "companionSpecies", "speciesId": 336 }
+      ] },
+      "sequenceId": "sequence:tegueste:burrow-left:snake-intimidation",
+      "proximity": {
+        "roomId": "room:tegueste-forest:02-04",
+        "target": { "kind": "placement", "placementId": "actor:rattata:left" },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-left:rattata-ambush"
+      },
+      "repeatPolicy": "persistent",
+      "rewardOriginId": "reward:tegueste:burrow-intimidation",
+      "rewardPackageId": "reward-package:companion-secret",
+      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+    },
+    {
+      "schemaVersion": 1,
+      "triggerId": "behavior:tegueste:burrow-middle:snake-intimidation",
+      "mode": "automatic",
+      "actionLabel": "Investigar los ruidos de la madriguera",
+      "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
+      "requirement": { "any": [
+        { "kind": "companionSpecies", "speciesId": 23 },
+        { "kind": "companionSpecies", "speciesId": 24 },
+        { "kind": "companionSpecies", "speciesId": 336 }
+      ] },
+      "sequenceId": "sequence:tegueste:burrow-middle:snake-intimidation",
+      "proximity": {
+        "roomId": "room:tegueste-forest:02-04",
+        "target": { "kind": "placement", "placementId": "actor:rattata:middle" },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-middle:rattata-ambush"
+      },
+      "repeatPolicy": "persistent",
+      "rewardOriginId": "reward:tegueste:burrow-intimidation",
+      "rewardPackageId": "reward-package:companion-secret",
+      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+    },
+    {
+      "schemaVersion": 1,
+      "triggerId": "behavior:tegueste:burrow-right:snake-intimidation",
+      "mode": "automatic",
+      "actionLabel": "Investigar los ruidos de la madriguera",
+      "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
+      "requirement": { "any": [
+        { "kind": "companionSpecies", "speciesId": 23 },
+        { "kind": "companionSpecies", "speciesId": 24 },
+        { "kind": "companionSpecies", "speciesId": 336 }
+      ] },
+      "sequenceId": "sequence:tegueste:burrow-right:snake-intimidation",
+      "proximity": {
+        "roomId": "room:tegueste-forest:02-04",
+        "target": { "kind": "placement", "placementId": "actor:rattata:right" },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-right:rattata-ambush"
+      },
+      "repeatPolicy": "persistent",
+      "rewardOriginId": "reward:tegueste:burrow-intimidation",
+      "rewardPackageId": "reward-package:companion-secret",
+      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+    }
+  ],
+  "companionSequences": [
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-left:rattata-ambush",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true }] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:left", "animation": "TailWhip" }], "pauseAfterMs": 100 },
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:attack", "actions": [
+          { "kind": "playAnimation", "actorRef": "actor:rattata:left", "animation": "Attack" },
+          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "right", "tiles": 2 }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-middle:rattata-ambush",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true }] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:middle", "animation": "TailWhip" }], "pauseAfterMs": 100 },
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:attack", "actions": [
+          { "kind": "playAnimation", "actorRef": "actor:rattata:middle", "animation": "Attack" },
+          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "up", "tiles": 2 }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-right:rattata-ambush",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true }] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:right", "animation": "TailWhip" }], "pauseAfterMs": 100 },
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:attack", "actions": [
+          { "kind": "playAnimation", "actorRef": "actor:rattata:right", "animation": "Attack" },
+          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "down", "tiles": 2 }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-left:snake-intimidation",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:snake-left:approach", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
+          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:left" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-middle:snake-intimidation",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:approach", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true },
+          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:middle" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-right:snake-intimidation",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:snake-right:approach", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true },
+          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:right" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
+      ]
+    }
+  ],
   "expressionTriggers": [{
     "schemaVersion": 1,
     "triggerId": "expression:tegueste:compliment-cottonee",
@@ -150,6 +309,10 @@
     "pmd:0546-cottonee:default",
     "pmd:0845-cramorant:default",
     "pmd:0204-pineco:default",
+    "pmd:0023-ekans:default",
+    "pmd:0024-arbok:default",
+    "pmd:0025-pikachu:default",
+    "pmd:0336-seviper:default",
     "character:trainer:achaman",
     "character:npc:professor-alcanfor"
   ]

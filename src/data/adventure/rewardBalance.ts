@@ -11,6 +11,8 @@ export const POKE_DISCOVER_REWARD_AMOUNTS = Object.freeze({
   mapSecretDiscoveryPoints: 15,
   specialDiscoveryTrainerExperience: 25,
   specialDiscoveryDiscoveryPoints: 30,
+  companionSecretTrainerExperience: 10,
+  companionSecretDiscoveryPoints: 10,
 });
 
 export type BalancedPokeDiscoverReward =
@@ -18,7 +20,8 @@ export type BalancedPokeDiscoverReward =
   | 'completedResearchEntry'
   | 'completedMission'
   | 'mapSecret'
-  | 'specialDiscovery';
+  | 'specialDiscovery'
+  | 'companionSecret';
 
 export function getBalancedPokeDiscoverRewards(
   kind: BalancedPokeDiscoverReward,
@@ -41,6 +44,12 @@ export function getBalancedPokeDiscoverRewards(
       { kind: 'discoveryPoints', amount: POKE_DISCOVER_REWARD_AMOUNTS.completedMissionDiscoveryPoints },
     ];
   }
+  if (kind === 'companionSecret') {
+    return [
+      { kind: 'trainerExperience', amount: POKE_DISCOVER_REWARD_AMOUNTS.companionSecretTrainerExperience },
+      { kind: 'discoveryPoints', amount: POKE_DISCOVER_REWARD_AMOUNTS.companionSecretDiscoveryPoints },
+    ];
+  }
   if (kind === 'mapSecret') {
     return [
       { kind: 'trainerExperience', amount: POKE_DISCOVER_REWARD_AMOUNTS.mapSecretTrainerExperience },
@@ -51,4 +60,13 @@ export function getBalancedPokeDiscoverRewards(
     { kind: 'trainerExperience', amount: POKE_DISCOVER_REWARD_AMOUNTS.specialDiscoveryTrainerExperience },
     { kind: 'discoveryPoints', amount: POKE_DISCOVER_REWARD_AMOUNTS.specialDiscoveryDiscoveryPoints },
   ];
+}
+
+export const POKE_DISCOVER_REWARD_PACKAGES = Object.freeze({
+  'reward-package:companion-secret': getBalancedPokeDiscoverRewards('companionSecret'),
+});
+
+export function getPokeDiscoverRewardPackage(packageId: string | undefined) {
+  if (!packageId) return undefined;
+  return POKE_DISCOVER_REWARD_PACKAGES[packageId as keyof typeof POKE_DISCOVER_REWARD_PACKAGES];
 }

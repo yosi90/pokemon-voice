@@ -5,6 +5,11 @@ import {
   MAP_EXPRESSION_CONTROL_EVENT,
   MAP_EXPRESSION_REQUEST_EVENT,
   MAP_EXPRESSION_STARTED_EVENT,
+  MAP_COMPANION_AVAILABLE_EVENT,
+  MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT,
+  MAP_COMPANION_CONTROL_EVENT,
+  MAP_COMPANION_REQUEST_EVENT,
+  MAP_COMPANION_STARTED_EVENT,
   MAP_INTERACTION_AVAILABLE_EVENT,
   MAP_INTERACTION_COMPLETED_EVENT,
   MAP_INTERACTION_CONTROL_EVENT,
@@ -12,11 +17,13 @@ import {
   MAP_INTERACTION_STARTED_EVENT,
   MAP_SPECIES_IDENTIFIED_EVENT,
   type MapInteractionPresentation,
+  type MapCompanionPresentation,
 } from '../domain/maps/createTechnicalPhaserGame.js';
 import { loadAdventureMapBundle } from '../domain/maps/loadAdventureBundle.js';
 import {
   getBrowserPokeVoiceSave,
   recordBrowserMeaningfulExpeditionInteraction,
+  executeBrowserCompanionBehavior,
 } from '../store/browserPokeVoiceSaveStore.js';
 import { browserDiscoveryStore } from '../store/browserDiscoveryStore.js';
 import { captureLocalAcousticExpression } from '../services/captureLocalAcousticExpression.js';
@@ -25,6 +32,16 @@ import type {
   ExpeditionExpressionTriggerV1,
   ExpeditionInteractionV1,
 } from '../../packages/contracts/src/index.js';
+import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
+import {
+  createCompanionCatalogSpecies,
+  getCompanionCandidates,
+} from '../domain/companions/companionCandidates.js';
+import {
+  listAvailableCompanionBehaviors,
+  listMatchingCompanionBehaviors,
+} from '../domain/expeditions/companionBehavior.js';
+import { getPokeDiscoverRewardPackage } from '../data/adventure/rewardBalance.js';
 
 export interface MapExpressionFeedback {
   status: 'resolved' | 'alreadyResolved' | 'ineligible' | 'methodUnavailable' | 'notMatched';
@@ -52,6 +69,7 @@ export function MapConceptPreview({
   onExpressionAcoustic,
   expressionFeedback,
   loadingText,
+  catalog,
   onClose,
 }: {
   open: boolean;
@@ -67,9 +85,11 @@ export function MapConceptPreview({
   onExpressionAcoustic: (features: AcousticExpressionFeatures) => void;
   expressionFeedback?: MapExpressionFeedback | null;
   loadingText: string;
+  catalog: readonly PokemonCatalogRecord[];
   onClose: () => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const bundleRef = useRef<Awaited<ReturnType<typeof loadAdventureMapBundle>> | undefined>(undefined);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [writtenName, setWrittenName] = useState('');
   const [availableInteraction, setAvailableInteraction] = useState<ExpeditionInteractionV1>();
@@ -81,6 +101,19 @@ export function MapConceptPreview({
   const acousticAbortRef = useRef<AbortController | undefined>(undefined);
   const [interactionPresentation, setInteractionPresentation] = useState<MapInteractionPresentation>();
   const [dialoguePageId, setDialoguePageId] = useState<string>();
+  const [companionAvailable, setCompanionAvailable] = useState(false);
+  const [companionPresentation, setCompanionPresentation] = useState<MapCompanionPresentation>();
+
+  const focusRuntime = useCallback(() => {
+    window.requestAnimationFrame(() => hostRef.current?.focus({ preventScroll: true }));
+  }, []);
+
+  const finishCompanionConversation = useCallback((triggerId?: string) => {
+    hostRef.current?.dispatchEvent(new CustomEvent(MAP_COMPANION_CONTROL_EVENT, {
+      detail: triggerId ? { command: 'execute', triggerId } : { command: 'dismiss' },
+    }));
+    setCompanionPresentation(undefined);
+  }, []);
 
   const finishDialogue = useCallback((completed: boolean) => {
     hostRef.current?.dispatchEvent(new CustomEvent(MAP_INTERACTION_CONTROL_EVENT, {
@@ -93,10 +126,17 @@ export function MapConceptPreview({
   const submitWrittenName = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = writtenName.trim();
-    if (!value) return;
-    await onSubmitText(value);
-    setWrittenName('');
+    if (value) {
+      await onSubmitText(value);
+      setWrittenName('');
+    }
+    focusRuntime();
   };
+
+  const toggleMicAndFocusRuntime = useCallback(() => {
+    onMic();
+    focusRuntime();
+  }, [focusRuntime, onMic]);
 
   const finishExpression = useCallback((completed: boolean) => {
     acousticAbortRef.current?.abort();
@@ -155,13 +195,14 @@ export function MapConceptPreview({
     if (!open) return undefined;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (interactionPresentation) finishDialogue(false);
+      if (companionPresentation) finishCompanionConversation();
+      else if (interactionPresentation) finishDialogue(false);
       else if (activeExpression) finishExpression(false);
       else onClose();
     };
     document.addEventListener('keydown', closeOnEscape);
     return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [activeExpression, finishDialogue, finishExpression, interactionPresentation, onClose, open]);
+  }, [activeExpression, companionPresentation, finishCompanionConversation, finishDialogue, finishExpression, interactionPresentation, onClose, open]);
 
   useEffect(() => {
     if (!open || !interactionPresentation) return undefined;
@@ -209,6 +250,35 @@ export function MapConceptPreview({
       setAcousticProgress(0);
       setAcousticError(undefined);
     };
+    const companionAvailableChanged = (event: Event) => {
+      setCompanionAvailable(Boolean((event as CustomEvent<{ available?: boolean }>).detail?.available));
+    };
+    const companionStarted = (event: Event) => {
+      const presentation = (event as CustomEvent<MapCompanionPresentation>).detail;
+      if (!presentation) return;
+      onInteractionStart();
+      setCompanionAvailable(false);
+      setCompanionPresentation(presentation);
+    };
+    const companionBehaviorCompleted = (event: Event) => {
+      const triggerId = (event as CustomEvent<{ triggerId?: string }>).detail?.triggerId;
+      if (!triggerId) return;
+      const save = getBrowserPokeVoiceSave();
+      const selection = save.activeExpeditionSession?.loadout?.companion;
+      const candidate = getCompanionCandidates(catalog, save).find(item => (
+        item.form.formId === selection?.formId && item.appearance?.appearanceId === selection?.appearanceId
+      ));
+      const trigger = bundleRef.current?.adventure.behaviorTriggers.find(item => item.triggerId === triggerId);
+      if (!candidate || !trigger) return;
+      executeBrowserCompanionBehavior({
+        mapId: bundleRef.current!.adventure.mapId,
+        trigger,
+        companionForm: candidate.form,
+        species: catalog.map(createCompanionCatalogSpecies),
+        executedAt: new Date().toISOString(),
+        rewards: getPokeDiscoverRewardPackage(trigger.rewardPackageId),
+      });
+    };
     const interactionCompleted = (event: Event) => {
       const interaction = (event as CustomEvent<{ interaction?: ExpeditionInteractionV1 }>).detail?.interaction;
       if (!interaction || !getBrowserPokeVoiceSave().activeExpeditionSession) return;
@@ -222,6 +292,9 @@ export function MapConceptPreview({
     host.addEventListener(MAP_INTERACTION_COMPLETED_EVENT, interactionCompleted);
     host.addEventListener(MAP_EXPRESSION_AVAILABLE_EVENT, expressionAvailable);
     host.addEventListener(MAP_EXPRESSION_STARTED_EVENT, expressionStarted);
+    host.addEventListener(MAP_COMPANION_AVAILABLE_EVENT, companionAvailableChanged);
+    host.addEventListener(MAP_COMPANION_STARTED_EVENT, companionStarted);
+    host.addEventListener(MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT, companionBehaviorCompleted);
     setStatus('loading');
     host.dataset.runtime = 'loading';
     host.focus({ preventScroll: true });
@@ -241,7 +314,43 @@ export function MapConceptPreview({
         .filter((speciesId): speciesId is number => Number.isSafeInteger(speciesId)))];
       onVisibleSpeciesIdsChange(visibleSpeciesIds);
       const save = getBrowserPokeVoiceSave();
+      bundleRef.current = bundle;
       const mapProgress = save.pokeDiscover.mapProgress[bundle.adventure.mapId];
+      const activeSession = save.activeExpeditionSession?.mapId === bundle.adventure.mapId
+        ? save.activeExpeditionSession
+        : undefined;
+      const selection = activeSession?.loadout?.companion
+        ?? save.pokedexRun.selectedCompanion
+        ?? (save.pokedexRun.selectedCompanionFormId
+          ? { schemaVersion: 1 as const, formId: save.pokedexRun.selectedCompanionFormId }
+          : undefined);
+      const companionCandidate = selection
+        ? getCompanionCandidates(catalog, save).find(item => (
+          item.form.formId === selection.formId && item.appearance?.appearanceId === selection.appearanceId
+        ))
+        : undefined;
+      const companionAsset = companionCandidate
+        ? bundle.pmdManifest.assets.find(asset => asset.formId === companionCandidate.form.formId)
+        : undefined;
+      const behaviorContext = companionCandidate ? {
+        companionForm: companionCandidate.form,
+        species: catalog.map(createCompanionCatalogSpecies),
+      } : undefined;
+      const eligibleBehaviors = companionCandidate && behaviorContext
+        ? (activeSession
+          ? listAvailableCompanionBehaviors(
+            save,
+            bundle.adventure.mapId,
+            bundle.adventure.behaviorTriggers,
+            behaviorContext,
+          )
+          : listMatchingCompanionBehaviors(
+            save,
+            bundle.adventure.mapId,
+            bundle.adventure.behaviorTriggers,
+            behaviorContext,
+          ))
+        : [];
       game = createTechnicalPhaserGame({
         Phaser,
         parent: host,
@@ -249,8 +358,16 @@ export function MapConceptPreview({
         initialRoomId: TEGUESTE_FOREST_PREVIEW_ROOM_ID,
         reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         registeredSpeciesIds: new Set(save.pokedexRun.registeredSpeciesIds),
-        expressionsEnabled: save.activeExpeditionSession?.mapId === bundle.adventure.mapId,
+        expressionsEnabled: Boolean(activeSession),
         resolvedExpressionTriggerIds: new Set(Object.keys(mapProgress?.resolvedExpressionTriggers ?? {})),
+        companion: companionCandidate ? {
+          displayName: companionCandidate.displayName,
+          form: companionCandidate.form,
+          asset: companionAsset,
+          eligibleBehaviorTriggerIds: new Set(eligibleBehaviors.map(trigger => trigger.triggerId)),
+          resolvedSecretIds: new Set(mapProgress?.unlockedSecretIds ?? []),
+          freeRoam: !activeSession?.missionId,
+        } : undefined,
         onReady: () => {
           if (cancelled) return;
           host.dataset.runtime = 'ready';
@@ -275,6 +392,9 @@ export function MapConceptPreview({
       host.removeEventListener(MAP_INTERACTION_COMPLETED_EVENT, interactionCompleted);
       host.removeEventListener(MAP_EXPRESSION_AVAILABLE_EVENT, expressionAvailable);
       host.removeEventListener(MAP_EXPRESSION_STARTED_EVENT, expressionStarted);
+      host.removeEventListener(MAP_COMPANION_AVAILABLE_EVENT, companionAvailableChanged);
+      host.removeEventListener(MAP_COMPANION_STARTED_EVENT, companionStarted);
+      host.removeEventListener(MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT, companionBehaviorCompleted);
       host.replaceChildren();
       onVisibleSpeciesIdsChange([]);
       setAvailableInteraction(undefined);
@@ -282,8 +402,11 @@ export function MapConceptPreview({
       setActiveExpression(undefined);
       setInteractionPresentation(undefined);
       setDialoguePageId(undefined);
+      setCompanionAvailable(false);
+      setCompanionPresentation(undefined);
+      bundleRef.current = undefined;
     };
-  }, [onExpressionStart, onInteractionStart, onVisibleSpeciesIdsChange, open]);
+  }, [catalog, onExpressionStart, onInteractionStart, onVisibleSpeciesIdsChange, open]);
 
   useEffect(() => {
     if (!open || !hostRef.current) return undefined;
@@ -359,6 +482,16 @@ export function MapConceptPreview({
                 {availableExpression.prompt}
               </button>
             )}
+            {companionAvailable && !availableInteraction && !availableExpression && !interactionPresentation && !activeExpression && !companionPresentation && (
+              <button
+                className="map-concept-preview__interaction-prompt map-concept-preview__interaction-prompt--companion"
+                type="button"
+                onClick={() => hostRef.current?.dispatchEvent(new CustomEvent(MAP_COMPANION_REQUEST_EVENT))}
+              >
+                <kbd>E</kbd>
+                Hablar con tu compañero
+              </button>
+            )}
             {activeExpression && (
               <section className="map-concept-preview__expression" aria-label="Interacción expresiva" aria-live="polite">
                 <strong>{activeExpression.prompt}</strong>
@@ -396,6 +529,27 @@ export function MapConceptPreview({
                 </button>
               </section>
             )}
+            {companionPresentation && (
+              <section className="map-concept-preview__dialogue map-concept-preview__companion-dialogue" role="dialog" aria-label={`Hablar con ${companionPresentation.displayName}`}>
+                <strong>{companionPresentation.displayName}</strong>
+                {companionPresentation.behaviors.length ? (
+                  <>
+                    <p>¿Qué quieres pedirle?</p>
+                    <div className="map-concept-preview__companion-actions">
+                      {companionPresentation.behaviors.map(behavior => (
+                        <button key={behavior.triggerId} type="button" onClick={() => finishCompanionConversation(behavior.triggerId)}>
+                          <span>{behavior.actionLabel ?? 'Investigar los alrededores'}</span>
+                          {behavior.loreHint && <small>{behavior.loreHint}</small>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : <p>Te mira con atención. Parece feliz de viajar contigo.</p>}
+                <button type="button" onClick={() => finishCompanionConversation()}>
+                  {companionPresentation.behaviors.length ? 'Cancelar' : 'Seguir explorando'}
+                </button>
+              </section>
+            )}
           </div>
           <div className="map-concept-preview__speaker map-concept-preview__speaker--right" aria-hidden="true" />
         </div>
@@ -417,7 +571,10 @@ export function MapConceptPreview({
                 placeholder={activeExpression ? 'Dile algo…' : 'Nombre…'}
                 autoComplete="off"
                 onChange={event => setWrittenName(event.target.value)}
-                onKeyDown={event => event.stopPropagation()}
+                onKeyDown={event => {
+                  event.stopPropagation();
+                  if (event.key === 'Escape') focusRuntime();
+                }}
               />
             )}
             {(!activeExpression || acceptsSpokenText) && (
@@ -432,7 +589,7 @@ export function MapConceptPreview({
                   ? activeExpression ? 'Responder a esta interacción por voz' : 'Identificar únicamente Pokémon visibles'
                   : 'Reconocimiento de voz no disponible'}
                 disabled={!speechSupported}
-                onClick={onMic}
+                onClick={toggleMicAndFocusRuntime}
               >
                 <span aria-hidden="true">🎙</span>
               </button>

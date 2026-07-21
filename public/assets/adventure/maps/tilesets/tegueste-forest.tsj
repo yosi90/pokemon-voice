@@ -1,14 +1,14 @@
-{
-  "columns": 88,
-  "image": "exteriors.png",
-  "imageheight": 1104,
-  "imagewidth": 1408,
-  "margin": 0,
-  "name": "exteriors",
-  "spacing": 0,
-  "tilecount": 6072,
-  "tileheight": 16,
-  "tilewidth": 16,
-  "type": "tileset",
-  "version": "1.10"
+{ "columns":88,
+ "image":"exteriors.png",
+ "imageheight":1104,
+ "imagewidth":1408,
+ "margin":0,
+ "name":"tegueste-forest",
+ "spacing":0,
+ "tilecount":6072,
+ "tiledversion":"1.12.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.10"
 }

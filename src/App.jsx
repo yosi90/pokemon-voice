@@ -538,6 +538,7 @@ export default function App() {
         onExpressionAcoustic={submitMapAcousticExpression}
         expressionFeedback={mapExpressionFeedback}
         loadingText={CAMPHOR_PROLOGUE_MISSION.loadingText}
+        catalog={game.pokemonCatalog}
         onClose={leaveTeguesteForest}
       />
       <ExpeditionReportModal report={expeditionReport} onClose={() => setExpeditionReport(undefined)} />

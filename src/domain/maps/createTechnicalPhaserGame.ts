@@ -3,16 +3,30 @@ import { findTiledObject } from './loadAdventureBundle.js';
 import type {
   AmbientActorActionV1,
   AmbientSequenceV1,
+  CompanionBehaviorTriggerV1,
+  CompanionSequenceV1,
   ExpeditionDialogueV1,
   ExpeditionExpressionTriggerV1,
   ExpeditionInteractionV1,
   MillisecondRangeV1,
+  PmdSpriteAssetV1,
+  PokemonFormV1,
 } from '../../../packages/contracts/src/index.js';
 import {
   facingTowardTarget,
   findFacingInteraction,
   findFacingSpatialDefinition,
 } from './expeditionInteractionRuntime.js';
+import {
+  activeGridDirection,
+  canStartClassicStep,
+  facingFromDelta,
+  findGridPath,
+  gridStep,
+  pressGridDirection,
+  releaseGridDirection,
+  type PressedGridDirection,
+} from './gridCompanionRuntime.js';
 
 type PhaserModule = typeof import('phaser');
 type Facing = 'up' | 'down' | 'left' | 'right';
@@ -29,6 +43,26 @@ export const MAP_EXPRESSION_AVAILABLE_EVENT = 'pokevoice:map-expression-availabl
 export const MAP_EXPRESSION_REQUEST_EVENT = 'pokevoice:map-expression-request';
 export const MAP_EXPRESSION_STARTED_EVENT = 'pokevoice:map-expression-started';
 export const MAP_EXPRESSION_CONTROL_EVENT = 'pokevoice:map-expression-control';
+export const MAP_COMPANION_AVAILABLE_EVENT = 'pokevoice:map-companion-available';
+export const MAP_COMPANION_REQUEST_EVENT = 'pokevoice:map-companion-request';
+export const MAP_COMPANION_STARTED_EVENT = 'pokevoice:map-companion-started';
+export const MAP_COMPANION_CONTROL_EVENT = 'pokevoice:map-companion-control';
+export const MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT = 'pokevoice:map-companion-behavior-completed';
+export const MAP_COMPANION_SEQUENCE_REQUEST_EVENT = 'pokevoice:map-companion-sequence-request';
+
+export interface MapCompanionRuntimeContext {
+  displayName: string;
+  form: PokemonFormV1;
+  asset?: PmdSpriteAssetV1;
+  eligibleBehaviorTriggerIds: ReadonlySet<string>;
+  resolvedSecretIds: ReadonlySet<string>;
+  freeRoam: boolean;
+}
+
+export interface MapCompanionPresentation {
+  displayName: string;
+  behaviors: CompanionBehaviorTriggerV1[];
+}
 
 export interface MapInteractionPresentation {
   interaction: ExpeditionInteractionV1;
@@ -124,6 +158,7 @@ export function createTechnicalPhaserGame({
   registeredSpeciesIds,
   expressionsEnabled = false,
   resolvedExpressionTriggerIds = new Set<string>(),
+  companion,
   onReady,
 }: {
   Phaser: PhaserModule;
@@ -134,6 +169,7 @@ export function createTechnicalPhaserGame({
   registeredSpeciesIds: ReadonlySet<number>;
   expressionsEnabled?: boolean;
   resolvedExpressionTriggerIds?: ReadonlySet<string>;
+  companion?: MapCompanionRuntimeContext;
   onReady: () => void;
 }) {
   const initialRoom = bundle.rooms.find(candidate => candidate.room.roomId === initialRoomId);
@@ -195,12 +231,97 @@ export function createTechnicalPhaserGame({
             frameHeight: asset.frameHeight,
           });
         }
+        const roomPlacements = new Map(bundle.adventure.actorPlacements
+          .filter(candidate => candidate.roomId === roomBundle.room.roomId)
+          .map(placement => [placement.placementId, placement]));
+        for (const action of (bundle.adventure.companionSequences ?? [])
+          .filter(sequence => sequence.roomId === roomBundle.room.roomId)
+          .flatMap(sequence => sequence.beats)
+          .flatMap(beat => beat.actions)) {
+          if (action.kind !== 'playAnimation' || action.actorRef === 'dynamic:companion' || action.actorRef === 'dynamic:player') continue;
+          if (!action.animation) continue;
+          const placement = roomPlacements.get(action.actorRef);
+          const asset = placement ? roomBundle.actorAssets.get(placement.assetId) : undefined;
+          const animation = asset?.animations.find(candidate => candidate.name === action.animation);
+          if (!asset || !animation) continue;
+          const key = actorSheetKey(asset.assetId, animation.name, animation.copyOf);
+          if (loadedActorSheets.has(key)) continue;
+          loadedActorSheets.add(key);
+          this.load.spritesheet(key, sheetUrl(animation.animationSheetPath), {
+            frameWidth: animation.frameWidth,
+            frameHeight: animation.frameHeight,
+          });
+        }
+      }
+      if (companion?.asset) {
+        const animationNames = new Set(['Idle', 'Walk']);
+        for (const sequence of bundle.adventure.companionSequences ?? []) {
+          for (const action of sequence.beats.flatMap(beat => beat.actions)) {
+            if (action.kind === 'playAnimation' && action.actorRef === 'dynamic:companion') {
+              if (action.animation) animationNames.add(action.animation);
+              Object.values(action.animationByCompanionSpecies ?? {}).forEach(name => animationNames.add(name));
+            }
+          }
+        }
+        for (const animationName of animationNames) {
+          const animation = companion.asset.animations.find(candidate => candidate.name === animationName);
+          if (!animation) continue;
+          const key = actorSheetKey(companion.asset.assetId, animation.name, animation.copyOf);
+          if (loadedActorSheets.has(key)) continue;
+          loadedActorSheets.add(key);
+          this.load.spritesheet(key, sheetUrl(animation.animationSheetPath), {
+            frameWidth: animation.frameWidth,
+            frameHeight: animation.frameHeight,
+          });
+        }
       }
     }
 
     create() {
-      const cursors = this.input.keyboard?.createCursorKeys();
-      const wasd = this.input.keyboard?.addKeys('W,A,S,D') as Record<string, import('phaser').Input.Keyboard.Key>;
+      let pressedDirections: PressedGridDirection[] = [];
+      const keyboardFacing = (event: KeyboardEvent): Facing | undefined => {
+        if (event.code === 'ArrowUp' || event.code === 'KeyW') return 'up';
+        if (event.code === 'ArrowDown' || event.code === 'KeyS') return 'down';
+        if (event.code === 'ArrowLeft' || event.code === 'KeyA') return 'left';
+        if (event.code === 'ArrowRight' || event.code === 'KeyD') return 'right';
+        return undefined;
+      };
+      const isEditableKeyboardTarget = (event: KeyboardEvent) => (
+        event.target instanceof HTMLElement
+        && Boolean(event.target.closest('input, textarea, select, button, [contenteditable="true"]'))
+      );
+      const directionKeyDown = (event: KeyboardEvent) => {
+        const facing = keyboardFacing(event);
+        if (!facing || isEditableKeyboardTarget(event)) return;
+        event.preventDefault();
+        if (event.repeat) return;
+        const facingAtPress = playerFacing;
+        pressedDirections = pressGridDirection(pressedDirections, {
+          code: event.code,
+          facing,
+          startedAt: performance.now(),
+          facingAtPress,
+        });
+        if (!stepTarget && !transitioning && !activeInteraction && !activeExpression
+          && !companionConversationActive && !activeCompanionSequence && playerFacing !== facing) {
+          playerFacing = facing;
+          parent.dataset.facing = facing;
+          if (playerCharacterSprite && playerCharacterAsset) {
+            playerCharacterSprite.stop();
+            playerCharacterSprite.setFrame(
+              playerCharacterAsset.directionRows[facing] * playerCharacterAsset.columns
+                + playerCharacterAsset.idleFrame,
+            );
+          }
+        }
+      };
+      const directionKeyUp = (event: KeyboardEvent) => {
+        const facing = keyboardFacing(event);
+        if (facing && !isEditableKeyboardTarget(event)) event.preventDefault();
+        if (facing) pressedDirections = releaseGridDirection(pressedDirections, event.code);
+      };
+      this.input.keyboard?.on('keydown', directionKeyDown);
+      this.input.keyboard?.on('keyup', directionKeyUp);
       let currentRoom: LoadedAdventureRoomBundle;
       let currentMap: import('phaser').Tilemaps.Tilemap | undefined;
       let player: import('phaser').GameObjects.Rectangle | import('phaser').GameObjects.Sprite;
@@ -213,9 +334,8 @@ export function createTechnicalPhaserGame({
       let transitionCount = 0;
       let chainedStepCount = 0;
       let transitionCooldownUntil = 0;
-      let stepTarget: { x: number; y: number; startX: number; startY: number; facing: Facing } | undefined;
+      let stepTarget: { x: number; y: number; startX: number; startY: number; facing: Facing; swappedCompanion?: boolean } | undefined;
       let activeObjects: import('phaser').GameObjects.GameObject[] = [];
-      let activeColliders: import('phaser').Physics.Arcade.Collider[] = [];
       let staticCollisionBounds: Bounds[] = [];
       let activeActorSpritesBySpecies = new Map<number, import('phaser').GameObjects.Sprite[]>();
       let activeActorsByPlacement = new Map<string, ActiveActorState>();
@@ -230,12 +350,18 @@ export function createTechnicalPhaserGame({
       let activeInteraction: ExpeditionInteractionV1 | undefined;
       let availableExpression: ExpeditionExpressionTriggerV1 | undefined;
       let activeExpression: ExpeditionExpressionTriggerV1 | undefined;
+      let companionActor: ActiveActorState | undefined;
+      let companionTrail: TiledPoint[] = [];
+      let companionTarget: TiledPoint | undefined;
+      let availableCompanionBehaviors: CompanionBehaviorTriggerV1[] = [];
+      let companionConversationActive = false;
+      let activeCompanionSequence = false;
+      const completedRuntimeBehaviorIds = new Set<string>();
+      const occupiedProximityZones = new Set<string>();
       const completedVisitInteractionIds = new Set<string>();
 
       const clearRoom = () => {
-        activeColliders.forEach(collider => collider.destroy());
         activeObjects.forEach(object => object.destroy());
-        activeColliders = [];
         activeObjects = [];
         staticCollisionBounds = [];
         activeActorSpritesBySpecies = new Map();
@@ -250,6 +376,13 @@ export function createTechnicalPhaserGame({
         activeInteraction = undefined;
         availableExpression = undefined;
         activeExpression = undefined;
+        companionActor = undefined;
+        companionTrail = [];
+        companionTarget = undefined;
+        availableCompanionBehaviors = [];
+        companionConversationActive = false;
+        activeCompanionSequence = false;
+        pressedDirections = [];
         delete parent.dataset.interactionId;
         delete parent.dataset.interactionPrompt;
         delete parent.dataset.expressionTriggerId;
@@ -358,6 +491,7 @@ export function createTechnicalPhaserGame({
         });
         state.direction = direction;
         state.currentAnimation = animationName;
+        if (state.placementId === 'dynamic:companion') parent.dataset.lastCompanionAnimation = animationName;
         state.sprite.stop();
         state.sprite.setTexture(actorSheetKey(state.asset.assetId, animation.name, animation.copyOf), frames[0]);
         state.sprite.setOrigin(origin.x, origin.y).setScale(state.asset.renderScale ?? 1);
@@ -367,6 +501,55 @@ export function createTechnicalPhaserGame({
         const oneCycleMs = animation.durationTicks.reduce((total, ticks) => total + ticks, 0)
           * (1000 / bundle.pmdManifest.tickRate);
         return repetitions < 0 ? Number.POSITIVE_INFINITY : oneCycleMs * repetitions;
+      };
+
+      const createCompanionActor = (spawn: TiledPoint, playerFacingAtSpawn: Facing) => {
+        if (!companion) return undefined;
+        const direction: Facing = playerFacingAtSpawn;
+        let sprite: import('phaser').GameObjects.Sprite;
+        if (companion.asset) {
+          const animation = companion.asset.animations.find(candidate => candidate.name === 'Idle')
+            ?? companion.asset.animations[0];
+          if (!animation) return undefined;
+          const row = DIRECTION_ROWS[direction];
+          const frame = row * animation.frameCount;
+          const origin = actorGroundOrigin(animation, frame);
+          sprite = this.add.sprite(
+            spawn.x,
+            spawn.y,
+            actorSheetKey(companion.asset.assetId, animation.name, animation.copyOf),
+            frame,
+          ).setOrigin(origin.x, origin.y).setScale(companion.asset.renderScale ?? 1).setDepth(spawn.y);
+        } else {
+          const textureKey = 'technical-companion-placeholder';
+          if (!this.textures.exists(textureKey)) {
+            const graphic = this.make.graphics({ x: 0, y: 0 });
+            graphic.fillStyle(0xf4f4f4).fillCircle(8, 8, 7);
+            graphic.fillStyle(0xe83b2e).fillRect(2, 2, 12, 6);
+            graphic.fillStyle(0x20252b).fillRect(1, 7, 14, 3);
+            graphic.fillStyle(0xffffff).fillCircle(8, 8, 3);
+            graphic.lineStyle(1, 0x20252b).strokeCircle(8, 8, 3);
+            graphic.generateTexture(textureKey, 16, 16);
+            graphic.destroy();
+          }
+          sprite = this.add.sprite(spawn.x, spawn.y, textureKey).setOrigin(.5, 1).setDepth(spawn.y);
+        }
+        sprite.setName('dynamic:companion');
+        activeObjects.push(sprite);
+        const state: ActiveActorState = {
+          placementId: 'dynamic:companion',
+          sprite,
+          collision: 'pass-through',
+          direction,
+          baseX: spawn.x,
+          baseY: spawn.y,
+          baseDirection: direction,
+          baseAnimation: 'Idle',
+          currentAnimation: 'Idle',
+          asset: companion.asset,
+        };
+        if (state.asset) startActorAnimation(state, 'Idle', direction, -1);
+        return state;
       };
 
       const applyActorOcclusion = (room: LoadedAdventureRoomBundle, state: ActiveActorState, groupIds: readonly string[]) => {
@@ -476,7 +659,8 @@ export function createTechnicalPhaserGame({
             anchorPoint.y,
             sheetKey,
             frames[0],
-          ).setOrigin(origin.x, origin.y).setScale(asset.renderScale ?? 1).setDepth(anchorPoint.y);
+          ).setOrigin(origin.x, origin.y).setScale(asset.renderScale ?? 1).setDepth(anchorPoint.y)
+            .setVisible(placement.initiallyHidden !== true);
           if (!revealedSpeciesIds.has(asset.speciesId)) {
             sprite.setTint(0x000000);
             sprite.setTintMode(Phaser.TintModes.FILL);
@@ -602,17 +786,30 @@ export function createTechnicalPhaserGame({
             height,
           };
           staticCollisionBounds.push(collisionBounds);
-          const obstacle = this.add.rectangle(
-            collisionBounds.x + width / 2,
-            collisionBounds.y + height / 2,
-            width,
-            height,
-            0x000000,
-            0,
-          );
-          activeObjects.push(obstacle);
-          this.physics.add.existing(obstacle, true);
-          activeColliders.push(this.physics.add.collider(player, obstacle));
+        }
+        if (companion) {
+          const behindFacing: Facing = playerFacing === 'up' ? 'down'
+            : playerFacing === 'down' ? 'up'
+              : playerFacing === 'left' ? 'right'
+                : 'left';
+          const roomWidth = nextRoom.tilemap.width * nextRoom.tilemap.tilewidth;
+          const roomHeight = nextRoom.tilemap.height * nextRoom.tilemap.tileheight;
+          const directions = [behindFacing, 'left', 'right', 'up', 'down'] as Facing[];
+          const companionSpawn = directions
+            .map(direction => gridStep({ x: player.x, y: player.y }, direction))
+            .find(point => point.x >= 8 && point.x <= roomWidth - 8 && point.y >= 16 && point.y <= roomHeight - 16
+              && !staticCollisionBounds.some(collision => overlap(actorFootprint(point.x, point.y), collision))
+              && ![...activeActorsByPlacement.values()].some(actor => actor.sprite.visible
+                && actor.collision === 'solid' && overlap(actorFootprint(point.x, point.y), actorFootprint(actor.sprite.x, actor.sprite.y))))
+            ?? { x: player.x, y: player.y };
+          companionActor = createCompanionActor(companionSpawn, playerFacing);
+          parent.dataset.companionAssetId = companion.asset?.assetId ?? 'placeholder:pokeball';
+          parent.dataset.companionFormId = companion.form.formId;
+          parent.dataset.companionPosition = `${companionSpawn.x},${companionSpawn.y}`;
+        } else {
+          delete parent.dataset.companionAssetId;
+          delete parent.dataset.companionFormId;
+          delete parent.dataset.companionPosition;
         }
         const mapWidth = nextRoom.tilemap.width * nextRoom.tilemap.tilewidth;
         const mapHeight = nextRoom.tilemap.height * nextRoom.tilemap.tileheight;
@@ -687,8 +884,53 @@ export function createTechnicalPhaserGame({
         }
         if (staticCollisionBounds.some(collision => overlap(footprint, collision))) return false;
         return ![...activeActorsByPlacement.values()].some(actor => (
-          actor.collision === 'solid' && overlap(footprint, actorFootprint(actor.sprite.x, actor.sprite.y))
+          actor.sprite.visible && actor.collision === 'solid' && overlap(footprint, actorFootprint(actor.sprite.x, actor.sprite.y))
         ));
+      };
+
+      const actorOccupiesCompanionTarget = (x: number, y: number) => [...activeActorsByPlacement.values()]
+        .some(actor => actor.sprite.visible && actor.collision === 'solid' && overlap(actorFootprint(x, y), actorFootprint(actor.sprite.x, actor.sprite.y)))
+        || overlap(actorFootprint(x, y), { x: player.x - 5, y: player.y - 10, width: 10, height: 10 });
+
+      const setCompanionMoving = (moving: boolean, direction?: Facing) => {
+        if (!companionActor) return;
+        const resolvedDirection = direction ?? companionActor.direction;
+        const changedDirection = resolvedDirection !== companionActor.direction;
+        companionActor.direction = resolvedDirection;
+        if (!companionActor.asset) return;
+        const animation = moving ? 'Walk' : 'Idle';
+        if (!changedDirection && companionActor.currentAnimation === animation && companionActor.sprite.anims.isPlaying) return;
+        startActorAnimation(companionActor, animation, resolvedDirection, -1);
+      };
+
+      const updateCompanionFollower = (deltaMs: number) => {
+        if (!companionActor || companionConversationActive) return;
+        if (!companionTarget && companionTrail.length) companionTarget = companionTrail.shift();
+        if (!companionTarget) {
+          setCompanionMoving(false);
+          return;
+        }
+        if (actorOccupiesCompanionTarget(companionTarget.x, companionTarget.y)) {
+          setCompanionMoving(false);
+          return;
+        }
+        const dx = companionTarget.x - companionActor.sprite.x;
+        const dy = companionTarget.y - companionActor.sprite.y;
+        const distance = Math.hypot(dx, dy);
+        const direction = facingFromDelta(dx, dy, companionActor.direction);
+        const travel = 96 * deltaMs / 1000;
+        if (distance <= Math.max(.001, travel)) {
+          companionActor.sprite.setPosition(companionTarget.x, companionTarget.y).setDepth(companionTarget.y);
+          companionTarget = undefined;
+          if (!companionTrail.length) setCompanionMoving(false);
+        } else {
+          setCompanionMoving(true, direction);
+          companionActor.sprite.setPosition(
+            companionActor.sprite.x + dx / distance * travel,
+            companionActor.sprite.y + dy / distance * travel,
+          ).setDepth(companionActor.sprite.y + dy / distance * travel);
+        }
+        parent.dataset.companionPosition = `${Math.round(companionActor.sprite.x)},${Math.round(companionActor.sprite.y)}`;
       };
 
       const facingForDelta = (dx: number, dy: number, fallback: Facing): Facing => {
@@ -975,10 +1217,25 @@ export function createTechnicalPhaserGame({
         }));
       };
 
+      const publishCompanionAvailability = (available: boolean) => {
+        const current = parent.dataset.companionAvailable === 'true';
+        if (current === available) return;
+        parent.dataset.companionAvailable = String(available);
+        parent.dispatchEvent(new CustomEvent(MAP_COMPANION_AVAILABLE_EVENT, { detail: { available } }));
+      };
+
+      const isFacingCompanion = () => {
+        if (!companionActor || stepTarget || transitioning) return false;
+        const faced = gridStep({ x: player.x, y: player.y }, playerFacing);
+        return Math.abs(faced.x - companionActor.sprite.x) < 5
+          && Math.abs(faced.y - companionActor.sprite.y) < 5;
+      };
+
       const refreshAvailableInteraction = () => {
-        if (activeInteraction || activeExpression || stepTarget || transitioning) {
+        if (activeInteraction || activeExpression || companionConversationActive || stepTarget || transitioning) {
           publishAvailableInteraction();
           publishAvailableExpression();
+          publishCompanionAvailability(false);
           return undefined;
         }
         const interaction = findFacingInteraction({
@@ -993,6 +1250,7 @@ export function createTechnicalPhaserGame({
         publishAvailableInteraction(interaction);
         if (interaction || !expressionsEnabled) {
           publishAvailableExpression();
+          publishCompanionAvailability(!interaction && isFacingCompanion());
           return interaction;
         }
         const spatialExpressions = bundle.adventure.expressionTriggers.filter((trigger): trigger is ExpeditionExpressionTriggerV1 & {
@@ -1012,6 +1270,7 @@ export function createTechnicalPhaserGame({
           resolveTarget: resolveSpatialTarget,
         });
         publishAvailableExpression(expression);
+        publishCompanionAvailability(!expression && isFacingCompanion());
         return expression;
       };
 
@@ -1084,6 +1343,243 @@ export function createTechnicalPhaserGame({
         if (availableInteraction) beginInteraction(availableInteraction);
       };
 
+      const beginCompanionConversation = () => {
+        if (!companion || !companionActor || !isFacingCompanion()) return;
+        companionConversationActive = true;
+        availableCompanionBehaviors = bundle.adventure.behaviorTriggers.filter(trigger => (
+          trigger.mode === 'prompt' && companion.eligibleBehaviorTriggerIds.has(trigger.triggerId)
+        ));
+        setPlayerIdle();
+        setCompanionMoving(false);
+        companionActor.direction = facingTowardTarget(
+          { x: companionActor.sprite.x, y: companionActor.sprite.y },
+          { x: player.x, y: player.y },
+        );
+        if (companionActor.asset) startActorAnimation(companionActor, 'Idle', companionActor.direction, -1);
+        setAmbientAnimationsPaused(true);
+        parent.dataset.controlPriority = 'companion';
+        publishCompanionAvailability(false);
+        parent.dispatchEvent(new CustomEvent<MapCompanionPresentation>(MAP_COMPANION_STARTED_EVENT, {
+          detail: { displayName: companion.displayName, behaviors: availableCompanionBehaviors },
+        }));
+      };
+
+      const finishCompanionConversation = () => {
+        companionConversationActive = false;
+        availableCompanionBehaviors = [];
+        parent.dataset.controlPriority = 'player';
+        if (!document.hidden && !ambientSuppressed && !reducedMotion) setAmbientAnimationsPaused(false);
+        refreshAvailableInteraction();
+      };
+
+      const requestCompanionConversation = () => {
+        refreshAvailableInteraction();
+        if (!availableInteraction && !availableExpression && isFacingCompanion()) beginCompanionConversation();
+      };
+
+      const controlCompanionConversation = (event: Event) => {
+        const detail = (event as CustomEvent<{ command?: string; triggerId?: string }>).detail;
+        if (detail?.command === 'execute' && detail.triggerId) {
+          const trigger = availableCompanionBehaviors.find(item => item.triggerId === detail.triggerId);
+          finishCompanionConversation();
+          if (trigger) void runCompanionSequence(trigger.sequenceId, trigger.triggerId);
+          return;
+        }
+        if (detail?.command === 'dismiss') finishCompanionConversation();
+      };
+
+      const waitForMilliseconds = (milliseconds: number) => new Promise<void>(resolve => {
+        if (milliseconds <= 0 || reducedMotion) resolve();
+        else this.time.delayedCall(milliseconds, resolve);
+      });
+
+      const tweenActorTo = async (
+        actor: ActiveActorState,
+        destination: TiledPoint,
+        speedPixelsPerSecond = 96,
+      ) => {
+        const path = findGridPath({
+          from: { x: Math.round(actor.sprite.x), y: Math.round(actor.sprite.y) },
+          to: destination,
+          canOccupy: (x, y) => (
+            !staticCollisionBounds.some(collision => overlap(actorFootprint(x, y), collision))
+            && !actorOccupiesCompanionTarget(x, y)
+          ),
+        });
+        for (const point of path.slice(1)) {
+          while (actorOccupiesCompanionTarget(point.x, point.y)) await waitForMilliseconds(100);
+          const direction = facingFromDelta(point.x - actor.sprite.x, point.y - actor.sprite.y, actor.direction);
+          actor.direction = direction;
+          if (actor.asset) startActorAnimation(actor, 'Walk', direction, -1);
+          await new Promise<void>(resolve => this.tweens.add({
+            targets: actor.sprite,
+            x: point.x,
+            y: point.y,
+            duration: reducedMotion ? 0 : 16 / speedPixelsPerSecond * 1000,
+            onUpdate: () => actor.sprite.setDepth(actor.sprite.y),
+            onComplete: () => resolve(),
+          }));
+        }
+        if (actor.asset) startActorAnimation(actor, 'Idle', actor.direction, -1);
+      };
+
+      const actorForSequenceRef = (actorRef: string) => (
+        actorRef === 'dynamic:companion' ? companionActor : activeActorsByPlacement.get(actorRef)
+      );
+
+      const executeCompanionSequenceAction = async (
+        action: CompanionSequenceV1['beats'][number]['actions'][number],
+      ) => {
+        const actor = action.actorRef === 'dynamic:player' ? undefined : actorForSequenceRef(action.actorRef);
+        if (action.kind === 'setVisible') {
+          if (actor) actor.sprite.setVisible(action.visible);
+          return;
+        }
+        if (action.kind === 'face') {
+          if (action.actorRef === 'dynamic:player') playerFacing = action.direction;
+          else if (actor) setActorFacing(actor, action.direction);
+          return;
+        }
+        if (action.kind === 'playAnimation') {
+          if (!actor) return;
+          const animation = action.animationByCompanionSpecies?.[companion?.form.speciesId ?? -1]
+            ?? action.animation;
+          if (!animation) return;
+          const duration = startActorAnimation(actor, animation, actor.direction, action.repetitions ?? 1);
+          await waitForMilliseconds(duration);
+          return;
+        }
+        if (action.kind === 'moveToAnchor') {
+          if (!actor) return;
+          const anchor = findTiledObject(currentRoom.tilemap, 'Anchors', action.anchorId);
+          if (!anchor) return;
+          const ground = groundPoint(tiledObjectBounds(anchor, action.anchorId));
+          const target = snapGroundPoint(ground.x, ground.y);
+          await tweenActorTo(actor, target, action.speedPixelsPerSecond);
+          return;
+        }
+        if (action.kind === 'returnToTrainer') {
+          if (!companionActor) return;
+          const preferredFacing: Facing = playerFacing === 'up' ? 'down'
+            : playerFacing === 'down' ? 'up'
+              : playerFacing === 'left' ? 'right'
+                : 'left';
+          const candidates = [preferredFacing, 'up', 'left', 'right', 'down'] as Facing[];
+          const target = candidates.map(direction => gridStep({ x: player.x, y: player.y }, direction))
+            .find(point => canOccupyGroundPoint(point.x, point.y)) ?? { x: player.x, y: player.y };
+          await tweenActorTo(companionActor, target, action.speedPixelsPerSecond);
+          companionTrail = [];
+          companionTarget = undefined;
+          return;
+        }
+        const destination = gridStep(
+          action.actorRef === 'dynamic:player'
+            ? { x: player.x, y: player.y }
+            : { x: actor?.sprite.x ?? 0, y: actor?.sprite.y ?? 0 },
+          action.direction,
+          action.tiles,
+        );
+        if (action.actorRef === 'dynamic:player') {
+          for (let step = 0; step < action.tiles; step += 1) {
+            const next = gridStep({ x: player.x, y: player.y }, action.direction);
+            if (!canOccupyGroundPoint(next.x, next.y)) break;
+            await new Promise<void>(resolve => this.tweens.add({
+              targets: player,
+              x: next.x,
+              y: next.y,
+              duration: reducedMotion ? 0 : 16 / (action.speedPixelsPerSecond ?? 96) * 1000,
+              onUpdate: () => player.setDepth(player.y),
+              onComplete: () => {
+                playerBody.reset(next.x, next.y);
+                resolve();
+              },
+            }));
+          }
+        } else if (actor) await tweenActorTo(actor, destination, action.speedPixelsPerSecond);
+      };
+
+      const runCompanionSequence = async (sequenceId: string, completedTriggerId?: string) => {
+        const sequence = (bundle.adventure.companionSequences ?? []).find(item => (
+          item.sequenceId === sequenceId && item.roomId === currentRoom.room.roomId
+        ));
+        if (!sequence || activeCompanionSequence) return;
+        activeCompanionSequence = true;
+        setPlayerIdle();
+        setAmbientAnimationsPaused(true);
+        parent.dataset.controlPriority = 'companionSequence';
+        parent.dataset.companionSequenceId = sequenceId;
+        parent.dataset.lastCompanionSequenceId = sequenceId;
+        try {
+          for (const beat of sequence.beats) {
+            await Promise.all(beat.actions.map(executeCompanionSequenceAction));
+            await waitForMilliseconds(beat.pauseAfterMs ?? 0);
+          }
+          if (completedTriggerId) {
+            const completedTrigger = bundle.adventure.behaviorTriggers.find(item => item.triggerId === completedTriggerId);
+            const completedSecrets = new Set(completedTrigger?.completionEffects?.unlockSecretIds ?? []);
+            for (const trigger of bundle.adventure.behaviorTriggers) {
+              if (trigger.triggerId === completedTriggerId
+                || (trigger.completionEffects?.unlockSecretIds ?? []).some(id => completedSecrets.has(id))) {
+                completedRuntimeBehaviorIds.add(trigger.triggerId);
+              }
+            }
+            parent.dispatchEvent(new CustomEvent(MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT, {
+              detail: { triggerId: completedTriggerId },
+            }));
+          }
+        } finally {
+          activeCompanionSequence = false;
+          delete parent.dataset.companionSequenceId;
+          parent.dataset.controlPriority = 'player';
+          if (!document.hidden && !ambientSuppressed && !reducedMotion) setAmbientAnimationsPaused(false);
+        }
+      };
+
+      const evaluateAutomaticCompanionBehaviors = () => {
+        if (!companion?.freeRoam || stepTarget || activeCompanionSequence
+          || activeInteraction || activeExpression || companionConversationActive) return;
+        const triggers = bundle.adventure.behaviorTriggers.filter(trigger => (
+          trigger.mode === 'automatic'
+          && trigger.proximity?.roomId === currentRoom.room.roomId
+          && !completedRuntimeBehaviorIds.has(trigger.triggerId)
+          && !(trigger.completionEffects?.unlockSecretIds ?? []).some(id => companion.resolvedSecretIds.has(id))
+        ));
+        const groups = new Map<string, CompanionBehaviorTriggerV1[]>();
+        for (const trigger of triggers) {
+          const target = trigger.proximity!.target;
+          const key = target.kind === 'anchor' ? `anchor:${target.anchorId}` : `placement:${target.placementId}`;
+          groups.set(key, [...(groups.get(key) ?? []), trigger]);
+        }
+        for (const [zoneId, group] of groups) {
+          const trigger = group[0];
+          const target = resolveSpatialTarget({ target: trigger.proximity!.target });
+          if (!target) continue;
+          const range = (trigger.proximity?.rangeTiles ?? 1) * 16;
+          const inside = Math.abs(player.x - target.x) + Math.abs(player.y - target.y) <= range;
+          if (!inside) {
+            occupiedProximityZones.delete(zoneId);
+            continue;
+          }
+          if (occupiedProximityZones.has(zoneId)) continue;
+          occupiedProximityZones.add(zoneId);
+          const eligible = group.find(item => companion.eligibleBehaviorTriggerIds.has(item.triggerId));
+          const sequenceId = eligible?.sequenceId ?? trigger.proximity?.failureSequenceId;
+          if (sequenceId) void runCompanionSequence(sequenceId, eligible?.triggerId);
+        }
+      };
+
+      const requestCompanionSequence = (event: Event) => {
+        if (!companion?.freeRoam || activeCompanionSequence) return;
+        const triggerId = (event as CustomEvent<{ triggerId?: string }>).detail?.triggerId;
+        const trigger = bundle.adventure.behaviorTriggers.find(item => (
+          item.triggerId === triggerId
+          && companion.eligibleBehaviorTriggerIds.has(item.triggerId)
+          && !completedRuntimeBehaviorIds.has(item.triggerId)
+          && !(item.completionEffects?.unlockSecretIds ?? []).some(id => companion.resolvedSecretIds.has(id))
+        ));
+        if (trigger) void runCompanionSequence(trigger.sequenceId, trigger.triggerId);
+      };
+
       const beginExpression = (trigger: ExpeditionExpressionTriggerV1) => {
         if (activeInteraction || activeExpression) return;
         activeExpression = trigger;
@@ -1126,7 +1622,10 @@ export function createTechnicalPhaserGame({
 
       const requestContextActionFromKeyboard = () => {
         const contextual = refreshAvailableInteraction();
-        if (!contextual) return;
+        if (!contextual) {
+          if (isFacingCompanion()) beginCompanionConversation();
+          return;
+        }
         if ('interactionId' in contextual) beginInteraction(contextual);
         else beginExpression(contextual);
       };
@@ -1210,6 +1709,9 @@ export function createTechnicalPhaserGame({
       parent.addEventListener(MAP_INTERACTION_CONTROL_EVENT, controlInteraction);
       parent.addEventListener(MAP_EXPRESSION_REQUEST_EVENT, requestExpression);
       parent.addEventListener(MAP_EXPRESSION_CONTROL_EVENT, controlExpression);
+      parent.addEventListener(MAP_COMPANION_REQUEST_EVENT, requestCompanionConversation);
+      parent.addEventListener(MAP_COMPANION_CONTROL_EVENT, controlCompanionConversation);
+      parent.addEventListener(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, requestCompanionSequence);
       this.input.keyboard?.on('keydown-E', requestContextActionFromKeyboard);
       this.input.keyboard?.on('keydown-SPACE', requestContextActionFromKeyboard);
       document.addEventListener('visibilitychange', syncVisibilityState);
@@ -1220,8 +1722,13 @@ export function createTechnicalPhaserGame({
         parent.removeEventListener(MAP_INTERACTION_CONTROL_EVENT, controlInteraction);
         parent.removeEventListener(MAP_EXPRESSION_REQUEST_EVENT, requestExpression);
         parent.removeEventListener(MAP_EXPRESSION_CONTROL_EVENT, controlExpression);
+        parent.removeEventListener(MAP_COMPANION_REQUEST_EVENT, requestCompanionConversation);
+        parent.removeEventListener(MAP_COMPANION_CONTROL_EVENT, controlCompanionConversation);
+        parent.removeEventListener(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, requestCompanionSequence);
         this.input.keyboard?.off('keydown-E', requestContextActionFromKeyboard);
         this.input.keyboard?.off('keydown-SPACE', requestContextActionFromKeyboard);
+        this.input.keyboard?.off('keydown', directionKeyDown);
+        this.input.keyboard?.off('keyup', directionKeyUp);
         document.removeEventListener('visibilitychange', syncVisibilityState);
       });
       parent.dataset.camera = 'static';
@@ -1233,7 +1740,8 @@ export function createTechnicalPhaserGame({
 
       this.events.on('update', (_time: number, delta: number) => {
         if (!playerBody || transitioning) return;
-        if (!document.hidden && !ambientSuppressed && !activeInteraction && !activeExpression && !reducedMotion) {
+        evaluateAutomaticCompanionBehaviors();
+        if (!document.hidden && !ambientSuppressed && !activeInteraction && !activeExpression && !companionConversationActive && !reducedMotion) {
           ambientAccumulatorMs = Math.min(100, ambientAccumulatorMs + delta);
           if (ambientAccumulatorMs >= 1000 / 30) {
             ambientSequenceStates.forEach(sequence => updateAmbientSequence(sequence, ambientAccumulatorMs));
@@ -1244,16 +1752,13 @@ export function createTechnicalPhaserGame({
         else if (ambientSuppressed) parent.dataset.ambientState = 'suppressed';
 
         refreshAvailableInteraction();
-        if (activeInteraction || activeExpression) {
+        if (activeInteraction || activeExpression || companionConversationActive || activeCompanionSequence) {
           setPlayerIdle();
           parent.dataset.step = 'idle';
           return;
         }
-        const requestedFacing: Facing | undefined = cursors?.up.isDown || wasd?.W?.isDown ? 'up'
-          : cursors?.down.isDown || wasd?.S?.isDown ? 'down'
-            : cursors?.left.isDown || wasd?.A?.isDown ? 'left'
-              : cursors?.right.isDown || wasd?.D?.isDown ? 'right'
-                : undefined;
+        const activeDirection = activeGridDirection(pressedDirections);
+        const requestedFacing = activeDirection?.facing;
 
         if (this.time.now >= transitionCooldownUntil && requestedFacing) {
           for (const transition of bundle.adventure.transitions.filter(item => item.fromRoomId === currentRoom.room.roomId)) {
@@ -1274,18 +1779,11 @@ export function createTechnicalPhaserGame({
 
         let completedStepThisFrame = false;
         if (stepTarget) {
-          const blocked = stepTarget.facing === 'left' ? playerBody.blocked.left
-            : stepTarget.facing === 'right' ? playerBody.blocked.right
-              : stepTarget.facing === 'up' ? playerBody.blocked.up
-                : playerBody.blocked.down;
           const reached = stepTarget.facing === 'left' ? player.x <= stepTarget.x
             : stepTarget.facing === 'right' ? player.x >= stepTarget.x
               : stepTarget.facing === 'up' ? player.y <= stepTarget.y
                 : player.y >= stepTarget.y;
-          if (blocked) {
-            playerBody.reset(stepTarget.startX, stepTarget.startY);
-            stepTarget = undefined;
-          } else if (reached) {
+          if (reached) {
             playerBody.reset(stepTarget.x, stepTarget.y);
             stepTarget = undefined;
             completedStepThisFrame = true;
@@ -1293,27 +1791,65 @@ export function createTechnicalPhaserGame({
         }
 
         if (!stepTarget && requestedFacing) {
-          const delta = requestedFacing === 'left' ? { x: -16, y: 0 }
+          const heldForMs = performance.now() - (activeDirection?.startedAt ?? performance.now());
+          const mayWalk = canStartClassicStep({
+            facing: activeDirection?.facingAtPress ?? playerFacing,
+            requestedFacing,
+            heldForMs,
+            chainingStep: completedStepThisFrame,
+          });
+          if (playerFacing !== requestedFacing) {
+            playerFacing = requestedFacing;
+            if (playerCharacterSprite && playerCharacterAsset) {
+              playerCharacterSprite.stop();
+              playerCharacterSprite.setFrame(
+                playerCharacterAsset.directionRows[playerFacing] * playerCharacterAsset.columns
+                  + playerCharacterAsset.idleFrame,
+              );
+            }
+            parent.dataset.facing = playerFacing;
+          }
+          if (!mayWalk) {
+            playerBody.setVelocity(0, 0);
+            parent.dataset.step = 'turning';
+            refreshAvailableInteraction();
+            updateCompanionFollower(delta);
+            return;
+          }
+          const movementDelta = requestedFacing === 'left' ? { x: -16, y: 0 }
             : requestedFacing === 'right' ? { x: 16, y: 0 }
               : requestedFacing === 'up' ? { x: 0, y: -16 }
                 : { x: 0, y: 16 };
-          const destination = { x: player.x + delta.x, y: player.y + delta.y };
-          playerFacing = requestedFacing;
+          const destination = { x: player.x + movementDelta.x, y: player.y + movementDelta.y };
           if (!canOccupyGroundPoint(destination.x, destination.y)) {
             playerBody.setVelocity(0, 0);
             parent.dataset.lastBlockedStep = 'preflight';
           } else {
+            const swapsCompanion = Boolean(companionActor
+              && Math.abs(companionActor.sprite.x - destination.x) < .5
+              && Math.abs(companionActor.sprite.y - destination.y) < .5);
+            if (swapsCompanion && companionActor) {
+              companionTrail = [];
+              companionTarget = undefined;
+              companionActor.sprite.setPosition(player.x, player.y).setDepth(player.y);
+              companionActor.direction = requestedFacing;
+              setCompanionMoving(false, requestedFacing);
+            }
+            if (companionActor && !swapsCompanion) {
+              companionTrail.push({ x: player.x, y: player.y });
+            }
             stepTarget = {
               x: destination.x,
               y: destination.y,
               startX: player.x,
               startY: player.y,
               facing: requestedFacing,
+              swappedCompanion: swapsCompanion,
             };
             delete parent.dataset.lastBlockedStep;
             playerBody.setVelocity(
-              delta.x === 0 ? 0 : Math.sign(delta.x) * 96,
-              delta.y === 0 ? 0 : Math.sign(delta.y) * 96,
+              movementDelta.x === 0 ? 0 : Math.sign(movementDelta.x) * 96,
+              movementDelta.y === 0 ? 0 : Math.sign(movementDelta.y) * 96,
             );
             if (completedStepThisFrame) {
               chainedStepCount += 1;
@@ -1324,6 +1860,8 @@ export function createTechnicalPhaserGame({
           playerBody.setVelocity(0, 0);
         }
         parent.dataset.step = stepTarget ? 'moving' : 'idle';
+        parent.dataset.facing = playerFacing;
+        updateCompanionFollower(delta);
 
         if (playerCharacterSprite && playerCharacterAsset) {
           if (stepTarget) {
@@ -1346,6 +1884,17 @@ export function createTechnicalPhaserGame({
         player.setDepth(player.y);
         parent.dataset.playerX = player.x.toFixed(1);
         parent.dataset.playerY = player.y.toFixed(1);
+        if (companionActor) {
+          parent.dataset.companionX = companionActor.sprite.x.toFixed(1);
+          parent.dataset.companionY = companionActor.sprite.y.toFixed(1);
+          parent.dataset.companionFacing = companionActor.direction;
+          parent.dataset.companionAnimation = companionActor.currentAnimation ?? 'none';
+          const companionFrame = companionActor.sprite.frame.name;
+          if (parent.dataset.companionFrame !== String(companionFrame)) {
+            parent.dataset.companionFrame = String(companionFrame);
+            parent.dataset.companionFrameChanges = String(Number(parent.dataset.companionFrameChanges ?? 0) + 1);
+          }
+        }
         const currentFrame = primaryActor?.frame.name;
         if (currentFrame !== undefined && parent.dataset.actorFrame !== String(currentFrame)) {
           parent.dataset.actorFrame = String(currentFrame);

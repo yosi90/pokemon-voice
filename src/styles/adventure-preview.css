@@ -189,6 +189,11 @@
   box-shadow: 0 0 0 2px #e8b7ff, 0 4px 12px rgba(0, 0, 0, .35);
 }
 
+.map-concept-preview__interaction-prompt--companion {
+  border-color: #2f715c;
+  box-shadow: 0 0 0 2px #cdebb7, 0 4px 12px rgba(0, 0, 0, .35);
+}
+
 .map-concept-preview__expression {
   position: absolute;
   z-index: 5;
@@ -272,6 +277,34 @@
   color: #193047;
   font: inherit;
   font-size: 9px;
+}
+
+.map-concept-preview__companion-dialogue {
+  padding-right: 24px;
+  padding-bottom: 58px;
+}
+
+.map-concept-preview__companion-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.map-concept-preview__companion-actions button {
+  position: static;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  width: 100%;
+  border-radius: 7px;
+  text-align: left;
+}
+
+.map-concept-preview__companion-actions small {
+  color: #48624f;
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .map-concept-preview__speaker {

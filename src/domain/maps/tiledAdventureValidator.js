@@ -185,6 +185,9 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     if (placement.collision && !['solid', 'pass-through'].includes(placement.collision)) {
       errors.push(`${placement.placementId}: colisión de actor desconocida ${placement.collision}`);
     }
+    if (placement.initiallyHidden !== undefined && typeof placement.initiallyHidden !== 'boolean') {
+      errors.push(`${placement.placementId}: initiallyHidden debe ser booleano`);
+    }
     if (!rooms.has(placement.roomId)) {
       errors.push(`${placement.placementId}: habitación inexistente`);
       continue;
@@ -391,6 +394,95 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
           }
         }
       }
+    }
+  }
+
+  const companionSequenceIds = new Set();
+  for (const sequence of adventure.companionSequences ?? []) {
+    if (companionSequenceIds.has(sequence.sequenceId)) errors.push(`${sequence.sequenceId}: secuencia de compañero duplicada`);
+    companionSequenceIds.add(sequence.sequenceId);
+    if (!rooms.has(sequence.roomId)) errors.push(`${sequence.sequenceId}: habitación inexistente ${sequence.roomId}`);
+    if (!Array.isArray(sequence.beats) || !sequence.beats.length) {
+      errors.push(`${sequence.sequenceId}: necesita al menos un beat`);
+      continue;
+    }
+    const beatIds = new Set();
+    for (const beat of sequence.beats) {
+      if (beatIds.has(beat.beatId)) errors.push(`${sequence.sequenceId}: beat duplicado ${beat.beatId}`);
+      beatIds.add(beat.beatId);
+      if (!Number.isFinite(beat.pauseAfterMs ?? 0) || (beat.pauseAfterMs ?? 0) < 0) {
+        errors.push(`${beat.beatId}: pauseAfterMs inválido`);
+      }
+      const actorRefs = new Set();
+      for (const action of beat.actions ?? []) {
+        if (actorRefs.has(action.actorRef)) errors.push(`${beat.beatId}: más de una acción para ${action.actorRef}`);
+        actorRefs.add(action.actorRef);
+        const dynamic = ['dynamic:companion', 'dynamic:player'].includes(action.actorRef);
+        const placement = dynamic ? undefined : allPlacements.get(action.actorRef);
+        if (!dynamic && (!placement || placement.roomId !== sequence.roomId)) {
+          errors.push(`${beat.beatId}: actorRef inexistente ${action.actorRef}`);
+          continue;
+        }
+        if (action.kind === 'playAnimation') {
+          if (!action.animation && !Object.keys(action.animationByCompanionSpecies ?? {}).length) {
+            errors.push(`${beat.beatId}: playAnimation necesita animation o animationByCompanionSpecies`);
+          }
+          if (action.actorRef === 'dynamic:player') errors.push(`${beat.beatId}: el protagonista no admite animaciones PMD`);
+          if (placement && action.animation) {
+            const actorPlacement = (adventure.actorPlacements ?? []).find(item => item.placementId === action.actorRef);
+            const asset = actorPlacement ? pmdAssets.get(actorPlacement.assetId) : undefined;
+            if (!asset?.animations.some(animation => animation.name === action.animation)) {
+              errors.push(`${beat.beatId}: animación inexistente ${action.animation} para ${action.actorRef}`);
+            }
+          }
+          for (const [speciesId, animationName] of Object.entries(action.animationByCompanionSpecies ?? {})) {
+            const assets = [...pmdAssets.values()].filter(asset => asset.speciesId === Number(speciesId));
+            if (!assets.length || assets.every(asset => !asset.animations.some(animation => animation.name === animationName))) {
+              errors.push(`${beat.beatId}: ${animationName} no existe para la especie ${speciesId}`);
+            }
+          }
+        }
+        if (action.kind === 'moveToAnchor') {
+          const anchor = roomAnchors.get(sequence.roomId)?.get(action.anchorId);
+          if (!anchor || anchor.class !== 'ActorAnchor') errors.push(`${beat.beatId}: ancla de movimiento inexistente ${action.anchorId}`);
+        }
+        if (action.kind === 'moveByTiles' && (!Number.isInteger(action.tiles) || action.tiles < 1)) {
+          errors.push(`${beat.beatId}: tiles debe ser un entero positivo`);
+        }
+        if (action.kind === 'returnToTrainer' && action.actorRef !== 'dynamic:companion') {
+          errors.push(`${beat.beatId}: returnToTrainer solo admite dynamic:companion`);
+        }
+      }
+    }
+  }
+
+  const behaviorTriggerIds = new Set();
+  for (const trigger of adventure.behaviorTriggers ?? []) {
+    if (behaviorTriggerIds.has(trigger.triggerId)) errors.push(`${trigger.triggerId}: comportamiento duplicado`);
+    behaviorTriggerIds.add(trigger.triggerId);
+    if (!companionSequenceIds.has(trigger.sequenceId)) errors.push(`${trigger.triggerId}: secuencia inexistente ${trigger.sequenceId}`);
+    if ((trigger.rewards?.length || trigger.rewardPackageId) && !trigger.rewardOriginId) {
+      errors.push(`${trigger.triggerId}: una recompensa necesita rewardOriginId`);
+    }
+    if (trigger.proximity) {
+      if (!rooms.has(trigger.proximity.roomId)) errors.push(`${trigger.triggerId}: habitación de proximidad inexistente`);
+      if (trigger.proximity.rangeTiles !== undefined
+        && (!Number.isInteger(trigger.proximity.rangeTiles) || trigger.proximity.rangeTiles < 1)) {
+        errors.push(`${trigger.triggerId}: rangeTiles debe ser un entero positivo`);
+      }
+      if (trigger.proximity.failureSequenceId && !companionSequenceIds.has(trigger.proximity.failureSequenceId)) {
+        errors.push(`${trigger.triggerId}: secuencia de fallo inexistente ${trigger.proximity.failureSequenceId}`);
+      }
+      if (trigger.proximity.target?.kind === 'placement') {
+        const placement = allPlacements.get(trigger.proximity.target.placementId);
+        if (!placement || placement.roomId !== trigger.proximity.roomId) {
+          errors.push(`${trigger.triggerId}: placement de proximidad inexistente ${trigger.proximity.target.placementId}`);
+        }
+      } else if (trigger.proximity.target?.kind === 'anchor') {
+        if (!roomAnchors.get(trigger.proximity.roomId)?.has(trigger.proximity.target.anchorId)) {
+          errors.push(`${trigger.triggerId}: ancla de proximidad inexistente ${trigger.proximity.target.anchorId}`);
+        }
+      } else errors.push(`${trigger.triggerId}: target de proximidad desconocido`);
     }
   }
 

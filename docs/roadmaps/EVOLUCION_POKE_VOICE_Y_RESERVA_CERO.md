@@ -719,7 +719,7 @@ Corrección visual final del 19 de julio de 2026. Todos los actores Pokémon sub
 - [x] Desbloquear la expedición libre de un mapa al terminar su primera misión.
 - [x] Preparar exactamente un acompañante y, opcionalmente, una herramienta antes de entrar.
 - [x] Mantener el loadout bloqueado hasta abandonar el mapa.
-- [ ] Ejecutar prompts contextuales y secuencias automáticas de acompañante desde datos exportados por el editor.
+- [x] Ejecutar prompts contextuales y secuencias automáticas de acompañante desde datos exportados por el editor.
 - [ ] Resolver capacidades narrativas de movimientos, como `rock-tomb`, desde los mismos requisitos declarativos.
 - [ ] Guardar inmediatamente observaciones, secretos y recompensas.
 - [ ] Guardar una sola vez el descubrimiento y procedencia de formas y apariencias encontradas.
@@ -750,6 +750,16 @@ Cuarta entrega del Hito 12 implementada el 19 de julio de 2026. Un mapa cuya pri
 Quinta entrega del Hito 12 implementada el 20 de julio de 2026. Los triggers expresivos pueden declarar habitación, objetivo, rango y prompt en el sidecar, y el runtime los ofrece únicamente al mirar al actor durante una expedición real. Cottonee inaugura el flujo completo: voz y texto reutilizan el reconocimiento existente, la interfaz muestra la transcripción normalizada y el feedback curado, y «Sonreír y saludar» aporta una alternativa accesible sobre el mismo secreto. La primera resolución se guarda inmediatamente con ID y método estables, registra una interacción significativa y elimina el prompt en visitas futuras; la previsualización técnica no escribe progreso. El validador cruza los objetivos expresivos con Tiled y Playwright verifica el flujo en escritorio y móvil.
 
 Sexta entrega del Hito 12 implementada el 20 de julio de 2026. Los prompts con condiciones acústicas ofrecen una captura local y voluntaria de 1,8 segundos que calcula RMS, duración y estabilidad aproximada de frecuencia sin grabar ni transmitir audio. La pista y el `AudioContext` se cierran al terminar, cancelar o desmontar la escena; el guardado conserva únicamente trigger, método y fecha, nunca métricas ni muestras. El resumen distingue sonidos fuertes, notas sostenidas y tarareos sencillos mediante reglas deterministas. Cramorant demuestra un secreto resuelto con un grito o el fallback «Agitar los brazos», y la interfaz explica el análisis, su progreso y el resultado tanto en escritorio como en móvil.
+
+Séptima entrega del Hito 12 implementada el 20 de julio de 2026. El protagonista adopta el giro clásico: una dirección nueva orienta al instante y solo inicia el paso tras mantenerla 140 ms, mientras avanzar hacia donde ya mira continúa siendo inmediato. El compañero de la sesión aparece como actor dinámico, usa `Idle` y `Walk`, sigue la estela a una casilla, se recoloca entre habitaciones y permite intercambiar posiciones sin bloquear al jugador; si falta su PMD se representa mediante una Poké Ball provisional. Mirarlo desde una casilla adyacente abre un prompt accesible con reacciones genéricas o acciones narrativas curadas. Las secuencias de compañero incorporan movimiento por anclas con búsqueda de ruta, animaciones por especie, regreso al entrenador y efectos persistentes.
+
+El Bosque de Tegueste demuestra el flujo en expedición libre con tres zonas de madriguera. Sin una serpiente, Rattata ejecuta `TailWhip + Attack`, hace retroceder al jugador y rearma la emboscada al abandonar la zona. Ekans (`Charge + Eat`), Arbok (`Charge + Shoot`) y Seviper (`Charge + Bite`) resuelven automáticamente el secreto compartido `secret:tegueste-forest:burrow-intimidation`. Su primera resolución concede 10 EXP, 10 PD y el logro permanente `Sangre fría`; el ledger y el secreto impiden repetir cualquier premio desde otra madriguera, forma o run.
+
+Corrección de integración del 21 de julio de 2026. La prueba consume la habitación actual `tegueste-forest-02-05.tmj`, el almacén común `maps/tilesets` y el catálogo PMD reorganizado por `gen1`…`gen9`. `Probar escenario` representa al compañero preparado y las emboscadas sin crear progreso ficticio. El giro corto ya no se transforma en paso, flechas y WASD no desplazan la página, se elimina la colisión física duplicada que devolvía al jugador al tile anterior y los triggers automáticos esperan a que termine el paso antes de ejecutar una secuencia.
+
+Corrección de control del 21 de julio de 2026. El teclado mantiene una pila de direcciones físicas para recuperar una tecla todavía pulsada al soltar la dirección más reciente. El compañero inicia `Walk` mientras recorre simultáneamente la casilla que deja libre el protagonista y vuelve a `Idle` al agotar su estela. Los controles de identificación por voz y texto devuelven el foco al mapa para reanudar el movimiento sin pulsar de nuevo sobre el canvas.
+
+Corrección de giro del 22 de julio de 2026. La espera de 140 ms se limita al cambio de orientación iniciado desde reposo. Si el protagonista ya está recorriendo un tile, una dirección nueva se encadena inmediatamente al finalizarlo y evita la pausa visual entre ambos pasos.
 
 ---
 

@@ -1,0 +1,6 @@
+ - Los mapas estarán formados por varios submapas.
+ - Cada submapa es la unidad mínima de navegación.
+ - El orden de los mapas irá de izquierda a derecha, de arriba a abajo.
+ - El emplazamiento de los mapas estará documentado en el README de cada mapa.
+ - Todos los tilesets compartidos viven en `maps/tilesets`; las carpetas de cada mapa conservan sus `.tmj`, sidecar y documentación de contenido.
+ - Los overlays que se reutilicen entre habitaciones también se registran en `maps/tilesets` y se referencian mediante una ruta relativa desde Tiled.

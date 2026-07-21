@@ -3,7 +3,7 @@ import technicalAdventure from '../../public/assets/adventure/maps/_technical/te
 import technicalRoomRaw from '../../public/assets/adventure/maps/_technical/technical-clearing.tmj?raw';
 import technicalPathRaw from '../../public/assets/adventure/maps/_technical/technical-path.tmj?raw';
 import teguesteAdventure from '../../public/assets/adventure/maps/tegueste-forest/tegueste-forest.adventure.json';
-import teguesteRoomRaw from '../../public/assets/adventure/maps/tegueste-forest/tegueste-forest-02-04.tmj?raw';
+import teguesteRoomRaw from '../../public/assets/adventure/maps/tegueste-forest/tegueste-forest-02-05.tmj?raw';
 import pmdManifest from '../../public/assets/sprites/pokemon/pmd/manifest.v1.json';
 import characterManifest from '../../public/assets/sprites/characters/manifest.v1.json';
 import { validateTiledAdventureBundle } from '../../src/domain/maps/tiledAdventureValidator.js';
@@ -63,6 +63,19 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     expect(teguesteAdventure.actorPlacements).toHaveLength(7);
     expect(teguesteAdventure.characterPlacements).toHaveLength(2);
     expect(teguesteAdventure.interactions).toHaveLength(1);
+    expect(teguesteAdventure.behaviorTriggers).toHaveLength(3);
+    expect(teguesteAdventure.companionSequences).toHaveLength(6);
+    expect(teguesteAdventure.behaviorTriggers.every(trigger => (
+      trigger.completionEffects?.unlockSecretIds?.includes('secret:tegueste-forest:burrow-intimidation')
+    ))).toBe(true);
+    const snakeThreats = teguesteAdventure.companionSequences
+      .flatMap(sequence => sequence.beats)
+      .flatMap(beat => beat.actions)
+      .filter((action): action is typeof action & { animationByCompanionSpecies: Record<string, string> } => (
+        action.kind === 'playAnimation' && 'animationByCompanionSpecies' in action
+      ));
+    expect(snakeThreats).toHaveLength(3);
+    expect(snakeThreats[0].animationByCompanionSpecies).toEqual({ 23: 'Eat', 24: 'Shoot', 336: 'Bite' });
     expect(teguesteAdventure.dialogues).toHaveLength(1);
     expect(teguesteAdventure.actorPlacements.find(placement => placement.placementId === 'actor:cottonee'))
       .toMatchObject({ collision: 'pass-through' });

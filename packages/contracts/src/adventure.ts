@@ -74,6 +74,7 @@ export interface AdventureMapV1 extends VersionedContractV1 {
   variants: MapVariantV1[];
   missionIds: StableId[];
   behaviorTriggers: CompanionBehaviorTriggerV1[];
+  companionSequences?: CompanionSequenceV1[];
   expressionTriggers: ExpeditionExpressionTriggerV1[];
   rareEncounters: RareEncounterDefinitionV1[];
   requiredAssetIds: StableId[];
@@ -105,6 +106,8 @@ export interface AdventureActorPlacementV1 extends VersionedContractV1 {
   collision?: AdventureActorCollision;
   /** Grupos de máscaras dibujadas en Tiled que pueden ocultar partes del sprite. */
   occlusionGroupIds?: StableId[];
+  /** Útil para actores que entran en escena desde madrigueras, puertas o escondites. */
+  initiallyHidden?: boolean;
 }
 
 export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
@@ -217,6 +220,7 @@ export interface AdventureMapV2 {
   variants: MapVariantV1[];
   missionIds: StableId[];
   behaviorTriggers: CompanionBehaviorTriggerV1[];
+  companionSequences?: CompanionSequenceV1[];
   expressionTriggers: ExpeditionExpressionTriggerV1[];
   interactions?: ExpeditionInteractionV1[];
   dialogues?: ExpeditionDialogueV1[];
@@ -292,11 +296,56 @@ export interface CompanionRequirementV1 extends VersionedContractV1 {
 export interface CompanionBehaviorTriggerV1 extends VersionedContractV1 {
   triggerId: StableId;
   mode: CompanionTriggerMode;
+  /** Texto de acción visible al hablar con el compañero. */
+  actionLabel?: string;
+  /** Pista narrativa; nunca revela el resultado oculto. */
+  loreHint?: string;
   requirement: RequirementExpressionV1;
   sequenceId: StableId;
+  proximity?: {
+    roomId: StableId;
+    target: ExpeditionInteractionTargetV1;
+    rangeTiles?: number;
+    /** Secuencia repetible cuando el requisito de compañero no se cumple. */
+    failureSequenceId?: StableId;
+  };
   /** `oncePerVisit` cuando no se especifica otro comportamiento. */
   repeatPolicy?: CompanionTriggerRepeatPolicy;
   rewardOriginId?: StableId;
+  rewardPackageId?: StableId;
+  rewards?: RewardDefinitionV1[];
+  completionEffects?: {
+    unlockSecretIds?: StableId[];
+  };
+}
+
+export type CompanionSequenceActorRef = StableId | 'dynamic:companion' | 'dynamic:player';
+
+export type CompanionSequenceActionV1 =
+  | {
+    kind: 'playAnimation';
+    actorRef: CompanionSequenceActorRef;
+    animation?: string;
+    /** Excepciones narrativas sin duplicar toda la secuencia. */
+    animationByCompanionSpecies?: Record<number, string>;
+    repetitions?: number;
+  }
+  | { kind: 'face'; actorRef: CompanionSequenceActorRef; direction: 'up' | 'down' | 'left' | 'right' }
+  | { kind: 'setVisible'; actorRef: CompanionSequenceActorRef; visible: boolean }
+  | { kind: 'moveToAnchor'; actorRef: CompanionSequenceActorRef; anchorId: StableId; speedPixelsPerSecond?: number }
+  | { kind: 'moveByTiles'; actorRef: CompanionSequenceActorRef; direction: 'up' | 'down' | 'left' | 'right'; tiles: number; speedPixelsPerSecond?: number }
+  | { kind: 'returnToTrainer'; actorRef: 'dynamic:companion'; speedPixelsPerSecond?: number };
+
+export interface CompanionSequenceBeatV1 extends VersionedContractV1 {
+  beatId: StableId;
+  actions: CompanionSequenceActionV1[];
+  pauseAfterMs?: number;
+}
+
+export interface CompanionSequenceV1 extends VersionedContractV1 {
+  sequenceId: StableId;
+  roomId: StableId;
+  beats: CompanionSequenceBeatV1[];
 }
 
 export type ExpressionMatcherV1 =

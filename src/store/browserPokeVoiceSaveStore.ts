@@ -559,8 +559,9 @@ export function executeBrowserCompanionBehavior(request: ExecuteCompanionBehavio
       kind: 'companionBehavior',
     });
   }
-  if (next !== current) persist(next);
-  return { ...result, save: next };
+  if (next === current) return { ...result, save: next };
+  const reconciled = persistWithPokeDiscoverAchievements(next, request.executedAt);
+  return { ...result, save: reconciled.save };
 }
 
 export function resolveBrowserExpressionTrigger(request: ResolveExpressionTriggerRequest) {

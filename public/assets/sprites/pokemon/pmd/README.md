@@ -1,0 +1,31 @@
+## [ ] Añadir Pokémon Iniciales:
+ - [x] Bulbasaur
+ - [x] Charmander
+ - [x] Squirtle
+ - [x] Chikorita
+ - [x] Cyndaquil
+ - [x] Totodile
+ - [x] Treecko
+ - [x] Torchic
+ - [x] Mudkip
+ - [x] Turtwig
+ - [x] Chimchar
+ - [x] Piplup
+ - [x] Snivy
+ - [x] Tepig
+ - [x] Oshawott
+ - [x] Chespin
+ - [x] Fennekin
+ - [x] Froakie
+ - [x] Rowlet
+ - [x] Litten
+ - [x] Popplio
+ - [x] Grookey
+ - [x] Scorbunny
+ - [x] Sobble
+ - [x] Sprigatito
+ - [x] Fuecoco
+ - [x] Quaxly
+ - [ ] Browt
+ - [ ] Pombon
+ - [ ] Gecqua

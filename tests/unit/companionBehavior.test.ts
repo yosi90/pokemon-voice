@@ -176,4 +176,50 @@ describe('comportamientos declarativos del acompañante', () => {
     expect(persisted.pokeDiscover.mapProgress[MAP_ID].completedBehaviorTriggerIds)
       .toEqual([rattataTrigger.triggerId]);
   });
+
+  it('desbloquea secreto, recompensa y logro de serpiente una sola vez', () => {
+    localStorage.clear();
+    const ekans: PokemonFormV1 = {
+      ...pikachu,
+      speciesId: 23,
+      formId: 'pokemon-form:23:default',
+      slug: 'ekans',
+      displayName: 'Ekans',
+      types: ['poison'],
+      narrativeTags: ['snake'],
+      fieldCapabilities: [],
+    };
+    setBrowserActiveExpeditionSession(createActiveSave(ekans).activeExpeditionSession!);
+    const trigger: CompanionBehaviorTriggerV1 = {
+      ...rattataTrigger,
+      triggerId: 'behavior:tegueste:burrow-middle:snake-intimidation',
+      requirement: { kind: 'companionSpecies', speciesId: 23 },
+      rewardOriginId: 'reward:tegueste:burrow-intimidation',
+      completionEffects: { unlockSecretIds: ['secret:tegueste-forest:burrow-intimidation'] },
+    };
+    const first = executeBrowserCompanionBehavior({
+      mapId: MAP_ID,
+      trigger,
+      companionForm: ekans,
+      executedAt: EXECUTED_AT,
+      rewards: [
+        { kind: 'trainerExperience', amount: 10 },
+        { kind: 'discoveryPoints', amount: 10 },
+      ],
+    });
+    const repeated = executeBrowserCompanionBehavior({
+      mapId: MAP_ID,
+      trigger,
+      companionForm: ekans,
+      executedAt: EXECUTED_AT,
+      rewards: [{ kind: 'discoveryPoints', amount: 999 }],
+    });
+
+    expect(first.save.pokeDiscover.mapProgress[MAP_ID].unlockedSecretIds)
+      .toContain('secret:tegueste-forest:burrow-intimidation');
+    expect(first.save.pokeDiscover.achievements['cold-blooded']?.achievementId).toBe('cold-blooded');
+    expect(first.save.pokeDiscover.discoveryPoints).toBe(10);
+    expect(repeated).toMatchObject({ status: 'alreadyCompleted' });
+    expect(repeated.save.pokeDiscover.discoveryPoints).toBe(10);
+  });
 });

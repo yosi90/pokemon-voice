@@ -8,6 +8,7 @@ import type {
 import { claimPokeDiscoverRewards } from '../progress/rewardLedger.js';
 import { evaluateRequirement } from '../requirements/evaluateRequirement.js';
 import { createAdventureMapProgressV1 } from './adventureMapProgress.js';
+import { recordMapDiscovery } from './adventureMapProgress.js';
 
 export interface CompanionBehaviorContext {
   companionForm: PokemonFormV1;
@@ -42,6 +43,8 @@ function assertActiveContext(save: PokeVoiceSaveV1, mapId: string, companionForm
 }
 
 function isCompleted(save: PokeVoiceSaveV1, mapId: string, trigger: CompanionBehaviorTriggerV1) {
+  const unlocked = save.pokeDiscover.mapProgress[mapId]?.unlockedSecretIds ?? [];
+  if ((trigger.completionEffects?.unlockSecretIds ?? []).some(secretId => unlocked.includes(secretId))) return true;
   const policy = trigger.repeatPolicy ?? 'oncePerVisit';
   if (policy === 'repeatable') return false;
   if (policy === 'persistent') {
@@ -74,6 +77,15 @@ export function listAvailableCompanionBehaviors(
   context: CompanionBehaviorContext,
 ) {
   assertActiveContext(save, mapId, context.companionForm);
+  return listMatchingCompanionBehaviors(save, mapId, triggers, context);
+}
+
+export function listMatchingCompanionBehaviors(
+  save: PokeVoiceSaveV1,
+  mapId: string,
+  triggers: readonly CompanionBehaviorTriggerV1[],
+  context: CompanionBehaviorContext,
+) {
   return triggers.filter(trigger => (
     !isCompleted(save, mapId, trigger) && requirementMet(save, trigger, context)
   ));
@@ -92,7 +104,7 @@ function markCompleted(
     const completedBehaviorTriggerIds = [
       ...(current.completedBehaviorTriggerIds ?? []),
       trigger.triggerId,
-    ];
+    ].filter((id, index, all) => all.indexOf(id) === index);
     return {
       ...save,
       pokeDiscover: {
@@ -133,14 +145,19 @@ export function executeCompanionBehavior(
   }
 
   let nextSave = markCompleted(save, request.mapId, request.trigger);
+  for (const secretId of request.trigger.completionEffects?.unlockSecretIds ?? []) {
+    const discovery = recordMapDiscovery(nextSave.pokeDiscover, request.mapId, 'secret', secretId);
+    nextSave = { ...nextSave, pokeDiscover: discovery.state };
+  }
   let rewardStatus: ExecuteCompanionBehaviorResult['rewardStatus'] = 'notApplicable';
-  if (request.rewards?.length) {
+  const rewards = request.rewards ?? request.trigger.rewards;
+  if (rewards?.length) {
     if (!request.trigger.rewardOriginId) {
       throw new Error('Un comportamiento con recompensas debe declarar rewardOriginId.');
     }
     const reward = claimPokeDiscoverRewards(nextSave.pokeDiscover, {
       originId: request.trigger.rewardOriginId,
-      rewards: request.rewards,
+      rewards,
       claimedAt: request.executedAt,
       runId: nextSave.pokedexRun.runId,
       mapId: request.mapId,
