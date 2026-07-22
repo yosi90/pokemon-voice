@@ -122,6 +122,13 @@ export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
       narrativeProgress: normalizeNarrativeProgress(save.pokeDiscover.narrativeProgress),
       ...(trainerProfile ? { trainerProfile } : {}),
       ...normalizeTrainerProgress(save.pokeDiscover.trainerExperience),
+      sightings: Array.isArray(save.pokeDiscover.sightings) ? save.pokeDiscover.sightings : [],
+      discoveredForms: isRecord(save.pokeDiscover.discoveredForms)
+        ? save.pokeDiscover.discoveredForms
+        : {},
+      discoveredAppearances: isRecord(save.pokeDiscover.discoveredAppearances)
+        ? save.pokeDiscover.discoveredAppearances
+        : {},
       inventory: normalizeInventory(save.pokeDiscover.inventory),
     },
     activeExpeditionSession: normalizeActiveExpedition(save.activeExpeditionSession),

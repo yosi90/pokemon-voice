@@ -64,6 +64,7 @@ export function getBalancedPokeDiscoverRewards(
 
 export const POKE_DISCOVER_REWARD_PACKAGES = Object.freeze({
   'reward-package:companion-secret': getBalancedPokeDiscoverRewards('companionSecret'),
+  'reward-package:map-secret': getBalancedPokeDiscoverRewards('mapSecret'),
 });
 
 export function getPokeDiscoverRewardPackage(packageId: string | undefined) {

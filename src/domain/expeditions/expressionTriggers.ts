@@ -9,7 +9,7 @@ import type {
 } from '../../../packages/contracts/src/index.js';
 import { claimPokeDiscoverRewards } from '../progress/rewardLedger.js';
 import { evaluateRequirement } from '../requirements/evaluateRequirement.js';
-import { createAdventureMapProgressV1 } from './adventureMapProgress.js';
+import { createAdventureMapProgressV1, recordMapDiscovery } from './adventureMapProgress.js';
 
 export interface AcousticExpressionFeatures {
   loudness?: number;
@@ -161,6 +161,10 @@ export function resolveExpressionTrigger(
       mapProgress: { ...save.pokeDiscover.mapProgress, [request.mapId]: mapProgress },
     },
   };
+  for (const secretId of request.trigger.completionEffects?.unlockSecretIds ?? []) {
+    const discovery = recordMapDiscovery(nextSave.pokeDiscover, request.mapId, 'secret', secretId);
+    nextSave = { ...nextSave, pokeDiscover: discovery.state };
+  }
   let rewardStatus: ResolveExpressionTriggerResult['rewardStatus'] = 'notApplicable';
   if (request.rewards?.length) {
     if (!request.trigger.rewardOriginId) {

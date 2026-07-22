@@ -5,8 +5,10 @@ import { ProfessorMissionModal } from '../../src/components/ProfessorMissionModa
 import { createDefaultCatalogRecord } from '../../src/domain/catalog/pokemonCatalogModel.js';
 import {
   getBrowserPokeVoiceSave,
+  updateBrowserPokeDiscover,
   updateBrowserPokedexRun,
 } from '../../src/store/browserPokeVoiceSaveStore.js';
+import { CAMPHOR_PROLOGUE_MISSION_ID } from '../../src/data/adventure/camphorPrologue.js';
 
 const catalog = [
   createDefaultCatalogRecord({ id: 1, name: 'bulbasaur' }),
@@ -66,6 +68,50 @@ describe('selector visual de acompañante', () => {
     expect(close).toBeVisible();
     await user.click(close);
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('reúne briefing, selector, acompañante y recompensas antes de salir', async () => {
+    updateBrowserPokeDiscover(progress => ({
+      ...progress,
+      worldFlags: { ...progress.worldFlags, 'story:camphor-prologue-offered': true },
+    }));
+    const user = userEvent.setup();
+    const onOpenMission = vi.fn();
+    const onOpenMapPreview = vi.fn();
+    render(
+      <ProfessorMissionModal
+        open
+        initialSection="missions"
+        missionIds={[CAMPHOR_PROLOGUE_MISSION_ID]}
+        catalog={catalog}
+        onOpenMission={onOpenMission}
+        onOpenMapPreview={onOpenMapPreview}
+        onClose={() => {}}
+      />,
+    );
+
+    const briefing = screen.getByRole('article', { name: 'Briefing: ¡Ayuda al profesor Alcanfor!' });
+    expect(briefing).toHaveTextContent('Ahuyenta a los tres Pokémon que rodean al profesor.');
+    expect(briefing).toHaveTextContent('25 PX de entrenador');
+    expect(briefing).toHaveTextContent('25 Puntos de Descubrimiento');
+    expect(briefing).toHaveTextContent('Expedición libre en este mapa');
+    expect(screen.getByRole('button', { name: 'Comenzar encargo' })).toBeDisabled();
+    expect(screen.getByText('Necesitas preparar un compañero para este encargo.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Elegir compañero' }));
+    const choose = screen.getAllByRole('button', { name: 'Elegir' }).find(button => !button.hasAttribute('disabled'));
+    expect(choose).toBeDefined();
+    await user.click(choose!);
+    await user.click(screen.getByRole('button', { name: 'Encargos' }));
+
+    expect(screen.getByRole('article', { name: 'Briefing: ¡Ayuda al profesor Alcanfor!' })).toHaveTextContent('Bulbasaur');
+    const start = screen.getByRole('button', { name: 'Comenzar encargo' });
+    expect(start).toBeEnabled();
+    await user.click(start);
+    expect(onOpenMapPreview).toHaveBeenCalledOnce();
+
+    await user.click(screen.getByRole('button', { name: /¡Ayuda al profesor Alcanfor!/ }));
+    expect(onOpenMission).toHaveBeenCalledWith(CAMPHOR_PROLOGUE_MISSION_ID);
   });
 
   it('genera categorías desde registrados y combina categoría con búsqueda', async () => {

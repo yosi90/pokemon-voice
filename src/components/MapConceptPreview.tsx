@@ -22,8 +22,8 @@ import {
 import { loadAdventureMapBundle } from '../domain/maps/loadAdventureBundle.js';
 import {
   getBrowserPokeVoiceSave,
-  recordBrowserMeaningfulExpeditionInteraction,
   executeBrowserCompanionBehavior,
+  completeBrowserExpeditionInteraction,
 } from '../store/browserPokeVoiceSaveStore.js';
 import { browserDiscoveryStore } from '../store/browserDiscoveryStore.js';
 import { captureLocalAcousticExpression } from '../services/captureLocalAcousticExpression.js';
@@ -282,9 +282,9 @@ export function MapConceptPreview({
     const interactionCompleted = (event: Event) => {
       const interaction = (event as CustomEvent<{ interaction?: ExpeditionInteractionV1 }>).detail?.interaction;
       if (!interaction || !getBrowserPokeVoiceSave().activeExpeditionSession) return;
-      recordBrowserMeaningfulExpeditionInteraction({
-        interactionId: interaction.interactionId,
-        kind: interaction.meaningfulKind,
+      completeBrowserExpeditionInteraction({
+        mapId: bundleRef.current!.adventure.mapId,
+        interaction,
       });
     };
     host.addEventListener(MAP_INTERACTION_AVAILABLE_EVENT, interactionAvailable);

@@ -58,6 +58,10 @@ import {
   type IdentifyVisibleSpeciesRequest,
 } from '../domain/expeditions/expeditionIdentification.js';
 import {
+  completeExpeditionInteraction,
+  type CompleteExpeditionInteractionRequest,
+} from '../domain/expeditions/expeditionInteractionCompletion.js';
+import {
   createCompanionCatalogSpecies,
   type CompanionCandidate,
 } from '../domain/companions/companionCandidates.js';
@@ -420,6 +424,15 @@ export function recordBrowserMeaningfulExpeditionInteraction(
   return next.activeExpeditionSession;
 }
 
+export function completeBrowserExpeditionInteraction(
+  request: CompleteExpeditionInteractionRequest,
+) {
+  const current = readCurrentSave();
+  const result = completeExpeditionInteraction(current, request);
+  if (result.save !== current) persist(result.save);
+  return result;
+}
+
 export function identifyBrowserVisibleExpeditionSpecies(request: IdentifyVisibleSpeciesRequest) {
   const current = readCurrentSave();
   const result = identifyVisibleExpeditionSpecies(current, request);
@@ -537,9 +550,19 @@ export function completeBrowserMissionDefinition(
 
 export function evaluateBrowserRareEncounterVisit(request: EvaluateRareEncounterRequest) {
   const current = readCurrentSave();
-  const result = evaluateRareEncounterVisit(current, request);
-  if (result.save !== current) persist(result.save);
-  return result;
+  const result = evaluateRareEncounterVisit(current, {
+    ...request,
+    encounteredAt: request.encounteredAt ?? new Date().toISOString(),
+  });
+  let next = result.save;
+  if (result.appeared && next.activeExpeditionSession) {
+    next = recordMeaningfulExpeditionInteraction(next, {
+      interactionId: `rare-encounter:${request.definition.encounterId}`,
+      kind: 'pokemonInteraction',
+    });
+  }
+  if (next !== current) persist(next);
+  return { ...result, save: next };
 }
 
 export function activateBrowserWorldEvent(event: import('../../packages/contracts/src/index.js').WorldEventV1) {
@@ -574,8 +597,9 @@ export function resolveBrowserExpressionTrigger(request: ResolveExpressionTrigge
       kind: 'contextTrigger',
     });
   }
-  if (next !== current) persist(next);
-  return { ...result, save: next };
+  if (next === current) return { ...result, save: next };
+  const reconciled = persistWithPokeDiscoverAchievements(next, request.resolvedAt);
+  return { ...result, save: reconciled.save };
 }
 
 export function syncBrowserLegacyEasterEggState(legacyState: unknown) {

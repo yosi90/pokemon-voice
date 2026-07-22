@@ -11,6 +11,7 @@ import {
 } from '../../src/store/browserPokeVoiceSaveStore.js';
 import {
   getKnownFieldNotebookEntries,
+  getKnownExpressionHints,
   recordNpcHint,
 } from '../../src/domain/expeditions/fieldNotebook.js';
 import { createPokeVoiceSaveV1 } from '../../src/domain/progress/pokeVoiceSave.js';
@@ -91,6 +92,24 @@ describe('cuaderno e informe de expedición', () => {
     expect(entries).toEqual([hints[0]]);
     expect(entries).not.toHaveProperty('total');
     expect(JSON.stringify(entries)).not.toContain(hints[1].hintId);
+  });
+
+  it('relaciona con una expresión solo sus pistas ya conocidas', () => {
+    const discovered = recordNpcHint(preparedSave().pokeDiscover, {
+      mapId: MAP_ID,
+      npcId: 'npc:sharpedo-bay:swimmer',
+      conversationId: 'conversation:sharpedo-bay:pretty-shark',
+      hintId: hints[0].hintId,
+    }).state;
+
+    expect(getKnownExpressionHints(discovered, MAP_ID, {
+      triggerId: 'expression:sharpedo-bay:calm-sharpedo',
+      knownHintIds: [hints[0].hintId, hints[1].hintId],
+    }, hints)).toEqual([hints[0]]);
+    expect(getKnownExpressionHints(discovered, MAP_ID, {
+      triggerId: 'expression:sharpedo-bay:other',
+      knownHintIds: [hints[0].hintId],
+    }, hints)).toEqual([]);
   });
 
   it('resume únicamente lo obtenido desde que comenzó la expedición', () => {

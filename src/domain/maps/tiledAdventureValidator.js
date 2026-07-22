@@ -257,6 +257,15 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   }
 
   const interactionIds = new Set();
+  const notebookHints = new Map();
+  for (const hint of adventure.fieldNotebookHints ?? []) {
+    if (notebookHints.has(hint.hintId)) errors.push(`${hint.hintId}: pista de cuaderno duplicada`);
+    notebookHints.set(hint.hintId, hint);
+    if (!hint.hintId?.trim() || !hint.title?.trim() || !hint.text?.trim()) {
+      errors.push(`${hint.hintId || adventure.mapId}: hintId, title y text son obligatorios`);
+    }
+    if (hint.mapId !== adventure.mapId) errors.push(`${hint.hintId}: mapId no coincide con ${adventure.mapId}`);
+  }
   for (const interaction of adventure.interactions ?? []) {
     if (interactionIds.has(interaction.interactionId)) errors.push(`${interaction.interactionId}: interacción duplicada`);
     interactionIds.add(interaction.interactionId);
@@ -271,6 +280,25 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     }
     if (interaction.repeatPolicy && !['oncePerVisit', 'repeatable'].includes(interaction.repeatPolicy)) {
       errors.push(`${interaction.interactionId}: repeatPolicy desconocido ${interaction.repeatPolicy}`);
+    }
+    const effects = interaction.completionEffects;
+    for (const [field, value] of [
+      ['npcId', effects?.npcId],
+      ['conversationId', effects?.conversationId],
+    ]) {
+      if (value !== undefined && (typeof value !== 'string' || !value.trim())) {
+        errors.push(`${interaction.interactionId}: ${field} debe ser un ID estable`);
+      }
+    }
+    for (const hintId of effects?.hintIds ?? []) {
+      if (!notebookHints.has(hintId)) {
+        errors.push(`${interaction.interactionId}: pista de cuaderno inexistente ${hintId}`);
+      }
+    }
+    for (const collectibleId of effects?.collectibleIds ?? []) {
+      if (typeof collectibleId !== 'string' || !collectibleId.trim()) {
+        errors.push(`${interaction.interactionId}: collectibleIds contiene un ID vacío`);
+      }
     }
     if (interaction.target?.kind === 'placement') {
       const placement = allPlacements.get(interaction.target.placementId);
@@ -310,6 +338,24 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     } else errors.push(`${trigger.triggerId}: target desconocido`);
     if (trigger.inputMethods?.includes('contextAction') && !trigger.fallbackActionId) {
       errors.push(`${trigger.triggerId}: contextAction necesita fallbackActionId`);
+    }
+    for (const hintId of trigger.knownHintIds ?? []) {
+      const hint = notebookHints.get(hintId);
+      if (!hint) errors.push(`${trigger.triggerId}: pista expresiva inexistente ${hintId}`);
+      else if (hint.relatedTriggerId && hint.relatedTriggerId !== trigger.triggerId) {
+        errors.push(`${trigger.triggerId}: ${hintId} está relacionada con otro trigger`);
+      }
+    }
+    if (trigger.rewardPackageId && !trigger.rewardOriginId) {
+      errors.push(`${trigger.triggerId}: una recompensa necesita rewardOriginId`);
+    }
+    const expressionSecretIds = new Set();
+    for (const secretId of trigger.completionEffects?.unlockSecretIds ?? []) {
+      if (typeof secretId !== 'string' || !secretId.trim()) {
+        errors.push(`${trigger.triggerId}: unlockSecretIds contiene un ID vacío`);
+      } else if (expressionSecretIds.has(secretId)) {
+        errors.push(`${trigger.triggerId}: secreto expresivo duplicado ${secretId}`);
+      } else expressionSecretIds.add(secretId);
     }
     for (const matcher of trigger.matchAny ?? []) {
       if (matcher.kind !== 'acoustic') continue;

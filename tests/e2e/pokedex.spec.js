@@ -219,6 +219,42 @@ test('filtra compañeros por categoría y conserva forma y apariencia selecciona
   ))).toBe(true);
 });
 
+test('el tablero de encargos reúne briefing, recompensas y compañero antes de salir', async ({ page }) => {
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokedexRun.registeredSpeciesIds = [1];
+    save.pokedexRun.discoveryOrder = [1];
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    save.pokeDiscover.worldFlags['story:camphor-prologue-offered'] = true;
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  const pokeDiscover = page.getByRole('dialog', { name: 'PokeDiscover' });
+  await pokeDiscover.getByRole('button', { name: 'Encargos' }).click();
+  const briefing = pokeDiscover.getByRole('article', { name: 'Briefing: ¡Ayuda al profesor Alcanfor!' });
+  await expect(briefing).toContainText('Ahuyenta a los tres Pokémon que rodean al profesor.');
+  await expect(briefing).toContainText('25 PX de entrenador');
+  await expect(briefing).toContainText('25 Puntos de Descubrimiento');
+  await expect(briefing).toContainText('Expedición libre en este mapa');
+  await expect(briefing.getByRole('button', { name: 'Comenzar encargo' })).toBeDisabled();
+
+  await briefing.getByRole('button', { name: 'Elegir compañero' }).click();
+  const bulbasaur = pokeDiscover.locator('.companion-card').filter({ hasText: 'Bulbasaur' });
+  await bulbasaur.getByRole('button', { name: 'Elegir' }).click();
+  await pokeDiscover.getByRole('button', { name: 'Encargos' }).click();
+  await expect(briefing).toContainText('Bulbasaur');
+  await briefing.getByRole('button', { name: 'Comenzar encargo' }).click();
+
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(
+    '#/expeditions/map%3Ategueste%3Acamphor-forest/room%3Ategueste-forest%3A02-04',
+  );
+  await expect(page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' })).toBeVisible();
+});
+
 test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisiones', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.evaluate(() => {
@@ -649,6 +685,9 @@ test('resuelve expresiones por texto y análisis acústico local sin conservar a
       fallbackLabel: 'Sonreír y saludar',
       prompt: 'Hablarle a Cottonee',
       successText: 'Cottonee gira feliz: parece que le ha gustado.',
+      rewardOriginId: 'reward:tegueste:compliment-cottonee',
+      rewardPackageId: 'reward-package:map-secret',
+      completionEffects: { unlockSecretIds: ['secret:tegueste-forest:compliment-cottonee'] },
     } },
   })));
 
@@ -660,6 +699,16 @@ test('resuelve expresiones por texto y análisis acústico local sin conservar a
   await expect.poll(() => page.evaluate(() => Boolean(JSON.parse(localStorage.getItem('pokevoice-save-v1'))
     .pokeDiscover.mapProgress['map:tegueste:camphor-forest']
     .resolvedExpressionTriggers['expression:tegueste:compliment-cottonee']))).toBe(true);
+  await expect.poll(() => page.evaluate(() => {
+    const progress = JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokeDiscover;
+    return {
+      secret: progress.mapProgress['map:tegueste:camphor-forest'].unlockedSecretIds
+        .includes('secret:tegueste-forest:compliment-cottonee'),
+      achievement: Boolean(progress.achievements['first-map-secret']),
+      experience: progress.trainerExperience,
+      points: progress.discoveryPoints,
+    };
+  })).toEqual({ secret: true, achievement: true, experience: 15, points: 15 });
   await expect(preview.getByText('Hablarle a Cottonee')).toHaveCount(0, { timeout: 3000 });
 
   await page.evaluate(() => {
@@ -706,6 +755,9 @@ test('resuelve expresiones por texto y análisis acústico local sin conservar a
       fallbackLabel: 'Agitar los brazos',
       prompt: 'Espantar a Cramorant',
       successText: 'Cramorant da un respingo y se aparta, muy ofendido.',
+      rewardOriginId: 'reward:tegueste:scare-cramorant',
+      rewardPackageId: 'reward-package:map-secret',
+      completionEffects: { unlockSecretIds: ['secret:tegueste-forest:scare-cramorant'] },
     } },
   })));
   await expect(preview.getByText(/El análisis dura menos de dos segundos/)).toBeVisible();
@@ -724,6 +776,21 @@ test('resuelve expresiones por texto y análisis acústico local sin conservar a
     .resolvedExpressionTriggers['expression:tegueste:scare-cramorant']);
   expect(acousticRecord).toMatchObject({ method: 'voice' });
   expect(JSON.stringify(acousticRecord)).not.toContain('loudness');
+  expect(await page.evaluate(() => {
+    const progress = JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokeDiscover;
+    return {
+      secrets: progress.mapProgress['map:tegueste:camphor-forest'].unlockedSecretIds,
+      experience: progress.trainerExperience,
+      points: progress.discoveryPoints,
+    };
+  })).toEqual({
+    secrets: [
+      'secret:tegueste-forest:compliment-cottonee',
+      'secret:tegueste-forest:scare-cramorant',
+    ],
+    experience: 30,
+    points: 30,
+  });
   expect(await preview.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
 
@@ -754,6 +821,19 @@ test('habla con Alcanfor mediante la interacción contextual y bloquea el mapa d
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
     save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    save.pokedexRun.registeredSpeciesIds = [25];
+    save.pokedexRun.discoveryOrder = [25];
+    save.pokedexRun.selectedCompanion = { schemaVersion: 1, formId: 'pokemon-form:25:default' };
+    save.pokedexRun.selectedCompanionFormId = 'pokemon-form:25:default';
+    save.pokeDiscover.mapProgress['map:tegueste:camphor-forest'] = {
+      schemaVersion: 1,
+      mapId: 'map:tegueste:camphor-forest',
+      freeExpeditionUnlocked: true,
+      completedMissionIds: ['mission:tegueste:help-professor-camphor'],
+      unlockedSecretIds: [], knownNpcIds: [], conversationIds: [], collectibleIds: [], knownHintIds: [],
+      unlockedRouteIds: [], eligibleEncounterVisits: {}, activeVariantIds: [], injectedEncounterIds: [],
+      completedBehaviorTriggerIds: [], resolvedExpressionTriggers: {},
+    };
     localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
   });
   await page.reload();
@@ -804,10 +884,25 @@ test('habla con Alcanfor mediante la interacción contextual y bloquea el mapa d
 
   await dialogue.getByRole('button', { name: 'Siguiente' }).click();
   await expect(dialogue).toContainText('Tu compañero también podrá ayudarte');
+  await dialogue.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(dialogue).toContainText('un ruido decidido o un gesto amplio');
   await dialogue.getByRole('button', { name: 'Terminar' }).click();
   await expect(dialogue).toHaveCount(0);
   await expect(runtime).toHaveAttribute('data-control-priority', 'player');
   await expect(runtime).toHaveAttribute('data-ambient-state', 'running');
+  await expect.poll(() => page.evaluate(() => {
+    const progress = JSON.parse(localStorage.getItem('pokevoice-save-v1'))
+      .pokeDiscover.mapProgress['map:tegueste:camphor-forest'];
+    return {
+      npcIds: progress.knownNpcIds,
+      conversationIds: progress.conversationIds,
+      hintIds: progress.knownHintIds,
+    };
+  })).toEqual({
+    npcIds: ['npc:tegueste:professor-alcanfor'],
+    conversationIds: ['conversation:tegueste:professor-warning'],
+    hintIds: ['hint:tegueste:rattata-follow-food', 'hint:tegueste:cramorant-startle'],
+  });
 
   await expect(prompt).toBeVisible();
   await prompt.click();

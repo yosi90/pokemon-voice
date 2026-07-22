@@ -6,6 +6,7 @@ import type {
 } from '../../../packages/contracts/src/index.js';
 import { createAdventureMapProgressV1 } from './adventureMapProgress.js';
 import { evaluateRequirement } from '../requirements/evaluateRequirement.js';
+import { recordPokemonVariantDiscovery } from './pokemonVariantDiscovery.js';
 
 export const DEFAULT_GUARANTEED_ELIGIBLE_VISIT = 3;
 
@@ -16,6 +17,7 @@ export interface EvaluateRareEncounterRequest {
   randomRoll: number;
   species?: readonly PokemonSpeciesV1[];
   companionForm?: PokemonFormV1;
+  encounteredAt?: string;
 }
 
 export interface RareEncounterVisitResult {
@@ -29,6 +31,15 @@ export interface RareEncounterVisitResult {
 
 function validateDefinition(definition: RareEncounterDefinitionV1) {
   if (!definition.encounterId?.trim()) throw new Error('encounterId debe ser estable y no vacío.');
+  if (!Number.isSafeInteger(definition.speciesId) || definition.speciesId <= 0) {
+    throw new Error('speciesId debe ser un entero positivo.');
+  }
+  if (definition.formId !== undefined && !definition.formId.trim()) {
+    throw new Error('formId debe ser estable y no vacío.');
+  }
+  if (definition.appearanceId !== undefined && !definition.appearanceId.trim()) {
+    throw new Error('appearanceId debe ser estable y no vacío.');
+  }
   if (!(definition.baseProbability > 0 && definition.baseProbability < 1)) {
     throw new Error('baseProbability debe ser mayor que 0 y menor que 1.');
   }
@@ -38,6 +49,26 @@ function validateDefinition(definition: RareEncounterDefinitionV1) {
     throw new Error('guaranteedEligibleVisit debe ser un entero positivo.');
   }
   return guarantee;
+}
+
+function withEncounterDiscovery(
+  save: PokeVoiceSaveV1,
+  request: EvaluateRareEncounterRequest,
+  encounteredAt: string,
+) {
+  const session = save.activeExpeditionSession!;
+  const discovery = recordPokemonVariantDiscovery(save.pokeDiscover, {
+    speciesId: request.definition.speciesId,
+    ...(request.definition.formId ? { formId: request.definition.formId } : {}),
+    ...(request.definition.appearanceId ? { appearanceId: request.definition.appearanceId } : {}),
+    discoveredAt: encounteredAt,
+    originMapId: request.mapId,
+    ...(session.missionId ? { originMissionId: session.missionId } : {}),
+    originEncounterId: request.definition.encounterId,
+  });
+  return discovery.state === save.pokeDiscover
+    ? save
+    : { ...save, pokeDiscover: discovery.state };
 }
 
 export function evaluateRareEncounterVisit(
@@ -60,9 +91,12 @@ export function evaluateRareEncounterVisit(
   const previousResult = session.evaluatedEncounterResults?.[encounterId];
   if (previousResult !== undefined) {
     const guaranteed = currentVisit >= guaranteeVisit;
+    const nextSave = previousResult
+      ? withEncounterDiscovery(save, request, request.encounteredAt ?? session.enteredAt)
+      : save;
     return {
       status: 'alreadyEvaluated',
-      save,
+      save: nextSave,
       eligibleVisit: currentVisit,
       probability: guaranteed ? 1 : Math.min(1, request.definition.baseProbability * currentVisit),
       guaranteed,
@@ -114,16 +148,21 @@ export function evaluateRareEncounterVisit(
     },
   };
 
+  let nextSave: PokeVoiceSaveV1 = {
+    ...save,
+    pokeDiscover: {
+      ...save.pokeDiscover,
+      mapProgress: { ...save.pokeDiscover.mapProgress, [request.mapId]: mapProgress },
+    },
+    activeExpeditionSession: nextSession,
+  };
+  if (appeared) {
+    nextSave = withEncounterDiscovery(nextSave, request, request.encounteredAt ?? session.enteredAt);
+  }
+
   return {
     status: appeared ? 'appeared' : 'missed',
-    save: {
-      ...save,
-      pokeDiscover: {
-        ...save.pokeDiscover,
-        mapProgress: { ...save.pokeDiscover.mapProgress, [request.mapId]: mapProgress },
-      },
-      activeExpeditionSession: nextSession,
-    },
+    save: nextSave,
     eligibleVisit,
     probability,
     guaranteed,

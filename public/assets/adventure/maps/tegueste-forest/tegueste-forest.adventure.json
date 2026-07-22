@@ -218,7 +218,10 @@
     "fallbackActionId": "action:tegueste:smile-at-cottonee",
     "fallbackLabel": "Sonreír y saludar",
     "successText": "Cottonee gira feliz: parece que le ha gustado.",
-    "retryText": "Cottonee ladea la cabeza. Quizá esperaba algo más amable."
+    "retryText": "Cottonee ladea la cabeza. Quizá esperaba algo más amable.",
+    "rewardOriginId": "reward:tegueste:compliment-cottonee",
+    "rewardPackageId": "reward-package:map-secret",
+    "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:compliment-cottonee"] }
   }, {
     "schemaVersion": 1,
     "triggerId": "expression:tegueste:scare-cramorant",
@@ -234,12 +237,15 @@
       "minimumLevel": 0.62,
       "minimumDurationMs": 500
     }],
-    "knownHintIds": [],
+    "knownHintIds": ["hint:tegueste:cramorant-startle"],
     "successSequenceId": "sequence:tegueste:cramorant-startled",
     "fallbackActionId": "action:tegueste:wave-arms-at-cramorant",
     "fallbackLabel": "Agitar los brazos",
     "successText": "Cramorant da un respingo y se aparta, muy ofendido.",
-    "retryText": "Cramorant ni se inmuta. Tendrás que hacerlo con más decisión."
+    "retryText": "Cramorant ni se inmuta. Tendrás que hacerlo con más decisión.",
+    "rewardOriginId": "reward:tegueste:scare-cramorant",
+    "rewardPackageId": "reward-package:map-secret",
+    "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:scare-cramorant"] }
   }],
   "interactions": [{
     "schemaVersion": 1,
@@ -249,7 +255,15 @@
     "prompt": "Hablar con Alcanfor",
     "dialogueId": "dialogue:tegueste:professor-warning",
     "meaningfulKind": "npcConversation",
-    "repeatPolicy": "repeatable"
+    "repeatPolicy": "repeatable",
+    "completionEffects": {
+      "npcId": "npc:tegueste:professor-alcanfor",
+      "conversationId": "conversation:tegueste:professor-warning",
+      "hintIds": [
+        "hint:tegueste:rattata-follow-food",
+        "hint:tegueste:cramorant-startle"
+      ]
+    }
   }],
   "dialogues": [{
     "schemaVersion": 1,
@@ -265,8 +279,30 @@
       "schemaVersion": 1,
       "pageId": "dialogue-page:tegueste:professor-warning:2",
       "speakerName": "Profesor Alcanfor",
-      "text": "Acércate a ellos y pulsa Espacio o E para ahuyentarlos. Tu compañero también podrá ayudarte."
+      "text": "Acércate a ellos y pulsa Espacio o E para ahuyentarlos. Tu compañero también podrá ayudarte.",
+      "nextPageId": "dialogue-page:tegueste:professor-warning:3"
+    }, {
+      "schemaVersion": 1,
+      "pageId": "dialogue-page:tegueste:professor-warning:3",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Cramorant se queda embobado junto al agua. Si necesitas que se aparte, un ruido decidido o un gesto amplio debería sobresaltarlo."
     }]
+  }],
+  "fieldNotebookHints": [{
+    "schemaVersion": 1,
+    "hintId": "hint:tegueste:rattata-follow-food",
+    "mapId": "map:tegueste:camphor-forest",
+    "title": "Tras la mochila de Alcanfor",
+    "text": "Los Rattata siguen el olor de la comida. Un compañero atento puede hacerles frente sin dañarlos.",
+    "sourceNpcId": "npc:tegueste:professor-alcanfor"
+  }, {
+    "schemaVersion": 1,
+    "hintId": "hint:tegueste:cramorant-startle",
+    "mapId": "map:tegueste:camphor-forest",
+    "title": "La distracción de Cramorant",
+    "text": "Un ruido decidido o un gesto amplio puede sacar a Cramorant de su ensimismamiento.",
+    "sourceNpcId": "npc:tegueste:professor-alcanfor",
+    "relatedTriggerId": "expression:tegueste:scare-cramorant"
   }],
   "ambientSequences": [{
     "schemaVersion": 1,

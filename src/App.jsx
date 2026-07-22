@@ -50,6 +50,7 @@ import { LOCAL_POKEMON_CATALOG } from './services/pokemonCatalog.ts';
 import { createPokemonNameIndex, resolveGuessTranscript } from './domain/discovery/resolvePokemonGuess.ts';
 import { toLegacyPokemonList } from './domain/catalog/pokemonCatalogModel.ts';
 import { CAMPHOR_PROLOGUE_MISSION } from './data/adventure/camphorPrologue.ts';
+import { getPokeDiscoverRewardPackage } from './data/adventure/rewardBalance.ts';
 import { getKnownPokeDiscoverMissionIds } from './data/adventure/missionCatalog.ts';
 import {
   buildExpeditionHash,
@@ -118,6 +119,7 @@ export default function App() {
       trigger: mapExpression,
       attempt: { method: fromSpeech ? 'voice' : 'text', transcript: raw },
       resolvedAt: new Date().toISOString(),
+      rewards: getPokeDiscoverRewardPackage(mapExpression.rewardPackageId),
     });
     const successful = result.status === 'resolved' || result.status === 'alreadyResolved';
     setMapExpressionFeedback({
@@ -139,6 +141,7 @@ export default function App() {
       trigger: mapExpression,
       attempt: { method: 'contextAction', contextActionId: mapExpression.fallbackActionId },
       resolvedAt: new Date().toISOString(),
+      rewards: getPokeDiscoverRewardPackage(mapExpression.rewardPackageId),
     });
     const successful = result.status === 'resolved' || result.status === 'alreadyResolved';
     setMapExpressionFeedback({
@@ -156,6 +159,7 @@ export default function App() {
       trigger: mapExpression,
       attempt: { method: 'voice', acoustic: features },
       resolvedAt: new Date().toISOString(),
+      rewards: getPokeDiscoverRewardPackage(mapExpression.rewardPackageId),
     });
     const successful = result.status === 'resolved' || result.status === 'alreadyResolved';
     setMapExpressionFeedback({

@@ -93,6 +93,26 @@ describe('encuentros raros con garantía', () => {
     expect(repeated.save).toBe(first.save);
   });
 
+  it('repara una aparición evaluada por una versión anterior sin cambiar su primera tirada', () => {
+    const active = prepareVisit();
+    active.activeExpeditionSession = {
+      ...active.activeExpeditionSession!,
+      evaluatedEncounterResults: { [encounter.encounterId]: true },
+    };
+    const repaired = evaluateRareEncounterVisit(active, {
+      mapId: MAP_ID,
+      definition: encounter,
+      randomRoll: 0.999,
+      encounteredAt: '2026-07-22T10:30:00.000Z',
+    });
+
+    expect(repaired).toMatchObject({ status: 'alreadyEvaluated', appeared: true });
+    expect(repaired.save.pokeDiscover.discoveredForms['pokemon-form:25:default']).toMatchObject({
+      discoveredAt: '2026-07-22T10:30:00.000Z',
+      originEncounterId: encounter.encounterId,
+    });
+  });
+
   it('una visita no elegible no avanza el contador y tampoco se reevalúa al recargar', () => {
     const locked = { ...encounter, requirement: { kind: 'trainerLevel' as const, minimum: 20 } };
     const first = evaluateRareEncounterVisit(prepareVisit(), {
@@ -120,6 +140,43 @@ describe('encuentros raros con garantía', () => {
     });
 
     expect(result).toMatchObject({ status: 'appeared', eligibleVisit: 1, guaranteed: true });
+  });
+
+  it('una aparición guarda forma, apariencia y procedencia sin crear otra especie', () => {
+    const definition: RareEncounterDefinitionV1 = {
+      ...encounter,
+      encounterId: 'encounter:test-meadow:pikachu-surfista',
+      formId: 'pokemon-form:25:default',
+      appearanceId: 'pokemon-appearance:25:surfista',
+      guaranteedEligibleVisit: 1,
+    };
+    const active = prepareVisit();
+    active.activeExpeditionSession = {
+      ...active.activeExpeditionSession!,
+      missionId: 'mission:test-meadow:surfing-event',
+    };
+    const result = evaluateRareEncounterVisit(active, {
+      mapId: MAP_ID,
+      definition,
+      randomRoll: 0.999,
+      encounteredAt: '2026-07-22T11:00:00.000Z',
+    });
+
+    expect(result.status).toBe('appeared');
+    expect(result.save.pokeDiscover.sightings).toEqual([25]);
+    expect(result.save.pokeDiscover.discoveredForms[definition.formId!]).toMatchObject({
+      speciesId: 25,
+      originMapId: MAP_ID,
+      originMissionId: 'mission:test-meadow:surfing-event',
+      originEncounterId: definition.encounterId,
+    });
+    expect(result.save.pokeDiscover.discoveredAppearances[definition.appearanceId!]).toMatchObject({
+      speciesId: 25,
+      formId: definition.formId,
+      discoveredAt: '2026-07-22T11:00:00.000Z',
+      originEncounterId: definition.encounterId,
+    });
+    expect(result.save.pokedexRun.registeredSpeciesIds).toEqual([]);
   });
 
   it('persiste el resultado de la visita para que una recarga no repita la tirada', () => {
@@ -156,5 +213,41 @@ describe('encuentros raros con garantía', () => {
     expect(repeated).toMatchObject({ status: 'alreadyEvaluated', appeared: false });
     expect(getBrowserPokeVoiceSave().pokeDiscover.mapProgress[MAP_ID]
       .eligibleEncounterVisits[encounter.encounterId]).toBe(1);
+  });
+
+  it('persiste en navegador la variante aparecida y registra interacción significativa', () => {
+    getBrowserPokeVoiceSave();
+    setBrowserActiveExpeditionSession({
+      schemaVersion: 1,
+      mapId: MAP_ID,
+      enteredAt: ENTERED_AT,
+      loadout: {
+        schemaVersion: 1,
+        companion: { schemaVersion: 1, formId: 'pokemon-form:19:default' },
+      },
+      evaluatedEncounterResults: {},
+    });
+    const definition: RareEncounterDefinitionV1 = {
+      ...encounter,
+      encounterId: 'encounter:test-meadow:raichu-alola',
+      speciesId: 26,
+      formId: 'pokemon-form:26:alola',
+      guaranteedEligibleVisit: 1,
+    };
+
+    evaluateBrowserRareEncounterVisit({
+      mapId: MAP_ID,
+      definition,
+      randomRoll: 0.999,
+      encounteredAt: '2026-07-22T12:00:00.000Z',
+    });
+
+    const persisted = getBrowserPokeVoiceSave();
+    expect(persisted.pokeDiscover.discoveredForms[definition.formId!]).toMatchObject({
+      speciesId: 26,
+      originEncounterId: definition.encounterId,
+    });
+    expect(persisted.activeExpeditionSession?.meaningfulInteractionIds)
+      .toContain(`rare-encounter:${definition.encounterId}`);
   });
 });

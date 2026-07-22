@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import type { MissionDefinitionV1, MissionStatus, RewardDefinitionV1 } from '../../packages/contracts/src/index.js';
 import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
 import { getCompanionCandidates } from '../domain/companions/companionCandidates.js';
 import { getCompanionArtworkUrl } from '../domain/companions/companionGameplayCatalog.js';
 import { getBrowserPokeVoiceSave } from '../store/browserPokeVoiceSaveStore.js';
 import { getPokeDiscoverMission } from '../data/adventure/missionCatalog.js';
+import { getPokeDiscoverShopContent } from '../data/adventure/pokeDiscoverShop.js';
 import { getMissionStatus } from '../domain/expeditions/missionLifecycle.js';
 import { CompanionSelector } from './CompanionSelector.js';
 import { PokeDiscoverShop } from './PokeDiscoverShop.js';
@@ -12,6 +14,137 @@ const TRAINER_AVATARS = Object.freeze({
   achaman: 'assets/images/achaman/achaman-saludando.png',
   guayota: 'assets/images/guayota/guayota-y-horquilla-saludando.png',
 });
+
+const MISSION_STATUS_LABELS: Readonly<Record<MissionStatus, string>> = Object.freeze({
+  locked: 'Bloqueado',
+  available: 'Disponible',
+  active: 'En curso',
+  completed: 'Completado',
+});
+
+function describeMissionReward(reward: RewardDefinitionV1) {
+  if (reward.kind === 'trainerExperience') return `${reward.amount} PX de entrenador`;
+  if (reward.kind === 'discoveryPoints') return `${reward.amount} Puntos de Descubrimiento`;
+  if (!('contentId' in reward)) return 'Recompensa de investigación';
+  const content = getPokeDiscoverShopContent(reward.contentId);
+  if (content) return content.displayName;
+  if (reward.kind === 'item') return reward.category === 'tool' ? 'Nueva herramienta' : 'Nuevo objeto clave';
+  return reward.kind === 'permission' ? 'Nuevo permiso de campo' : 'Nuevo cosmético';
+}
+
+function MissionBoard({
+  catalog,
+  missions,
+  save,
+  selectedMissionId,
+  onSelectMission,
+  onChooseCompanion,
+  onOpenMapPreview,
+}: {
+  catalog: readonly PokemonCatalogRecord[];
+  missions: readonly MissionDefinitionV1[];
+  save: ReturnType<typeof getBrowserPokeVoiceSave>;
+  selectedMissionId?: string;
+  onSelectMission: (missionId: string) => void;
+  onChooseCompanion: () => void;
+  onOpenMapPreview: () => void;
+}) {
+  const selectedMission = missions.find(mission => mission.missionId === selectedMissionId) ?? missions[0];
+  const selectedStatus = selectedMission ? getMissionStatus(save, selectedMission) : undefined;
+  const candidates = getCompanionCandidates(catalog, save);
+  const selectedCompanion = candidates.find(candidate => candidate.selected);
+  const hasEligibleCompanion = candidates.some(candidate => candidate.eligibility.status === 'eligible');
+  const needsCompanion = hasEligibleCompanion && !selectedCompanion;
+  const canEnter = selectedStatus !== 'locked' && !needsCompanion;
+
+  return (
+    <div className="professor-mission-board">
+      <aside className="professor-mission-board__selector" aria-label="Selector de encargos">
+        <span className="professor-mission-board__eyebrow">Encargos conocidos</span>
+        {missions.map(mission => {
+          const status = getMissionStatus(save, mission);
+          const selected = mission.missionId === selectedMission?.missionId;
+          return (
+            <button
+              className={`professor-mission-card professor-mission-card--${status} ${selected ? 'is-selected' : ''}`}
+              type="button"
+              key={mission.missionId}
+              aria-pressed={selected}
+              onClick={() => onSelectMission(mission.missionId)}
+            >
+              <span className="professor-mission-card__status">{MISSION_STATUS_LABELS[status]}</span>
+              <strong>{mission.title}</strong>
+              <span>Ver briefing</span>
+            </button>
+          );
+        })}
+      </aside>
+
+      {selectedMission && selectedStatus ? (
+        <article className="professor-mission-briefing" aria-label={`Briefing: ${selectedMission.title}`}>
+          <header>
+            <div>
+              <span className="professor-mission-board__eyebrow">Briefing del profesor</span>
+              <h4>{selectedMission.title}</h4>
+            </div>
+            <span className={`professor-mission-card__status professor-mission-card__status--${selectedStatus}`}>
+              {MISSION_STATUS_LABELS[selectedStatus]}
+            </span>
+          </header>
+          <p className="professor-mission-briefing__summary">{selectedMission.briefing}</p>
+
+          <section className="professor-mission-briefing__section" aria-labelledby="mission-objectives-title">
+            <h5 id="mission-objectives-title">Objetivos</h5>
+            <ul>
+              {selectedMission.objectives.map(objective => (
+                <li key={objective.objectiveId}>{objective.description}{objective.optional ? ' (opcional)' : ''}</li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="professor-mission-briefing__section" aria-labelledby="mission-rewards-title">
+            <h5 id="mission-rewards-title">Recompensas</h5>
+            <ul className="professor-mission-rewards">
+              {selectedMission.rewards.map((reward, index) => (
+                <li key={`${reward.kind}:${index}`}>
+                  <span aria-hidden="true">{reward.kind === 'trainerExperience' ? '★' : reward.kind === 'discoveryPoints' ? '◆' : '🎁'}</span>
+                  {describeMissionReward(reward)}
+                </li>
+              ))}
+              {selectedMission.unlocksFreeExpedition ? <li><span aria-hidden="true">🗺</span>Expedición libre en este mapa</li> : null}
+            </ul>
+          </section>
+
+          <section className="professor-mission-loadout" aria-label="Compañero preparado">
+            <div className="professor-mission-loadout__copy">
+              <span className="professor-mission-board__eyebrow">Compañero</span>
+              {selectedCompanion ? (
+                <div className="professor-mission-loadout__selected">
+                  <img src={getCompanionArtworkUrl(selectedCompanion.assetId, selectedCompanion.record.species.speciesId)} alt="" />
+                  <strong>{selectedCompanion.displayName}</strong>
+                </div>
+              ) : (
+                <p>{hasEligibleCompanion ? 'Elige quién te acompañará antes de salir.' : 'Alcanfor preparará tu primer compañero.'}</p>
+              )}
+            </div>
+            {hasEligibleCompanion ? (
+              <button type="button" onClick={onChooseCompanion}>
+                {selectedCompanion ? 'Cambiar compañero' : 'Elegir compañero'}
+              </button>
+            ) : null}
+          </section>
+
+          <footer className="professor-mission-briefing__actions">
+            {needsCompanion ? <p role="status">Necesitas preparar un compañero para este encargo.</p> : null}
+            <button type="button" disabled={!canEnter} onClick={onOpenMapPreview}>
+              {selectedStatus === 'active' ? 'Continuar encargo' : selectedStatus === 'completed' ? 'Volver al mapa' : 'Comenzar encargo'}
+            </button>
+          </footer>
+        </article>
+      ) : null}
+    </div>
+  );
+}
 
 function PokeDiscoverHome({
   catalog,
@@ -119,17 +252,22 @@ export function ProfessorMissionModal({
   const closeRef = useRef<HTMLButtonElement>(null);
   const [section, setSection] = useState<'home' | 'missions' | 'companion' | 'shop'>(initialSection);
   const [save, setSave] = useState(getBrowserPokeVoiceSave);
+  const [focusedMissionId, setFocusedMissionId] = useState(selectedMissionId ?? missionIds[0]);
   useEffect(() => {
     if (!open) return undefined;
     setSection(initialSection);
     setSave(getBrowserPokeVoiceSave());
+    setFocusedMissionId(selectedMissionId ?? missionIds[0]);
     closeRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [initialSection, onClose, open]);
+  }, [initialSection, onClose, open, selectedMissionId]);
+  const missions = missionIds
+    .map(getPokeDiscoverMission)
+    .filter((mission): mission is MissionDefinitionV1 => Boolean(mission));
   if (!open) return null;
   return (
     <div className="pv-modal professor-missions" data-testid="professor-missions">
@@ -152,30 +290,20 @@ export function ProfessorMissionModal({
             <CompanionSelector catalog={catalog} onSaveChange={setSave} />
           ) : section === 'shop' ? (
             <PokeDiscoverShop save={save} onSaveChange={setSave} />
-          ) : missionIds.length ? missionIds.map(missionId => {
-            const mission = getPokeDiscoverMission(missionId);
-            const status = mission ? getMissionStatus(save, mission) : 'available';
-            const statusLabels = {
-              locked: 'Bloqueado',
-              available: 'Disponible',
-              active: 'En curso',
-              completed: 'Completado',
-            } as const;
-            return (
-              <article
-                className={`professor-mission-card professor-mission-card--${status} ${selectedMissionId === missionId ? 'is-selected' : ''}`}
-                key={missionId}
-                aria-current={selectedMissionId === missionId ? 'page' : undefined}
-              >
-                <span className="professor-mission-card__status">{statusLabels[status]}</span>
-                <strong>{mission?.title ?? missionId}</strong>
-                {mission && <p>{mission.briefing}</p>}
-                <button type="button" onClick={() => onOpenMission(missionId)}>
-                  {status === 'active' ? 'Continuar encargo' : status === 'completed' ? 'Volver al mapa' : 'Ver encargo'}
-                </button>
-              </article>
-            );
-          }) : (
+          ) : missions.length ? (
+            <MissionBoard
+              catalog={catalog}
+              missions={missions}
+              save={save}
+              selectedMissionId={focusedMissionId}
+              onSelectMission={missionId => {
+                setFocusedMissionId(missionId);
+                onOpenMission(missionId);
+              }}
+              onChooseCompanion={() => setSection('companion')}
+              onOpenMapPreview={onOpenMapPreview}
+            />
+          ) : (
             <div className="professor-missions__empty">
               <img className="camphor-leaf-mark" src={`${import.meta.env.BASE_URL}assets/icons/profesor-alcanfor/hoja-alcanforero.png`} alt="" aria-hidden="true" />
               <h4>Preparando el primer encargo</h4>

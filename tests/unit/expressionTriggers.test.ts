@@ -28,6 +28,8 @@ const sharpedoTrigger: ExpeditionExpressionTriggerV1 = {
   successSequenceId: 'sequence:sharpedo-bay:sharpedo-calms-down',
   fallbackActionId: 'action:sharpedo-bay:offer-compliment',
   rewardOriginId: 'expression:sharpedo-bay:calm-sharpedo',
+  rewardPackageId: 'reward-package:map-secret',
+  completionEffects: { unlockSecretIds: ['secret:sharpedo-bay:calmed-sharpedo'] },
 };
 
 const shoutTrigger: ExpeditionExpressionTriggerV1 = {
@@ -117,8 +119,12 @@ describe('interacciones expresivas de expedición', () => {
       method: 'contextAction',
       resolvedAt: RESOLVED_AT,
     });
+    expect(first.save.pokeDiscover.mapProgress[MAP_ID].unlockedSecretIds)
+      .toContain('secret:sharpedo-bay:calmed-sharpedo');
     expect(repeated.status).toBe('alreadyResolved');
     expect(repeated.save.pokeDiscover.discoveryPoints).toBe(10);
+    expect(repeated.save.pokeDiscover.mapProgress[MAP_ID]
+      .resolvedExpressionTriggers?.[sharpedoTrigger.triggerId]?.method).toBe('contextAction');
   });
 
   it('procesa un grito mediante métricas locales y no conserva audio ni transcripción', () => {
@@ -159,9 +165,15 @@ describe('interacciones expresivas de expedición', () => {
       trigger: sharpedoTrigger,
       attempt: { method: 'text', transcript: 'eres un tiburón precioso' },
       resolvedAt: RESOLVED_AT,
+      rewards: [{ kind: 'discoveryPoints', amount: 10 }],
     });
 
-    expect(getBrowserPokeVoiceSave().pokeDiscover.mapProgress[MAP_ID]
+    const persisted = getBrowserPokeVoiceSave().pokeDiscover;
+    expect(persisted.mapProgress[MAP_ID]
       .resolvedExpressionTriggers?.[sharpedoTrigger.triggerId]?.method).toBe('text');
+    expect(persisted.mapProgress[MAP_ID].unlockedSecretIds)
+      .toContain('secret:sharpedo-bay:calmed-sharpedo');
+    expect(persisted.discoveryPoints).toBe(10);
+    expect(persisted.achievements['first-map-secret']).toBeDefined();
   });
 });

@@ -205,6 +205,12 @@ export interface ExpeditionInteractionV1 extends VersionedContractV1 {
   /** Distancia cardinal máxima; un tile cuando se omite. */
   rangeTiles?: number;
   repeatPolicy?: 'oncePerVisit' | 'repeatable';
+  completionEffects?: {
+    npcId?: StableId;
+    conversationId?: StableId;
+    hintIds?: StableId[];
+    collectibleIds?: StableId[];
+  };
 }
 
 /** Mapa lógico multihabitación. La geometría vive exclusivamente en los .tmj enlazados. */
@@ -224,6 +230,7 @@ export interface AdventureMapV2 {
   expressionTriggers: ExpeditionExpressionTriggerV1[];
   interactions?: ExpeditionInteractionV1[];
   dialogues?: ExpeditionDialogueV1[];
+  fieldNotebookHints?: FieldNotebookHintV1[];
   ambientSequences: AmbientSequenceV1[];
   rareEncounters: RareEncounterDefinitionV1[];
   requiredAssetIds: StableId[];
@@ -375,6 +382,10 @@ export interface ExpeditionExpressionTriggerV1 extends VersionedContractV1 {
   successText?: string;
   retryText?: string;
   rewardOriginId?: StableId;
+  rewardPackageId?: StableId;
+  completionEffects?: {
+    unlockSecretIds?: StableId[];
+  };
 }
 
 export interface WorldEventV1 extends VersionedContractV1 {

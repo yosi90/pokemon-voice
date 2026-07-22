@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0–7, 9 y 10 completados; base de dominio del Hito 8 completada con tareas visuales y de contenido aplazadas al pipeline; siguiente entrega: Hito 11.
+- Estado: Hitos 0–7, 9 y 10 completados; base de dominio del Hito 8 completada; Hitos 11 y 12 en curso, con el guardado inmediato de observaciones, secretos y recompensas ya integrado.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -721,12 +721,12 @@ Corrección visual final del 19 de julio de 2026. Todos los actores Pokémon sub
 - [x] Mantener el loadout bloqueado hasta abandonar el mapa.
 - [x] Ejecutar prompts contextuales y secuencias automáticas de acompañante desde datos exportados por el editor.
 - [ ] Resolver capacidades narrativas de movimientos, como `rock-tomb`, desde los mismos requisitos declarativos.
-- [ ] Guardar inmediatamente observaciones, secretos y recompensas.
-- [ ] Guardar una sola vez el descubrimiento y procedencia de formas y apariencias encontradas.
-- [ ] Guardar pistas del cuaderno, conversaciones únicas, coleccionables e intentos elegibles de encuentros raros.
-- [ ] Guardar pistas de expresiones conocidas, secretos resueltos y el método de primera resolución.
+- [x] Guardar inmediatamente observaciones, secretos y recompensas.
+- [x] Guardar una sola vez el descubrimiento y procedencia de formas y apariencias encontradas.
+- [x] Guardar pistas del cuaderno, conversaciones únicas, coleccionables e intentos elegibles de encuentros raros.
+- [x] Guardar pistas de expresiones conocidas, secretos resueltos y el método de primera resolución.
 - [x] Permitir abandonar y regresar sin perder progreso.
-- [ ] Crear el modal del profesor con briefing, selector de misión, acompañante y recompensas.
+- [x] Crear el modal del profesor con briefing, selector de misión, acompañante y recompensas.
 - [x] Mostrar un informe de salida con experiencia, Puntos de Descubrimiento, observaciones y pistas nuevas.
 - [x] Registrar interacciones significativas durante la visita sin contar movimiento, espera ni cambios de habitación.
 - [x] Conceder una sola vez el campo curado de convivencia al salir con al menos una interacción significativa.
@@ -760,6 +760,16 @@ Corrección de integración del 21 de julio de 2026. La prueba consume la habita
 Corrección de control del 21 de julio de 2026. El teclado mantiene una pila de direcciones físicas para recuperar una tecla todavía pulsada al soltar la dirección más reciente. El compañero inicia `Walk` mientras recorre simultáneamente la casilla que deja libre el protagonista y vuelve a `Idle` al agotar su estela. Los controles de identificación por voz y texto devuelven el foco al mapa para reanudar el movimiento sin pulsar de nuevo sobre el canvas.
 
 Corrección de giro del 22 de julio de 2026. La espera de 140 ms se limita al cambio de orientación iniciado desde reposo. Si el protagonista ya está recorriendo un tile, una dirección nueva se encadena inmediatamente al finalizarlo y evita la pausa visual entre ambos pasos.
+
+Octava entrega del Hito 12 implementada el 22 de julio de 2026. Las interacciones expresivas declaran ahora sus secretos y paquetes de recompensa en el sidecar. Al resolverlas por voz, texto, gesto o análisis acústico, el runtime guarda en una sola operación el método de primera resolución, el secreto, la interacción significativa y el premio equilibrado; el ledger impide repetirlo y la reconciliación inmediata concede los logros de PokeDiscover que correspondan. Cottonee y Cramorant validan el flujo completo con secretos independientes, 15 EXP y 15 PD cada uno, sin almacenar audio ni métricas acústicas. La persistencia inmediata de observaciones continúa usando el mismo guardado del navegador y queda cubierta junto al ledger por las pruebas de dominio.
+
+Novena entrega del Hito 12 implementada el 22 de julio de 2026. Cada encuentro que aparece registra de forma idempotente su especie, forma y apariencia, junto a la fecha y la primera procedencia por mapa, misión y encuentro. Repetir el hallazgo conserva el origen inicial y no crea especies ficticias ni altera el registro reiniciable de la Pokédex. Las apariencias se relacionan siempre con su forma base, los avistamientos viven en PokeDiscover y el guardado normaliza partidas anteriores que aún no contenían estas colecciones. Una sesión antigua que ya hubiera fijado una aparición también completa el nuevo registro al recuperarse, sin repetir la tirada del encuentro.
+
+Décima entrega del Hito 12 implementada el 22 de julio de 2026. Las interacciones contextuales pueden declarar ahora NPC, conversación, pistas y coleccionables como efectos de finalización. El runtime aplica todos los efectos y la interacción significativa en una única transacción persistente; repetir un diálogo no duplica ninguna colección. El sidecar del Bosque de Tegueste incorpora una pista real de Alcanfor sobre los Rattata y el validador comprueba que las referencias del cuaderno pertenezcan al mapa. Los intentos elegibles de encuentros raros continúan fijándose una sola vez por visita, incluidas recargas, y el flujo completo del diálogo se verifica en Chromium de escritorio y móvil.
+
+Undécima entrega del Hito 12 implementada el 22 de julio de 2026. Las pistas del cuaderno pueden relacionarse explícitamente con un trigger expresivo y el dominio devuelve únicamente las que el jugador ya conoce, sin filtrar el catálogo oculto. Alcanfor enseña una pista sobre cómo apartar a Cramorant y el sidecar la enlaza con su interacción acústica; el validador rechaza IDs inexistentes o asociados a otro trigger. Resolver el secreto conserva para siempre el primer método empleado aunque se intente después por otra vía, mientras el ledger y el mapa siguen impidiendo duplicar secreto o recompensa.
+
+Duodécima entrega del Hito 12 implementada el 22 de julio de 2026. El centro de encargos reúne en una misma vista el selector de misión, su estado, el briefing completo, los objetivos y las recompensas con nombres legibles. El loadout muestra al compañero preparado y, cuando existe algún candidato disponible, impide salir hasta elegir uno; el propio tablero enlaza con el selector y refleja la elección al regresar. La acción final distingue comenzar, continuar o volver al mapa, conserva la ruta hash de la misión seleccionada y se adapta a escritorio y móvil. Vitest cubre la transición completa dentro del modal y Playwright valida el flujo integrado en ambos tamaños.
 
 ---
 

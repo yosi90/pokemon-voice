@@ -1131,10 +1131,23 @@
 .professor-mission-card {
   display: grid;
   gap: 6px;
+  width: 100%;
   border: 2px solid #75a787;
   border-radius: 12px;
   padding: 14px;
   background: rgba(255,255,255,.55);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.professor-mission-card:hover,
+.professor-mission-card:focus-visible,
+.professor-mission-card.is-selected {
+  border-color: #2f7652;
+  background: #fff9cf;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 118, 82, .14);
 }
 
 .professor-mission-card__status {
@@ -1156,6 +1169,100 @@
 .professor-mission-card--completed .professor-mission-card__status {
   color: #3565a8;
 }
+
+.professor-mission-card__status--active { color: #a35b0b; }
+.professor-mission-card__status--completed { color: #3565a8; }
+
+.professor-mission-board {
+  display: grid;
+  grid-template-columns: minmax(210px, .72fr) minmax(0, 1.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.professor-mission-board__selector {
+  display: grid;
+  gap: 10px;
+}
+
+.professor-mission-board__eyebrow {
+  color: #3c7f5d;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.professor-mission-briefing {
+  display: grid;
+  gap: 16px;
+  border: 2px solid #80aa8d;
+  border-radius: 16px;
+  padding: 18px;
+  background: rgba(255, 255, 255, .65);
+}
+
+.professor-mission-briefing > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.professor-mission-briefing h4,
+.professor-mission-briefing h5,
+.professor-mission-briefing p { margin: 0; }
+.professor-mission-briefing h4 { margin-top: 5px; font-size: 1.22rem; }
+.professor-mission-briefing h5 { color: #285f45; font-size: .82rem; text-transform: uppercase; }
+.professor-mission-briefing__summary { line-height: 1.55; }
+.professor-mission-briefing__section { display: grid; gap: 8px; }
+.professor-mission-briefing__section ul { margin: 0; padding-left: 20px; line-height: 1.5; }
+
+.professor-mission-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 !important;
+  list-style: none;
+}
+
+.professor-mission-rewards li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #9ab5a1;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f3f8e9;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.professor-mission-loadout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  border-radius: 12px;
+  padding: 12px;
+  background: #e5f1dc;
+}
+
+.professor-mission-loadout__copy { display: grid; gap: 6px; }
+.professor-mission-loadout__selected { display: flex; align-items: center; gap: 9px; }
+.professor-mission-loadout__selected img { width: 42px; height: 42px; object-fit: contain; image-rendering: pixelated; }
+.professor-mission-loadout button,
+.professor-mission-briefing__actions button { min-height: 40px; cursor: pointer; }
+
+.professor-mission-briefing__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.professor-mission-briefing__actions p { margin-right: auto; color: #8a4d16; font-size: .82rem; font-weight: 700; }
+.professor-mission-briefing__actions button:disabled { cursor: not-allowed; opacity: .55; }
 
 .professor-mission-card p {
   margin: 0;
@@ -1254,6 +1361,13 @@
   .professor-missions__body { padding: 14px; }
   .professor-missions__panel .pv-modal__head { min-height: 62px; padding: 10px 12px; }
   .professor-missions__panel .pv-modal__head h3 { font-size: 13px; }
+  .professor-mission-board { grid-template-columns: 1fr; }
+  .professor-mission-board__selector { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .professor-mission-board__selector > .professor-mission-board__eyebrow { grid-column: 1 / -1; }
+  .professor-mission-briefing { padding: 14px; }
+  .professor-mission-loadout,
+  .professor-mission-briefing__actions { align-items: stretch; flex-direction: column; }
+  .professor-mission-briefing__actions p { margin-right: 0; }
   .pokediscover-profile {
     min-height: 158px;
     grid-template-columns: 104px minmax(0, 1fr) 56px;

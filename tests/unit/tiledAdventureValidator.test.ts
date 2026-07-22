@@ -77,6 +77,16 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     expect(snakeThreats).toHaveLength(3);
     expect(snakeThreats[0].animationByCompanionSpecies).toEqual({ 23: 'Eat', 24: 'Shoot', 336: 'Bite' });
     expect(teguesteAdventure.dialogues).toHaveLength(1);
+    expect(teguesteAdventure.fieldNotebookHints).toHaveLength(2);
+    expect(teguesteAdventure.interactions[0].completionEffects).toMatchObject({
+      npcId: 'npc:tegueste:professor-alcanfor',
+      conversationId: 'conversation:tegueste:professor-warning',
+      hintIds: ['hint:tegueste:rattata-follow-food', 'hint:tegueste:cramorant-startle'],
+    });
+    expect(teguesteAdventure.expressionTriggers.every(trigger => (
+      trigger.rewardPackageId === 'reward-package:map-secret'
+      && trigger.completionEffects?.unlockSecretIds?.length === 1
+    ))).toBe(true);
     expect(teguesteAdventure.actorPlacements.find(placement => placement.placementId === 'actor:cottonee'))
       .toMatchObject({ collision: 'pass-through' });
     expect(characterManifest.assets.map(asset => asset.renderScale)).toEqual([1, 1, 1]);
@@ -93,6 +103,29 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     ]));
   });
 
+  it('rechaza pistas inexistentes o adscritas a otro mapa', () => {
+    const broken = teguesteBundle() as any;
+    broken.adventure.interactions[0].completionEffects.hintIds = ['hint:tegueste:missing'];
+    broken.adventure.fieldNotebookHints[0].mapId = 'map:other';
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'hint:tegueste:rattata-follow-food: mapId no coincide con map:tegueste:camphor-forest',
+      'interaction:tegueste:talk-professor-camphor: pista de cuaderno inexistente hint:tegueste:missing',
+    ]));
+  });
+
+  it('rechaza pistas expresivas inexistentes o relacionadas con otro trigger', () => {
+    const broken = teguesteBundle() as any;
+    broken.adventure.expressionTriggers[0].knownHintIds = ['hint:tegueste:missing'];
+    broken.adventure.expressionTriggers[1].knownHintIds = ['hint:tegueste:rattata-follow-food'];
+    broken.adventure.fieldNotebookHints[0].relatedTriggerId = 'expression:tegueste:other';
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'expression:tegueste:compliment-cottonee: pista expresiva inexistente hint:tegueste:missing',
+      'expression:tegueste:scare-cramorant: hint:tegueste:rattata-follow-food está relacionada con otro trigger',
+    ]));
+  });
+
   it('valida el contexto espacial de las interacciones expresivas', () => {
     const broken = teguesteBundle() as any;
     const trigger = broken.adventure.expressionTriggers[0];
@@ -102,6 +135,18 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
       'expression:tegueste:compliment-cottonee: placement objetivo inexistente actor:missing',
       'expression:tegueste:compliment-cottonee: rangeTiles debe ser un entero positivo',
+    ]));
+  });
+
+  it('rechaza recompensas expresivas sin origen y secretos expresivos duplicados', () => {
+    const broken = teguesteBundle() as any;
+    broken.adventure.expressionTriggers[0].rewardOriginId = undefined;
+    const secretId = broken.adventure.expressionTriggers[1].completionEffects.unlockSecretIds[0];
+    broken.adventure.expressionTriggers[1].completionEffects.unlockSecretIds.push(secretId);
+
+    expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
+      'expression:tegueste:compliment-cottonee: una recompensa necesita rewardOriginId',
+      'expression:tegueste:scare-cramorant: secreto expresivo duplicado secret:tegueste-forest:scare-cramorant',
     ]));
   });
 

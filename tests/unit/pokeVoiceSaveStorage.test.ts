@@ -129,6 +129,26 @@ describe('guardado raíz y migración legacy', () => {
     expect(JSON.parse(localStorage.getItem(POKE_VOICE_SAVE_KEY) || '{}').pokeDiscover.trainerLevel).toBe(3);
   });
 
+  it('añade colecciones vacías de variantes a partidas raíz anteriores', () => {
+    const oldSave = loadOrMigratePokeVoiceSave({
+      storage: localStorage,
+      now: () => NOW,
+      createRunId: () => 'pokedex-run:before-variants',
+    }).save;
+    const pokeDiscover = { ...oldSave.pokeDiscover } as Partial<typeof oldSave.pokeDiscover>;
+    delete pokeDiscover.sightings;
+    delete pokeDiscover.discoveredForms;
+    delete pokeDiscover.discoveredAppearances;
+    localStorage.setItem(POKE_VOICE_SAVE_KEY, JSON.stringify({ ...oldSave, pokeDiscover }));
+
+    const result = loadOrMigratePokeVoiceSave({ storage: localStorage });
+
+    expect(result.source).toBe('current');
+    expect(result.save.pokeDiscover.sightings).toEqual([]);
+    expect(result.save.pokeDiscover.discoveredForms).toEqual({});
+    expect(result.save.pokeDiscover.discoveredAppearances).toEqual({});
+  });
+
   it('migra una selección de compañero anterior al objeto de variante', () => {
     const oldSave = loadOrMigratePokeVoiceSave({
       storage: localStorage,
