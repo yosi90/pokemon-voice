@@ -309,6 +309,7 @@ export function usePokemonGame() {
     loadingError,
     navigateCards,
     psyduckMode,
+    playRevealAudio,
     remaining,
     replayPokemonCry,
     discoverPokemon: revealPokemon,

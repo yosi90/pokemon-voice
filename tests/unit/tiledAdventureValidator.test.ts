@@ -60,11 +60,12 @@ function teguesteBundle() {
 describe('validador cruzado Tiled + aventura + PMD', () => {
   it('acepta la primera habitación definitiva del Bosque de Tegueste', () => {
     expect(validateTiledAdventureBundle(teguesteBundle())).toEqual([]);
-    expect(teguesteAdventure.actorPlacements).toHaveLength(7);
-    expect(teguesteAdventure.characterPlacements).toHaveLength(2);
+    expect(teguesteAdventure.actorPlacements).toHaveLength(11);
+    expect(teguesteAdventure.characterPlacements).toHaveLength(5);
+    expect(teguesteAdventure.mapSequences).toHaveLength(7);
     expect(teguesteAdventure.interactions).toHaveLength(1);
-    expect(teguesteAdventure.behaviorTriggers).toHaveLength(3);
-    expect(teguesteAdventure.companionSequences).toHaveLength(6);
+    expect(teguesteAdventure.behaviorTriggers).toHaveLength(4);
+    expect(teguesteAdventure.companionSequences).toHaveLength(7);
     expect(teguesteAdventure.behaviorTriggers.every(trigger => (
       trigger.completionEffects?.unlockSecretIds?.includes('secret:tegueste-forest:burrow-intimidation')
     ))).toBe(true);
@@ -76,6 +77,11 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
       ));
     expect(snakeThreats).toHaveLength(3);
     expect(snakeThreats[0].animationByCompanionSpecies).toEqual({ 23: 'Eat', 24: 'Shoot', 336: 'Bite' });
+    expect(teguesteAdventure.behaviorTriggers.find(trigger => trigger.triggerId.endsWith(':rock-tomb')))
+      .toMatchObject({
+        requirement: { kind: 'fieldCapability', capabilityId: 'rock-tomb', minimumStrength: 1 },
+        sequenceId: 'sequence:tegueste:burrow-left:rock-tomb',
+      });
     expect(teguesteAdventure.dialogues).toHaveLength(1);
     expect(teguesteAdventure.fieldNotebookHints).toHaveLength(2);
     expect(teguesteAdventure.interactions[0].completionEffects).toMatchObject({
@@ -89,7 +95,7 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     ))).toBe(true);
     expect(teguesteAdventure.actorPlacements.find(placement => placement.placementId === 'actor:cottonee'))
       .toMatchObject({ collision: 'pass-through' });
-    expect(characterManifest.assets.map(asset => asset.renderScale)).toEqual([1, 1, 1]);
+    expect(characterManifest.assets.map(asset => asset.renderScale)).toEqual([1, 1, 1, 1, 1]);
   });
 
   it('rechaza interacciones con objetivos o páginas de diálogo rotas', () => {
@@ -100,6 +106,61 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
       'interaction:tegueste:talk-professor-camphor: placement objetivo inexistente character:missing',
       'dialogue-page:tegueste:professor-warning:1: página siguiente inexistente dialogue-page:missing',
+    ]));
+  });
+
+  it('admite encuentros y secretos sobre sus clases de anclaje específicas', () => {
+    const candidate = teguesteBundle() as any;
+    const anchors = candidate.tiledMaps['tiled-map:tegueste-forest:02-04'].layers
+      .find((layer: TestTiledLayer) => layer.name === 'Anchors').objects;
+    anchors.push({ id: 999, name: 'anchor:test:encounter', type: 'EncounterAnchor', x: 100, y: 100, width: 0, height: 0 });
+    candidate.adventure.actorPlacements.push({
+      schemaVersion: 1,
+      placementId: 'actor:test:encounter',
+      roomId: 'room:tegueste-forest:02-04',
+      anchorId: 'anchor:test:encounter',
+      assetId: 'pmd:0019-rattata:default',
+      animation: 'Idle',
+    });
+    candidate.adventure.dialogues.push({
+      schemaVersion: 1,
+      dialogueId: 'dialogue:test:secret',
+      initialPageId: 'page:test:secret',
+      pages: [{ schemaVersion: 1, pageId: 'page:test:secret', speakerName: 'PokeDiscover', text: 'Secreto.' }],
+    });
+    candidate.adventure.interactions.push({
+      schemaVersion: 1,
+      interactionId: 'interaction:test:secret',
+      roomId: 'room:tegueste-forest:02-04',
+      target: { kind: 'anchor', anchorId: 'anchor:tree:hit' },
+      prompt: 'Investigar',
+      dialogueId: 'dialogue:test:secret',
+      meaningfulKind: 'secret',
+    });
+
+    expect(validateTiledAdventureBundle(candidate)).toEqual([]);
+  });
+
+  it('valida investigación portable contra mapa e interacción', () => {
+    const candidate = teguesteBundle() as any;
+    candidate.adventure.researchFacts = [{
+      schemaVersion: 1,
+      factId: 'research:test:rattata',
+      speciesId: 19,
+      field: 'behavior',
+      contribution: 'fieldCompletion',
+      mapId: candidate.adventure.mapId,
+      interactionId: candidate.adventure.interactions[0].interactionId,
+      text: 'Rattata busca alimento en grupo.',
+      rewards: [{ kind: 'discoveryPoints', amount: 10 }],
+    }];
+    expect(validateTiledAdventureBundle(candidate)).toEqual([]);
+
+    candidate.adventure.researchFacts[0].interactionId = 'interaction:missing';
+    candidate.adventure.researchFacts[0].rewards[0].amount = 0;
+    expect(validateTiledAdventureBundle(candidate)).toEqual(expect.arrayContaining([
+      'research:test:rattata: interacción inexistente interaction:missing',
+      'research:test:rattata: recompensa discoveryPoints debe ser positiva',
     ]));
   });
 
@@ -202,6 +263,25 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     expect(idle).toMatchObject({ frameWidth: 32, frameHeight: 32, frameCount: 8, directionCount: 8 });
     expect(idle?.groundOrigins).toHaveLength(8);
     expect(idle?.groundOrigins[0]).toEqual({ x: .5, y: .625 });
+  });
+
+  it('valida raros, variantes y referencias locales de eventos globales', () => {
+    const candidate = bundle() as any;
+    candidate.adventure.rareEncounters = [{ encounterId: 'encounter:test:rare', speciesId: 151, requirement: { kind: 'trainerLevel', minimum: 2 }, baseProbability: .2, guaranteedEligibleVisit: 3 }];
+    candidate.adventure.variants = [{ variantId: 'variant:test:night', requirement: { kind: 'worldFlag', flagId: 'night', expected: true }, enabledObjectIds: ['object:moon'] }];
+    candidate.adventure.worldEvents = [{ schemaVersion: 1, eventId: 'event:test:night', activation: { kind: 'trainerLevel', minimum: 3 }, setFlags: { night: true }, encounterInjections: [{ mapId: candidate.adventure.mapId, encounterId: 'encounter:test:rare' }], mapVariants: [{ mapId: candidate.adventure.mapId, variantId: 'variant:test:night' }] }];
+    expect(validateTiledAdventureBundle(candidate)).toEqual([]);
+
+    candidate.adventure.rareEncounters[0].baseProbability = 1;
+    candidate.adventure.variants[0].disabledObjectIds = ['object:moon'];
+    candidate.adventure.worldEvents[0].encounterInjections[0].encounterId = 'encounter:missing';
+    candidate.adventure.worldEvents[0].mapVariants[0].variantId = 'variant:missing';
+    expect(validateTiledAdventureBundle(candidate)).toEqual(expect.arrayContaining([
+      'encounter:test:rare: baseProbability debe estar entre 0 y 1 sin incluirlos',
+      'variant:test:night: object:moon no puede estar habilitado y deshabilitado a la vez',
+      'event:test:night: encuentro local inexistente encounter:missing',
+      'event:test:night: variante local inexistente variant:missing',
+    ]));
   });
 
   it('detecta capas, anclas y animaciones rotas con mensajes accionables', () => {

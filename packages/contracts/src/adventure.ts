@@ -108,6 +108,8 @@ export interface AdventureActorPlacementV1 extends VersionedContractV1 {
   occlusionGroupIds?: StableId[];
   /** Útil para actores que entran en escena desde madrigueras, puertas o escondites. */
   initiallyHidden?: boolean;
+  /** Multiplicador visual relativo al renderScale curado del asset. 1 equivale al 100 %. */
+  renderScaleMultiplier?: number;
 }
 
 export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
@@ -120,6 +122,10 @@ export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
   /** Los NPC son sólidos por defecto. */
   collision?: AdventureActorCollision;
   occlusionGroupIds?: StableId[];
+  /** Permite preparar poses alternativas y entradas de cinemática sin sacarlas del sidecar. */
+  initiallyHidden?: boolean;
+  /** Multiplicador visual relativo al renderScale curado del asset. 1 equivale al 100 %. */
+  renderScaleMultiplier?: number;
 }
 
 export interface AmbientPlayAnimationActionV1 {
@@ -146,10 +152,21 @@ export interface AmbientMovePathActionV1 {
   reverse?: boolean;
 }
 
+export interface AmbientMoveByTilesActionV1 {
+  kind: 'moveByTiles';
+  placementId: StableId;
+  deltaXTiles: number;
+  deltaYTiles: number;
+  movementStyle: AmbientMovementStyle;
+  speedPixelsPerSecond: number;
+  animation?: string;
+}
+
 export type AmbientActorActionV1 =
   | AmbientPlayAnimationActionV1
   | AmbientFaceActionV1
-  | AmbientMovePathActionV1;
+  | AmbientMovePathActionV1
+  | AmbientMoveByTilesActionV1;
 
 export interface AmbientBeatV1 extends VersionedContractV1 {
   beatId: StableId;
@@ -161,6 +178,8 @@ export interface AmbientSequenceV1 extends VersionedContractV1 {
   sequenceId: StableId;
   roomId: StableId;
   loop: boolean;
+  /** Modo explícito del editor; `loop` se conserva para sidecars V1 anteriores. */
+  playbackMode?: 'loop' | 'pingPong' | 'once';
   /** Todas las acciones se pausan juntas cuando una ruta queda bloqueada. */
   blockedPolicy: 'pauseSequence';
   loopPauseMs?: number | MillisecondRangeV1;
@@ -213,7 +232,19 @@ export interface ExpeditionInteractionV1 extends VersionedContractV1 {
   };
 }
 
-/** Mapa lógico multihabitación. La geometría vive exclusivamente en los .tmj enlazados. */
+export interface AdventureEntryPointV1 extends VersionedContractV1 {
+  entryPointId: StableId;
+  label: string;
+  roomId: StableId;
+  anchorId: StableId;
+}
+
+export interface AdventureMissionEntryPointV1 extends VersionedContractV1 {
+  missionId: StableId;
+  entryPointId: StableId;
+}
+
+/** Mapa lógico multihabitación. La geometría jugable vive en los .tmj enlazados. */
 export interface AdventureMapV2 {
   schemaVersion: 2;
   mapId: StableId;
@@ -225,14 +256,26 @@ export interface AdventureMapV2 {
   transitions: RoomTransitionV1[];
   variants: MapVariantV1[];
   missionIds: StableId[];
+  /** Entradas reutilizables del mapa. Opcional para conservar sidecars V2 anteriores. */
+  entryPoints?: AdventureEntryPointV1[];
+  /** Entrada elegida por cada misión asociada a este mapa. */
+  missionEntryPoints?: AdventureMissionEntryPointV1[];
+  /** Entrada usada al comenzar una expedición libre. */
+  freeExpeditionEntryPointId?: StableId;
   behaviorTriggers: CompanionBehaviorTriggerV1[];
   companionSequences?: CompanionSequenceV1[];
+  /** Secuencias narrativas del mapa; comparten beats y acciones con las del compañero. */
+  mapSequences?: CompanionSequenceV1[];
   expressionTriggers: ExpeditionExpressionTriggerV1[];
   interactions?: ExpeditionInteractionV1[];
   dialogues?: ExpeditionDialogueV1[];
   fieldNotebookHints?: FieldNotebookHintV1[];
+  /** Hechos de investigación obtenibles en este mapa; factId actúa como origen único de recompensa. */
+  researchFacts?: ResearchFactV1[];
   ambientSequences: AmbientSequenceV1[];
   rareEncounters: RareEncounterDefinitionV1[];
+  /** Eventos originados por este sidecar; sus efectos pueden apuntar a cualquier mapa. */
+  worldEvents?: WorldEventV1[];
   requiredAssetIds: StableId[];
 }
 
@@ -341,7 +384,15 @@ export type CompanionSequenceActionV1 =
   | { kind: 'setVisible'; actorRef: CompanionSequenceActorRef; visible: boolean }
   | { kind: 'moveToAnchor'; actorRef: CompanionSequenceActorRef; anchorId: StableId; speedPixelsPerSecond?: number }
   | { kind: 'moveByTiles'; actorRef: CompanionSequenceActorRef; direction: 'up' | 'down' | 'left' | 'right'; tiles: number; speedPixelsPerSecond?: number }
-  | { kind: 'returnToTrainer'; actorRef: 'dynamic:companion'; speedPixelsPerSecond?: number };
+  | { kind: 'returnToTrainer'; actorRef: 'dynamic:companion'; speedPixelsPerSecond?: number }
+  | {
+    kind: 'dropPokeBalls';
+    actorRef: CompanionSequenceActorRef;
+    count: number;
+    spreadTiles?: number;
+    fallTiles?: number;
+  }
+  | { kind: 'emitCue'; actorRef: CompanionSequenceActorRef; cueId: StableId };
 
 export interface CompanionSequenceBeatV1 extends VersionedContractV1 {
   beatId: StableId;

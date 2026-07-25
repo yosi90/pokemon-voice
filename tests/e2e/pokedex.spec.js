@@ -114,9 +114,42 @@ test('Alcanfor se presenta desde la primera ficha y abre PokeDiscover sin conced
   expect(persisted.trainerProfile).toEqual({ schemaVersion: 1, avatarId: 'guayota', displayName: 'Naira' });
   expect(persisted.achievements['first-mission']).toBeUndefined();
 
-  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await answerProfessorCall(page);
+  const emergency = page.getByRole('dialog', { name: 'Conversación con el profesor Alcanfor' });
+  await expect(emergency).toContainText('emergencia en el Bosque de Tegueste');
+  await completeNarrativePage(page);
+  await expect(emergency).toContainText('Elige un compañero de campo');
+  await completeNarrativePage(page);
+
   const missions = page.getByRole('dialog', { name: 'PokeDiscover' });
-  await expect(missions).toContainText('Preparando el primer encargo');
+  await expect(missions).toContainText('Llamada urgente');
+  await expect(missions).toContainText('Alcanfor necesita ayuda en Tegueste');
+  await expect(missions.getByRole('button', { name: 'Cerrar PokeDiscover' })).toHaveCount(0);
+  await expect(missions.getByRole('button', { name: 'Inicio' })).toBeDisabled();
+  await expect(missions.getByRole('button', { name: 'Encargos' })).toBeDisabled();
+  await expect(missions.getByRole('button', { name: 'Tienda' })).toBeDisabled();
+  const confirmCompanion = missions.getByRole('button', { name: 'Confirmar compañero y revisar encargo' });
+  await expect(confirmCompanion).toBeDisabled();
+
+  await page.reload();
+  const reloadedVoiceModal = page.locator('#voice-support-modal');
+  if (await reloadedVoiceModal.isVisible()) await reloadedVoiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(missions).toContainText('Alcanfor necesita ayuda en Tegueste');
+  await expect(missions.getByRole('button', { name: 'Cerrar PokeDiscover' })).toHaveCount(0);
+  await missions.locator('.companion-card').filter({ hasText: 'Bulbasaur' }).getByRole('button', { name: 'Elegir' }).click();
+  await expect(confirmCompanion).toBeEnabled();
+  await confirmCompanion.click();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(
+    '#/missions/mission%3Ategueste%3Ahelp-professor-camphor',
+  );
+  await expect(missions.getByRole('article', { name: 'Briefing: ¡Ayuda al profesor Alcanfor!' })).toBeVisible();
+  const prepared = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')));
+  expect(prepared.pendingMissionLaunch).toMatchObject({
+    missionId: 'mission:tegueste:help-professor-camphor',
+    checkpoint: 'ready',
+  });
+  expect(prepared.pokeDiscover.worldFlags['story:camphor-prologue-offered']).toBe(true);
+  expect(prepared.pokeDiscover.achievements['first-mission']).toBeUndefined();
 });
 
 test('una adhesión anterior solicita el perfil al abrir Poke-Discover sin interrumpir la carga', async ({ page }) => {
@@ -132,6 +165,87 @@ test('una adhesión anterior solicita el perfil al abrir Poke-Discover sin inter
   await scene.getByRole('button', { name: 'Soy un chico' }).click();
   await scene.locator('.narrative-box').click();
   await expect(scene.getByLabel('Nombre del entrenador')).toHaveValue('Achaman');
+});
+
+test('el prólogo sin compañero representa asalto, elección, rescate, científicos y Pineco en Phaser', async ({ page }) => {
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokedexRun.registeredSpeciesIds = [];
+    save.pokedexRun.discoveryOrder = [];
+    delete save.pokedexRun.selectedCompanion;
+    delete save.pokedexRun.selectedCompanionFormId;
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    save.pokeDiscover.worldFlags['story:camphor-prologue-offered'] = true;
+    save.pokeDiscover.narrativeProgress.completedSequenceIds = ['narrative:professor-camphor:forest-emergency'];
+    save.pendingMissionLaunch = {
+      schemaVersion: 1,
+      missionId: 'mission:tegueste:help-professor-camphor',
+      checkpoint: 'openingCinematic',
+      offeredAt: '2026-07-22T12:00:00.000Z',
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+    window.location.hash = '#/expeditions/map%3Ategueste%3Acamphor-forest/room%3Ategueste-forest%3A02-04';
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  const runtime = preview.getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  const starterChoice = preview.getByRole('dialog', { name: 'Elegir primer compañero' });
+  await expect(starterChoice).toBeVisible({ timeout: 15000 });
+  await expect(runtime).toHaveAttribute('data-story-poke-ball-count', '3');
+  await starterChoice.getByRole('button', { name: 'Charmander' }).click();
+
+  await expect(preview.getByText('¡Rescate completado!')).toBeVisible({ timeout: 15000 });
+  await expect(runtime).toHaveAttribute('data-last-sequence-cue-id', 'cue:camphor-prologue:complete');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')));
+  expect(saved.pendingMissionLaunch).toBeUndefined();
+  expect(saved.pokedexRun.selectedCompanion.formId).toBe('pokemon-form:4:default');
+  expect(saved.activeExpeditionSession.missionRuntime).toMatchObject({
+    checkpointId: 'checkpoint:camphor-prologue:free-roam',
+    counters: { 'mission-counter:camphor:rattata-driven-away': 3 },
+  });
+  expect(saved.pokeDiscover.mapProgress['map:tegueste:camphor-forest'].completedMissionIds)
+    .toContain('mission:tegueste:help-professor-camphor');
+  expect(saved.pokeDiscover.mapProgress['map:tegueste:camphor-forest'].unlockedSecretIds)
+    .toContain('secret:camphor-forest:pineco-tree');
+});
+
+test('el prólogo con compañero usa su rescate sin repetir la elección de inicial', async ({ page }) => {
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokedexRun.registeredSpeciesIds = [1];
+    save.pokedexRun.discoveryOrder = [1];
+    save.pokedexRun.selectedCompanion = { schemaVersion: 1, formId: 'pokemon-form:1:default' };
+    save.pokedexRun.selectedCompanionFormId = 'pokemon-form:1:default';
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    save.pokeDiscover.worldFlags['story:camphor-prologue-offered'] = true;
+    save.pokeDiscover.narrativeProgress.completedSequenceIds = ['narrative:professor-camphor:forest-emergency'];
+    save.pendingMissionLaunch = {
+      schemaVersion: 1,
+      missionId: 'mission:tegueste:help-professor-camphor',
+      checkpoint: 'ready',
+      offeredAt: '2026-07-22T12:00:00.000Z',
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+    window.location.hash = '#/missions/mission%3Ategueste%3Ahelp-professor-camphor';
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+
+  await page.getByRole('button', { name: 'Comenzar encargo' }).click();
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  await expect(preview.getByRole('dialog', { name: 'Rescatar al profesor Alcanfor' })).toBeVisible({ timeout: 15000 });
+  await expect(preview.getByRole('dialog', { name: 'Elegir primer compañero' })).toHaveCount(0);
+  await preview.getByRole('button', { name: '¡Ayuda a Alcanfor!' }).click();
+  await expect(preview.getByText('¡Rescate completado!')).toBeVisible({ timeout: 15000 });
+
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')));
+  expect(saved.pokedexRun.selectedCompanion.formId).toBe('pokemon-form:1:default');
+  expect(saved.activeExpeditionSession.missionRuntime.counters['mission-counter:camphor:rattata-driven-away']).toBe(3);
 });
 
 test('filtra compañeros por categoría y conserva forma y apariencia seleccionadas', async ({ page }) => {
@@ -280,6 +394,25 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await expect(preview.getByRole('status')).toHaveText('¡Corriendo a ayudar al profesor!');
   const runtime = preview.getByTestId('technical-map-runtime');
   await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-movement-inputs', 'keyboard');
+  const controlDecorations = preview.locator('[data-control-decoration]');
+  await expect(controlDecorations).toHaveCount(2);
+  await expect(controlDecorations.locator('button, input, [role="button"]')).toHaveCount(0);
+  for (const decoration of await controlDecorations.all()) {
+    await expect(decoration).toHaveAttribute('aria-hidden', 'true');
+    await expect(decoration).toHaveCSS('pointer-events', 'none');
+  }
+  const decorativePad = preview.locator('[data-control-decoration="direction-pad"]');
+  const positionBeforeDecorationClick = await runtime.evaluate(element => ({
+    x: element.getAttribute('data-player-x'),
+    y: element.getAttribute('data-player-y'),
+  }));
+  await decorativePad.click({ force: true });
+  await page.waitForTimeout(100);
+  await expect.poll(() => runtime.evaluate(element => ({
+    x: element.getAttribute('data-player-x'),
+    y: element.getAttribute('data-player-y'),
+  }))).toEqual(positionBeforeDecorationClick);
   await expect(preview.getByRole('status')).toHaveCount(0);
   await expect(runtime).toHaveAttribute('data-animation', 'playing');
   await expect(runtime).toHaveAttribute('data-map-id', 'map:tegueste:camphor-forest');
@@ -636,6 +769,57 @@ test('Ekans ejecuta la secuencia de madriguera y cobra secreto y logro una sola 
   })).toEqual([10, 10]);
 });
 
+test('Geodude resuelve Tumba Rocas desde la capacidad declarativa del loadout', async ({ page }) => {
+  await mockPokemonApi(page, {
+    extraEntries: [{ name: 'geodude', url: 'https://pokeapi.co/api/v2/pokemon/74/' }],
+  });
+  await page.goto('/');
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    save.pokeDiscover.trainerLevel = 3;
+    save.pokedexRun.registeredSpeciesIds = [74];
+    save.pokedexRun.discoveryOrder = [74];
+    save.pokedexRun.selectedCompanion = { schemaVersion: 1, formId: 'pokemon-form:74:default' };
+    save.pokedexRun.selectedCompanionFormId = 'pokemon-form:74:default';
+    save.pokeDiscover.mapProgress['map:tegueste:camphor-forest'] = {
+      schemaVersion: 1,
+      mapId: 'map:tegueste:camphor-forest',
+      freeExpeditionUnlocked: true,
+      completedMissionIds: ['mission:tegueste:help-professor-camphor'],
+      unlockedSecretIds: [], knownNpcIds: [], conversationIds: [], collectibleIds: [], knownHintIds: [],
+      unlockedRouteIds: [], eligibleEncounterVisits: {}, activeVariantIds: [], injectedEncounterIds: [],
+      completedBehaviorTriggerIds: [], resolvedExpressionTriggers: {},
+    };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+  const runtime = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' })
+    .getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-companion-form-id', 'pokemon-form:74:default');
+
+  await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-companion-sequence-request', {
+    detail: { triggerId: 'behavior:tegueste:burrow-left:rock-tomb' },
+  })));
+  await expect(runtime).toHaveAttribute('data-last-companion-sequence-id', 'sequence:tegueste:burrow-left:rock-tomb');
+  await expect.poll(async () => page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    return {
+      completed: save.pokeDiscover.mapProgress['map:tegueste:camphor-forest'].completedBehaviorTriggerIds
+        .includes('behavior:tegueste:burrow-left:rock-tomb'),
+      secret: save.pokeDiscover.mapProgress['map:tegueste:camphor-forest'].unlockedSecretIds
+        .includes('secret:tegueste-forest:burrow-intimidation'),
+      experience: save.pokeDiscover.trainerExperience,
+      points: save.pokeDiscover.discoveryPoints,
+    };
+  }), { timeout: 20_000 }).toEqual({ completed: true, secret: true, experience: 10, points: 10 });
+});
+
 test('resuelve expresiones por texto y análisis acústico local sin conservar audio', async ({ page }) => {
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
@@ -913,8 +1097,16 @@ test('habla con Alcanfor mediante la interacción contextual y bloquea el mapa d
 });
 
 test('voz y texto de expedición solo identifican especies presentes en la habitación', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
   await page.addInitScript(() => {
     window.__mapSpeechInstances = [];
+    window.__mapCryPlays = [];
+    window.Audio = class FakeAudio {
+      constructor(src) { this.src = src; }
+      addEventListener() {}
+      async play() { window.__mapCryPlays.push(this.src); }
+    };
     class FakeSpeechRecognition {
       constructor() { window.__mapSpeechInstances.push(this); }
       start() { this.started = true; }
@@ -931,6 +1123,14 @@ test('voz y texto de expedición solo identifican especies presentes en la habit
       value: { getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }) },
     });
   });
+  await page.route('https://pokeapi.co/api/v2/pokemon/546', route => route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 546, name: 'cottonee', cries: { latest: 'https://audio.test/cottonee.ogg' } }),
+  }));
+  await page.route('https://audio.test/cottonee.ogg', route => route.fulfill({
+    contentType: 'audio/ogg',
+    body: 'OggS',
+  }));
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
     save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
@@ -945,17 +1145,21 @@ test('voz y texto de expedición solo identifican especies presentes en la habit
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   const runtime = preview.getByTestId('technical-map-runtime');
   await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '4');
   await preview.getByRole('button', { name: 'Identificar Pokémon por voz' }).click();
   await expect(runtime).toBeFocused();
   await expect(preview.getByRole('button', { name: 'Detener identificación por voz' })).toHaveAttribute('aria-pressed', 'true');
-  await page.evaluate(() => window.__mapSpeechInstances[0].emit('rattata'));
-  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '4');
-  await expect.poll(() => page.evaluate(() => (
-    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds
-  ))).toContain(19);
+  await page.evaluate(() => window.__mapSpeechInstances[0].emit('cottonee'));
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '3');
+  expect(pageErrors).toEqual([]);
+  await expect.poll(() => page.evaluate(() => ({
+    registered: JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds.includes(546),
+    guessed: JSON.parse(localStorage.getItem('pokevoice-guessed-v1') || '[]').includes(546),
+    cries: window.__mapCryPlays.length,
+  }))).toEqual({ registered: true, guessed: true, cries: 1 });
 
   const writtenName = preview.getByLabel('Nombre del Pokémon visible');
-  await writtenName.fill('cottonee');
+  await writtenName.fill('cramorant');
   await writtenName.press('Enter');
   await expect(runtime).toBeFocused();
   const facingBeforeKeyboardResume = await runtime.getAttribute('data-facing');
@@ -963,10 +1167,18 @@ test('voz y texto de expedición solo identifican especies presentes en la habit
   const resumedFacing = resumeKey === 'ArrowRight' ? 'right' : 'left';
   await page.keyboard.press(resumeKey);
   await expect(runtime).toHaveAttribute('data-facing', resumedFacing);
-  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '3');
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '2');
   await expect.poll(() => page.evaluate(() => (
     JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds
-  ))).toContain(546);
+  ))).toContain(845);
+
+  await writtenName.fill('rattata');
+  await writtenName.press('Enter');
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (
+    JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds
+  ))).not.toContain(19);
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '2');
 
   await writtenName.fill('pikachu');
   await writtenName.press('Enter');
@@ -974,7 +1186,7 @@ test('voz y texto de expedición solo identifican especies presentes en la habit
   expect(await page.evaluate(() => (
     JSON.parse(localStorage.getItem('pokevoice-save-v1')).pokedexRun.registeredSpeciesIds
   ))).not.toContain(25);
-  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '3');
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '2');
 });
 
 test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan', async ({ page }) => {

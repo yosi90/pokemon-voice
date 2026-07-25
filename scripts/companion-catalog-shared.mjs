@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export const MAX_SPECIES_ID = 1025;
 export const CAPABILITY_IDS = new Set([
-  'cut', 'surf', 'fly', 'dig', 'archaeology', 'rock-smash', 'light', 'climb', 'carry',
+  'cut', 'surf', 'fly', 'dig', 'archaeology', 'rock-smash', 'rock-tomb', 'light', 'climb', 'carry',
   'ride-ground', 'ride-water', 'ride-air',
 ]);
 export const GENERATION_RANGES = [[1, 151], [152, 251], [252, 386], [387, 493], [494, 649], [650, 721], [722, 809], [810, 898], [899, 1025]];

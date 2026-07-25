@@ -484,6 +484,17 @@
   color: #214f40;
 }
 
+.professor-missions__tabs button:disabled { opacity: .38; cursor: not-allowed; }
+.professor-missions__urgent-badge { border: 2px solid #a74332; border-radius: 999px; padding: 7px 10px; background: #ffe1d7; color: #8b3024; font: 700 7px/1 "Press Start 2P", monospace; text-transform: uppercase; }
+.professor-urgent-companion { display: grid; gap: 16px; }
+.professor-urgent-companion__message { border: 2px solid #b64e3c; border-radius: 14px; padding: 13px 15px; background: linear-gradient(135deg, #fff0d4, #ffdcd3); box-shadow: inset 5px 0 #d55a42; }
+.professor-urgent-companion__message strong { color: #8c3327; font: 700 9px/1.5 "Press Start 2P", monospace; }
+.professor-urgent-companion__message p { margin: 7px 0 0; color: #744b40; font-size: 12px; font-weight: 700; }
+.professor-urgent-companion__actions { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 2px solid #4c876d; border-radius: 14px; padding: 12px 14px; background: rgba(242,250,231,.97); box-shadow: 0 -8px 22px rgba(23,59,53,.14); }
+.professor-urgent-companion__actions p { margin: 0; color: #45685b; font-size: 11px; font-weight: 800; }
+.professor-urgent-companion__actions button { min-height: 42px; border: 2px solid #224f40; border-radius: 999px; padding: 9px 15px; background: #ffd84b; color: #1f473a; box-shadow: 0 3px 0 #8f6c12; cursor: pointer; font: 700 7px/1.35 "Press Start 2P", monospace; }
+.professor-urgent-companion__actions button:disabled { opacity: .45; cursor: not-allowed; box-shadow: 0 2px 0 #78847b; }
+
 .pokediscover-shop {
   display: grid;
   gap: 14px;

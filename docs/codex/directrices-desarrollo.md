@@ -88,6 +88,7 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - Al pulsar una dirección distinta estando parado, el protagonista gira inmediatamente y espera 140 ms antes de caminar; si ya mira en esa dirección, el primer paso puede comenzar sin espera. Durante una marcha, cualquier giro encadena el siguiente tile inmediatamente y nunca reutiliza esa espera.
 - Las direcciones pulsadas se conservan como una pila por tecla física: manda la más reciente y, al soltarla, se recupera automáticamente la anterior si continúa pulsada.
 - Las flechas y WASD capturadas por Phaser deben cancelar el comportamiento de scroll del navegador, salvo cuando el foco esté dentro de un control editable.
+- El prototipo de expediciones admite movimiento solo mediante teclado. La cruceta y los botones dibujados en la carcasa son decoración con `aria-hidden` y `pointer-events: none`; no deben recibir listeners ni simular controles táctiles hasta que exista un roadmap específico de controles móviles. Los botones HTML de diálogo, voz, texto y acciones contextuales continúan siendo táctiles y accesibles.
 - Tras enviar una identificación por texto o pulsar el micrófono de una expedición, el foco vuelve al runtime en el siguiente frame para poder continuar caminando sin otro clic.
 - La cuadrícula usa una única comprobación previa contra límites, colisiones y actores. No añadir colliders Arcade paralelos que puedan corregir la posición después de haber autorizado un paso.
 - Ninguna secuencia automática puede comenzar mientras existe un paso incompleto; primero se ajusta al destino de 16 px y después se evalúa el trigger.
@@ -95,17 +96,30 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - El compañero reproduce `Walk` durante cada desplazamiento de su estela y regresa a `Idle` únicamente cuando alcanza su última casilla pendiente.
 - La previsualización técnica puede representar el compañero seleccionado y ejecutar secuencias sin crear una sesión ni escribir progreso. Solo una expedición real persiste secretos, recompensas e interacciones.
 - Las acciones ocultas del compañero se resuelven mediante `behaviorTriggers` y `companionSequences`. Movimiento a anclas, animaciones y efectos persistentes pertenecen al sidecar; Phaser no contiene excepciones por mapa o especie.
+- Las cinemáticas de una habitación se declaran mediante `mapSequences`, reutilizando los mismos beats y referencias estables que `companionSequences`. Los cues pueden pausar la escena para una decisión HTML accesible, pero la colocación, visibilidad, movimiento y props animados permanecen dentro de Phaser y del sidecar.
+- Una cinemática de misión debe persistir su checkpoint al alcanzar cada decisión y poder reanudar desde `pendingMissionLaunch` o `missionRuntime.checkpointId` sin duplicar recompensas. Las escenas con inicial alternativo convergen en el mismo runtime de misión después de elegirlo.
+- Las capacidades narrativas se resuelven una sola vez desde el compañero, su apariencia y la herramienta del loadout bloqueado. El mismo conjunto `expeditionCapabilities` debe alimentar tanto la selección de triggers como su ejecución persistente; movimientos como `rock-tomb` se declaran siempre mediante `fieldCapability`, nunca mediante excepciones por especie en Phaser.
+- La identificación de una expedición solo acepta especies cuyos actores estén visibles en ese momento. Un registro nuevo elimina todas sus siluetas visibles, persiste el descubrimiento y reproduce su grito; los actores `initiallyHidden` no se anuncian al reconocedor hasta que una secuencia los muestre.
 - Las interacciones contextuales se declaran en `interactions` y sus textos en `dialogues` del sidecar. Phaser resuelve proximidad, dirección y prioridad de control; el prompt y el diálogo se renderizan como HTML accesible sobre el canvas.
 - Espacio, E y el botón contextual ejecutan la misma interacción. Mientras exista un diálogo activo se detienen jugador y coreografías ambientales; cerrar o completar devuelve el control sin alterar la posición.
 - Los triggers expresivos ejecutables en el mapa declaran conjuntamente `roomId`, `target` y `prompt` dentro de `expressionTriggers`. Comparten la resolución cardinal de las interacciones normales, pero solo se habilitan cuando existe una sesión de expedición real; una previsualización nunca debe crear progreso.
 - Voz, texto y `contextAction` resuelven el mismo `triggerId` persistente. La interfaz muestra el texto normalizado que entendió, conserva abierto el prompt tras un intento fallido y nunca deja una ruta obligatoria dependiente exclusivamente del micrófono.
 - Las condiciones `acoustic` solo pueden activar una captura tras una acción explícita del jugador. El análisis local puede resumir volumen, duración y estabilidad tonal, pero debe detener todas las pistas al terminar o cancelar y nunca persistir audio, transcripciones ni métricas acústicas.
+- La confirmación inicial del perfil prepara el prólogo de Alcanfor una sola vez y encola su llamada urgente. Tras completar esa llamada, `pendingMissionLaunch: awaitingCompanion` bloquea PokeDiscover en el selector hasta confirmar un candidato elegible; una recarga debe restaurar el bloqueo y una misión ya completada nunca vuelve a encolar la emergencia.
 
 ## Sidewebs de desarrollo
 
 - Las herramientas auxiliares viven bajo `tools/<nombre>/index.html` como entradas independientes de Vite y su código bajo `src/sidewebs/<nombre>/`.
+- Se publican como URLs ocultas del mismo sitio (`/tools/<nombre>/`), siguiendo el patrón del randomizador. No tienen navegación desde Poke-Voice, dominio propio ni despliegue separado.
 - Deben reutilizar los catálogos y contratos locales del juego; no mantener copias paralelas ni depender de PokeAPI durante la ejecución para decidir resultados.
 - No deben añadir navegación ni peso al bundle inicial de Poke-Voice salvo que exista una necesidad explícita dentro del juego.
+- El configurador PokeDiscover es la herramienta principal de autoría salvo para pintar tiles. Abre una carpeta de aventura, detecta o crea su `.adventure.json`, registra todos los `.tmj` y permite editar tanto las habitaciones ya declaradas como las recién descubiertas.
+- Tiled conserva la autoría exclusiva de `Ground`, `Above`, `Detail:*` y los tilesets. El configurador puede crear y editar `Anchors`, `Collision`, `Paths` y `Occlusion`, manteniendo `nextlayerid`, `nextobjectid` y todos los campos desconocidos del TMJ.
+- La distribución global vive en un archivo `.world` nativo de Tiled. Tiled y el configurador pueden reorganizarlo; el README solo documenta intención y avance.
+- El configurador guarda directamente sidecar, TMJ y `.world` cuando el navegador concede acceso a la carpeta, con exportación de copia como fallback. Las operaciones que afecten varios documentos forman una única transacción de Deshacer/Rehacer.
+- La interfaz de autoría es de escritorio: no tiene scroll de documento entre `1280×720` y pantallas ultrawide, mantiene el lienzo sin deformación y usa scroll únicamente dentro de ventanas y listas.
+- El catálogo del configurador pagina los resultados y distingue forma base, forma alternativa y apariencia. La ficha reproduce el asset PMD y la animación seleccionados, sin sintetizar previews para variantes sin asset.
+- Las secuencias ambientales pueden encadenar beats de animación y transiciones por ruta o por desplazamiento relativo en tiles. Su final se declara como reinicio, ida y vuelta o terminación conservando la posición; no inferirlo desde las animaciones elegidas.
 
 ## Sprites de expedición PMD
 

@@ -8,6 +8,10 @@ import type {
   PokeVoiceSaveV1,
   ResearchFactV1,
 } from '../../packages/contracts/src/index.js';
+import {
+  CAMPHOR_PROLOGUE_MISSION_ID,
+  CAMPHOR_RATTATA_ACTOR_IDS,
+} from '../data/adventure/camphorPrologue.js';
 import { LS_CARD_SCALE, LS_GENS, LS_KEY } from '../../scripts/utils.js';
 import type { AchievementRecord } from '../domain/achievements/achievementProgress.js';
 import {
@@ -52,6 +56,16 @@ import {
   startAdventureMission,
   type MissionEvaluationContext,
 } from '../domain/expeditions/missionLifecycle.js';
+import {
+  beginCamphorPrologue,
+  chooseCamphorStarter,
+  completeCamphorPrologue,
+  confirmCamphorCompanion,
+  discoverCamphorPinecoSecret,
+  driveAwayCamphorRattata,
+  prepareCamphorPrologue,
+  reachCamphorStarterChoice,
+} from '../domain/expeditions/camphorPrologue.js';
 import { activateWorldEvent } from '../domain/expeditions/worldEvents.js';
 import {
   identifyVisibleExpeditionSpecies,
@@ -122,6 +136,61 @@ function persistWithPokeDiscoverAchievements(
 
 export function getBrowserPokeVoiceSave() {
   return readCurrentSave();
+}
+
+export function prepareBrowserCamphorPrologue(
+  availableCompanionCount: number,
+  offeredAt = new Date().toISOString(),
+) {
+  const current = readCurrentSave();
+  if (current.pendingMissionLaunch) return current;
+  const prologueCompleted = Object.values(current.pokeDiscover.mapProgress)
+    .some(progress => progress.completedMissionIds.includes(CAMPHOR_PROLOGUE_MISSION_ID));
+  if (prologueCompleted) return current;
+  const next = prepareCamphorPrologue(current, availableCompanionCount, offeredAt);
+  persist(next);
+  return next;
+}
+
+export function confirmBrowserCamphorCompanion() {
+  const next = confirmCamphorCompanion(readCurrentSave());
+  persist(next);
+  return next;
+}
+
+export function reachBrowserCamphorStarterChoice() {
+  const next = reachCamphorStarterChoice(readCurrentSave());
+  persist(next);
+  return next;
+}
+
+export function chooseBrowserCamphorStarter(speciesId: 1 | 4 | 7) {
+  const next = chooseCamphorStarter(readCurrentSave(), speciesId);
+  persist(next);
+  return next;
+}
+
+export function beginBrowserCamphorPrologue(enteredAt = new Date().toISOString()) {
+  const next = beginCamphorPrologue(readCurrentSave(), enteredAt);
+  persist(next);
+  return next;
+}
+
+export function resolveBrowserCamphorRescue() {
+  let next = readCurrentSave();
+  for (const actorId of CAMPHOR_RATTATA_ACTOR_IDS) {
+    next = driveAwayCamphorRattata(next, actorId, 'companion');
+  }
+  persist(next);
+  return next;
+}
+
+export function completeBrowserCamphorPrologueScene(completedAt = new Date().toISOString()) {
+  const completion = completeCamphorPrologue(readCurrentSave(), completedAt);
+  if (completion.status !== 'completed') return completion;
+  const pineco = discoverCamphorPinecoSecret(completion.save, completedAt);
+  const reconciled = persistWithPokeDiscoverAchievements(pineco.save, completedAt);
+  return { ...completion, save: reconciled.save, pinecoStatus: pineco.status };
 }
 
 export function getBrowserLegacyEasterEggState() {

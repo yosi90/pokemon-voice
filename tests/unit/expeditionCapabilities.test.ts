@@ -8,6 +8,10 @@ import { resolveExpeditionCapabilities } from '../../src/domain/expeditions/expe
 import { beginExpedition } from '../../src/domain/expeditions/expeditionSession.js';
 import { createPokeVoiceSaveV1 } from '../../src/domain/progress/pokeVoiceSave.js';
 import { evaluateRequirement } from '../../src/domain/requirements/evaluateRequirement.js';
+import {
+  getCompanionFormProfile,
+  toCompanionForm,
+} from '../../src/domain/companions/companionGameplayCatalog.js';
 
 const bulbasaur: PokemonFormV1 = {
   schemaVersion: 1,
@@ -60,6 +64,23 @@ function createActiveSave(toolId = 'tool:boat') {
 }
 
 describe('capacidades combinadas de expedición', () => {
+  it('publica Tumba Rocas como capacidad narrativa curada de Geodude', () => {
+    const profile = getCompanionFormProfile('pokemon-form:74:default');
+    expect(profile).toBeDefined();
+    const form = toCompanionForm(profile!.form);
+
+    expect(form.fieldCapabilities).toContainEqual({
+      id: 'rock-tomb',
+      source: 'move',
+      strength: 1,
+      tags: ['loose-rock', 'seal-passage'],
+    });
+    expect(evaluateRequirement(
+      { kind: 'fieldCapability', capabilityId: 'rock-tomb', minimumStrength: 1 },
+      { save: createPokeVoiceSaveV1({ runId: 'run:rock-tomb', now: 1 }), companionForm: form },
+    ).met).toBe(true);
+  });
+
   it('combina bote y compañero para resolver surf + cut', () => {
     const save = createActiveSave();
     const capabilities = resolveExpeditionCapabilities(save, { companionForm: bulbasaur, tools });

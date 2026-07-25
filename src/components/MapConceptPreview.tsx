@@ -9,6 +9,7 @@ import {
   MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT,
   MAP_COMPANION_CONTROL_EVENT,
   MAP_COMPANION_REQUEST_EVENT,
+  MAP_COMPANION_SEQUENCE_REQUEST_EVENT,
   MAP_COMPANION_STARTED_EVENT,
   MAP_INTERACTION_AVAILABLE_EVENT,
   MAP_INTERACTION_COMPLETED_EVENT,
@@ -16,14 +17,21 @@ import {
   MAP_INTERACTION_REQUEST_EVENT,
   MAP_INTERACTION_STARTED_EVENT,
   MAP_SPECIES_IDENTIFIED_EVENT,
+  MAP_SEQUENCE_CUE_EVENT,
+  MAP_VISIBLE_SPECIES_CHANGED_EVENT,
   type MapInteractionPresentation,
   type MapCompanionPresentation,
 } from '../domain/maps/createTechnicalPhaserGame.js';
 import { loadAdventureMapBundle } from '../domain/maps/loadAdventureBundle.js';
 import {
+  beginBrowserCamphorPrologue,
+  chooseBrowserCamphorStarter,
+  completeBrowserCamphorPrologueScene,
   getBrowserPokeVoiceSave,
   executeBrowserCompanionBehavior,
   completeBrowserExpeditionInteraction,
+  reachBrowserCamphorStarterChoice,
+  resolveBrowserCamphorRescue,
 } from '../store/browserPokeVoiceSaveStore.js';
 import { browserDiscoveryStore } from '../store/browserDiscoveryStore.js';
 import { captureLocalAcousticExpression } from '../services/captureLocalAcousticExpression.js';
@@ -42,6 +50,8 @@ import {
   listMatchingCompanionBehaviors,
 } from '../domain/expeditions/companionBehavior.js';
 import { getPokeDiscoverRewardPackage } from '../data/adventure/rewardBalance.js';
+import { POKE_DISCOVER_FIELD_TOOLS } from '../data/adventure/pokeDiscoverShop.js';
+import { resolveExpeditionCapabilities } from '../domain/expeditions/expeditionCapabilities.js';
 
 export interface MapExpressionFeedback {
   status: 'resolved' | 'alreadyResolved' | 'ineligible' | 'methodUnavailable' | 'notMatched';
@@ -103,6 +113,26 @@ export function MapConceptPreview({
   const [dialoguePageId, setDialoguePageId] = useState<string>();
   const [companionAvailable, setCompanionAvailable] = useState(false);
   const [companionPresentation, setCompanionPresentation] = useState<MapCompanionPresentation>();
+  const [storyCueId, setStoryCueId] = useState<string>();
+
+  const requestMapSequence = useCallback((sequenceId: string) => {
+    window.setTimeout(() => hostRef.current?.dispatchEvent(new CustomEvent(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, {
+      detail: { sequenceId },
+    })), 0);
+  }, []);
+
+  const chooseStarter = useCallback((speciesId: 1 | 4 | 7) => {
+    chooseBrowserCamphorStarter(speciesId);
+    beginBrowserCamphorPrologue();
+    setStoryCueId(undefined);
+    const slug = speciesId === 1 ? 'bulbasaur' : speciesId === 4 ? 'charmander' : 'squirtle';
+    requestMapSequence(`sequence:camphor-prologue:starter-${slug}-rescue`);
+  }, [requestMapSequence]);
+
+  const requestCompanionRescue = useCallback(() => {
+    setStoryCueId(undefined);
+    requestMapSequence('sequence:camphor-prologue:companion-rescue');
+  }, [requestMapSequence]);
 
   const focusRuntime = useCallback(() => {
     window.requestAnimationFrame(() => hostRef.current?.focus({ preventScroll: true }));
@@ -270,14 +300,48 @@ export function MapConceptPreview({
       ));
       const trigger = bundleRef.current?.adventure.behaviorTriggers.find(item => item.triggerId === triggerId);
       if (!candidate || !trigger) return;
+      const expeditionCapabilities = resolveExpeditionCapabilities(save, {
+        companionForm: candidate.form,
+        tools: POKE_DISCOVER_FIELD_TOOLS,
+      });
       executeBrowserCompanionBehavior({
         mapId: bundleRef.current!.adventure.mapId,
         trigger,
         companionForm: candidate.form,
         species: catalog.map(createCompanionCatalogSpecies),
+        expeditionCapabilities,
         executedAt: new Date().toISOString(),
         rewards: getPokeDiscoverRewardPackage(trigger.rewardPackageId),
       });
+    };
+    const visibleSpeciesChanged = (event: Event) => {
+      const speciesIds = (event as CustomEvent<{ speciesIds?: number[] }>).detail?.speciesIds;
+      if (speciesIds) onVisibleSpeciesIdsChange(speciesIds);
+    };
+    const sequenceCue = (event: Event) => {
+      const cueId = (event as CustomEvent<{ cueId?: string }>).detail?.cueId;
+      if (!cueId) return;
+      if (cueId === 'cue:camphor-prologue:starter-choice') {
+        if (getBrowserPokeVoiceSave().pendingMissionLaunch?.checkpoint === 'openingCinematic') {
+          reachBrowserCamphorStarterChoice();
+        }
+        setStoryCueId(cueId);
+        return;
+      }
+      if (cueId === 'cue:camphor-prologue:rescue') {
+        setStoryCueId(cueId);
+        return;
+      }
+      if (cueId === 'cue:camphor-prologue:rescued') {
+        resolveBrowserCamphorRescue();
+        setStoryCueId(undefined);
+        requestMapSequence('sequence:camphor-prologue:aftermath');
+        return;
+      }
+      if (cueId === 'cue:camphor-prologue:complete') {
+        completeBrowserCamphorPrologueScene();
+        setStoryCueId(cueId);
+      }
     };
     const interactionCompleted = (event: Event) => {
       const interaction = (event as CustomEvent<{ interaction?: ExpeditionInteractionV1 }>).detail?.interaction;
@@ -295,6 +359,8 @@ export function MapConceptPreview({
     host.addEventListener(MAP_COMPANION_AVAILABLE_EVENT, companionAvailableChanged);
     host.addEventListener(MAP_COMPANION_STARTED_EVENT, companionStarted);
     host.addEventListener(MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT, companionBehaviorCompleted);
+    host.addEventListener(MAP_SEQUENCE_CUE_EVENT, sequenceCue);
+    host.addEventListener(MAP_VISIBLE_SPECIES_CHANGED_EVENT, visibleSpeciesChanged);
     setStatus('loading');
     host.dataset.runtime = 'loading';
     host.focus({ preventScroll: true });
@@ -307,18 +373,39 @@ export function MapConceptPreview({
       }),
     ]).then(([Phaser, bundle]) => {
       if (cancelled) return;
-      const room = bundle.rooms.find(candidate => candidate.room.roomId === TEGUESTE_FOREST_PREVIEW_ROOM_ID);
-      const visibleSpeciesIds = [...new Set(bundle.adventure.actorPlacements
-        .filter(placement => placement.roomId === TEGUESTE_FOREST_PREVIEW_ROOM_ID)
-        .map(placement => room?.actorAssets.get(placement.assetId)?.speciesId)
-        .filter((speciesId): speciesId is number => Number.isSafeInteger(speciesId)))];
-      onVisibleSpeciesIdsChange(visibleSpeciesIds);
       const save = getBrowserPokeVoiceSave();
       bundleRef.current = bundle;
       const mapProgress = save.pokeDiscover.mapProgress[bundle.adventure.mapId];
       const activeSession = save.activeExpeditionSession?.mapId === bundle.adventure.mapId
         ? save.activeExpeditionSession
         : undefined;
+      const launchMissionId = activeSession?.missionId ?? save.pendingMissionLaunch?.missionId;
+      const entryPointId = launchMissionId
+        ? bundle.adventure.missionEntryPoints
+          ?.find(assignment => assignment.missionId === launchMissionId)?.entryPointId
+        : bundle.adventure.freeExpeditionEntryPointId;
+      const initialEntryPoint = bundle.adventure.entryPoints
+        ?.find(entry => entry.entryPointId === entryPointId);
+      const initialRoomId = initialEntryPoint?.roomId ?? TEGUESTE_FOREST_PREVIEW_ROOM_ID;
+      const room = bundle.rooms.find(candidate => candidate.room.roomId === initialRoomId);
+      const visibleSpeciesIds = [...new Set(bundle.adventure.actorPlacements
+        .filter(placement => placement.roomId === initialRoomId && placement.initiallyHidden !== true)
+        .map(placement => room?.actorAssets.get(placement.assetId)?.speciesId)
+        .filter((speciesId): speciesId is number => Number.isSafeInteger(speciesId)))];
+      onVisibleSpeciesIdsChange(visibleSpeciesIds);
+      const pendingCheckpoint = save.pendingMissionLaunch?.missionId === 'mission:tegueste:help-professor-camphor'
+        ? save.pendingMissionLaunch.checkpoint
+        : undefined;
+      const missionCheckpoint = activeSession?.missionRuntime?.missionId === 'mission:tegueste:help-professor-camphor'
+        ? activeSession.missionRuntime.checkpointId
+        : undefined;
+      const initialSequenceId = pendingCheckpoint === 'openingCinematic' || pendingCheckpoint === 'awaitingStarter'
+        ? 'sequence:camphor-prologue:assault-with-choice'
+        : missionCheckpoint === 'checkpoint:camphor-prologue:rescue'
+          ? 'sequence:camphor-prologue:assault-with-companion'
+          : missionCheckpoint === 'checkpoint:camphor-prologue:rescued'
+            ? 'sequence:camphor-prologue:aftermath'
+            : undefined;
       const selection = activeSession?.loadout?.companion
         ?? save.pokedexRun.selectedCompanion
         ?? (save.pokedexRun.selectedCompanionFormId
@@ -335,6 +422,12 @@ export function MapConceptPreview({
       const behaviorContext = companionCandidate ? {
         companionForm: companionCandidate.form,
         species: catalog.map(createCompanionCatalogSpecies),
+        ...(activeSession ? {
+          expeditionCapabilities: resolveExpeditionCapabilities(save, {
+            companionForm: companionCandidate.form,
+            tools: POKE_DISCOVER_FIELD_TOOLS,
+          }),
+        } : {}),
       } : undefined;
       const eligibleBehaviors = companionCandidate && behaviorContext
         ? (activeSession
@@ -355,7 +448,8 @@ export function MapConceptPreview({
         Phaser,
         parent: host,
         bundle,
-        initialRoomId: TEGUESTE_FOREST_PREVIEW_ROOM_ID,
+        initialRoomId,
+        initialSpawnAnchorId: initialEntryPoint?.anchorId,
         reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         registeredSpeciesIds: new Set(save.pokedexRun.registeredSpeciesIds),
         expressionsEnabled: Boolean(activeSession),
@@ -368,6 +462,7 @@ export function MapConceptPreview({
           resolvedSecretIds: new Set(mapProgress?.unlockedSecretIds ?? []),
           freeRoam: !activeSession?.missionId,
         } : undefined,
+        initialSequenceId,
         onReady: () => {
           if (cancelled) return;
           host.dataset.runtime = 'ready';
@@ -395,6 +490,8 @@ export function MapConceptPreview({
       host.removeEventListener(MAP_COMPANION_AVAILABLE_EVENT, companionAvailableChanged);
       host.removeEventListener(MAP_COMPANION_STARTED_EVENT, companionStarted);
       host.removeEventListener(MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT, companionBehaviorCompleted);
+      host.removeEventListener(MAP_SEQUENCE_CUE_EVENT, sequenceCue);
+      host.removeEventListener(MAP_VISIBLE_SPECIES_CHANGED_EVENT, visibleSpeciesChanged);
       host.replaceChildren();
       onVisibleSpeciesIdsChange([]);
       setAvailableInteraction(undefined);
@@ -404,9 +501,10 @@ export function MapConceptPreview({
       setDialoguePageId(undefined);
       setCompanionAvailable(false);
       setCompanionPresentation(undefined);
+      setStoryCueId(undefined);
       bundleRef.current = undefined;
     };
-  }, [catalog, onExpressionStart, onInteractionStart, onVisibleSpeciesIdsChange, open]);
+  }, [catalog, onExpressionStart, onInteractionStart, onVisibleSpeciesIdsChange, open, requestMapSequence]);
 
   useEffect(() => {
     if (!open || !hostRef.current) return undefined;
@@ -457,6 +555,31 @@ export function MapConceptPreview({
               <div className="map-concept-preview__status" role="status">
                 {status === 'error' ? 'No se pudo cargar el Bosque de Tegueste.' : loadingText}
               </div>
+            )}
+            {storyCueId === 'cue:camphor-prologue:starter-choice' && (
+              <section className="map-concept-preview__story-choice" role="dialog" aria-label="Elegir primer compañero">
+                <strong>¡Las Poké Balls de Alcanfor han caído!</strong>
+                <p>Elige rápidamente quién te ayudará en el rescate.</p>
+                <div>
+                  <button type="button" onClick={() => chooseStarter(1)}><span aria-hidden="true">●</span>Bulbasaur</button>
+                  <button type="button" onClick={() => chooseStarter(4)}><span aria-hidden="true">●</span>Charmander</button>
+                  <button type="button" onClick={() => chooseStarter(7)}><span aria-hidden="true">●</span>Squirtle</button>
+                </div>
+              </section>
+            )}
+            {storyCueId === 'cue:camphor-prologue:rescue' && (
+              <section className="map-concept-preview__story-choice" role="dialog" aria-label="Rescatar al profesor Alcanfor">
+                <strong>Los Rattata han rodeado a Alcanfor</strong>
+                <p>Tu compañero espera tu señal.</p>
+                <button type="button" onClick={requestCompanionRescue}>¡Ayuda a Alcanfor!</button>
+              </section>
+            )}
+            {storyCueId === 'cue:camphor-prologue:complete' && (
+              <section className="map-concept-preview__story-choice map-concept-preview__story-choice--complete" role="status">
+                <strong>¡Rescate completado!</strong>
+                <p>Los científicos despejan el sendero y un Pineco cae del árbol durante la retirada.</p>
+                <button type="button" onClick={() => setStoryCueId(undefined)}>Explorar el bosque</button>
+              </section>
             )}
             {availableInteraction && !interactionPresentation && (
               <button
@@ -555,7 +678,11 @@ export function MapConceptPreview({
         </div>
         <div className="map-concept-preview__hinge" aria-hidden="true"><span /><span /></div>
         <div className="map-concept-preview__lower-shell">
-          <div className="map-concept-preview__dpad" aria-hidden="true"><i /><i /></div>
+          <div
+            className="map-concept-preview__direction-decoration"
+            data-control-decoration="direction-pad"
+            aria-hidden="true"
+          ><i /><i /></div>
           <form className="map-concept-preview__touchscreen" onSubmit={submitWrittenName}>
             {(!activeExpression || acceptsWrittenText) && (
               <label className="map-concept-preview__hidden-label" htmlFor="map-pokemon-name">
@@ -618,7 +745,11 @@ export function MapConceptPreview({
               </button>
             )}
           </form>
-          <div className="map-concept-preview__buttons" aria-hidden="true"><i /><i /><i /><i /></div>
+          <div
+            className="map-concept-preview__action-decoration"
+            data-control-decoration="action-buttons"
+            aria-hidden="true"
+          ><i /><i /><i /><i /></div>
         </div>
       </section>
     </div>

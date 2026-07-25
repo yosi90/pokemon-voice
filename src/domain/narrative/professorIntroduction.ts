@@ -9,6 +9,7 @@ import type {
 export const PROFESSOR_INTRO_SEQUENCE_ID = 'narrative:professor-camphor:introduction';
 export const PROFESSOR_RETURN_SEQUENCE_ID = 'narrative:professor-camphor:return';
 export const PROFESSOR_PROFILE_SEQUENCE_ID = 'narrative:professor-camphor:trainer-profile';
+export const PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID = 'narrative:professor-camphor:forest-emergency';
 export const PROFESSOR_FIRST_AUTOMATIC_DISCOVERY = 5;
 export const PROFESSOR_INCOMING_CALL_DELAY_MS = 1800;
 export const DEFAULT_TRAINER_NAMES: Readonly<Record<TrainerAvatarId, string>> = Object.freeze({
@@ -209,8 +210,21 @@ export const PROFESSOR_PROFILE_SEQUENCE: NarrativeSequenceV1 = {
   ],
 };
 
+export const PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE: NarrativeSequenceV1 = {
+  schemaVersion: 1,
+  sequenceId: PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID,
+  initialPageId: 'emergency-call',
+  once: true,
+  backgroundId: 'camphor-laboratory',
+  pages: [
+    { pageId: 'emergency-call', speakerId: 'professor-camphor', speakerName: 'Profesor Alcanfor', portraitState: 'speaking', text: '¡Tenemos una emergencia en el Bosque de Tegueste! Tres Pokémon me han rodeado y están intentando llevarse las provisiones.', nextPageId: 'choose-companion' },
+    { pageId: 'choose-companion', speakerId: 'professor-camphor', speakerName: 'Profesor Alcanfor', portraitState: 'idea', text: 'Necesito que vengas enseguida. Elige un compañero de campo y confirma la salida; mantendré abierta la comunicación.', action: { kind: 'completeSequence' } },
+  ],
+};
+
 export const PROFESSOR_NARRATIVE_SEQUENCES: Readonly<Record<string, NarrativeSequenceV1>> = Object.freeze({
   [PROFESSOR_INTRO_SEQUENCE_ID]: PROFESSOR_INTRODUCTION_SEQUENCE,
   [PROFESSOR_RETURN_SEQUENCE_ID]: PROFESSOR_RETURN_SEQUENCE,
   [PROFESSOR_PROFILE_SEQUENCE_ID]: PROFESSOR_PROFILE_SEQUENCE,
+  [PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID]: PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE,
 });

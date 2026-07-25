@@ -27,12 +27,18 @@ import {
   releaseGridDirection,
   type PressedGridDirection,
 } from './gridCompanionRuntime.js';
+import {
+  readTiledCollisionShape,
+  rectangleOverlapsCollision,
+  type TiledCollisionShape,
+} from './tiledCollisionGeometry.js';
 
 type PhaserModule = typeof import('phaser');
 type Facing = 'up' | 'down' | 'left' | 'right';
 
 const DIRECTION_ROWS = Object.freeze({ down: 0, right: 2, up: 4, left: 6 });
 export const MAP_SPECIES_IDENTIFIED_EVENT = 'pokevoice:map-species-identified';
+export const MAP_VISIBLE_SPECIES_CHANGED_EVENT = 'pokevoice:map-visible-species-changed';
 export const MAP_AMBIENT_CONTROL_EVENT = 'pokevoice:map-ambient-control';
 export const MAP_INTERACTION_AVAILABLE_EVENT = 'pokevoice:map-interaction-available';
 export const MAP_INTERACTION_REQUEST_EVENT = 'pokevoice:map-interaction-request';
@@ -49,6 +55,8 @@ export const MAP_COMPANION_STARTED_EVENT = 'pokevoice:map-companion-started';
 export const MAP_COMPANION_CONTROL_EVENT = 'pokevoice:map-companion-control';
 export const MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT = 'pokevoice:map-companion-behavior-completed';
 export const MAP_COMPANION_SEQUENCE_REQUEST_EVENT = 'pokevoice:map-companion-sequence-request';
+export const MAP_SEQUENCE_CUE_EVENT = 'pokevoice:map-sequence-cue';
+export const EXPEDITION_MOVEMENT_INPUTS = Object.freeze(['keyboard'] as const);
 
 export interface MapCompanionRuntimeContext {
   displayName: string;
@@ -103,6 +111,7 @@ interface AmbientSequenceState {
   pauseRemainingMs: number;
   phase: 'start' | 'actions' | 'pause' | 'complete';
   cycles: number;
+  forward: boolean;
 }
 
 function requiredNumber(object: Record<string, unknown> | undefined, key: string, label: string) {
@@ -154,22 +163,26 @@ export function createTechnicalPhaserGame({
   parent,
   bundle,
   initialRoomId,
+  initialSpawnAnchorId,
   reducedMotion,
   registeredSpeciesIds,
   expressionsEnabled = false,
   resolvedExpressionTriggerIds = new Set<string>(),
   companion,
+  initialSequenceId,
   onReady,
 }: {
   Phaser: PhaserModule;
   parent: HTMLElement;
   bundle: LoadedAdventureMapBundle;
   initialRoomId: string;
+  initialSpawnAnchorId?: string;
   reducedMotion: boolean;
   registeredSpeciesIds: ReadonlySet<number>;
   expressionsEnabled?: boolean;
   resolvedExpressionTriggerIds?: ReadonlySet<string>;
   companion?: MapCompanionRuntimeContext;
+  initialSequenceId?: string;
   onReady: () => void;
 }) {
   const initialRoom = bundle.rooms.find(candidate => candidate.room.roomId === initialRoomId);
@@ -234,7 +247,10 @@ export function createTechnicalPhaserGame({
         const roomPlacements = new Map(bundle.adventure.actorPlacements
           .filter(candidate => candidate.roomId === roomBundle.room.roomId)
           .map(placement => [placement.placementId, placement]));
-        for (const action of (bundle.adventure.companionSequences ?? [])
+        for (const action of [
+          ...(bundle.adventure.companionSequences ?? []),
+          ...(bundle.adventure.mapSequences ?? []),
+        ]
           .filter(sequence => sequence.roomId === roomBundle.room.roomId)
           .flatMap(sequence => sequence.beats)
           .flatMap(beat => beat.actions)) {
@@ -255,7 +271,10 @@ export function createTechnicalPhaserGame({
       }
       if (companion?.asset) {
         const animationNames = new Set(['Idle', 'Walk']);
-        for (const sequence of bundle.adventure.companionSequences ?? []) {
+        for (const sequence of [
+          ...(bundle.adventure.companionSequences ?? []),
+          ...(bundle.adventure.mapSequences ?? []),
+        ]) {
           for (const action of sequence.beats.flatMap(beat => beat.actions)) {
             if (action.kind === 'playAnimation' && action.actorRef === 'dynamic:companion') {
               if (action.animation) animationNames.add(action.animation);
@@ -336,7 +355,7 @@ export function createTechnicalPhaserGame({
       let transitionCooldownUntil = 0;
       let stepTarget: { x: number; y: number; startX: number; startY: number; facing: Facing; swappedCompanion?: boolean } | undefined;
       let activeObjects: import('phaser').GameObjects.GameObject[] = [];
-      let staticCollisionBounds: Bounds[] = [];
+      let staticCollisionBounds: TiledCollisionShape[] = [];
       let activeActorSpritesBySpecies = new Map<number, import('phaser').GameObjects.Sprite[]>();
       let activeActorsByPlacement = new Map<string, ActiveActorState>();
       let ambientSequenceStates: AmbientSequenceState[] = [];
@@ -359,6 +378,19 @@ export function createTechnicalPhaserGame({
       const completedRuntimeBehaviorIds = new Set<string>();
       const occupiedProximityZones = new Set<string>();
       const completedVisitInteractionIds = new Set<string>();
+
+      const publishVisibleSpecies = () => {
+        const visibleSpeciesIds = [...new Set([...activeActorsByPlacement.values()]
+          .filter(actor => actor.asset && actor.sprite.visible)
+          .map(actor => actor.asset!.speciesId))];
+        const undiscoveredActorCount = [...activeActorsByPlacement.values()]
+          .filter(actor => actor.asset && actor.sprite.visible && !revealedSpeciesIds.has(actor.asset.speciesId)).length;
+        parent.dataset.visibleSpeciesIds = JSON.stringify(visibleSpeciesIds);
+        parent.dataset.undiscoveredActorCount = String(undiscoveredActorCount);
+        parent.dispatchEvent(new CustomEvent(MAP_VISIBLE_SPECIES_CHANGED_EVENT, {
+          detail: { speciesIds: visibleSpeciesIds },
+        }));
+      };
 
       const clearRoom = () => {
         activeObjects.forEach(object => object.destroy());
@@ -659,7 +691,9 @@ export function createTechnicalPhaserGame({
             anchorPoint.y,
             sheetKey,
             frames[0],
-          ).setOrigin(origin.x, origin.y).setScale(asset.renderScale ?? 1).setDepth(anchorPoint.y)
+          ).setOrigin(origin.x, origin.y)
+            .setScale((asset.renderScale ?? 1) * (placement.renderScaleMultiplier ?? 1))
+            .setDepth(anchorPoint.y)
             .setVisible(placement.initiallyHidden !== true);
           if (!revealedSpeciesIds.has(asset.speciesId)) {
             sprite.setTint(0x000000);
@@ -701,6 +735,7 @@ export function createTechnicalPhaserGame({
             sprite.play(animationKey);
           }
         }
+        publishVisibleSpecies();
 
         const characterPlacements = bundle.adventure.characterPlacements
           .filter(candidate => candidate.roomId === roomId);
@@ -716,7 +751,10 @@ export function createTechnicalPhaserGame({
             anchorPoint.y,
             characterSheetKey(asset.assetId),
             asset.directionRows[direction] * asset.columns + asset.idleFrame,
-          ).setOrigin(.5, 1).setScale(asset.renderScale ?? 1).setDepth(anchorPoint.y);
+          ).setOrigin(.5, 1)
+            .setScale((asset.renderScale ?? 1) * (placement.renderScaleMultiplier ?? 1))
+            .setDepth(anchorPoint.y)
+            .setVisible(placement.initiallyHidden !== true);
           sprite.setName(placement.placementId);
           activeObjects.push(sprite);
           const actorState: ActiveActorState = {
@@ -755,7 +793,9 @@ export function createTechnicalPhaserGame({
             spawn.y,
             characterSheetKey(controllableAsset.assetId),
             controllableAsset.directionRows[playerFacing] * controllableAsset.columns + controllableAsset.idleFrame,
-          ).setOrigin(.5, 1).setScale(controllableAsset.renderScale ?? 1).setDepth(spawn.y);
+          ).setOrigin(.5, 1)
+            .setScale((controllableAsset.renderScale ?? 1) * (controllable.renderScaleMultiplier ?? 1))
+            .setDepth(spawn.y);
           player = playerCharacterSprite;
         } else {
           player = this.add.rectangle(spawn.x, spawn.y, 10, 12, 0xffd54f)
@@ -777,15 +817,8 @@ export function createTechnicalPhaserGame({
           ? collisionLayer.objects as Array<Record<string, unknown>>
           : [];
         for (const collision of collisions) {
-          const width = requiredNumber(collision, 'width', String(collision.name));
-          const height = requiredNumber(collision, 'height', String(collision.name));
-          const collisionBounds = {
-            x: requiredNumber(collision, 'x', String(collision.name)),
-            y: requiredNumber(collision, 'y', String(collision.name)),
-            width,
-            height,
-          };
-          staticCollisionBounds.push(collisionBounds);
+          const collisionShape = readTiledCollisionShape(collision);
+          if (collisionShape) staticCollisionBounds.push(collisionShape);
         }
         if (companion) {
           const behindFacing: Facing = playerFacing === 'up' ? 'down'
@@ -798,7 +831,7 @@ export function createTechnicalPhaserGame({
           const companionSpawn = directions
             .map(direction => gridStep({ x: player.x, y: player.y }, direction))
             .find(point => point.x >= 8 && point.x <= roomWidth - 8 && point.y >= 16 && point.y <= roomHeight - 16
-              && !staticCollisionBounds.some(collision => overlap(actorFootprint(point.x, point.y), collision))
+              && !staticCollisionBounds.some(collision => rectangleOverlapsCollision(actorFootprint(point.x, point.y), collision))
               && ![...activeActorsByPlacement.values()].some(actor => actor.sprite.visible
                 && actor.collision === 'solid' && overlap(actorFootprint(point.x, point.y), actorFootprint(actor.sprite.x, actor.sprite.y))))
             ?? { x: player.x, y: player.y };
@@ -817,6 +850,7 @@ export function createTechnicalPhaserGame({
         this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
         this.cameras.main.setRoundPixels(true);
         ambientSequenceStates = [];
+        parent.dataset.mapId = bundle.adventure.mapId;
         parent.dataset.roomId = roomId;
         parent.dataset.actorId = placements[0]?.placementId ?? '';
         parent.dataset.actorGrounding = 'pmd-shadow';
@@ -824,13 +858,10 @@ export function createTechnicalPhaserGame({
         parent.dataset.occludedActorCount = String(occludedActorCount);
         parent.dataset.occlusionFilterCount = String(filterOccludedActorCount);
         parent.dataset.ambientTickRate = '30';
-        parent.dataset.undiscoveredActorCount = String(placements
-          .filter(placement => {
-            const asset = nextRoom.actorAssets.get(placement.assetId);
-            return asset && !revealedSpeciesIds.has(asset.speciesId);
-          }).length);
+        publishVisibleSpecies();
         parent.dataset.playerAssetId = playerCharacterAsset?.assetId ?? 'technical-marker';
         parent.dataset.movement = 'grid';
+        parent.dataset.movementInputs = EXPEDITION_MOVEMENT_INPUTS.join(',');
         parent.dataset.step = 'idle';
         parent.dataset.animation = primaryActor ? (reducedMotion ? 'paused' : 'playing') : 'none';
         parent.dataset.actorFrameChanges = '0';
@@ -882,7 +913,7 @@ export function createTechnicalPhaserGame({
           || footprint.y < 0 || footprint.y + footprint.height > mapHeight) {
           return false;
         }
-        if (staticCollisionBounds.some(collision => overlap(footprint, collision))) return false;
+        if (staticCollisionBounds.some(collision => rectangleOverlapsCollision(footprint, collision))) return false;
         return ![...activeActorsByPlacement.values()].some(actor => (
           actor.sprite.visible && actor.collision === 'solid' && overlap(footprint, actorFootprint(actor.sprite.x, actor.sprite.y))
         ));
@@ -955,7 +986,15 @@ export function createTechnicalPhaserGame({
       };
 
       const startAmbientBeat = (sequence: AmbientSequenceState) => {
-        const beat = sequence.definition.beats[sequence.beatIndex];
+        const sourceBeat = sequence.definition.beats[sequence.beatIndex];
+        const beat = sequence.forward ? sourceBeat : {
+          ...sourceBeat,
+          actions: sourceBeat.actions.map(action => action.kind === 'movePath'
+            ? { ...action, reverse: !action.reverse }
+            : action.kind === 'moveByTiles'
+              ? { ...action, deltaXTiles: -action.deltaXTiles, deltaYTiles: -action.deltaYTiles }
+              : action),
+        };
         parent.dataset.ambientBeatId = beat.beatId;
         sequence.actionStates = beat.actions.map(action => {
           const actor = activeActorsByPlacement.get(action.placementId);
@@ -974,8 +1013,10 @@ export function createTechnicalPhaserGame({
             );
             return { action, remainingMs, complete: remainingMs <= 0 };
           }
-          const rawPoints = ambientPathPoints(currentRoom, action.pathId);
-          const orderedPoints = action.reverse ? [...rawPoints].reverse() : rawPoints;
+          const rawPoints = action.kind === 'moveByTiles'
+            ? [{ x: actor.sprite.x, y: actor.sprite.y }, { x: actor.sprite.x + action.deltaXTiles * 16, y: actor.sprite.y + action.deltaYTiles * 16 }]
+            : ambientPathPoints(currentRoom, action.pathId);
+          const orderedPoints = action.kind === 'movePath' && action.reverse ? [...rawPoints].reverse() : rawPoints;
           const first = orderedPoints[0];
           const points = first && Math.hypot(actor.sprite.x - first.x, actor.sprite.y - first.y) > .5
             ? [{ x: actor.sprite.x, y: actor.sprite.y }, ...orderedPoints]
@@ -996,7 +1037,7 @@ export function createTechnicalPhaserGame({
       };
 
       const proposedMove = (state: AmbientActionState, actor: ActiveActorState, deltaMs: number) => {
-        if (state.action.kind !== 'movePath' || !state.points || state.complete) return undefined;
+        if ((state.action.kind !== 'movePath' && state.action.kind !== 'moveByTiles') || !state.points || state.complete) return undefined;
         const target = state.points[state.pointIndex ?? 1];
         if (!target) return { x: actor.sprite.x, y: actor.sprite.y, complete: true, pointIndex: state.pointIndex ?? 1 };
         const dx = target.x - actor.sprite.x;
@@ -1027,7 +1068,7 @@ export function createTechnicalPhaserGame({
         if (footprint.x < 0 || footprint.y < 0
           || footprint.x + footprint.width > mapWidth || footprint.y + footprint.height > mapHeight) return false;
         if (actor.collision === 'pass-through') return true;
-        if (staticCollisionBounds.some(collision => overlap(footprint, collision))) return false;
+        if (staticCollisionBounds.some(collision => rectangleOverlapsCollision(footprint, collision))) return false;
         if (overlap(footprint, { x: player.x - 5, y: player.y - 10, width: 10, height: 10 })) return false;
         return ![...activeActorsByPlacement.values()].some(other => {
           if (other.placementId === actor.placementId || other.collision === 'pass-through') return false;
@@ -1048,7 +1089,7 @@ export function createTechnicalPhaserGame({
 
         const proposals = new Map<string, { x: number; y: number; complete: boolean; pointIndex: number }>();
         for (const actionState of sequence.actionStates) {
-          if (actionState.action.kind !== 'movePath' || actionState.complete) continue;
+          if ((actionState.action.kind !== 'movePath' && actionState.action.kind !== 'moveByTiles') || actionState.complete) continue;
           const actor = activeActorsByPlacement.get(actionState.action.placementId);
           if (!actor) continue;
           const proposal = proposedMove(actionState, actor, deltaMs);
@@ -1071,7 +1112,7 @@ export function createTechnicalPhaserGame({
           if (actionState.action.kind === 'playAnimation') {
             actionState.remainingMs = Math.max(0, (actionState.remainingMs ?? 0) - deltaMs);
             actionState.complete = actionState.remainingMs === 0;
-          } else if (actionState.action.kind === 'movePath') {
+          } else if (actionState.action.kind === 'movePath' || actionState.action.kind === 'moveByTiles') {
             const proposal = proposals.get(actor.placementId);
             if (!proposal) continue;
             actor.sprite.setPosition(proposal.x, proposal.y).setDepth(proposal.y);
@@ -1094,19 +1135,25 @@ export function createTechnicalPhaserGame({
 
         if (!sequence.actionStates.every(action => action.complete)) return;
         const beat = sequence.definition.beats[sequence.beatIndex];
-        const lastBeat = sequence.beatIndex >= sequence.definition.beats.length - 1;
-        if (lastBeat) {
-          if (!sequence.definition.loop) {
+        const playbackMode = sequence.definition.playbackMode ?? (sequence.definition.loop ? 'loop' : 'once');
+        const edgeBeat = sequence.forward
+          ? sequence.beatIndex >= sequence.definition.beats.length - 1
+          : sequence.beatIndex <= 0;
+        if (edgeBeat) {
+          if (playbackMode === 'once') {
             sequence.phase = 'complete';
             return;
           }
-          sequence.beatIndex = 0;
+          if (playbackMode === 'pingPong') {
+            sequence.forward = !sequence.forward;
+            sequence.beatIndex = sequence.forward ? 0 : sequence.definition.beats.length - 1;
+          } else sequence.beatIndex = 0;
           sequence.cycles += 1;
           parent.dataset.ambientCycle = String(sequence.cycles);
           sequence.pauseRemainingMs = sampleMilliseconds(beat.pauseAfterMs)
             + sampleMilliseconds(sequence.definition.loopPauseMs);
         } else {
-          sequence.beatIndex += 1;
+          sequence.beatIndex += sequence.forward ? 1 : -1;
           sequence.pauseRemainingMs = sampleMilliseconds(beat.pauseAfterMs);
         }
         sequence.phase = sequence.pauseRemainingMs > 0 ? 'pause' : 'start';
@@ -1123,6 +1170,7 @@ export function createTechnicalPhaserGame({
             pauseRemainingMs: 0,
             phase: 'start' as const,
             cycles: 0,
+            forward: true,
           }));
         parent.dataset.ambientAssets = 'ready';
         parent.dataset.ambientSequenceCount = String(ambientSequenceStates.length);
@@ -1146,7 +1194,7 @@ export function createTechnicalPhaserGame({
           frameHeight: number;
         }>();
         for (const action of definitions.flatMap(sequence => sequence.beats).flatMap(beat => beat.actions)) {
-          if (action.kind !== 'playAnimation' && action.kind !== 'movePath') continue;
+          if (action.kind !== 'playAnimation' && action.kind !== 'movePath' && action.kind !== 'moveByTiles') continue;
           if (!action.animation) continue;
           const placement = placementsById.get(action.placementId);
           const asset = placement ? room.actorAssets.get(placement.assetId) : undefined;
@@ -1402,7 +1450,7 @@ export function createTechnicalPhaserGame({
           from: { x: Math.round(actor.sprite.x), y: Math.round(actor.sprite.y) },
           to: destination,
           canOccupy: (x, y) => (
-            !staticCollisionBounds.some(collision => overlap(actorFootprint(x, y), collision))
+            !staticCollisionBounds.some(collision => rectangleOverlapsCollision(actorFootprint(x, y), collision))
             && !actorOccupiesCompanionTarget(x, y)
           ),
         });
@@ -1432,7 +1480,10 @@ export function createTechnicalPhaserGame({
       ) => {
         const actor = action.actorRef === 'dynamic:player' ? undefined : actorForSequenceRef(action.actorRef);
         if (action.kind === 'setVisible') {
-          if (actor) actor.sprite.setVisible(action.visible);
+          if (actor) {
+            actor.sprite.setVisible(action.visible);
+            publishVisibleSpecies();
+          }
           return;
         }
         if (action.kind === 'face') {
@@ -1447,6 +1498,45 @@ export function createTechnicalPhaserGame({
           if (!animation) return;
           const duration = startActorAnimation(actor, animation, actor.direction, action.repetitions ?? 1);
           await waitForMilliseconds(duration);
+          return;
+        }
+        if (action.kind === 'dropPokeBalls') {
+          const source = actor?.sprite ?? player;
+          const count = Math.max(1, action.count);
+          const spread = (action.spreadTiles ?? 2) * 16;
+          const fall = (action.fallTiles ?? 3) * 16;
+          const center = (count - 1) / 2;
+          const balls = Array.from({ length: count }, (_, index) => {
+            const container = this.add.container(source.x, source.y - fall).setDepth(source.y + fall + 1);
+            const ball = this.add.graphics();
+            ball.fillStyle(0xf4f4f4, 1).fillCircle(0, 0, 6);
+            ball.fillStyle(0xd93636, 1).fillCircle(0, -1, 6);
+            ball.fillStyle(0x242424, 1).fillRect(-6, -1, 12, 2);
+            ball.fillStyle(0xffffff, 1).fillCircle(0, 0, 2);
+            ball.lineStyle(1, 0x242424, 1).strokeCircle(0, 0, 6);
+            container.add(ball);
+            activeObjects.push(container);
+            return { container, x: source.x + (index - center) * spread, y: source.y + fall };
+          });
+          parent.dataset.storyPokeBallCount = String(count);
+          await Promise.all(balls.map(({ container, x, y }, index) => new Promise<void>(resolve => {
+            this.tweens.add({
+              targets: container,
+              x,
+              y,
+              angle: index % 2 ? 180 : -180,
+              duration: reducedMotion ? 0 : 420 + index * 70,
+              ease: 'Bounce.Out',
+              onComplete: () => resolve(),
+            });
+          })));
+          return;
+        }
+        if (action.kind === 'emitCue') {
+          parent.dataset.lastSequenceCueId = action.cueId;
+          parent.dispatchEvent(new CustomEvent(MAP_SEQUENCE_CUE_EVENT, {
+            detail: { cueId: action.cueId },
+          }));
           return;
         }
         if (action.kind === 'moveToAnchor') {
@@ -1499,7 +1589,10 @@ export function createTechnicalPhaserGame({
       };
 
       const runCompanionSequence = async (sequenceId: string, completedTriggerId?: string) => {
-        const sequence = (bundle.adventure.companionSequences ?? []).find(item => (
+        const sequence = [
+          ...(bundle.adventure.companionSequences ?? []),
+          ...(bundle.adventure.mapSequences ?? []),
+        ].find(item => (
           item.sequenceId === sequenceId && item.roomId === currentRoom.room.roomId
         ));
         if (!sequence || activeCompanionSequence) return;
@@ -1569,8 +1662,13 @@ export function createTechnicalPhaserGame({
       };
 
       const requestCompanionSequence = (event: Event) => {
+        const detail = (event as CustomEvent<{ triggerId?: string; sequenceId?: string }>).detail;
+        if (detail?.sequenceId) {
+          if (!activeCompanionSequence) void runCompanionSequence(detail.sequenceId);
+          return;
+        }
         if (!companion?.freeRoam || activeCompanionSequence) return;
-        const triggerId = (event as CustomEvent<{ triggerId?: string }>).detail?.triggerId;
+        const triggerId = detail?.triggerId;
         const trigger = bundle.adventure.behaviorTriggers.find(item => (
           item.triggerId === triggerId
           && companion.eligibleBehaviorTriggerIds.has(item.triggerId)
@@ -1649,18 +1747,14 @@ export function createTechnicalPhaserGame({
         });
       };
 
-      renderRoom(initialRoomId);
+      renderRoom(initialRoomId, initialSpawnAnchorId);
       const identifyVisibleSpecies = (event: Event) => {
         const speciesId = Number((event as CustomEvent<{ speciesId?: number }>).detail?.speciesId);
         const sprites = activeActorSpritesBySpecies.get(speciesId);
         if (!sprites?.length) return;
         revealedSpeciesIds.add(speciesId);
         sprites.forEach(sprite => sprite.clearTint());
-        const placements = bundle.adventure.actorPlacements.filter(item => item.roomId === currentRoom.room.roomId);
-        parent.dataset.undiscoveredActorCount = String(placements.filter(placement => {
-          const asset = currentRoom.actorAssets.get(placement.assetId);
-          return asset && !revealedSpeciesIds.has(asset.speciesId);
-        }).length);
+        publishVisibleSpecies();
       };
       parent.addEventListener(MAP_SPECIES_IDENTIFIED_EVENT, identifyVisibleSpecies);
       const controlAmbient = (event: Event) => {
@@ -1737,6 +1831,7 @@ export function createTechnicalPhaserGame({
       parent.dataset.transitionCount = '0';
       parent.dataset.controlPriority = 'player';
       onReady();
+      if (initialSequenceId) queueMicrotask(() => void runCompanionSequence(initialSequenceId));
 
       this.events.on('update', (_time: number, delta: number) => {
         if (!playerBody || transitioning) return;

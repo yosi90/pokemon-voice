@@ -64,11 +64,24 @@ El archivo `<mapa>.adventure.json` contiene `AdventureMapV2` y:
 - Registra cada `.tmj` en `tiledMapAssets` mediante ruta relativa a `public/`.
 - Relaciona cada habitación con un `tiledMapAssetId`.
 - Declara en `actorPlacements` qué asset se coloca en qué `ActorAnchor` y con qué animación.
+- Un encuentro Pokémon visible también puede usar un `EncounterAnchor`; comparte `actorPlacements` y el mismo render PMD, pero conserva así la intención semántica del anclaje.
 - Conserva misiones, transiciones, variantes, requisitos y encuentros fuera de la geometría.
+- Los encuentros deterministas visibles son `actorPlacements` sobre `ActorAnchor` o `EncounterAnchor`. Los opcionales usan `rareEncounters`: su probabilidad crece por visita elegible y `guaranteedEligibleVisit` vale 3 cuando se omite.
+- `variants` activa o desactiva objetos por nombre estable y puede sustituir audio o efectos; un mismo objeto no puede aparecer a la vez en `enabledObjectIds` y `disabledObjectIds`.
+- `worldEvents` se declara opcionalmente en el sidecar del mapa que origina el evento. Sus flags son persistentes y sus inyecciones de encuentros o activaciones de variantes pueden apuntar mediante `mapId` a este u otros mapas; las referencias al mapa propio se validan de forma cruzada.
+- El simulador del configurador crea únicamente un `PokeVoiceSaveV1` y una expedición efímeros en memoria. Evalúa `RequirementExpressionV1` y las capacidades del loadout con los resolutores del juego, distingue requisitos de métodos de entrada incompatibles y nunca escribe guardado, progreso ni sidecar.
+- La matriz de investigación toma el sidecar abierto como fuente viva y puede leer sidecars adicionales seleccionados localmente sin necesitar sus TMJ. Cruza `speciesId`, los cuatro `ResearchFieldKey` y `mapId`, conserva la contribución de cada `ResearchFactV1` y nunca mantiene un manifiesto manual de mapas.
+- La misma matriz muestra `companionResearch` como reserva de convivencia separada de los mapas. Debe advertir si los sidecars cierran los cuatro campos distintos de una especie o si dos fuentes, incluida convivencia, pretenden aportar `fieldCompletion` al mismo campo; solo informa y nunca reescribe las contribuciones.
+- El diagnóstico del configurador combina `validateTiledAdventureBundle` con un auditor lógico. Los IDs se consideran globales dentro del sidecar; los ciclos se buscan entre productores y consumidores de flags o secretos; una definición solo se marca inaccesible cuando el catálogo o una contradicción demuestran que no puede cumplirse. Una interacción con voz necesita una alternativa efectiva de frase/intención por texto o un `contextAction` con `fallbackActionId`.
+- El análisis económico del diagnóstico suma únicamente las recompensas declaradas en el sidecar abierto y sus misiones locales, y contrasta los niveles con la curva compartida. Sus avisos describen el contenido previo analizado, no garantizan el balance global entre mapas. Una compra se considera bloqueante solo si pertenece a una misión que desbloquea expedición libre, aparece en todas las alternativas aplicables y no existe una entrega previa ni un compañero capaz de sustituir la herramienta.
+- La exportación del configurador descarga únicamente `AdventureMapV2`, el manifiesto PMD y el manifiesto de personajes como JSON legible. Los nombres de descarga de los manifiestos deben distinguir su dominio aunque ambos se almacenen como `manifest.v1.json` en carpetas diferentes. Ningún flujo de exportación incluye o reescribe `.tmj`, `.tsj`, tiles, colisiones, anclas, rutas u oclusiones.
+- Los tres artefactos deben superar un round-trip JSON canónico antes de presentarse como estables. La regresión del editor debe comparar el documento completo exportado y reabrir el sidecar descargado con su TMJ original; comprobar solo campos aislados no demuestra ausencia de pérdida.
 - Incluye en `requiredAssetIds` todos los sprites usados por actores.
 - Declara `occlusionGroupIds` en las colocaciones que deban aceptar máscaras parciales.
 - Declara `ambientSequences` como beats ordenados. Dentro de un beat cada actor admite una sola acción y todos esperan a que terminen las demás antes de avanzar.
 - Declara `interactions` apuntando a un `placementId` o a un `InteractionAnchor`, y conserva las páginas reutilizables en `dialogues`. Los textos y prompts no se escriben en Phaser ni en el `.tmj`.
+- Una interacción con `meaningfulKind: secret` puede apuntar a un `SecretAnchor`; los demás objetivos espaciales sin actor continúan usando `InteractionAnchor`.
+- Los hechos de investigación obtenibles en el mapa viven en `researchFacts` del sidecar, apuntan a un `interactionId` del mismo mapa y usan su `factId` como origen idempotente de recompensa.
 
 Un cambio de coordenadas en Tiled no obliga a editar el sidecar mientras el nombre estable del ancla se conserve.
 

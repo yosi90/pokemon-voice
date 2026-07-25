@@ -4142,8 +4142,20 @@
           "evolutionStage": 1,
           "heightMeters": 0.4,
           "sizeClass": "small",
-          "narrativeTags": [],
-          "fieldCapabilities": [],
+          "narrativeTags": [
+            "rock-move"
+          ],
+          "fieldCapabilities": [
+            {
+              "id": "rock-tomb",
+              "source": "move",
+              "strength": 1,
+              "tags": [
+                "loose-rock",
+                "seal-passage"
+              ]
+            }
+          ],
           "companion": {
             "minimumTrainerLevel": 3,
             "balanceStatus": "provisional",

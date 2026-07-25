@@ -1,0 +1,33 @@
+{
+  "maps": [
+    {
+      "fileName": "tegueste-forest-01-05.tmj",
+      "x": 480,
+      "y": 0,
+      "width": 480,
+      "height": 320
+    },
+    {
+      "fileName": "tegueste-forest-02-05.tmj",
+      "x": 480,
+      "y": 320,
+      "width": 480,
+      "height": 320
+    },
+    {
+      "fileName": "tegueste-forest-04-05.tmj",
+      "x": 0,
+      "y": 640,
+      "width": 480,
+      "height": 320
+    },
+    {
+      "fileName": "tegueste-forest-05-05.tmj",
+      "x": 480,
+      "y": 640,
+      "width": 480,
+      "height": 320
+    }
+  ],
+  "type": "world"
+}

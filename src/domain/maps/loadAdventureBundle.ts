@@ -11,17 +11,19 @@ export interface LoadedTiledTileset {
   imageUrl: string;
 }
 
+export type LoadedTiledMap = Record<string, unknown> & {
+  width: number;
+  height: number;
+  tilewidth: number;
+  tileheight: number;
+  layers: Array<Record<string, unknown>>;
+  tilesets: Array<Record<string, unknown>>;
+};
+
 export interface LoadedAdventureRoomBundle {
   adventure: AdventureMapV2;
   room: AdventureMapV2['rooms'][number];
-  tilemap: Record<string, unknown> & {
-    width: number;
-    height: number;
-    tilewidth: number;
-    tileheight: number;
-    layers: Array<Record<string, unknown>>;
-    tilesets: Array<Record<string, unknown>>;
-  };
+  tilemap: LoadedTiledMap;
   tilesets: LoadedTiledTileset[];
   pmdManifest: PmdAnimationManifestV1;
   actorAssets: Map<string, PmdSpriteAssetV1>;
@@ -46,6 +48,32 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function xmlAttributes(source: string) {
+  return Object.fromEntries([...source.matchAll(/([\w-]+)="([^"]*)"/g)].map(match => [match[1], match[2]]));
+}
+
+async function fetchTiledTileset(url: string): Promise<Record<string, unknown>> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`No se pudo cargar ${url} (${response.status}).`);
+  if (!url.toLocaleLowerCase().endsWith('.tsx')) return response.json() as Promise<Record<string, unknown>>;
+  const source = await response.text();
+  const tilesetTag = source.match(/<tileset\b[^>]*>/)?.[0];
+  const imageTag = source.match(/<image\b[^>]*>/)?.[0];
+  if (!tilesetTag || !imageTag) throw new Error(`${url}: TSX sin tileset o image.`);
+  const tileset = xmlAttributes(tilesetTag);
+  const image = xmlAttributes(imageTag);
+  return {
+    name: tileset.name,
+    image: image.source,
+    tilewidth: Number(tileset.tilewidth),
+    tileheight: Number(tileset.tileheight),
+    tilecount: Number(tileset.tilecount),
+    columns: Number(tileset.columns),
+    imagewidth: Number(image.width),
+    imageheight: Number(image.height),
+  };
+}
+
 async function inlineExternalTilesets(
   tilemap: LoadedAdventureRoomBundle['tilemap'],
   tmjUrl: string,
@@ -61,7 +89,7 @@ async function inlineExternalTilesets(
       return { ...reference, image: imageUrl };
     }
     const tsjUrl = new URL(reference.source, tmjUrl).href;
-    const definition = await fetchJson<Record<string, unknown>>(tsjUrl);
+    const definition = await fetchTiledTileset(tsjUrl);
     if (typeof definition.name !== 'string' || typeof definition.image !== 'string') {
       throw new Error(`${reference.source}: tileset sin name o image.`);
     }
@@ -99,6 +127,22 @@ export async function loadAdventureMapBundle({
   baseUrl: string;
 }): Promise<LoadedAdventureMapBundle> {
   const adventure = await fetchJson<AdventureMapV2>(assetUrl(adventurePath, baseUrl));
+  return loadAdventureMapBundleFromData({ adventure, baseUrl });
+}
+
+/**
+ * Construye el mismo bundle que usa el juego permitiendo que herramientas de
+ * autoría sustituyan uno o más TMJ leídos localmente por el usuario.
+ */
+export async function loadAdventureMapBundleFromData({
+  adventure,
+  baseUrl,
+  tiledMapsByAssetId = new Map(),
+}: {
+  adventure: AdventureMapV2;
+  baseUrl: string;
+  tiledMapsByAssetId?: ReadonlyMap<string, LoadedTiledMap>;
+}): Promise<LoadedAdventureMapBundle> {
   const [pmdManifest, characterManifest] = await Promise.all([
     fetchJson<PmdAnimationManifestV1>(assetUrl('assets/sprites/pokemon/pmd/manifest.v1.json', baseUrl)),
     fetchJson<CharacterSpriteManifestV1>(assetUrl('assets/sprites/characters/manifest.v1.json', baseUrl)),
@@ -110,7 +154,8 @@ export async function loadAdventureMapBundle({
       .find(candidate => candidate.assetId === room.tiledMapAssetId);
     if (!tiledReference) throw new Error(`Asset Tiled inexistente: ${room.tiledMapAssetId}.`);
     const tmjUrl = assetUrl(tiledReference.path, baseUrl);
-    const rawTilemap = await fetchJson<LoadedAdventureRoomBundle['tilemap']>(tmjUrl);
+    const rawTilemap = tiledMapsByAssetId.get(tiledReference.assetId)
+      ?? await fetchJson<LoadedTiledMap>(tmjUrl);
     const resolved = await inlineExternalTilesets(rawTilemap, tmjUrl);
     const actorAssets = new Map<string, PmdSpriteAssetV1>();
     for (const placement of adventure.actorPlacements.filter(item => item.roomId === room.roomId)) {

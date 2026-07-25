@@ -8,7 +8,7 @@ El prototipo se apoyará en un editor web de escenarios propio, mapas pequeños 
 
 ## Estado actual
 
-- Estado: Hitos 0–7, 9 y 10 completados; base de dominio del Hito 8 completada; Hitos 11 y 12 en curso, con el guardado inmediato de observaciones, secretos y recompensas ya integrado.
+- Estado: Hitos 0–13.5 completados funcionalmente. El configurador de autoría queda documentado en `[Finalizado] HITO_13_5_CONFIGURADOR_DE_AUTORIA_POKEDISCOVER.md`; el Hito 14 puede reanudarse sobre esta base.
 - Playwright y Chromium están instalados.
 - La web actual ha sido revisada en escritorio y móvil.
 - El roadmap termina al validar el prototipo de Reserva Cero. La expansión a más regiones, combates o backend requerirá un roadmap posterior.
@@ -720,7 +720,7 @@ Corrección visual final del 19 de julio de 2026. Todos los actores Pokémon sub
 - [x] Preparar exactamente un acompañante y, opcionalmente, una herramienta antes de entrar.
 - [x] Mantener el loadout bloqueado hasta abandonar el mapa.
 - [x] Ejecutar prompts contextuales y secuencias automáticas de acompañante desde datos exportados por el editor.
-- [ ] Resolver capacidades narrativas de movimientos, como `rock-tomb`, desde los mismos requisitos declarativos.
+- [x] Resolver capacidades narrativas de movimientos, como `rock-tomb`, desde los mismos requisitos declarativos.
 - [x] Guardar inmediatamente observaciones, secretos y recompensas.
 - [x] Guardar una sola vez el descubrimiento y procedencia de formas y apariencias encontradas.
 - [x] Guardar pistas del cuaderno, conversaciones únicas, coleccionables e intentos elegibles de encuentros raros.
@@ -731,7 +731,7 @@ Corrección visual final del 19 de julio de 2026. Todos los actores Pokémon sub
 - [x] Registrar interacciones significativas durante la visita sin contar movimiento, espera ni cambios de habitación.
 - [x] Conceder una sola vez el campo curado de convivencia al salir con al menos una interacción significativa.
 - [x] Resolver la identificación contextual de una especie visible mediante voz o texto sobre el reconocedor compartido.
-- [ ] Excluir controles táctiles del prototipo; se evaluarán en el roadmap de expansión.
+- [x] Excluir controles táctiles del prototipo; se evaluarán en el roadmap de expansión.
 
 Primera entrega formal del Hito 12 implementada el 19 de julio de 2026. La auditoría del prototipo confirma que Phaser ya se carga únicamente al abrir la expedición, el movimiento cardinal y la entrada contextual por voz o texto funcionan sobre el canvas y el dominio mantiene el loadout inmutable durante la visita. PokeDiscover, los encargos y las expediciones incorporan rutas hash reversibles y compatibles con alojamiento estático; los IDs estables se codifican por segmento, Atrás restaura la pantalla anterior y abandonar elimina la ruta sin recargar la Pokédex.
 
@@ -771,9 +771,13 @@ Undécima entrega del Hito 12 implementada el 22 de julio de 2026. Las pistas de
 
 Duodécima entrega del Hito 12 implementada el 22 de julio de 2026. El centro de encargos reúne en una misma vista el selector de misión, su estado, el briefing completo, los objetivos y las recompensas con nombres legibles. El loadout muestra al compañero preparado y, cuando existe algún candidato disponible, impide salir hasta elegir uno; el propio tablero enlaza con el selector y refleja la elección al regresar. La acción final distingue comenzar, continuar o volver al mapa, conserva la ruta hash de la misión seleccionada y se adapta a escritorio y móvil. Vitest cubre la transición completa dentro del modal y Playwright valida el flujo integrado en ambos tamaños.
 
+Decimotercera entrega del Hito 12 implementada el 22 de julio de 2026. El runtime resuelve ahora las capacidades narrativas combinando la forma y apariencia del compañero con la herramienta fijada en el loadout, y entrega el mismo resultado a la selección visual del trigger y a su ejecución persistente. `RequirementExpressionV1` restringe `fieldCapability` al catálogo compartido de capacidades para detectar IDs inválidos en TypeScript. Geodude incorpora `rock-tomb` como movimiento curado y el Bosque de Tegueste demuestra su uso declarativo al sellar una madriguera mediante una secuencia de sidecar, sin ninguna excepción de especie en Phaser. Catálogo, dominio y Playwright verifican la resolución y el premio idempotente en escritorio y móvil.
+
+Decimocuarta entrega y cierre funcional del Hito 12 implementados el 22 de julio de 2026. El motor declara `keyboard` como única entrada de movimiento del prototipo. La cruceta y los botones físicos dibujados en la carcasa se identifican expresamente como decoración, quedan ocultos para tecnologías de asistencia y no aceptan eventos de puntero; pulsarlos no altera la posición del jugador. Esta exclusión no afecta a los controles HTML accesibles de diálogos, identificación, voz, texto ni acciones contextuales. Playwright comprueba el contrato y la ausencia de movimiento tanto en escritorio como en el viewport móvil; los controles móviles permanecen en el trabajo futuro del roadmap de expansión.
+
 ---
 
-## Hito 13 — Sideweb: configurador de contenido PokeDiscover
+## Hito 13 — URL oculta: configurador de contenido PokeDiscover
 
 ### Objetivo
 
@@ -781,30 +785,68 @@ Construir, después de validar el runtime, una aplicación Vite + React + TypeSc
 
 ### Checklist
 
-- [ ] Abrir un `.tmj` y su `.adventure.json`, y mostrar ambos mediante el runtime Phaser compartido.
-- [ ] Leer el catálogo local de especies, formas, apariencias y capacidades.
-- [ ] Leer el manifiesto PMD y ofrecer solamente las animaciones disponibles para cada variante.
-- [ ] Leer las capas `Paths` y `Occlusion` del `.tmj` y mostrar sus IDs como opciones, sin editar su geometría.
-- [ ] Crear un editor por beats para actor, animación, dirección, ruta, estilo de movimiento, velocidad y pausa con previsualización Phaser.
-- [ ] Colocar y previsualizar encuentros, NPC, portales, secretos y triggers sobre anclajes del mapa.
-- [ ] Crear un editor visual de requisitos `all`/`any`.
-- [ ] Configurar investigación, recompensas únicas, comportamientos del acompañante e interacciones expresivas.
-- [ ] Configurar encuentros deterministas, raros, variantes y eventos globales.
-- [ ] Simular nivel, registro, acompañante, herramienta, objetos, flags y métodos de entrada.
-- [ ] Crear la matriz especie × campo de investigación × mapa.
-- [ ] Mostrar en la matriz el campo reservado a convivencia y advertir si una especie depende de cuatro colocaciones obligatorias o duplica su `fieldCompletion`.
-- [ ] Detectar IDs duplicados, referencias rotas, dependencias circulares, objetivos inaccesibles y fallbacks de voz ausentes.
-- [ ] Advertir sobre experiencia insuficiente y compras que puedan bloquear progreso obligatorio.
-- [ ] Guardar o descargar únicamente el sidecar y los manifiestos propios; Tiled seguirá siendo dueño del escenario.
-- [ ] Verificar round-trip sin pérdida de información.
+- [x] Abrir un `.tmj` y su `.adventure.json`, y mostrar ambos mediante el runtime Phaser compartido.
+- [x] Leer el catálogo local de especies, formas, apariencias y capacidades.
+- [x] Leer el manifiesto PMD y ofrecer solamente las animaciones disponibles para cada variante.
+- [x] Leer las capas `Paths` y `Occlusion` del `.tmj` y mostrar sus IDs como opciones, sin editar su geometría.
+- [x] Crear un editor por beats para actor, animación, dirección, ruta, estilo de movimiento, velocidad y pausa con previsualización Phaser.
+- [x] Colocar y previsualizar encuentros, NPC, portales, secretos y triggers sobre anclajes del mapa.
+- [x] Crear un editor visual de requisitos `all`/`any`.
+- [x] Configurar investigación, recompensas únicas, comportamientos del acompañante e interacciones expresivas.
+- [x] Configurar encuentros deterministas, raros, variantes y eventos globales.
+- [x] Simular nivel, registro, acompañante, herramienta, objetos, flags y métodos de entrada.
+- [x] Crear la matriz especie × campo de investigación × mapa.
+- [x] Mostrar en la matriz el campo reservado a convivencia y advertir si una especie depende de cuatro colocaciones obligatorias o duplica su `fieldCompletion`.
+- [x] Detectar IDs duplicados, referencias rotas, dependencias circulares, objetivos inaccesibles y fallbacks de voz ausentes.
+- [x] Advertir sobre experiencia insuficiente y compras que puedan bloquear progreso obligatorio.
+- [x] Guardar o descargar únicamente el sidecar y los manifiestos propios; Tiled seguirá siendo dueño del escenario.
+- [x] Verificar round-trip sin pérdida de información.
 
 ### Criterio de aceptación
 
-Un mapa dibujado en Tiled se abre en la sideweb, se puebla usando catálogos y selectores visuales, y se ejecuta en Poke-Voice sin editar manualmente el sidecar.
+Un mapa dibujado en Tiled se abre en la URL oculta de herramientas, se puebla usando catálogos y selectores visuales, y se ejecuta en Poke-Voice sin editar manualmente el sidecar.
+
+Primera entrega del Hito 13 implementada el 22 de julio de 2026. `/tools/pokediscover-editor/` sigue el mismo patrón oculto y el mismo despliegue que el randomizador; no aparece en la navegación ni crea una aplicación separada. La herramienta acepta un sidecar `AdventureMapV2` y un `.tmj` local, relaciona el TMJ por nombre o por la única referencia disponible, completa tilesets y manifiestos desde los assets del proyecto y construye el bundle mediante el cargador compartido. El selector permite cambiar de habitación y la vista ejecuta el mismo `createTechnicalPhaserGame` que Poke-Voice. Los errores de JSON o estructura se explican sin desmontar la página, y Playwright verifica apertura y render Phaser en escritorio y móvil.
+
+Segunda entrega del Hito 13 implementada el 22 de julio de 2026. El configurador consume directamente las 1025 especies y 1336 formas del catálogo curado local, incluyendo todas sus apariencias, sin consultar PokeAPI. Un índice derivado conserva las referencias de especie, forma y apariencia y calcula capacidades y etiquetas efectivas con el mismo conversor utilizado por los acompañantes del juego. La URL oculta permite filtrar por texto y generación, buscar también por nombre visible, ID, movimiento o etiqueta, y revisar tipos, etapa, nivel narrativo, disponibilidad y fuerza de cada capacidad. Geodude con Tumba Rocas y Pikachu surfista con Surf verifican respectivamente una capacidad de forma y otra añadida por apariencia en dominio, escritorio y móvil.
+
+Tercera entrega del Hito 13 implementada el 22 de julio de 2026. La herramienta lee al abrirse el manifiesto local PMD V1 y relaciona cada variante con el asset de su `formId`; las apariencias reutilizan explícitamente el asset de su forma mientras no exista uno propio. El selector enumera únicamente las animaciones declaradas por ese asset y muestra frames, direcciones, tamaño de celda, duración calculada con el `tickRate` del manifiesto y la relación `copyOf` de los alias resueltos. Las formas sin asset no reciben una animación ficticia: el editor explica la ausencia y omite el selector. Pruebas de dominio y Playwright verifican la lista exacta, el alias `Strike` de Bulbasaur, la herencia de Pikachu surfista y la ausencia de asset en Geodude, tanto en escritorio como en móvil.
+
+Cuarta entrega del Hito 13 implementada el 22 de julio de 2026. Al abrir un proyecto, el inspector extrae en modo de solo lectura las polilíneas `AmbientPath` de `Paths` y las máscaras `ActorOccluder` de `Occlusion`. Las rutas se ofrecen por su nombre estable y muestran únicamente un resumen de puntos, inicio y final; las máscaras se agrupan por la propiedad estable `occlusionGroup` y conservan visibles los nombres de sus objetos y su tipo geométrico. Los IDs numéricos internos de Tiled y los objetos que no cumplen las clases compartidas nunca se ofrecen al sidecar. La geometría no tiene controles de edición y continúa perteneciendo exclusivamente a Tiled. Las pruebas unitarias y Playwright verifican las referencias reales de los Gyarados y su grupo de oclusión de agua en escritorio y móvil.
+
+Quinta entrega del Hito 13 implementada el 22 de julio de 2026. El configurador incorpora un editor de `ambientSequences` organizado por secuencia, beat y acción. Permite elegir actores presentes en la habitación, usar únicamente sus animaciones PMD, orientar acciones, seleccionar rutas estables del TMJ, alternar movimiento continuo o por cuadrícula, ajustar velocidad, recorrido inverso y pausas exactas o por intervalo, además de añadir beats y acciones con IDs sin colisiones. Las acciones `face` existentes se conservan como parte del contrato compartido. Cada cambio sustituye inmutablemente el sidecar en memoria y reconstruye el bundle ya cargado para que la previsualización Phaser ejecute el resultado real; todavía no escribe ni descarga archivos. Las pruebas cubren inmutabilidad, generación de IDs y edición con reinicio efectivo del runtime en escritorio y móvil.
+
+Sexta entrega del Hito 13 implementada el 22 de julio de 2026. La herramienta lee la capa `Anchors` y permite colocar encuentros Pokémon, NPC, portales, secretos y triggers mediante los contratos compartidos `actorPlacements`, `characterPlacements`, `transitions`, `interactions` y `dialogues`. Cada tipo filtra únicamente las clases de anclaje compatibles, añade assets requeridos e IDs estables sin colisiones y actualiza el bundle en memoria. Phaser representa directamente Pokémon, NPC, transiciones e interacciones, mientras una capa técnica de autoría superpone marcadores porcentuales para hacer visibles todas las referencias sin modificar el TMJ. El perfil y el validador admiten ahora el uso previsto de `EncounterAnchor` para encuentros visibles y `SecretAnchor` para interacciones `meaningfulKind: secret`. Pruebas unitarias y Playwright colocan consecutivamente los cinco tipos y verifican sus marcadores y el runtime en escritorio y móvil.
+
+Séptima entrega del Hito 13 implementada el 22 de julio de 2026. El configurador indexa los requisitos de variantes, encuentros raros, comportamientos de compañero, triggers expresivos y transiciones condicionadas, y los edita como árboles visuales de `RequirementExpressionV1`. Cada nodo puede ser una condición, un grupo `all` o un grupo `any`; admite subgrupos arbitrarios, adición y retirada de ramas y los campos tipados de todas las condiciones atómicas del contrato, incluidas especies, investigación, progreso, compañero, capacidades, inventario, flags y contadores. Las operaciones reemplazan únicamente la rama y definición seleccionadas, sin mutar el sidecar original ni duplicar el evaluador compartido. Las pruebas verifican actualización por definición, edición anidada y composición visual real en escritorio y móvil.
+
+Octava entrega del Hito 13 implementada el 22 de julio de 2026. `AdventureMapV2` admite `researchFacts` portables vinculados a una interacción del mismo mapa; el editor crea y modifica especie, campo, contribución, texto y recompensa balanceada, mientras `factId` conserva el papel de origen idempotente que ya usa el ledger. El panel de acompañante edita modo, repetición, secuencia, acción visible, pista narrativa y el par `rewardPackageId`/`rewardOriginId`. El panel expresivo configura prompt, métodos de entrada, secuencia de éxito y matchers de frase, intención o señal acústica, además de su recompensa única. Todos los premios se seleccionan desde `rewardBalance.ts`, sin cantidades paralelas en la interfaz. El validador cruza investigación, mapa, interacción y recompensas positivas; las pruebas cubren operaciones inmutables y el flujo completo en escritorio y móvil.
+
+Novena entrega del Hito 13 implementada el 22 de julio de 2026. El panel de estado del mundo edita los `actorPlacements` deterministas de la habitación y reconstruye su asset, animación, dirección, colisión, ancla y visibilidad en la previsualización compartida. Los encuentros raros se crean desde especie, forma o apariencia del catálogo local y muestran la curva real por visita elegible, incluida la garantía curada. Las variantes configuran objetos habilitados y deshabilitados, audio y efectos visuales. `AdventureMapV2` admite además `worldEvents` originados en un sidecar, con flags persistentes e inyecciones de encuentros o activaciones de variantes sobre cualquier `mapId`; su activación se incorpora al editor visual de requisitos. El validador detecta probabilidades, garantías, duplicados, objetos contradictorios y referencias locales rotas, y las pruebas verifican operaciones inmutables y el flujo completo en escritorio y móvil.
+
+Décima entrega del Hito 13 implementada el 22 de julio de 2026. El configurador incorpora una partida efímera para simular nivel de entrenador, especies registradas y avistadas, compañero por forma o apariencia, herramienta, IDs de inventario, flags tipados y método de entrada. La simulación construye `PokeVoiceSaveV1` y, cuando existe compañero, un loadout de expedición solo en memoria; combina capacidades mediante `resolveExpeditionCapabilities` y evalúa todas las definiciones condicionadas mediante `evaluateRequirement`, sin duplicar reglas ni tocar `localStorage`, progreso o sidecar. Los resultados separan requisito pendiente de método expresivo no admitido, enumeran los átomos incumplidos y admiten filtros de disponibles y bloqueados. Las pruebas cubren el contexto completo, Tumba Rocas curada, herramienta, flags, inventario y métodos en escritorio y móvil.
+
+Undécima entrega del Hito 13 implementada el 22 de julio de 2026. La herramienta genera una matriz navegable que cruza las 1025 especies del catálogo curado con los cuatro campos de investigación y cada mapa analizado. El sidecar abierto se actualiza en vivo y pueden añadirse múltiples `.adventure.json` locales para comparar mapas sin cargar sus TMJ ni mantener un catálogo manual de rutas. Cada celda conserva todos los `ResearchFactV1`, su `factId` y su contribución como observación, cierre de campo o nota adicional; los hechos con especies desconocidas se señalan aparte. Búsqueda, generación, cobertura y un límite de 80 filas visibles mantienen utilizable la tabla en escritorio y móvil. Las pruebas cruzan Rattata entre el Bosque de Tegueste y un segundo mapa y confirman la actualización inmediata después de editar investigación.
+
+Duodécima entrega del Hito 13 implementada el 22 de julio de 2026. La matriz incorpora una columna de convivencia alimentada directamente por `companionResearch` del catálogo curado y distingue su campo, estado provisional o curado y `factId` de las colocaciones de mapas. La cobertura incluye ahora especies cuyo único contenido planificado sea esa convivencia. Un análisis derivado alerta cuando los sidecars colocan `fieldCompletion` en los cuatro campos distintos de una especie o cuando varias fuentes intentan cerrar el mismo campo; para detectar el segundo caso también cuenta la reserva de convivencia, de acuerdo con la conversión a nota adicional que realiza el runtime si el campo ya estaba completo. Las alertas enumeran todos los orígenes implicados, no modifican datos y se verifican con Rattata en escritorio, móvil y pruebas de dominio.
+
+Decimotercera entrega del Hito 13 implementada el 22 de julio de 2026. El editor incorpora un diagnóstico integral que reutiliza el validador cruzado de Tiled, PMD y sidecar y añade un auditor lógico para IDs globales duplicados, misiones o variantes referenciadas sin definición, ciclos entre productores y consumidores de flags o secretos, requisitos estáticamente imposibles y fallbacks de voz ineficaces. La satisfacibilidad reconoce alternativas `any`, contradicciones dentro de `all`, especies, formas, etiquetas, capacidades, fuerza e inventario disponibles en los catálogos compartidos, evitando marcar como inaccesible aquello que todavía pueda proceder de progreso externo. El panel separa errores y advertencias, filtra por categoría y se actualiza durante la edición; ha revelado que la misión de Alcanfor aún referencia `variant:camphor-forest:scientists-blocking-exit`, ausente del sidecar actual. El manifiesto PMD regenerado reconoce además los nuevos assets aportados de Charizard, Snorlax, Mewtwo, Mew y Unown: suma 51 assets y 1375 animaciones.
+
+Decimocuarta entrega del Hito 13 implementada el 22 de julio de 2026. El diagnóstico integral incorpora un análisis económico derivado de las recompensas declaradas en misiones, investigación, comportamientos e interacciones expresivas. Contrasta cada nivel obligatorio con la curva compartida de experiencia y con la EXP accesible antes de ese umbral, muestra EXP, nivel alcanzable, PD y coste obligatorio en vivo, y emite advertencias —no errores— cuando el contenido analizado no basta. También detecta objetos o herramientas de la tienda opcional que aparecen en todas las alternativas de una misión que desbloquea expedición libre; no marca una compra si otra rama `any`, una recompensa previa o una capacidad de compañero permite avanzar. Las pruebas de dominio y Playwright cubren estos límites y la actualización inmediata del panel en escritorio y móvil.
+
+Decimoquinta entrega del Hito 13 implementada el 22 de julio de 2026. El configurador incorpora un panel de exportación que serializa el estado vivo del `AdventureMapV2` con JSON legible y descarga por separado el sidecar, el manifiesto PMD y el manifiesto de personajes. Los dos manifiestos usan nombres de descarga inequívocos y cada artefacto muestra su ruta de destino dentro del proyecto; el sidecar conserva su nombre `.adventure.json` o deriva uno estable desde `mapId`. La interfaz distingue cambios todavía en memoria y declara explícitamente que `.tmj`, `.tsj`, tiles, colisiones y geometría no se exportan ni modifican. Las pruebas verifican tipos, nombres, contenido descargado tras una edición y exclusión de Tiled en escritorio y móvil.
+
+Decimosexta y última entrega del Hito 13 implementada el 22 de julio de 2026. Cada artefacto de exportación comprueba ahora su estabilidad canónica mediante `serializar → parsear → serializar`, y el panel muestra el resultado conjunto antes de descargar. La prueba de navegador abre el sidecar real de Tegueste, modifica un requisito, compara el documento exportado completo con la fuente más esa única edición, verifica byte semántico por byte semántico ambos manifiestos y vuelve a abrir el sidecar descargado con el TMJ original. La segunda apertura conserva la edición y vuelve a quedar en estado limpio, tanto en escritorio como en móvil. Con ello queda completado el Hito 13: la URL oculta puede abrir, poblar, diagnosticar, previsualizar y exportar contenido PokeDiscover sin apropiarse de la geometría de Tiled ni perder información.
+
+Afinado posterior del Hito 13 implementado el 22 de julio de 2026. La apertura recomendada selecciona ahora la carpeta completa de una aventura, detecta su único sidecar y carga conjuntamente todos sus TMJ; las habitaciones declaradas continúan siendo editables y una vista global compone también los mapas aún no incorporados al sidecar sobre sus coordenadas nominales, en modo de solo lectura, con arrastre y zoom. El cargador compartido admite además tilesets externos JSON (`.tsj`) y XML (`.tsx`). El catálogo sustituye el corte arbitrario de 40 entradas por páginas de 24 y checks independientes para formas base, alternativas y skins, mientras la ficha anima directamente la hoja PMD seleccionada. Finalmente, los beats admiten desplazamientos relativos enteros en tiles entre animaciones y declaran si la secuencia reinicia, vuelve sobre sí misma o termina conservando la posición. Las pruebas cubren filtros, carpeta, vista completa, preview y edición de estas transiciones.
+
+Corrección de presentación del afinado aplicada el 22 de julio de 2026. La cabecera queda reducida al nombre de la herramienta y Fuentes expone únicamente la carga por carpeta. El catálogo elimina contadores y rótulos redundantes, compacta búsqueda, generación y clases de variante, y distribuye el selector de animación y sus cuatro métricas junto a una preview PMD contenida en vez de reservarle todo el ancho. La composición adaptativa conserva esta relación tanto en escritorio como en el viewport móvil.
 
 ---
 
 ## Hito 14 — Prototipo Reserva Cero
+
+> Reanudable tras el cierre de `docs/roadmaps/[Finalizado] HITO_13_5_CONFIGURADOR_DE_AUTORIA_POKEDISCOVER.md`.
 
 ### Estructura
 
@@ -831,12 +873,20 @@ Como regla general, tres campos procederán de escenarios y uno de convivencia c
 - [x] Añadir el logro permanente `Un comienzo típico` y la elección de Bulbasaur, Charmander o Squirtle cuando no haya candidatos.
 - [x] Permitir ahuyentar Rattata mediante acción directa o reacción genérica del compañero en el dominio.
 - [x] Definir la observación de conducta de Rattata, el secreto de Pineco y su biometría con recompensa única.
-- [ ] Conectar la confirmación del perfil con el selector de compañero bloqueado y su diálogo urgente.
-- [ ] Dibujar y validar el mapa definitivo cuando el pipeline Tiled entregue la plantilla.
-- [ ] Representar asalto, caída de Poké Balls, elección de inicial, rescate, científicos y escena de Pineco en Phaser.
-- [ ] Aplicar siluetas a especies no registradas y reproducir revelación y grito dentro del mapa.
+- [x] Conectar la confirmación del perfil con el selector de compañero bloqueado y su diálogo urgente.
+- [x] Dibujar y validar el mapa definitivo cuando el pipeline Tiled entregue la plantilla.
+- [x] Representar asalto, caída de Poké Balls, elección de inicial, rescate, científicos y escena de Pineco en Phaser.
+- [x] Aplicar siluetas a especies no registradas y reproducir revelación y grito dentro del mapa.
 - [ ] Abrir la ruta de científicos visualmente y conservar el arbusto de Corte para revisitas.
 - [ ] Cubrir el flujo visual completo con Playwright tras existir el runtime.
+
+Primera entrega del Hito 14 implementada el 22 de julio de 2026. Confirmar el avatar y el nombre prepara ahora el prólogo mediante `prepareCamphorPrologue`, conserva su checkpoint en el guardado y encola una segunda llamada narrativa en la que Alcanfor comunica la emergencia del Bosque de Tegueste. Al terminarla, PokeDiscover se abre directamente en el selector de compañero: Inicio, Encargos y Tienda quedan deshabilitados, no existe cierre por botón, fondo o Escape y la confirmación permanece bloqueada hasta seleccionar un candidato realmente elegible. Confirmar el equipo ejecuta `confirmCamphorCompanion`, avanza el checkpoint a `ready` y abre el briefing de la misión sin conceder todavía `first-mission`. El bloqueo se restaura tras recargar; una partida antigua con el prólogo ya completado no vuelve a encolar la emergencia. Pruebas de dominio, componente y Playwright verifican el recorrido en escritorio y móvil.
+
+Segunda entrega del Hito 14 implementada el 22 de julio de 2026. La plantilla definitiva de la sala activa `02-05` del Bosque de Tegueste queda aceptada como escenario del prólogo: una habitación ortogonal de 30×20 tiles con `Ground`, 43 volúmenes de colisión, `Above`, oclusión de agua, rutas ambientales y 30 anclas estables. Tiled contiene posiciones específicas para la entrada, Alcanfor de pie y caído, los tres Rattata, dos científicos, nueve Pineco y las aproximaciones del compañero, de modo que las próximas cinemáticas no dependerán de coordenadas incrustadas en Phaser. `npm run maps:validate` confirma conjuntamente el TMJ, su sidecar, tilesets, manifiestos y animaciones; la prueba visual de escritorio y móvil adopta el agua tileada y el Alcanfor normalizado como nueva referencia. Las habitaciones 3 y 4 continúan fuera de este alcance y permanecen documentadas como expansión pendiente del bosque.
+
+Tercera entrega del Hito 14 implementada el 22 de julio de 2026. El sidecar incorpora `mapSequences` para representar el asalto como beats declarativos: aparecen los tres Rattata, los ayudantes científicos corren a sus anclas de refugio, Alcanfor cambia a su pose caída y Phaser deja caer tres Poké Balls físicas cuando no existe compañero previo. Un cue accesible ofrece Bulbasaur, Charmander o Squirtle, persiste `awaitingStarter`, registra la elección y converge en la misma misión que la rama con compañero ya preparado. Ambas rutas visualizan el rescate, resuelven los tres actores del contador, levantan a Alcanfor, retiran a los científicos y hacen caer a Pineco antes de conceder misión, ruta, investigación y secreto una sola vez. El nuevo intérprete también admite personajes inicialmente ocultos, props de Poké Ball y cues sin codificar coordenadas narrativas en React. Se integran la pose caída de Alcanfor y un científico FRLG en el manifiesto de personajes. Playwright recorre las dos ramas completas en escritorio y móvil y comprueba checkpoints, compañero, contador, misión y Pineco persistidos.
+
+Cuarta entrega del Hito 14 implementada el 22 de julio de 2026. La silueta y su revelación, ya presentes en el runtime, quedan conectadas al flujo completo de descubrimiento dentro del mapa: una especie visible recién identificada se guarda una sola vez y reproduce inmediatamente su grito. La lista entregada al reconocedor se actualiza desde Phaser cuando una secuencia muestra u oculta actores, por lo que los Rattata, iniciales y Pineco del prólogo no pueden nombrarse antes de entrar realmente en escena. El contador técnico ignora igualmente actores ocultos. Playwright verifica por voz la persistencia, el audio y la revelación de Cottonee, por texto la de Cramorant y el rechazo de Rattata mientras todavía permanece oculto.
 
 ### Misiones
 

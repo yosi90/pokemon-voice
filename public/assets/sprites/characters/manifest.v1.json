@@ -48,6 +48,38 @@
       "frameDurationMs": 160,
       "renderScale": 1,
       "source": "pack estructurado proporcionado por el usuario"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "character:npc:professor-alcanfor-fallen",
+      "role": "npc",
+      "path": "assets/sprites/characters/alcanfor/professor-alcanfor-fall.png",
+      "frameWidth": 16,
+      "frameHeight": 24,
+      "columns": 4,
+      "rows": 1,
+      "directionRows": { "down": 0, "left": 0, "right": 0, "up": 0 },
+      "idleFrame": 3,
+      "walkFrames": [3],
+      "frameDurationMs": 180,
+      "renderScale": 1,
+      "source": "pose normalizada de caída del profesor Alcanfor"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "character:npc:scientist",
+      "role": "npc",
+      "path": "assets/sprites/characters/scientist/scientist-walk.png",
+      "frameWidth": 32,
+      "frameHeight": 48,
+      "columns": 4,
+      "rows": 4,
+      "directionRows": { "down": 0, "left": 1, "right": 2, "up": 3 },
+      "idleFrame": 0,
+      "walkFrames": [0, 1, 2, 3],
+      "frameDurationMs": 150,
+      "renderScale": 1,
+      "source": "FRLG NPCs · trainer_SCIENTIST"
     }
   ]
 }

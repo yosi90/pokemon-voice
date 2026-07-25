@@ -156,4 +156,33 @@ describe('selector visual de acompañante', () => {
     await user.selectOptions(screen.getByLabelText('Categoría'), 'common');
     expect(screen.getByText('No hay candidatos conocidos con ese nombre.')).toBeInTheDocument();
   });
+
+  it('bloquea PokeDiscover en el compañero durante la llamada urgente', async () => {
+    const user = userEvent.setup();
+    const onConfirmCompanion = vi.fn();
+    render(<ProfessorMissionModal
+      open
+      initialSection="companion"
+      companionSelectionLocked
+      missionIds={[CAMPHOR_PROLOGUE_MISSION_ID]}
+      catalog={catalog}
+      onConfirmCompanion={onConfirmCompanion}
+      onClose={() => {}}
+    />);
+
+    expect(screen.queryByRole('button', { name: 'Cerrar PokeDiscover' })).not.toBeInTheDocument();
+    expect(screen.getByText('Alcanfor necesita ayuda en Tegueste')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Inicio' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Encargos' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tienda' })).toBeDisabled();
+    const confirm = screen.getByRole('button', { name: 'Confirmar compañero y revisar encargo' });
+    expect(confirm).toBeDisabled();
+
+    const choose = screen.getAllByRole('button', { name: 'Elegir' }).find(button => !button.hasAttribute('disabled'));
+    expect(choose).toBeDefined();
+    await user.click(choose!);
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+    expect(onConfirmCompanion).toHaveBeenCalledOnce();
+  });
 });

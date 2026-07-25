@@ -1,4 +1,5 @@
 import type {
+  FieldToolDefinitionV1,
   PokeDiscoverShopContentV1,
   ShopOfferV1,
 } from '../../../packages/contracts/src/index.js';
@@ -74,6 +75,12 @@ export const POKE_DISCOVER_SHOP_CONTENT = Object.freeze([
     unlockHint: 'Cambio puramente visual.',
   },
 ] as const satisfies readonly PokeDiscoverShopContentV1[]);
+
+export const POKE_DISCOVER_FIELD_TOOLS = Object.freeze(
+  POKE_DISCOVER_SHOP_CONTENT.filter(
+    (content): content is typeof content & FieldToolDefinitionV1 => content.category === 'tool',
+  ),
+);
 
 export const POKE_DISCOVER_SHOP_OFFERS = Object.freeze([
   { schemaVersion: 1, offerId: 'offer:tool:shovel', category: 'tool', contentId: 'tool:shovel', discoveryPointCost: 90, optionalContentOnly: true },

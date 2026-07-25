@@ -1,5 +1,5 @@
 import type { PokemonFormId, PokemonSpeciesId, StableId } from './common.js';
-import type { EvolutionStage, PokemonSizeClass, PokemonTypeId } from './catalog.js';
+import type { EvolutionStage, FieldCapabilityId, PokemonSizeClass, PokemonTypeId } from './catalog.js';
 import type { ResearchFieldKey, ResearchStatus } from './research.js';
 
 export type CounterComparison = 'eq' | 'gte' | 'lte' | 'gt' | 'lt';
@@ -17,7 +17,7 @@ export type RequirementAtomV1 =
   | { kind: 'achievement'; achievementId: StableId }
   | { kind: 'modeCompleted'; modeId: StableId }
   | { kind: 'worldFlag'; flagId: StableId; expected?: boolean | string | number }
-  | { kind: 'fieldCapability'; capabilityId: StableId; minimumStrength?: number }
+  | { kind: 'fieldCapability'; capabilityId: FieldCapabilityId; minimumStrength?: number }
   | { kind: 'companionSpecies'; speciesId: PokemonSpeciesId }
   | { kind: 'companionForm'; formId: PokemonFormId }
   | { kind: 'companionType'; typeId: PokemonTypeId }

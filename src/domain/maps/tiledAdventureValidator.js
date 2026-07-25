@@ -40,6 +40,10 @@ function validMilliseconds(value) {
     && value.min >= 0 && value.max >= value.min;
 }
 
+function validPlacementScale(value) {
+  return value === undefined || (Number.isFinite(value) && value >= .1 && value <= 5);
+}
+
 function validateTiledRoom(assetId, tiled) {
   const errors = [];
   if (!tiled || typeof tiled !== 'object') return [`${assetId}: TMJ ausente o inválido`];
@@ -188,13 +192,18 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     if (placement.initiallyHidden !== undefined && typeof placement.initiallyHidden !== 'boolean') {
       errors.push(`${placement.placementId}: initiallyHidden debe ser booleano`);
     }
+    if (!validPlacementScale(placement.renderScaleMultiplier)) {
+      errors.push(`${placement.placementId}: renderScaleMultiplier debe estar entre 0.1 y 5`);
+    }
     if (!rooms.has(placement.roomId)) {
       errors.push(`${placement.placementId}: habitación inexistente`);
       continue;
     }
     const anchor = roomAnchors.get(placement.roomId)?.get(placement.anchorId);
     if (!anchor) errors.push(`${placement.placementId}: ancla inexistente ${placement.anchorId}`);
-    else if (anchor.class !== 'ActorAnchor') errors.push(`${placement.placementId}: ${placement.anchorId} no es ActorAnchor`);
+    else if (!['ActorAnchor', 'EncounterAnchor'].includes(anchor.class)) {
+      errors.push(`${placement.placementId}: ${placement.anchorId} no es ActorAnchor ni EncounterAnchor`);
+    }
     if (!(adventure.requiredAssetIds ?? []).includes(placement.assetId)) {
       errors.push(`${placement.placementId}: asset ausente en requiredAssetIds`);
     }
@@ -212,6 +221,9 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     characterPlacements.add(placement.placementId);
     if (placement.collision && !['solid', 'pass-through'].includes(placement.collision)) {
       errors.push(`${placement.placementId}: colisión de personaje desconocida ${placement.collision}`);
+    }
+    if (!validPlacementScale(placement.renderScaleMultiplier)) {
+      errors.push(`${placement.placementId}: renderScaleMultiplier debe estar entre 0.1 y 5`);
     }
     if (!rooms.has(placement.roomId)) {
       errors.push(`${placement.placementId}: habitación inexistente`);
@@ -233,6 +245,49 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     if (placement.controllable) controllableCount += 1;
   }
   if (controllableCount > 1) errors.push(`${adventure.mapId}: solo puede existir un personaje controlable por habitación`);
+
+  const variantIds = new Set();
+  for (const variant of adventure.variants ?? []) {
+    if (!variant.variantId?.trim()) errors.push(`${adventure.mapId}: variantId no puede estar vacío`);
+    else if (variantIds.has(variant.variantId)) errors.push(`${variant.variantId}: variante duplicada`);
+    variantIds.add(variant.variantId);
+    const enabled = new Set(variant.enabledObjectIds ?? []);
+    for (const objectId of variant.disabledObjectIds ?? []) {
+      if (enabled.has(objectId)) errors.push(`${variant.variantId}: ${objectId} no puede estar habilitado y deshabilitado a la vez`);
+    }
+  }
+
+  const rareEncounterIds = new Set();
+  for (const encounter of adventure.rareEncounters ?? []) {
+    if (!encounter.encounterId?.trim()) errors.push(`${adventure.mapId}: encounterId no puede estar vacío`);
+    else if (rareEncounterIds.has(encounter.encounterId)) errors.push(`${encounter.encounterId}: encuentro raro duplicado`);
+    rareEncounterIds.add(encounter.encounterId);
+    if (!Number.isSafeInteger(encounter.speciesId) || encounter.speciesId <= 0) errors.push(`${encounter.encounterId}: speciesId debe ser un entero positivo`);
+    if (encounter.formId !== undefined && !encounter.formId.trim()) errors.push(`${encounter.encounterId}: formId no puede estar vacío`);
+    if (encounter.appearanceId !== undefined && !encounter.appearanceId.trim()) errors.push(`${encounter.encounterId}: appearanceId no puede estar vacío`);
+    if (!(encounter.baseProbability > 0 && encounter.baseProbability < 1)) errors.push(`${encounter.encounterId}: baseProbability debe estar entre 0 y 1 sin incluirlos`);
+    if (encounter.guaranteedEligibleVisit !== undefined && (!Number.isSafeInteger(encounter.guaranteedEligibleVisit) || encounter.guaranteedEligibleVisit < 1)) {
+      errors.push(`${encounter.encounterId}: guaranteedEligibleVisit debe ser un entero positivo`);
+    }
+  }
+
+  const worldEventIds = new Set();
+  for (const event of adventure.worldEvents ?? []) {
+    if (!event.eventId?.trim()) errors.push(`${adventure.mapId}: eventId no puede estar vacío`);
+    else if (worldEventIds.has(event.eventId)) errors.push(`${event.eventId}: evento global duplicado`);
+    worldEventIds.add(event.eventId);
+    for (const flagId of Object.keys(event.setFlags ?? {})) {
+      if (!flagId.trim()) errors.push(`${event.eventId}: flagId no puede estar vacío`);
+    }
+    for (const injection of event.encounterInjections ?? []) {
+      if (!injection.mapId?.trim() || !injection.encounterId?.trim()) errors.push(`${event.eventId}: la inyección necesita mapId y encounterId`);
+      else if (injection.mapId === adventure.mapId && !rareEncounterIds.has(injection.encounterId)) errors.push(`${event.eventId}: encuentro local inexistente ${injection.encounterId}`);
+    }
+    for (const target of event.mapVariants ?? []) {
+      if (!target.mapId?.trim() || !target.variantId?.trim()) errors.push(`${event.eventId}: la activación de variante necesita mapId y variantId`);
+      else if (target.mapId === adventure.mapId && !variantIds.has(target.variantId)) errors.push(`${event.eventId}: variante local inexistente ${target.variantId}`);
+    }
+  }
 
   const allPlacements = new Map([
     ...(adventure.actorPlacements ?? []).map(placement => [placement.placementId, placement]),
@@ -308,8 +363,33 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     } else if (interaction.target?.kind === 'anchor') {
       const anchor = roomAnchors.get(interaction.roomId)?.get(interaction.target.anchorId);
       if (!anchor) errors.push(`${interaction.interactionId}: ancla objetivo inexistente ${interaction.target.anchorId}`);
-      else if (anchor.class !== 'InteractionAnchor') errors.push(`${interaction.interactionId}: ${interaction.target.anchorId} no es InteractionAnchor`);
+      else {
+        const allowedClasses = interaction.meaningfulKind === 'secret'
+          ? ['SecretAnchor', 'InteractionAnchor']
+          : ['InteractionAnchor'];
+        if (!allowedClasses.includes(anchor.class)) {
+          errors.push(`${interaction.interactionId}: ${interaction.target.anchorId} no es ${allowedClasses.join(' ni ')}`);
+        }
+      }
     } else errors.push(`${interaction.interactionId}: target desconocido`);
+  }
+
+  const researchFactIds = new Set();
+  for (const fact of adventure.researchFacts ?? []) {
+    if (researchFactIds.has(fact.factId)) errors.push(`${fact.factId}: hecho de investigación duplicado`);
+    researchFactIds.add(fact.factId);
+    if (!fact.factId?.trim() || !fact.text?.trim()) errors.push(`${fact.factId || adventure.mapId}: factId y text son obligatorios`);
+    if (!Number.isInteger(fact.speciesId) || fact.speciesId <= 0) errors.push(`${fact.factId}: speciesId debe ser un entero positivo`);
+    if (!['biometrics', 'behavior', 'habitat', 'exceptional'].includes(fact.field)) errors.push(`${fact.factId}: campo de investigación desconocido ${fact.field}`);
+    if (!['observation', 'fieldCompletion', 'additionalNote'].includes(fact.contribution)) errors.push(`${fact.factId}: contribución desconocida ${fact.contribution}`);
+    if (fact.mapId !== adventure.mapId) errors.push(`${fact.factId}: mapId no coincide con ${adventure.mapId}`);
+    if (!interactionIds.has(fact.interactionId)) errors.push(`${fact.factId}: interacción inexistente ${fact.interactionId}`);
+    for (const reward of fact.rewards ?? []) {
+      if (['trainerExperience', 'discoveryPoints'].includes(reward.kind)
+        && (!Number.isFinite(reward.amount) || reward.amount <= 0)) {
+        errors.push(`${fact.factId}: recompensa ${reward.kind} debe ser positiva`);
+      }
+    }
   }
 
   const expressionTriggerIds = new Set();
@@ -396,6 +476,9 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     sequenceIds.add(sequence.sequenceId);
     if (!rooms.has(sequence.roomId)) errors.push(`${sequence.sequenceId}: habitación inexistente ${sequence.roomId}`);
     if (sequence.blockedPolicy !== 'pauseSequence') errors.push(`${sequence.sequenceId}: blockedPolicy debe ser pauseSequence`);
+    if (sequence.playbackMode !== undefined && !['loop', 'pingPong', 'once'].includes(sequence.playbackMode)) {
+      errors.push(`${sequence.sequenceId}: playbackMode desconocido ${sequence.playbackMode}`);
+    }
     if (!validMilliseconds(sequence.loopPauseMs)) errors.push(`${sequence.sequenceId}: loopPauseMs inválido`);
     if (!Array.isArray(sequence.beats) || !sequence.beats.length) {
       errors.push(`${sequence.sequenceId}: necesita al menos un beat`);
@@ -416,7 +499,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
           errors.push(`${beat.beatId}: placement inexistente ${action.placementId}`);
           continue;
         }
-        if (action.kind === 'playAnimation' || (action.kind === 'movePath' && action.animation)) {
+        if (action.kind === 'playAnimation' || ((action.kind === 'movePath' || action.kind === 'moveByTiles') && action.animation)) {
           const actor = (adventure.actorPlacements ?? []).find(candidate => candidate.placementId === action.placementId);
           const asset = actor ? pmdAssets.get(actor.assetId) : undefined;
           const animationName = action.animation;
@@ -439,13 +522,25 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
             if (!aligned || !orthogonal) errors.push(`${beat.beatId}: ${action.pathId} debe ser ortogonal y ajustarse a 16 px`);
           }
         }
+        if (action.kind === 'moveByTiles') {
+          if (!Number.isInteger(action.deltaXTiles) || !Number.isInteger(action.deltaYTiles)) {
+            errors.push(`${beat.beatId}: el desplazamiento relativo debe usar tiles enteros`);
+          }
+          if (!action.deltaXTiles && !action.deltaYTiles) errors.push(`${beat.beatId}: el desplazamiento relativo no puede ser cero`);
+          if (!['grid', 'continuous'].includes(action.movementStyle)) errors.push(`${beat.beatId}: movementStyle inválido`);
+          if (!(action.speedPixelsPerSecond > 0)) errors.push(`${beat.beatId}: velocidad inválida`);
+        }
       }
     }
   }
 
   const companionSequenceIds = new Set();
-  for (const sequence of adventure.companionSequences ?? []) {
-    if (companionSequenceIds.has(sequence.sequenceId)) errors.push(`${sequence.sequenceId}: secuencia de compañero duplicada`);
+  const allMapSequences = [
+    ...(adventure.companionSequences ?? []),
+    ...(adventure.mapSequences ?? []),
+  ];
+  for (const sequence of allMapSequences) {
+    if (companionSequenceIds.has(sequence.sequenceId)) errors.push(`${sequence.sequenceId}: secuencia de mapa duplicada`);
     companionSequenceIds.add(sequence.sequenceId);
     if (!rooms.has(sequence.roomId)) errors.push(`${sequence.sequenceId}: habitación inexistente ${sequence.roomId}`);
     if (!Array.isArray(sequence.beats) || !sequence.beats.length) {
@@ -495,6 +590,12 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
         if (action.kind === 'moveByTiles' && (!Number.isInteger(action.tiles) || action.tiles < 1)) {
           errors.push(`${beat.beatId}: tiles debe ser un entero positivo`);
         }
+        if (action.kind === 'dropPokeBalls' && (!Number.isInteger(action.count) || action.count < 1)) {
+          errors.push(`${beat.beatId}: count debe ser un entero positivo`);
+        }
+        if (action.kind === 'emitCue' && !action.cueId?.trim()) {
+          errors.push(`${beat.beatId}: emitCue necesita cueId`);
+        }
         if (action.kind === 'returnToTrainer' && action.actorRef !== 'dynamic:companion') {
           errors.push(`${beat.beatId}: returnToTrainer solo admite dynamic:companion`);
         }
@@ -539,6 +640,34 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     else if (from.class !== 'TransitionAnchor') errors.push(`${transition.transitionId}: el origen no es TransitionAnchor`);
     if (!to) errors.push(`${transition.transitionId}: ancla Tiled de destino inexistente`);
     else if (to.class !== 'TransitionAnchor') errors.push(`${transition.transitionId}: el destino no es TransitionAnchor`);
+  }
+  const entryPoints = new Map();
+  for (const entry of adventure.entryPoints ?? []) {
+    if (!entry.entryPointId?.trim()) {
+      errors.push(`${adventure.mapId}: punto de entrada sin ID`);
+      continue;
+    }
+    if (entryPoints.has(entry.entryPointId)) errors.push(`${entry.entryPointId}: punto de entrada duplicado`);
+    entryPoints.set(entry.entryPointId, entry);
+    if (!entry.label?.trim()) errors.push(`${entry.entryPointId}: nombre visible vacío`);
+    const anchor = roomAnchors.get(entry.roomId)?.get(entry.anchorId);
+    if (!anchor) errors.push(`${entry.entryPointId}: ancla de entrada inexistente`);
+    else if (anchor.class !== 'PlayerSpawn') errors.push(`${entry.entryPointId}: la entrada necesita PlayerSpawn`);
+  }
+  const missionEntries = new Set();
+  for (const assignment of adventure.missionEntryPoints ?? []) {
+    if (missionEntries.has(assignment.missionId)) errors.push(`${assignment.missionId}: entrada de misión duplicada`);
+    missionEntries.add(assignment.missionId);
+    if (!(adventure.missionIds ?? []).includes(assignment.missionId)) {
+      errors.push(`${assignment.missionId}: la misión no pertenece al mapa`);
+    }
+    if (!entryPoints.has(assignment.entryPointId)) {
+      errors.push(`${assignment.missionId}: punto de entrada inexistente ${assignment.entryPointId}`);
+    }
+  }
+  if (adventure.freeExpeditionEntryPointId
+    && !entryPoints.has(adventure.freeExpeditionEntryPointId)) {
+    errors.push(`${adventure.mapId}: entrada libre inexistente ${adventure.freeExpeditionEntryPointId}`);
   }
   return errors;
 }

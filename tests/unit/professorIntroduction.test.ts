@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   PROFESSOR_FIRST_AUTOMATIC_DISCOVERY,
+  PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID,
+  PROFESSOR_NARRATIVE_SEQUENCES,
   PROFESSOR_INTRO_SEQUENCE_ID,
   PROFESSOR_RETURN_SEQUENCE_ID,
   createProfessorIntroductionStateV1,
@@ -77,5 +79,12 @@ describe('introducción del profesor Alcanfor', () => {
       displayName: 'Naira del Mar',
     });
     expect(normalizeTrainerProfile({ avatarId: 'achaman', displayName: '   ' })?.displayName).toBe('Achaman');
+  });
+
+  it('declara la llamada urgente que enlaza el perfil con la preparación de campo', () => {
+    const sequence = PROFESSOR_NARRATIVE_SEQUENCES[PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID];
+    expect(sequence).toMatchObject({ once: true, initialPageId: 'emergency-call' });
+    expect(sequence.pages.map(page => page.pageId)).toEqual(['emergency-call', 'choose-companion']);
+    expect(sequence.pages[1].text).toContain('Elige un compañero');
   });
 });

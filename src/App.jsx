@@ -40,9 +40,12 @@ import {
 } from './domain/modes/modeDefinitions.ts';
 import {
   beginBrowserExpedition,
+  beginBrowserCamphorPrologue,
+  confirmBrowserCamphorCompanion,
   deleteAllBrowserPokeVoiceData,
   endBrowserExpeditionWithReport,
   getBrowserPokeVoiceSave,
+  prepareBrowserCamphorPrologue,
   resolveBrowserExpressionTrigger,
 } from './store/browserPokeVoiceSaveStore.js';
 import { browserDiscoveryStore } from './store/browserDiscoveryStore.ts';
@@ -52,6 +55,8 @@ import { toLegacyPokemonList } from './domain/catalog/pokemonCatalogModel.ts';
 import { CAMPHOR_PROLOGUE_MISSION } from './data/adventure/camphorPrologue.ts';
 import { getPokeDiscoverRewardPackage } from './data/adventure/rewardBalance.ts';
 import { getKnownPokeDiscoverMissionIds } from './data/adventure/missionCatalog.ts';
+import { getCompanionCandidates } from './domain/companions/companionCandidates.ts';
+import { PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID } from './domain/narrative/professorIntroduction.ts';
 import {
   buildExpeditionHash,
   buildMissionHash,
@@ -104,10 +109,11 @@ export default function App() {
       if (discovered) {
         const name = game.allPokemon.find(pokemon => pokemon.id === speciesId)?.name ?? raw;
         game.showToast(`¡${name} identificado en la expedición!`, 'ok');
+        game.playRevealAudio(speciesId, { delay: 0, volume: 0.42 });
       }
     }
     return true;
-  }, [game.allPokemon, game.showToast, resolveMapPokemon]);
+  }, [game.allPokemon, game.playRevealAudio, game.showToast, resolveMapPokemon]);
   const resolveMapInput = useCallback((raw, options = {}) => {
     if (mapExpression && String(raw ?? '').trim()) return { matched: true, sequence: [] };
     return resolveMapPokemon(raw, options);
@@ -231,10 +237,31 @@ export default function App() {
     && !game.lastRevealedId
     && game.specialEffects.length === 0
     && (!voiceSupportModalOpen || speech.speechSupported);
+  const handleProfileConfirmed = useCallback(() => {
+    const current = getBrowserPokeVoiceSave();
+    const availableCompanionCount = getCompanionCandidates(game.pokemonCatalog, current)
+      .filter(candidate => candidate.eligibility.status === 'eligible').length;
+    const prepared = prepareBrowserCamphorPrologue(availableCompanionCount);
+    return prepared.pendingMissionLaunch?.missionId === CAMPHOR_PROLOGUE_MISSION.missionId;
+  }, [game.pokemonCatalog]);
+  const handleProfessorSequenceCompleted = useCallback(sequenceId => {
+    if (sequenceId !== PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID) return;
+    const pending = getBrowserPokeVoiceSave().pendingMissionLaunch;
+    const hash = pending?.checkpoint === 'awaitingCompanion'
+      ? buildPokeDiscoverHash()
+      : pending?.checkpoint === 'openingCinematic'
+        ? buildExpeditionHash(TEGUESTE_FOREST_PREVIEW_MAP_ID, TEGUESTE_FOREST_PREVIEW_ROOM_ID)
+        : undefined;
+    if (!hash) return;
+    setProfessorMissionsOpen(pending?.checkpoint === 'awaitingCompanion');
+    if (window.location.hash !== hash) window.location.hash = hash;
+  }, []);
   const professor = useProfessorIntroduction({
     discoveryCount: game.globalScore,
     canPresent: narrativeCanPresent,
     ignoreNewDiscoveries: Boolean(game.timer || game.timedCountdown),
+    onProfileConfirmed: handleProfileConfirmed,
+    onSequenceCompleted: handleProfessorSequenceCompleted,
   });
   useEffect(() => {
     if (professor.active) return;
@@ -261,8 +288,12 @@ export default function App() {
   const selectedEntryState = selectedPokemon
     ? getPokemonEntryState(getBrowserPokeVoiceSave(), selectedPokemon.id)
     : null;
-  const professorProgress = getBrowserPokeVoiceSave().pokeDiscover;
-  const knownProfessorMissionIds = getKnownPokeDiscoverMissionIds(getBrowserPokeVoiceSave());
+  const currentPokeVoiceSave = getBrowserPokeVoiceSave();
+  const professorProgress = currentPokeVoiceSave.pokeDiscover;
+  const knownProfessorMissionIds = getKnownPokeDiscoverMissionIds(currentPokeVoiceSave);
+  const companionSelectionLocked = currentPokeVoiceSave.pendingMissionLaunch?.checkpoint === 'awaitingCompanion'
+    && currentPokeVoiceSave.pokeDiscover.narrativeProgress.completedSequenceIds
+      .includes(PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID);
 
   const closeNavigationLayers = () => {
     setModesOpen(false);
@@ -284,7 +315,16 @@ export default function App() {
   }, []);
 
   const openTeguesteForest = useCallback(() => {
-    const save = getBrowserPokeVoiceSave();
+    let save = getBrowserPokeVoiceSave();
+    if (save.pendingMissionLaunch?.missionId === CAMPHOR_PROLOGUE_MISSION.missionId
+      && save.pendingMissionLaunch.checkpoint === 'ready') {
+      try {
+        save = beginBrowserCamphorPrologue();
+      } catch (error) {
+        game.showToast(error instanceof Error ? error.message : 'No se pudo comenzar el encargo.', 'bad');
+        return;
+      }
+    }
     const progress = save.pokeDiscover.mapProgress[TEGUESTE_FOREST_PREVIEW_MAP_ID];
     if (progress?.freeExpeditionUnlocked && !save.activeExpeditionSession) {
       try {
@@ -302,6 +342,15 @@ export default function App() {
       TEGUESTE_FOREST_PREVIEW_MAP_ID,
       TEGUESTE_FOREST_PREVIEW_ROOM_ID,
     ));
+  }, [game.showToast, navigateAdventure]);
+
+  const confirmUrgentCompanion = useCallback(() => {
+    try {
+      confirmBrowserCamphorCompanion();
+      navigateAdventure(buildMissionHash(CAMPHOR_PROLOGUE_MISSION.missionId));
+    } catch (error) {
+      game.showToast(error instanceof Error ? error.message : 'No se pudo confirmar el compañero.', 'bad');
+    }
   }, [game.showToast, navigateAdventure]);
 
   const leaveTeguesteForest = useCallback(() => {
@@ -522,8 +571,10 @@ export default function App() {
         open={professorMissionsOpen && !professor.active}
         missionIds={knownProfessorMissionIds}
         catalog={game.pokemonCatalog}
-        initialSection={adventureRoute.kind === 'mission' ? 'missions' : 'home'}
+        initialSection={companionSelectionLocked ? 'companion' : adventureRoute.kind === 'mission' ? 'missions' : 'home'}
         selectedMissionId={adventureRoute.kind === 'mission' ? adventureRoute.missionId : undefined}
+        companionSelectionLocked={companionSelectionLocked}
+        onConfirmCompanion={confirmUrgentCompanion}
         onOpenMission={missionId => navigateAdventure(buildMissionHash(missionId))}
         onOpenMapPreview={openTeguesteForest}
         onClose={closeAdventureRoute}

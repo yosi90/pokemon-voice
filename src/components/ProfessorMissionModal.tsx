@@ -236,6 +236,8 @@ export function ProfessorMissionModal({
   catalog,
   initialSection = 'home',
   selectedMissionId,
+  companionSelectionLocked = false,
+  onConfirmCompanion = () => {},
   onOpenMission = () => {},
   onOpenMapPreview = () => {},
   onClose,
@@ -245,11 +247,14 @@ export function ProfessorMissionModal({
   catalog: readonly PokemonCatalogRecord[];
   initialSection?: 'home' | 'missions' | 'companion' | 'shop';
   selectedMissionId?: string;
+  companionSelectionLocked?: boolean;
+  onConfirmCompanion?: () => void;
   onOpenMission?: (missionId: string) => void;
   onOpenMapPreview?: () => void;
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const [section, setSection] = useState<'home' | 'missions' | 'companion' | 'shop'>(initialSection);
   const [save, setSave] = useState(getBrowserPokeVoiceSave);
   const [focusedMissionId, setFocusedMissionId] = useState(selectedMissionId ?? missionIds[0]);
@@ -258,36 +263,41 @@ export function ProfessorMissionModal({
     setSection(initialSection);
     setSave(getBrowserPokeVoiceSave());
     setFocusedMissionId(selectedMissionId ?? missionIds[0]);
-    closeRef.current?.focus();
+    (companionSelectionLocked ? panelRef.current : closeRef.current)?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape' && !companionSelectionLocked) onClose();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [initialSection, onClose, open, selectedMissionId]);
+  }, [companionSelectionLocked, initialSection, onClose, open, selectedMissionId]);
   const missions = missionIds
     .map(getPokeDiscoverMission)
     .filter((mission): mission is MissionDefinitionV1 => Boolean(mission));
+  const selectedCompanion = getCompanionCandidates(catalog, save).find(candidate => candidate.selected);
   if (!open) return null;
   return (
     <div className="pv-modal professor-missions" data-testid="professor-missions">
-      <div className="pv-modal__backdrop" onClick={onClose} />
-      <section className="pv-modal__panel professor-missions__panel" role="dialog" aria-modal="true" aria-labelledby="professor-missions-title">
+      <div className="pv-modal__backdrop" onClick={companionSelectionLocked ? undefined : onClose} />
+      <section ref={panelRef} tabIndex={companionSelectionLocked ? -1 : undefined} className="pv-modal__panel professor-missions__panel" role="dialog" aria-modal="true" aria-labelledby="professor-missions-title">
         <header className="pv-modal__head">
           <h3 id="professor-missions-title">PokeDiscover</h3>
-          <button ref={closeRef} className="icon-btn professor-missions__close" type="button" aria-label="Cerrar PokeDiscover" onClick={onClose}>×</button>
+          {!companionSelectionLocked ? <button ref={closeRef} className="icon-btn professor-missions__close" type="button" aria-label="Cerrar PokeDiscover" onClick={onClose}>×</button> : <span className="professor-missions__urgent-badge">Llamada urgente</span>}
         </header>
         <nav className="professor-missions__tabs" aria-label="Secciones de Poke-Discover">
-          <button type="button" className={section === 'home' ? 'is-active' : ''} aria-pressed={section === 'home'} onClick={() => setSection('home')}>Inicio</button>
-          <button type="button" className={section === 'missions' ? 'is-active' : ''} aria-pressed={section === 'missions'} onClick={() => setSection('missions')}>Encargos</button>
+          <button type="button" disabled={companionSelectionLocked} className={section === 'home' ? 'is-active' : ''} aria-pressed={section === 'home'} onClick={() => setSection('home')}>Inicio</button>
+          <button type="button" disabled={companionSelectionLocked} className={section === 'missions' ? 'is-active' : ''} aria-pressed={section === 'missions'} onClick={() => setSection('missions')}>Encargos</button>
           <button type="button" className={section === 'companion' ? 'is-active' : ''} aria-pressed={section === 'companion'} onClick={() => setSection('companion')}>Compañero</button>
-          <button type="button" className={section === 'shop' ? 'is-active' : ''} aria-pressed={section === 'shop'} onClick={() => setSection('shop')}>Tienda</button>
+          <button type="button" disabled={companionSelectionLocked} className={section === 'shop' ? 'is-active' : ''} aria-pressed={section === 'shop'} onClick={() => setSection('shop')}>Tienda</button>
         </nav>
         <div className="pv-modal__body professor-missions__body">
           {section === 'home' ? (
             <PokeDiscoverHome catalog={catalog} missionIds={missionIds} save={save} onOpenMapPreview={onOpenMapPreview} />
           ) : section === 'companion' ? (
-            <CompanionSelector catalog={catalog} onSaveChange={setSave} />
+            <div className={companionSelectionLocked ? 'professor-urgent-companion' : ''}>
+              {companionSelectionLocked ? <div className="professor-urgent-companion__message" role="status"><strong>Alcanfor necesita ayuda en Tegueste</strong><p>Elige un compañero y confirma la salida. No podrás cambiar de sección hasta dejar preparado el equipo.</p></div> : null}
+              <CompanionSelector catalog={catalog} onSaveChange={setSave} />
+              {companionSelectionLocked ? <footer className="professor-urgent-companion__actions"><p>{selectedCompanion ? `${selectedCompanion.displayName} está listo para partir.` : 'Selecciona un Pokémon disponible para continuar.'}</p><button type="button" disabled={!selectedCompanion} onClick={onConfirmCompanion}>Confirmar compañero y revisar encargo</button></footer> : null}
+            </div>
           ) : section === 'shop' ? (
             <PokeDiscoverShop save={save} onSaveChange={setSave} />
           ) : missions.length ? (

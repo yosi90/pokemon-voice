@@ -3,6 +3,7 @@ import type { NarrativeActionV1, NarrativeChoiceV1 } from '../../packages/contra
 import {
   DEFAULT_TRAINER_NAMES,
   PROFESSOR_NARRATIVE_SEQUENCES,
+  PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID,
   PROFESSOR_PROFILE_SEQUENCE_ID,
   PROFESSOR_INCOMING_CALL_DELAY_MS,
   getProfessorIntroductionTrigger,
@@ -26,10 +27,14 @@ export function useProfessorIntroduction({
   discoveryCount,
   canPresent,
   ignoreNewDiscoveries = false,
+  onProfileConfirmed,
+  onSequenceCompleted,
 }: {
   discoveryCount: number;
   canPresent: boolean;
   ignoreNewDiscoveries?: boolean;
+  onProfileConfirmed?: () => boolean | void;
+  onSequenceCompleted?: (sequenceId: string) => void;
 }) {
   const [state, setState] = useState(readState);
   const [incomingCallSequenceId, setIncomingCallSequenceId] = useState<string>();
@@ -161,7 +166,8 @@ export function useProfessorIntroduction({
         ])],
       },
     }));
-  }, [commit, state.introduction, state.narrativeProgress.activeSequence]);
+    onSequenceCompleted?.(active.sequenceId);
+  }, [commit, onSequenceCompleted, state.introduction, state.narrativeProgress.activeSequence]);
 
   const applyAction = useCallback((action?: NarrativeActionV1) => {
     if (!action) return state.introduction;
@@ -237,8 +243,19 @@ export function useProfessorIntroduction({
     const introduction = page.textInput.action === 'saveTrainerNameAndAccept'
       ? { ...state.introduction, status: 'accepted' as const, acceptedAt: state.introduction.acceptedAt ?? new Date().toISOString() }
       : state.introduction;
-    moveToPage(page.textInput.nextPageId, introduction, trainerProfile);
-  }, [moveToPage, state.introduction, state.narrativeProgress.activeSequence, state.trainerProfile]);
+    commit(current => ({
+      ...current,
+      introduction,
+      trainerProfile,
+      narrativeProgress: {
+        ...current.narrativeProgress,
+        activeSequence: current.narrativeProgress.activeSequence
+          ? { ...current.narrativeProgress.activeSequence, pageId: page.textInput!.nextPageId }
+          : undefined,
+      },
+    }));
+    if (onProfileConfirmed?.() !== false) queueSequence(PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID, false);
+  }, [commit, onProfileConfirmed, queueSequence, state.introduction, state.narrativeProgress.activeSequence, state.trainerProfile]);
 
   const dismiss = useCallback(() => {
     if (state.introduction.status === 'accepted') {
