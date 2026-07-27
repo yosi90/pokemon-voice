@@ -1,6 +1,6 @@
 import type {
-  AdventureActorPlacementV1,
-  AdventureMapV2,
+  AdventureActorPlacementV3,
+  AdventureMapV3,
   MapVariantV1,
   RareEncounterDefinitionV1,
   WorldEventV1,
@@ -16,9 +16,9 @@ export function rareEncounterProbabilityForVisit(
 }
 
 export function updateEditorDeterministicEncounter(
-  adventure: AdventureMapV2,
-  placement: AdventureActorPlacementV1,
-): AdventureMapV2 {
+  adventure: AdventureMapV3,
+  placement: AdventureActorPlacementV3,
+): AdventureMapV3 {
   return {
     ...adventure,
     actorPlacements: adventure.actorPlacements.map(candidate => (
@@ -31,9 +31,9 @@ export function updateEditorDeterministicEncounter(
 }
 
 export function upsertEditorRareEncounter(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   definition: RareEncounterDefinitionV1,
-): AdventureMapV2 {
+): AdventureMapV3 {
   const exists = adventure.rareEncounters.some(candidate => candidate.encounterId === definition.encounterId);
   return {
     ...adventure,
@@ -43,7 +43,7 @@ export function upsertEditorRareEncounter(
   };
 }
 
-export function upsertEditorMapVariant(adventure: AdventureMapV2, variant: MapVariantV1): AdventureMapV2 {
+export function upsertEditorMapVariant(adventure: AdventureMapV3, variant: MapVariantV1): AdventureMapV3 {
   const exists = adventure.variants.some(candidate => candidate.variantId === variant.variantId);
   return {
     ...adventure,
@@ -53,7 +53,7 @@ export function upsertEditorMapVariant(adventure: AdventureMapV2, variant: MapVa
   };
 }
 
-export function upsertEditorWorldEvent(adventure: AdventureMapV2, event: WorldEventV1): AdventureMapV2 {
+export function upsertEditorWorldEvent(adventure: AdventureMapV3, event: WorldEventV1): AdventureMapV3 {
   const exists = (adventure.worldEvents ?? []).some(candidate => candidate.eventId === event.eventId);
   return {
     ...adventure,

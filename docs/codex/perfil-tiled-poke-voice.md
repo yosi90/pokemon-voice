@@ -2,10 +2,10 @@
 
 ## Formato base
 
-- Guardar cada habitación como JSON de Tiled con extensión `.tmj`.
+- Guardar cada sector como JSON de Tiled con extensión `.tmj`.
 - Mapa ortogonal, finito y con render order `right-down`.
 - Tile base de 16×16 px. No cambiar el tile base para simular zoom.
-- La cámara muestra una habitación completa y permanece estática mientras el jugador se mueve en ella.
+- La cámara muestra un sector completo y permanece estática mientras el jugador se mueve en él.
 - Usar escalado entero y desactivar el suavizado de texturas en el runtime.
 - Guardar tilesets externos como `.tsj` y rutas relativas al `.tmj`.
 - No incrustar imágenes o tilesets como Base64.
@@ -32,7 +32,7 @@ El campo `name` de Tiled es el identificador estable. El ID numérico de Tiled n
 
 Clases admitidas en `Collision`:
 
-- `Collision`: rectángulo o polígono que bloquea el movimiento. Las colisiones estáticas no necesitan nombre ni clase individual; solo los obstáculos persistentes o referenciados desde el sidecar requieren un ID estable.
+- `Collision`: rectángulo o polígono que bloquea el movimiento. Toda colisión creada por el configurador usa clase `Collision` e ID técnico ordinal.
 
 Clases admitidas en `Anchors`:
 
@@ -48,21 +48,19 @@ Clases admitidas en capas opcionales:
 - `ActorOccluder`: área que recorta únicamente los sprites asociados al mismo grupo. Sirve para agua, tejados, cuevas o cualquier intersección parcial y no sustituye a `Collision`.
 - `AmbientPath`: polilínea recorrida por una coreografía ambiental. Su geometría pertenece a Tiled; su velocidad, dirección, animación y orden pertenecen al sidecar.
 
-Prefijos recomendados:
+Los IDs técnicos son obligatorios, de solo lectura, minúsculos, segmentados con `:` y con ordinales `01`, `02`, etc. El nombre del ancla coincide con el ID sidecar que la utiliza: `placementId`, `entryPointId`, `interactionId`, `transitionId:<from|to>` o el ID derivado de una acción de secuencia. Las colisiones usan `collision:<ordinal>`.
 
-- `anchor:<mapa>:<función>` para anclas.
-- `collision:<mapa>:<zona>` para colisiones.
-
-Todos los objetos deben tener un nombre único dentro de la habitación. Las coordenadas pertenecen exclusivamente a Tiled; el sidecar solo conserva el identificador estable.
+Todos los objetos deben tener un nombre único dentro del sector. Las coordenadas pertenecen exclusivamente a Tiled; el sidecar solo conserva el identificador estable.
 
 Para colocar protagonistas, NPC y Pokémon se recomienda dibujar un rectángulo de 16×16 exactamente sobre la celda que ocupan. El runtime interpreta su centro inferior como el punto de suelo. También se admite un objeto de punto, pero debe colocarse en el centro inferior de la celda con el ajuste a cuadrícula activo. El ancla nunca compensa el tamaño o el espacio transparente del sprite: el manifiesto de personajes y las hojas `Shadow.png` de PMD resuelven automáticamente escala y pivote.
 
 ## Sidecar de aventura
 
-El archivo `<mapa>.adventure.json` contiene `AdventureMapV2` y:
+El archivo `<mapa>.adventure.json` contiene `AdventureMapV3` y:
 
 - Registra cada `.tmj` en `tiledMapAssets` mediante ruta relativa a `public/`.
-- Relaciona cada habitación con un `tiledMapAssetId`.
+- Relaciona cada sector con un `tiledMapAssetId` mediante `sectors`/`sectorId`.
+- Declara en cada sector un reparto de cinco o más assets Pokémon distintos y cero o más NPC. Todo asset colocado debe pertenecer al reparto y estar sincronizado con `requiredAssetIds`.
 - Declara en `actorPlacements` qué asset se coloca en qué `ActorAnchor` y con qué animación.
 - Un encuentro Pokémon visible también puede usar un `EncounterAnchor`; comparte `actorPlacements` y el mismo render PMD, pero conserva así la intención semántica del anclaje.
 - Conserva misiones, transiciones, variantes, requisitos y encuentros fuera de la geometría.
@@ -74,7 +72,7 @@ El archivo `<mapa>.adventure.json` contiene `AdventureMapV2` y:
 - La misma matriz muestra `companionResearch` como reserva de convivencia separada de los mapas. Debe advertir si los sidecars cierran los cuatro campos distintos de una especie o si dos fuentes, incluida convivencia, pretenden aportar `fieldCompletion` al mismo campo; solo informa y nunca reescribe las contribuciones.
 - El diagnóstico del configurador combina `validateTiledAdventureBundle` con un auditor lógico. Los IDs se consideran globales dentro del sidecar; los ciclos se buscan entre productores y consumidores de flags o secretos; una definición solo se marca inaccesible cuando el catálogo o una contradicción demuestran que no puede cumplirse. Una interacción con voz necesita una alternativa efectiva de frase/intención por texto o un `contextAction` con `fallbackActionId`.
 - El análisis económico del diagnóstico suma únicamente las recompensas declaradas en el sidecar abierto y sus misiones locales, y contrasta los niveles con la curva compartida. Sus avisos describen el contenido previo analizado, no garantizan el balance global entre mapas. Una compra se considera bloqueante solo si pertenece a una misión que desbloquea expedición libre, aparece en todas las alternativas aplicables y no existe una entrega previa ni un compañero capaz de sustituir la herramienta.
-- La exportación del configurador descarga únicamente `AdventureMapV2`, el manifiesto PMD y el manifiesto de personajes como JSON legible. Los nombres de descarga de los manifiestos deben distinguir su dominio aunque ambos se almacenen como `manifest.v1.json` en carpetas diferentes. Ningún flujo de exportación incluye o reescribe `.tmj`, `.tsj`, tiles, colisiones, anclas, rutas u oclusiones.
+- La exportación del configurador descarga `AdventureMapV3` y los documentos modificados como JSON legible. Un V2 solo puede convertirse explícitamente después de crear `<mapa>.adventure.v2.backup.json`.
 - Los tres artefactos deben superar un round-trip JSON canónico antes de presentarse como estables. La regresión del editor debe comparar el documento completo exportado y reabrir el sidecar descargado con su TMJ original; comprobar solo campos aislados no demuestra ausencia de pérdida.
 - Incluye en `requiredAssetIds` todos los sprites usados por actores.
 - Declara `occlusionGroupIds` en las colocaciones que deban aceptar máscaras parciales.
@@ -90,10 +88,11 @@ Un cambio de coordenadas en Tiled no obliga a editar el sidecar mientras el nomb
 1. Copiar la carpeta de plantilla técnica y renombrar `.tmj`, `.tsj` y `.adventure.json` con un slug en minúsculas y guiones.
 2. Abrir el `.tmj` en Tiled y sustituir el tileset técnico por el tileset definitivo.
 3. Dibujar `Ground`, colisiones y `Above` manteniendo sus nombres. Los tiles de `Above` deben proceder de PNG transparentes: nunca deben incluir el cuadrado de suelo del tileset original.
-4. Colocar y nombrar las anclas necesarias.
-5. Si existen inmersiones parciales o movimiento ambiental, dibujar `ActorOccluder` y `AmbientPath` en sus capas opcionales.
-6. Registrar habitaciones, actores, transiciones y secuencias en el sidecar.
-7. Ejecutar `npm run assets:pmd:manifest` después de añadir sprites PMD.
-8. Ejecutar `npm run maps:validate` antes de probar el mapa en el juego.
+4. Declarar el reparto del sector en el configurador.
+5. Crear construcciones funcionales mediante el wizard; no crear ni nombrar anclas manualmente.
+6. Crear `ActorOccluder`, `AmbientPath` y destinos únicamente desde la colocación o acción sidecar que los utilizará.
+7. Registrar sectores, actores, transiciones y secuencias en el sidecar.
+8. Ejecutar `npm run assets:pmd:manifest` después de añadir sprites PMD.
+9. Ejecutar `npm run maps:validate` antes de probar el mapa en el juego.
 
 La plantilla técnica vive en `public/assets/adventure/maps/_technical/`. No es arte definitivo y puede reemplazarse sin migrar progreso.

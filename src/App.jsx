@@ -19,7 +19,7 @@ import { ExpeditionReportModal } from './components/ExpeditionReportModal.tsx';
 import {
   MapConceptPreview,
   TEGUESTE_FOREST_PREVIEW_MAP_ID,
-  TEGUESTE_FOREST_PREVIEW_ROOM_ID,
+  TEGUESTE_FOREST_PREVIEW_SECTOR_ID,
 } from './components/MapConceptPreview.tsx';
 import { PokedexControlsDrawer } from './components/PokedexControlsDrawer.jsx';
 import { usePokemonGame } from './hooks/usePokemonGame.js';
@@ -53,6 +53,7 @@ import { LOCAL_POKEMON_CATALOG } from './services/pokemonCatalog.ts';
 import { createPokemonNameIndex, resolveGuessTranscript } from './domain/discovery/resolvePokemonGuess.ts';
 import { toLegacyPokemonList } from './domain/catalog/pokemonCatalogModel.ts';
 import { CAMPHOR_PROLOGUE_MISSION } from './data/adventure/camphorPrologue.ts';
+import { toSectorId } from './domain/expeditions/adventureMapV3.ts';
 import { getPokeDiscoverRewardPackage } from './data/adventure/rewardBalance.ts';
 import { getKnownPokeDiscoverMissionIds } from './data/adventure/missionCatalog.ts';
 import { getCompanionCandidates } from './domain/companions/companionCandidates.ts';
@@ -250,7 +251,7 @@ export default function App() {
     const hash = pending?.checkpoint === 'awaitingCompanion'
       ? buildPokeDiscoverHash()
       : pending?.checkpoint === 'openingCinematic'
-        ? buildExpeditionHash(TEGUESTE_FOREST_PREVIEW_MAP_ID, TEGUESTE_FOREST_PREVIEW_ROOM_ID)
+        ? buildExpeditionHash(TEGUESTE_FOREST_PREVIEW_MAP_ID, TEGUESTE_FOREST_PREVIEW_SECTOR_ID)
         : undefined;
     if (!hash) return;
     setProfessorMissionsOpen(pending?.checkpoint === 'awaitingCompanion');
@@ -273,7 +274,7 @@ export default function App() {
     if (
       adventureRoute.kind === 'expedition'
       && adventureRoute.mapId === TEGUESTE_FOREST_PREVIEW_MAP_ID
-      && adventureRoute.roomId === TEGUESTE_FOREST_PREVIEW_ROOM_ID
+      && toSectorId(adventureRoute.sectorId) === TEGUESTE_FOREST_PREVIEW_SECTOR_ID
     ) {
       setProfessorMissionsOpen(false);
       setMapConceptPreviewOpen(true);
@@ -340,7 +341,7 @@ export default function App() {
     }
     navigateAdventure(buildExpeditionHash(
       TEGUESTE_FOREST_PREVIEW_MAP_ID,
-      TEGUESTE_FOREST_PREVIEW_ROOM_ID,
+      TEGUESTE_FOREST_PREVIEW_SECTOR_ID,
     ));
   }, [game.showToast, navigateAdventure]);
 

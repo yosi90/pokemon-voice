@@ -1,13 +1,13 @@
-import type { LoadedAdventureMapBundle, LoadedAdventureRoomBundle } from './loadAdventureBundle.js';
+import type { LoadedAdventureMapBundle, LoadedAdventureSectorBundle } from './loadAdventureBundle.js';
 import { findTiledObject } from './loadAdventureBundle.js';
 import type {
   AmbientActorActionV1,
-  AmbientSequenceV1,
-  CompanionBehaviorTriggerV1,
-  CompanionSequenceV1,
+  AmbientSequenceV3,
+  CompanionBehaviorTriggerV3,
+  CompanionSequenceV3,
   ExpeditionDialogueV1,
-  ExpeditionExpressionTriggerV1,
-  ExpeditionInteractionV1,
+  ExpeditionExpressionTriggerV3,
+  ExpeditionInteractionV3,
   MillisecondRangeV1,
   PmdSpriteAssetV1,
   PokemonFormV1,
@@ -73,11 +73,11 @@ export interface MapCompanionRuntimeContext {
 
 export interface MapCompanionPresentation {
   displayName: string;
-  behaviors: CompanionBehaviorTriggerV1[];
+  behaviors: CompanionBehaviorTriggerV3[];
 }
 
 export interface MapInteractionPresentation {
-  interaction: ExpeditionInteractionV1;
+  interaction: ExpeditionInteractionV3;
   dialogue: ExpeditionDialogueV1;
 }
 
@@ -97,8 +97,8 @@ interface ActiveActorState {
   cropHeight?: number;
   baseAnimation?: string;
   renderScaleMultiplier: number;
-  asset?: LoadedAdventureRoomBundle['actorAssets'] extends Map<string, infer Asset> ? Asset : never;
-  characterAsset?: LoadedAdventureRoomBundle['characterAssets'] extends Map<string, infer Asset> ? Asset : never;
+  asset?: LoadedAdventureSectorBundle['actorAssets'] extends Map<string, infer Asset> ? Asset : never;
+  characterAsset?: LoadedAdventureSectorBundle['characterAssets'] extends Map<string, infer Asset> ? Asset : never;
 }
 
 interface AmbientActionState {
@@ -110,7 +110,7 @@ interface AmbientActionState {
 }
 
 interface AmbientSequenceState {
-  definition: AmbientSequenceV1;
+  definition: AmbientSequenceV3;
   beatIndex: number;
   actionStates: AmbientActionState[];
   pauseRemainingMs: number;
@@ -174,7 +174,7 @@ export function createTechnicalPhaserGame({
   Phaser,
   parent,
   bundle,
-  initialRoomId,
+  initialSectorId,
   initialSpawnAnchorId,
   reducedMotion,
   registeredSpeciesIds,
@@ -188,7 +188,7 @@ export function createTechnicalPhaserGame({
   Phaser: PhaserModule;
   parent: HTMLElement;
   bundle: LoadedAdventureMapBundle;
-  initialRoomId: string;
+  initialSectorId: string;
   initialSpawnAnchorId?: string;
   reducedMotion: boolean;
   registeredSpeciesIds: ReadonlySet<number>;
@@ -199,11 +199,11 @@ export function createTechnicalPhaserGame({
   fitParent?: boolean;
   onReady: () => void;
 }) {
-  const initialRoom = bundle.rooms.find(candidate => candidate.room.roomId === initialRoomId);
-  if (!initialRoom) throw new Error(`Habitación inicial inexistente: ${initialRoomId}.`);
+  const initialRoom = bundle.sectors.find(candidate => candidate.sector.sectorId === initialSectorId);
+  if (!initialRoom) throw new Error(`Sector inicial inexistente: ${initialSectorId}.`);
   const canvasWidth = initialRoom.tilemap.width * initialRoom.tilemap.tilewidth;
   const canvasHeight = initialRoom.tilemap.height * initialRoom.tilemap.tileheight;
-  const mapKey = (roomId: string) => `technical-map:${roomId}`;
+  const mapKey = (sectorId: string) => `technical-map:${sectorId}`;
   const tilesetKey = (name: string) => `technical-tileset:${name}`;
   const actorSheetKey = (assetId: string, animation: string, copyOf?: string) => (
     `technical-actor:${assetId}:${copyOf ?? animation}`
@@ -222,8 +222,8 @@ export function createTechnicalPhaserGame({
       const loadedTilesets = new Set<string>();
       const loadedActorSheets = new Set<string>();
       const loadedCharacterSheets = new Set<string>();
-      for (const roomBundle of bundle.rooms) {
-        this.load.tilemapTiledJSON(mapKey(roomBundle.room.roomId), roomBundle.tilemap);
+      for (const roomBundle of bundle.sectors) {
+        this.load.tilemapTiledJSON(mapKey(roomBundle.sector.sectorId), roomBundle.tilemap);
         for (const tileset of roomBundle.tilesets) {
           const key = tilesetKey(tileset.name);
           if (loadedTilesets.has(key)) continue;
@@ -231,7 +231,7 @@ export function createTechnicalPhaserGame({
           this.load.image(key, tileset.imageUrl);
         }
         for (const placement of bundle.adventure.actorPlacements
-          .filter(candidate => candidate.roomId === roomBundle.room.roomId)) {
+          .filter(candidate => candidate.sectorId === roomBundle.sector.sectorId)) {
           const asset = roomBundle.actorAssets.get(placement.assetId);
           if (!asset) throw new Error(`Actor sin manifiesto: ${placement.placementId}.`);
           for (const animationName of [placement.animation]) {
@@ -247,7 +247,7 @@ export function createTechnicalPhaserGame({
           }
         }
         for (const placement of bundle.adventure.characterPlacements
-          .filter(candidate => candidate.roomId === roomBundle.room.roomId)) {
+          .filter(candidate => candidate.sectorId === roomBundle.sector.sectorId)) {
           const asset = roomBundle.characterAssets.get(placement.assetId);
           if (!asset) throw new Error(`Personaje sin manifiesto: ${placement.placementId}.`);
           const key = characterSheetKey(asset.assetId);
@@ -259,13 +259,13 @@ export function createTechnicalPhaserGame({
           });
         }
         const roomPlacements = new Map(bundle.adventure.actorPlacements
-          .filter(candidate => candidate.roomId === roomBundle.room.roomId)
+          .filter(candidate => candidate.sectorId === roomBundle.sector.sectorId)
           .map(placement => [placement.placementId, placement]));
         for (const action of [
           ...(bundle.adventure.companionSequences ?? []),
           ...(bundle.adventure.mapSequences ?? []),
         ]
-          .filter(sequence => sequence.roomId === roomBundle.room.roomId)
+          .filter(sequence => sequence.sectorId === roomBundle.sector.sectorId)
           .flatMap(sequence => sequence.beats)
           .flatMap(beat => beat.actions)) {
           if (action.kind !== 'playAnimation' || action.actorRef === 'dynamic:companion' || action.actorRef === 'dynamic:player') continue;
@@ -355,12 +355,12 @@ export function createTechnicalPhaserGame({
       };
       this.input.keyboard?.on('keydown', directionKeyDown);
       this.input.keyboard?.on('keyup', directionKeyUp);
-      let currentRoom: LoadedAdventureRoomBundle;
+      let currentRoom: LoadedAdventureSectorBundle;
       let currentMap: import('phaser').Tilemaps.Tilemap | undefined;
       let player: import('phaser').GameObjects.Rectangle | import('phaser').GameObjects.Sprite;
       let playerBody: import('phaser').Physics.Arcade.Body;
       let playerCharacterSprite: import('phaser').GameObjects.Sprite | undefined;
-      let playerCharacterAsset: LoadedAdventureRoomBundle['characterAssets'] extends Map<string, infer Asset> ? Asset | undefined : never;
+      let playerCharacterAsset: LoadedAdventureSectorBundle['characterAssets'] extends Map<string, infer Asset> ? Asset | undefined : never;
       let playerFacing: Facing = 'up';
       let primaryActor: import('phaser').GameObjects.Sprite | undefined;
       let transitioning = false;
@@ -379,14 +379,14 @@ export function createTechnicalPhaserGame({
       let solidActorCount = 0;
       let occludedActorCount = 0;
       let filterOccludedActorCount = 0;
-      let availableInteraction: ExpeditionInteractionV1 | undefined;
-      let activeInteraction: ExpeditionInteractionV1 | undefined;
-      let availableExpression: ExpeditionExpressionTriggerV1 | undefined;
-      let activeExpression: ExpeditionExpressionTriggerV1 | undefined;
+      let availableInteraction: ExpeditionInteractionV3 | undefined;
+      let activeInteraction: ExpeditionInteractionV3 | undefined;
+      let availableExpression: ExpeditionExpressionTriggerV3 | undefined;
+      let activeExpression: ExpeditionExpressionTriggerV3 | undefined;
       let companionActor: ActiveActorState | undefined;
       let companionTrail: TiledPoint[] = [];
       let companionTarget: TiledPoint | undefined;
-      let availableCompanionBehaviors: CompanionBehaviorTriggerV1[] = [];
+      let availableCompanionBehaviors: CompanionBehaviorTriggerV3[] = [];
       let companionConversationActive = false;
       let activeCompanionSequence = false;
       const completedRuntimeBehaviorIds = new Set<string>();
@@ -483,12 +483,12 @@ export function createTechnicalPhaserGame({
         return key;
       };
 
-      const layerObjects = (room: LoadedAdventureRoomBundle, layerName: string) => {
+      const layerObjects = (room: LoadedAdventureSectorBundle, layerName: string) => {
         const layer = room.tilemap.layers.find(candidate => candidate.name === layerName);
         return Array.isArray(layer?.objects) ? layer.objects as Array<Record<string, unknown>> : [];
       };
 
-      const ambientPathPoints = (room: LoadedAdventureRoomBundle, pathId: string) => {
+      const ambientPathPoints = (room: LoadedAdventureSectorBundle, pathId: string) => {
         const path = layerObjects(room, 'Paths').find(object => object.name === pathId);
         const polyline = Array.isArray(path?.polyline) ? path.polyline as Array<Record<string, unknown>> : [];
         return polyline.map((point, index) => transformTiledObjectPoint(path ?? {}, {
@@ -600,7 +600,7 @@ export function createTechnicalPhaserGame({
         return state;
       };
 
-      const applyActorOcclusion = (room: LoadedAdventureRoomBundle, state: ActiveActorState, groupIds: readonly string[]) => {
+      const applyActorOcclusion = (room: LoadedAdventureSectorBundle, state: ActiveActorState, groupIds: readonly string[]) => {
         if (!groupIds.length) return;
         const occluders = layerObjects(room, 'Occlusion').filter(object => {
           const properties = tiledProperties(object);
@@ -680,12 +680,12 @@ export function createTechnicalPhaserGame({
         else state.sprite.setCrop(0, 0, frameWidth, nextHeight);
       };
 
-      const renderRoom = (roomId: string, spawnAnchorId?: string, facing?: Facing) => {
-        const nextRoom = bundle.rooms.find(candidate => candidate.room.roomId === roomId);
-        if (!nextRoom) throw new Error(`Habitación no cargada: ${roomId}.`);
+      const renderRoom = (sectorId: string, spawnAnchorId?: string, facing?: Facing) => {
+        const nextRoom = bundle.sectors.find(candidate => candidate.sector.sectorId === sectorId);
+        if (!nextRoom) throw new Error(`Sector no cargada: ${sectorId}.`);
         clearRoom();
         currentRoom = nextRoom;
-        currentMap = this.make.tilemap({ key: mapKey(roomId) });
+        currentMap = this.make.tilemap({ key: mapKey(sectorId) });
         const phaserTilesets = nextRoom.tilesets.map(tileset => {
           const value = currentMap?.addTilesetImage(tileset.name, tilesetKey(tileset.name));
           if (!value) throw new Error(`Phaser no pudo enlazar el tileset ${tileset.name}.`);
@@ -694,7 +694,7 @@ export function createTechnicalPhaserGame({
         currentMap.createLayer('Ground', phaserTilesets, 0, 0)?.setDepth(0);
         currentMap.createLayer('Above', phaserTilesets, 0, 0)?.setDepth(10_000);
 
-        const placements = bundle.adventure.actorPlacements.filter(candidate => candidate.roomId === roomId);
+        const placements = bundle.adventure.actorPlacements.filter(candidate => candidate.sectorId === sectorId);
         for (const placement of placements) {
           const asset = nextRoom.actorAssets.get(placement.assetId);
           const animation = asset?.animations.find(candidate => candidate.name === placement.animation);
@@ -759,7 +759,7 @@ export function createTechnicalPhaserGame({
         publishVisibleSpecies();
 
         const characterPlacements = bundle.adventure.characterPlacements
-          .filter(candidate => candidate.roomId === roomId);
+          .filter(candidate => candidate.sectorId === sectorId);
         for (const placement of characterPlacements.filter(candidate => !candidate.controllable)) {
           const asset = nextRoom.characterAssets.get(placement.assetId);
           const anchor = findTiledObject(nextRoom.tilemap, 'Anchors', placement.anchorId);
@@ -795,7 +795,7 @@ export function createTechnicalPhaserGame({
           if (actorState.collision === 'solid') solidActorCount += 1;
         }
 
-        const resolvedSpawnId = spawnAnchorId ?? nextRoom.room.spawnAnchorIds[0];
+        const resolvedSpawnId = spawnAnchorId ?? nextRoom.sector.spawnAnchorIds[0];
         const playerAnchor = findTiledObject(nextRoom.tilemap, 'Anchors', resolvedSpawnId);
         const playerAnchorBounds = tiledObjectBounds(playerAnchor, resolvedSpawnId);
         const playerGroundPoint = groundPoint(playerAnchorBounds);
@@ -873,7 +873,7 @@ export function createTechnicalPhaserGame({
         this.cameras.main.setRoundPixels(true);
         ambientSequenceStates = [];
         parent.dataset.mapId = bundle.adventure.mapId;
-        parent.dataset.roomId = roomId;
+        parent.dataset.sectorId = sectorId;
         parent.dataset.actorId = placements[0]?.placementId ?? '';
         parent.dataset.actorGrounding = 'pmd-shadow';
         parent.dataset.solidActorCount = String(solidActorCount);
@@ -1185,10 +1185,10 @@ export function createTechnicalPhaserGame({
         sequence.phase = sequence.pauseRemainingMs > 0 ? 'pause' : 'start';
       };
 
-      const activateRoomAmbientSequences = (roomId: string) => {
-        if (currentRoom.room.roomId !== roomId || reducedMotion) return;
+      const activateRoomAmbientSequences = (sectorId: string) => {
+        if (currentRoom.sector.sectorId !== sectorId || reducedMotion) return;
         ambientSequenceStates = bundle.adventure.ambientSequences
-          .filter(sequence => sequence.roomId === roomId)
+          .filter(sequence => sequence.sectorId === sectorId)
           .map(definition => ({
             definition,
             beatIndex: 0,
@@ -1207,12 +1207,12 @@ export function createTechnicalPhaserGame({
       };
 
       const queueRoomAmbientAssets = (
-        room: LoadedAdventureRoomBundle,
+        room: LoadedAdventureSectorBundle,
         placements: LoadedAdventureMapBundle['adventure']['actorPlacements'],
       ) => {
         if (reducedMotion) return;
         const definitions = bundle.adventure.ambientSequences
-          .filter(sequence => sequence.roomId === room.room.roomId);
+          .filter(sequence => sequence.sectorId === room.sector.sectorId);
         const placementsById = new Map(placements.map(placement => [placement.placementId, placement]));
         const pending = new Map<string, {
           url: string;
@@ -1236,7 +1236,7 @@ export function createTechnicalPhaserGame({
         }
         parent.dataset.ambientTextureCount = String(pending.size);
         if (!pending.size) {
-          activateRoomAmbientSequences(room.room.roomId);
+          activateRoomAmbientSequences(room.sector.sectorId);
           return;
         }
         for (const [key, file] of pending) {
@@ -1245,12 +1245,12 @@ export function createTechnicalPhaserGame({
             frameHeight: file.frameHeight,
           });
         }
-        const roomId = room.room.roomId;
-        this.load.once(Phaser.Loader.Events.COMPLETE, () => activateRoomAmbientSequences(roomId));
+        const sectorId = room.sector.sectorId;
+        this.load.once(Phaser.Loader.Events.COMPLETE, () => activateRoomAmbientSequences(sectorId));
         if (!this.load.isLoading()) this.load.start();
       };
 
-      const resolveSpatialTarget = (definition: { target: ExpeditionInteractionV1['target'] }) => {
+      const resolveSpatialTarget = (definition: { target: ExpeditionInteractionV3['target'] }) => {
         if (definition.target.kind === 'placement') {
           const actor = activeActorsByPlacement.get(definition.target.placementId);
           return actor ? { x: actor.sprite.x, y: actor.sprite.y, placementId: actor.placementId } : undefined;
@@ -1261,7 +1261,7 @@ export function createTechnicalPhaserGame({
         return { ...point, anchorId: definition.target.anchorId };
       };
 
-      const publishAvailableInteraction = (interaction?: ExpeditionInteractionV1) => {
+      const publishAvailableInteraction = (interaction?: ExpeditionInteractionV3) => {
         if (availableInteraction?.interactionId === interaction?.interactionId) return;
         availableInteraction = interaction;
         if (interaction) {
@@ -1276,7 +1276,7 @@ export function createTechnicalPhaserGame({
         }));
       };
 
-      const publishAvailableExpression = (expression?: ExpeditionExpressionTriggerV1) => {
+      const publishAvailableExpression = (expression?: ExpeditionExpressionTriggerV3) => {
         if (availableExpression?.triggerId === expression?.triggerId) return;
         availableExpression = expression;
         if (expression) {
@@ -1316,7 +1316,7 @@ export function createTechnicalPhaserGame({
           interactions: (bundle.adventure.interactions ?? []).filter(candidate => (
             candidate.repeatPolicy !== 'oncePerVisit' || !completedVisitInteractionIds.has(candidate.interactionId)
           )),
-          roomId: currentRoom.room.roomId,
+          sectorId: currentRoom.sector.sectorId,
           player: { x: player.x, y: player.y },
           facing: playerFacing,
           resolveTarget: resolveSpatialTarget,
@@ -1327,18 +1327,18 @@ export function createTechnicalPhaserGame({
           publishCompanionAvailability(!interaction && isFacingCompanion());
           return interaction;
         }
-        const spatialExpressions = bundle.adventure.expressionTriggers.filter((trigger): trigger is ExpeditionExpressionTriggerV1 & {
-          roomId: string;
-          target: ExpeditionInteractionV1['target'];
+        const spatialExpressions = bundle.adventure.expressionTriggers.filter((trigger): trigger is ExpeditionExpressionTriggerV3 & {
+          sectorId: string;
+          target: ExpeditionInteractionV3['target'];
         } => Boolean(
-          trigger.roomId
+          trigger.sectorId
           && trigger.target
           && trigger.prompt
           && !completedExpressionTriggerIds.has(trigger.triggerId),
         ));
         const expression = findFacingSpatialDefinition({
           definitions: spatialExpressions,
-          roomId: currentRoom.room.roomId,
+          sectorId: currentRoom.sector.sectorId,
           player: { x: player.x, y: player.y },
           facing: playerFacing,
           resolveTarget: resolveSpatialTarget,
@@ -1359,7 +1359,7 @@ export function createTechnicalPhaserGame({
         );
       };
 
-      const beginInteraction = (interaction: ExpeditionInteractionV1) => {
+      const beginInteraction = (interaction: ExpeditionInteractionV3) => {
         if (activeInteraction) return;
         const dialogue = (bundle.adventure.dialogues ?? [])
           .find(candidate => candidate.dialogueId === interaction.dialogueId);
@@ -1502,7 +1502,7 @@ export function createTechnicalPhaserGame({
       );
 
       const executeCompanionSequenceAction = async (
-        action: CompanionSequenceV1['beats'][number]['actions'][number],
+        action: CompanionSequenceV3['beats'][number]['actions'][number],
       ) => {
         const actor = action.actorRef === 'dynamic:player' ? undefined : actorForSequenceRef(action.actorRef);
         if (action.kind === 'setVisible') {
@@ -1619,7 +1619,7 @@ export function createTechnicalPhaserGame({
           ...(bundle.adventure.companionSequences ?? []),
           ...(bundle.adventure.mapSequences ?? []),
         ].find(item => (
-          item.sequenceId === sequenceId && item.roomId === currentRoom.room.roomId
+          item.sequenceId === sequenceId && item.sectorId === currentRoom.sector.sectorId
         ));
         if (!sequence || activeCompanionSequence) return;
         activeCompanionSequence = true;
@@ -1659,11 +1659,11 @@ export function createTechnicalPhaserGame({
           || activeInteraction || activeExpression || companionConversationActive) return;
         const triggers = bundle.adventure.behaviorTriggers.filter(trigger => (
           trigger.mode === 'automatic'
-          && trigger.proximity?.roomId === currentRoom.room.roomId
+          && trigger.proximity?.sectorId === currentRoom.sector.sectorId
           && !completedRuntimeBehaviorIds.has(trigger.triggerId)
           && !(trigger.completionEffects?.unlockSecretIds ?? []).some(id => companion.resolvedSecretIds.has(id))
         ));
-        const groups = new Map<string, CompanionBehaviorTriggerV1[]>();
+        const groups = new Map<string, CompanionBehaviorTriggerV3[]>();
         for (const trigger of triggers) {
           const target = trigger.proximity!.target;
           const key = target.kind === 'anchor' ? `anchor:${target.anchorId}` : `placement:${target.placementId}`;
@@ -1704,7 +1704,7 @@ export function createTechnicalPhaserGame({
         if (trigger) void runCompanionSequence(trigger.sequenceId, trigger.triggerId);
       };
 
-      const beginExpression = (trigger: ExpeditionExpressionTriggerV1) => {
+      const beginExpression = (trigger: ExpeditionExpressionTriggerV3) => {
         if (activeInteraction || activeExpression) return;
         activeExpression = trigger;
         publishAvailableExpression();
@@ -1761,7 +1761,7 @@ export function createTechnicalPhaserGame({
         parent.dataset.lastTransitionId = transition.transitionId;
         this.cameras.main.fadeOut(140, 14, 31, 21);
         this.time.delayedCall(150, () => {
-          renderRoom(transition.toRoomId, transition.toAnchorId, transition.destinationFacing);
+          renderRoom(transition.toSectorId, transition.toAnchorId, transition.destinationFacing);
           transitionCount += 1;
           parent.dataset.transitionCount = String(transitionCount);
           parent.dataset.transition = 'fading-in';
@@ -1773,7 +1773,7 @@ export function createTechnicalPhaserGame({
         });
       };
 
-      renderRoom(initialRoomId, initialSpawnAnchorId);
+      renderRoom(initialSectorId, initialSpawnAnchorId);
       const identifyVisibleSpecies = (event: Event) => {
         const speciesId = Number((event as CustomEvent<{ speciesId?: number }>).detail?.speciesId);
         const sprites = activeActorSpritesBySpecies.get(speciesId);
@@ -1882,7 +1882,7 @@ export function createTechnicalPhaserGame({
         const requestedFacing = activeDirection?.facing;
 
         if (this.time.now >= transitionCooldownUntil && requestedFacing) {
-          for (const transition of bundle.adventure.transitions.filter(item => item.fromRoomId === currentRoom.room.roomId)) {
+          for (const transition of bundle.adventure.transitions.filter(item => item.fromSectorId === currentRoom.sector.sectorId)) {
             const anchor = findTiledObject(currentRoom.tilemap, 'Anchors', transition.fromAnchorId);
             if (!anchor || !movingOutward(anchor, requestedFacing)) continue;
             const bounds = tiledObjectBounds(anchor, transition.fromAnchorId);

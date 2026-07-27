@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createTechnicalPhaserGame } from '../../domain/maps/createTechnicalPhaserGame.js';
 import type { LoadedAdventureMapBundle } from '../../domain/maps/loadAdventureBundle.js';
 
-function withDesignSpawn(bundle: LoadedAdventureMapBundle, roomId: string) {
-  const room = bundle.rooms.find(candidate => candidate.room.roomId === roomId);
-  if (!room || room.room.spawnAnchorIds.length) return bundle;
+function withDesignSpawn(bundle: LoadedAdventureMapBundle, sectorId: string) {
+  const sectorBundle = bundle.sectors.find(candidate => candidate.sector.sectorId === sectorId);
+  if (!sectorBundle || sectorBundle.sector.spawnAnchorIds.length) return bundle;
   const anchorId = 'anchor:editor:temporary-preview';
-  const anchorLayer = room.tilemap.layers.find(layer => layer.name === 'Anchors');
+  const anchorLayer = sectorBundle.tilemap.layers.find(layer => layer.name === 'Anchors');
   const nextAnchorLayer = anchorLayer
     ? {
       ...anchorLayer,
@@ -17,8 +17,8 @@ function withDesignSpawn(bundle: LoadedAdventureMapBundle, roomId: string) {
           name: anchorId,
           class: 'PlayerSpawn',
           point: true,
-          x: Math.floor(room.tilemap.width / 2) * room.tilemap.tilewidth,
-          y: Math.floor(room.tilemap.height / 2) * room.tilemap.tileheight,
+          x: Math.floor(sectorBundle.tilemap.width / 2) * sectorBundle.tilemap.tilewidth,
+          y: Math.floor(sectorBundle.tilemap.height / 2) * sectorBundle.tilemap.tileheight,
           width: 0,
           height: 0,
           rotation: 0,
@@ -37,29 +37,29 @@ function withDesignSpawn(bundle: LoadedAdventureMapBundle, roomId: string) {
         name: anchorId,
         class: 'PlayerSpawn',
         point: true,
-        x: Math.floor(room.tilemap.width / 2) * room.tilemap.tilewidth,
-        y: Math.floor(room.tilemap.height / 2) * room.tilemap.tileheight,
+        x: Math.floor(sectorBundle.tilemap.width / 2) * sectorBundle.tilemap.tilewidth,
+        y: Math.floor(sectorBundle.tilemap.height / 2) * sectorBundle.tilemap.tileheight,
         width: 0,
         height: 0,
         rotation: 0,
         visible: true,
       }],
     };
-  const nextRoomContract = { ...room.room, spawnAnchorIds: [anchorId] };
+  const nextSectorContract = { ...sectorBundle.sector, spawnAnchorIds: [anchorId] };
   const adventure = {
     ...bundle.adventure,
-    rooms: bundle.adventure.rooms.map(candidate => candidate.roomId === roomId
-      ? nextRoomContract
+    sectors: bundle.adventure.sectors.map(candidate => candidate.sectorId === sectorId
+      ? nextSectorContract
       : candidate),
   };
   return {
     ...bundle,
     adventure,
-    rooms: bundle.rooms.map(candidate => candidate.room.roomId === roomId
+    sectors: bundle.sectors.map(candidate => candidate.sector.sectorId === sectorId
       ? {
         ...candidate,
         adventure,
-        room: nextRoomContract,
+        sector: nextSectorContract,
         tilemap: {
           ...candidate.tilemap,
           layers: anchorLayer
@@ -73,18 +73,18 @@ function withDesignSpawn(bundle: LoadedAdventureMapBundle, roomId: string) {
 
 export function RuntimePreview({
   bundle,
-  roomId,
+  sectorId,
   designMode,
 }: {
   bundle: LoadedAdventureMapBundle;
-  roomId: string;
+  sectorId: string;
   designMode: boolean;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const previewBundle = useMemo(
-    () => designMode ? withDesignSpawn(bundle, roomId) : bundle,
-    [bundle, designMode, roomId],
+    () => designMode ? withDesignSpawn(bundle, sectorId) : bundle,
+    [bundle, designMode, sectorId],
   );
 
   useEffect(() => {
@@ -100,7 +100,7 @@ export function RuntimePreview({
         Phaser,
         parent: host,
         bundle: previewBundle,
-        initialRoomId: roomId,
+        initialSectorId: sectorId,
         reducedMotion: designMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         registeredSpeciesIds: new Set(previewBundle.pmdManifest.assets.map(asset => asset.speciesId)),
         fitParent: false,
@@ -122,7 +122,7 @@ export function RuntimePreview({
       game?.destroy(true);
       host.replaceChildren();
     };
-  }, [designMode, previewBundle, roomId]);
+  }, [designMode, previewBundle, sectorId]);
 
   return (
     <div className="editor-runtime-stack">
@@ -137,7 +137,7 @@ export function RuntimePreview({
       />
       {status !== 'ready' ? (
         <div className={`editor-runtime-status ${status === 'error' ? 'is-error' : ''}`} role="status">
-          {status === 'error' ? 'No se pudo dibujar esta habitación.' : 'Preparando mapa…'}
+      {status === 'error' ? 'No se pudo dibujar este sector.' : 'Preparando mapa…'}
         </div>
       ) : null}
     </div>

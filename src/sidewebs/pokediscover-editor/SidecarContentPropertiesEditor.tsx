@@ -1,4 +1,4 @@
-import type { AdventureMapV2 } from '../../../packages/contracts/src/index.js';
+import type { AdventureMapV3 } from '../../../packages/contracts/src/index.js';
 
 export function SidecarContentPropertiesEditor({
   adventure,
@@ -6,9 +6,9 @@ export function SidecarContentPropertiesEditor({
   onAdventureChange,
   onClose,
 }: {
-  adventure: AdventureMapV2;
+  adventure: AdventureMapV3;
   contentId: string;
-  onAdventureChange: (adventure: AdventureMapV2) => void;
+  onAdventureChange: (adventure: AdventureMapV3) => void;
   onClose: () => void;
 }) {
   const transition = adventure.transitions.find(candidate => candidate.transitionId === contentId);
@@ -29,7 +29,7 @@ export function SidecarContentPropertiesEditor({
         <option value="">Conservar dirección</option>
         <option value="up">Arriba</option><option value="down">Abajo</option><option value="left">Izquierda</option><option value="right">Derecha</option>
       </select></label>
-      <p>Destino: {transition.toRoomId} · {transition.toAnchorId}</p>
+      <p>Destino: {transition.toSectorId} · {transition.toAnchorId}</p>
     </> : null}
     {interaction ? <>
       <label><span>Texto de acción</span><input value={interaction.prompt} onChange={event => onAdventureChange({

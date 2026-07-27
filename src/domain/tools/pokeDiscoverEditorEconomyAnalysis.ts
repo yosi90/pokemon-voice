@@ -1,5 +1,5 @@
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   MissionDefinitionV1,
   PokeDiscoverShopContentV1,
   RequirementAtomV1,
@@ -81,7 +81,7 @@ function companionCapabilityStrength(capabilityId: string) {
 }
 
 export function analyzePokeDiscoverEditorEconomy(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   options: PokeDiscoverEditorEconomyOptions = {},
 ): PokeDiscoverEditorEconomyAnalysis {
   const missions = options.missions ?? POKEDISCOVER_MISSION_CATALOG;

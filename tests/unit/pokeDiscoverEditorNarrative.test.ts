@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import teguesteAdventure from '../../public/assets/adventure/maps/tegueste-forest/tegueste-forest.adventure.json';
-import type { AdventureMapV2, ResearchFactV1 } from '../../packages/contracts/src/index.js';
+import type { AdventureMapV3, ResearchFactV1 } from '../../packages/contracts/src/index.js';
+import { normalizeAdventureMapV3 } from '../../src/domain/expeditions/adventureMapV3.js';
 import { getBalancedPokeDiscoverRewards } from '../../src/data/adventure/rewardBalance.js';
 import {
   updateEditorBehaviorTrigger,
@@ -10,7 +11,7 @@ import {
 
 describe('configuración narrativa del editor', () => {
   it('añade investigación con recompensa idempotente basada en factId', () => {
-    const adventure = structuredClone(teguesteAdventure) as AdventureMapV2;
+    const adventure = normalizeAdventureMapV3(structuredClone(teguesteAdventure) as never);
     const fact: ResearchFactV1 = {
       schemaVersion: 1,
       factId: 'research:test:rattata',
@@ -28,7 +29,7 @@ describe('configuración narrativa del editor', () => {
   });
 
   it('actualiza comportamientos y expresiones por su ID estable', () => {
-    const adventure = structuredClone(teguesteAdventure) as AdventureMapV2;
+    const adventure = normalizeAdventureMapV3(structuredClone(teguesteAdventure) as never);
     const behavior = { ...adventure.behaviorTriggers[0], actionLabel: 'Nueva acción' };
     const expression = { ...adventure.expressionTriggers[0], prompt: 'Nuevo prompt' };
     const withBehavior = updateEditorBehaviorTrigger(adventure, behavior);
@@ -38,4 +39,3 @@ describe('configuración narrativa del editor', () => {
     expect(adventure.behaviorTriggers[0].actionLabel).not.toBe('Nueva acción');
   });
 });
-

@@ -1,5 +1,5 @@
 import type {
-  ExpeditionExpressionTriggerV1,
+  ExpeditionExpressionTriggerV3,
   FieldNotebookHintV1,
   PokeDiscoverStateV1,
 } from '../../../packages/contracts/src/index.js';
@@ -50,7 +50,7 @@ export function getKnownFieldNotebookEntries(
 export function getKnownExpressionHints(
   state: PokeDiscoverStateV1,
   mapId: string,
-  trigger: Pick<ExpeditionExpressionTriggerV1, 'triggerId' | 'knownHintIds'>,
+  trigger: Pick<ExpeditionExpressionTriggerV3, 'triggerId' | 'knownHintIds'>,
   definitions: readonly FieldNotebookHintV1[],
 ) {
   const triggerHintIds = new Set(trigger.knownHintIds);

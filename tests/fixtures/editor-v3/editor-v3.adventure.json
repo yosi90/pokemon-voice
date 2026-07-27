@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 3,
+  "mapId": "map:editor-e2e",
+  "title": "Mapa V3 E2E",
+  "tiledMapAssets": [
+    {
+      "schemaVersion": 1,
+      "assetId": "tiled-map:editor-e2e:01",
+      "path": "tests/fixtures/editor-v3/editor-v3.tmj"
+    }
+  ],
+  "sectors": [
+    {
+      "schemaVersion": 1,
+      "sectorId": "sector:editor-e2e:01",
+      "tiledMapAssetId": "tiled-map:editor-e2e:01",
+      "staticCamera": true,
+      "spawnAnchorIds": [],
+      "roster": {
+        "schemaVersion": 1,
+        "pokemonAssetIds": [
+          "pmd:0001-bulbasaur:default",
+          "pmd:0004-charmander:default",
+          "pmd:0007-squirtle:default",
+          "pmd:0019-rattata:default",
+          "pmd:0204-pineco:default"
+        ],
+        "npcAssetIds": []
+      }
+    }
+  ],
+  "actorPlacements": [],
+  "characterPlacements": [],
+  "transitions": [],
+  "variants": [],
+  "missionIds": [],
+  "behaviorTriggers": [],
+  "expressionTriggers": [],
+  "ambientSequences": [],
+  "rareEncounters": [],
+  "requiredAssetIds": [
+    "pmd:0001-bulbasaur:default",
+    "pmd:0004-charmander:default",
+    "pmd:0007-squirtle:default",
+    "pmd:0019-rattata:default",
+    "pmd:0204-pineco:default"
+  ]
+}

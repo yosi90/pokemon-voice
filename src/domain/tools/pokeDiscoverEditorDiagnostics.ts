@@ -1,5 +1,5 @@
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   RequirementAtomV1,
   RequirementExpressionV1,
 } from '../../../packages/contracts/src/index.js';
@@ -115,11 +115,11 @@ function expressionImpossibleReason(expression: RequirementExpressionV1): string
   return atomImpossibleReason(expression);
 }
 
-function collectStableIds(adventure: AdventureMapV2) {
+function collectStableIds(adventure: AdventureMapV3) {
   const entries: Array<{ id: string; kind: string }> = [];
   const add = (id: string | undefined, kind: string) => { if (id?.trim()) entries.push({ id, kind }); };
   for (const item of adventure.tiledMapAssets ?? []) add(item.assetId, 'asset Tiled');
-  for (const item of adventure.rooms ?? []) add(item.roomId, 'habitación');
+  for (const item of adventure.sectors ?? []) add(item.sectorId, 'sector');
   for (const item of adventure.actorPlacements ?? []) add(item.placementId, 'actor');
   for (const item of adventure.characterPlacements ?? []) add(item.placementId, 'personaje');
   for (const item of adventure.transitions ?? []) add(item.transitionId, 'transición');
@@ -146,7 +146,7 @@ function dependencyToken(atom: RequirementAtomV1) {
   return undefined;
 }
 
-function circularDiagnostics(adventure: AdventureMapV2) {
+function circularDiagnostics(adventure: AdventureMapV3) {
   const nodes: DependencyNode[] = [
     ...(adventure.worldEvents ?? []).map(event => ({ id: event.eventId, requirement: event.activation, produces: Object.entries(event.setFlags).map(([id, value]) => `flag:${id}:${JSON.stringify(value)}`) })),
     ...(adventure.behaviorTriggers ?? []).map(trigger => ({ id: trigger.triggerId, requirement: trigger.requirement, produces: (trigger.completionEffects?.unlockSecretIds ?? []).map(id => `secret:${id}`) })),
@@ -181,7 +181,7 @@ function circularDiagnostics(adventure: AdventureMapV2) {
   return components.map(component => diagnostic('circularDependency', 'error', component[0], `Dependencia circular entre ${component.join(' → ')}.`));
 }
 
-export function auditPokeDiscoverEditorLogic(adventure: AdventureMapV2): PokeDiscoverEditorDiagnostic[] {
+export function auditPokeDiscoverEditorLogic(adventure: AdventureMapV3): PokeDiscoverEditorDiagnostic[] {
   const diagnostics: PokeDiscoverEditorDiagnostic[] = [];
   const ids = new Map<string, string[]>();
   for (const entry of collectStableIds(adventure)) ids.set(entry.id, [...(ids.get(entry.id) ?? []), entry.kind]);
@@ -216,7 +216,7 @@ export function auditPokeDiscoverEditorLogic(adventure: AdventureMapV2): PokeDis
 }
 
 export function auditPokeDiscoverEditorProject(bundle: LoadedAdventureMapBundle): PokeDiscoverEditorDiagnostic[] {
-  const tiledMaps = Object.fromEntries(bundle.rooms.map(room => [room.room.tiledMapAssetId, room.tilemap]));
+  const tiledMaps = Object.fromEntries(bundle.sectors.map(room => [room.sector.tiledMapAssetId, room.tilemap]));
   const validationErrors = validateTiledAdventureBundle({ adventure: bundle.adventure, tiledMaps, pmdManifest: bundle.pmdManifest, characterManifest: bundle.characterManifest }) as string[];
   const diagnostics = [...auditPokeDiscoverEditorLogic(bundle.adventure)];
   for (const message of validationErrors) {

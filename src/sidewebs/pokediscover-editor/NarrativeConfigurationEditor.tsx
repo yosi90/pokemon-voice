@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type {
-  AdventureMapV2,
-  CompanionBehaviorTriggerV1,
-  ExpeditionExpressionTriggerV1,
+  AdventureMapV3,
+  CompanionBehaviorTriggerV3,
+  ExpeditionExpressionTriggerV3,
   ExpressionMatcherV1,
   ResearchFactV1,
 } from '../../../packages/contracts/src/index.js';
@@ -77,7 +77,7 @@ function MatcherFields({ matcher, onChange }: { matcher: ExpressionMatcherV1; on
   </>;
 }
 
-export function NarrativeConfigurationEditor({ adventure, onAdventureChange }: { adventure: AdventureMapV2; onAdventureChange: (adventure: AdventureMapV2) => void }) {
+export function NarrativeConfigurationEditor({ adventure, onAdventureChange }: { adventure: AdventureMapV3; onAdventureChange: (adventure: AdventureMapV3) => void }) {
   const [tab, setTab] = useState<'research' | 'behavior' | 'expression'>('research');
   const [researchId, setResearchId] = useState('');
   const [behaviorId, setBehaviorId] = useState('');
@@ -110,8 +110,8 @@ export function NarrativeConfigurationEditor({ adventure, onAdventureChange }: {
     setResearchId(factId);
   };
   const updateFact = (next: ResearchFactV1) => onAdventureChange(upsertEditorResearchFact(adventure, next));
-  const updateBehavior = (next: CompanionBehaviorTriggerV1) => onAdventureChange(updateEditorBehaviorTrigger(adventure, next));
-  const updateExpression = (next: ExpeditionExpressionTriggerV1) => onAdventureChange(updateEditorExpressionTrigger(adventure, next));
+  const updateBehavior = (next: CompanionBehaviorTriggerV3) => onAdventureChange(updateEditorBehaviorTrigger(adventure, next));
+  const updateExpression = (next: ExpeditionExpressionTriggerV3) => onAdventureChange(updateEditorExpressionTrigger(adventure, next));
   const updateMatcher = (next: ExpressionMatcherV1) => {
     if (!expression) return;
     updateExpression({ ...expression, matchAny: expression.matchAny.map((candidate, index) => index === matcherIndex ? next : candidate) });

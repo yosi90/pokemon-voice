@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import type { LoadedAdventureRoomBundle } from '../../domain/maps/loadAdventureBundle.js';
+import type { LoadedAdventureSectorBundle } from '../../domain/maps/loadAdventureBundle.js';
 import { readPokeDiscoverEditorTiledReferences } from '../../domain/tools/pokeDiscoverEditorTiledReferences.js';
 
 function formatPoint(point: { x: number; y: number }) {
   return `(${Math.round(point.x)}, ${Math.round(point.y)})`;
 }
 
-export function TiledReferenceExplorer({ room }: { room: LoadedAdventureRoomBundle }) {
+export function TiledReferenceExplorer({ room }: { room: LoadedAdventureSectorBundle }) {
   const references = useMemo(
     () => readPokeDiscoverEditorTiledReferences(room.tilemap),
     [room.tilemap],
@@ -22,7 +22,7 @@ export function TiledReferenceExplorer({ room }: { room: LoadedAdventureRoomBund
       <header>
         <div>
           <span className="editor-eyebrow">Solo lectura</span>
-          <h2 id="editor-tiled-references-title">Geometría de la habitación</h2>
+          <h2 id="editor-tiled-references-title">Geometría de la sector</h2>
         </div>
         <span>{references.paths.length + references.occlusionGroups.length} opciones</span>
       </header>
@@ -43,7 +43,7 @@ export function TiledReferenceExplorer({ room }: { room: LoadedAdventureRoomBund
             </label>
             <small>{selectedPath.pointCount} puntos · {formatPoint(selectedPath.start)} → {formatPoint(selectedPath.end)}</small>
           </>
-        ) : <p className="editor-catalog__empty-field">Esta habitación no declara rutas `AmbientPath`.</p>}
+        ) : <p className="editor-catalog__empty-field">Esta sector no declara rutas `AmbientPath`.</p>}
       </div>
 
       <div className="editor-tiled-reference-block">
@@ -70,7 +70,7 @@ export function TiledReferenceExplorer({ room }: { room: LoadedAdventureRoomBund
               ))}
             </ul>
           </>
-        ) : <p className="editor-catalog__empty-field">Esta habitación no declara grupos `ActorOccluder`.</p>}
+        ) : <p className="editor-catalog__empty-field">Esta sector no declara grupos `ActorOccluder`.</p>}
       </div>
     </section>
   );

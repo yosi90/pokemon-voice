@@ -1,5 +1,5 @@
 import type {
-  CompanionBehaviorTriggerV1,
+  CompanionBehaviorTriggerV3,
   PokemonFormV1,
   PokemonSpeciesV1,
   PokeVoiceSaveV1,
@@ -18,7 +18,7 @@ export interface CompanionBehaviorContext {
 
 export interface ExecuteCompanionBehaviorRequest extends CompanionBehaviorContext {
   mapId: string;
-  trigger: CompanionBehaviorTriggerV1;
+  trigger: CompanionBehaviorTriggerV3;
   executedAt: string;
   rewards?: readonly RewardDefinitionV1[];
 }
@@ -42,7 +42,7 @@ function assertActiveContext(save: PokeVoiceSaveV1, mapId: string, companionForm
   return session;
 }
 
-function isCompleted(save: PokeVoiceSaveV1, mapId: string, trigger: CompanionBehaviorTriggerV1) {
+function isCompleted(save: PokeVoiceSaveV1, mapId: string, trigger: CompanionBehaviorTriggerV3) {
   const unlocked = save.pokeDiscover.mapProgress[mapId]?.unlockedSecretIds ?? [];
   if ((trigger.completionEffects?.unlockSecretIds ?? []).some(secretId => unlocked.includes(secretId))) return true;
   const policy = trigger.repeatPolicy ?? 'oncePerVisit';
@@ -57,7 +57,7 @@ function isCompleted(save: PokeVoiceSaveV1, mapId: string, trigger: CompanionBeh
 
 function requirementMet(
   save: PokeVoiceSaveV1,
-  trigger: CompanionBehaviorTriggerV1,
+  trigger: CompanionBehaviorTriggerV3,
   context: CompanionBehaviorContext,
 ) {
   return evaluateRequirement(trigger.requirement, {
@@ -73,7 +73,7 @@ function requirementMet(
 export function listAvailableCompanionBehaviors(
   save: PokeVoiceSaveV1,
   mapId: string,
-  triggers: readonly CompanionBehaviorTriggerV1[],
+  triggers: readonly CompanionBehaviorTriggerV3[],
   context: CompanionBehaviorContext,
 ) {
   assertActiveContext(save, mapId, context.companionForm);
@@ -83,7 +83,7 @@ export function listAvailableCompanionBehaviors(
 export function listMatchingCompanionBehaviors(
   save: PokeVoiceSaveV1,
   mapId: string,
-  triggers: readonly CompanionBehaviorTriggerV1[],
+  triggers: readonly CompanionBehaviorTriggerV3[],
   context: CompanionBehaviorContext,
 ) {
   return triggers.filter(trigger => (
@@ -94,7 +94,7 @@ export function listMatchingCompanionBehaviors(
 function markCompleted(
   save: PokeVoiceSaveV1,
   mapId: string,
-  trigger: CompanionBehaviorTriggerV1,
+  trigger: CompanionBehaviorTriggerV3,
 ) {
   const policy = trigger.repeatPolicy ?? 'oncePerVisit';
   if (policy === 'repeatable') return save;

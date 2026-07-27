@@ -2,12 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import type { LoadedAdventureMapBundle } from '../../domain/maps/loadAdventureBundle.js';
 import { getPokeDiscoverEditorContentMarkers } from '../../domain/tools/pokeDiscoverEditorContent.js';
 import {
-  addPokeDiscoverAnchor,
   addPokeDiscoverCollisionPolygon,
   addPokeDiscoverCollisionRectangle,
-  addPokeDiscoverOccluder,
-  addPokeDiscoverPath,
-  type PokeDiscoverAnchorKind,
   type PokeDiscoverGeometryPoint,
 } from '../../domain/tools/pokeDiscoverEditorGeometry.js';
 import {
@@ -29,26 +25,17 @@ import { transformTiledObjectPoint } from '../../domain/maps/tiledObjectTransfor
 export type PokeDiscoverCanvasTool =
   | 'select'
   | 'pan'
-  | 'anchor'
   | 'collision-rectangle'
   | 'collision-polygon'
-  | 'path'
-  | 'connection'
-  | 'occlusion-rectangle'
-  | 'occlusion-polygon';
+  | 'connection';
 
 export type PokeDiscoverCellCommand =
   | 'pokemon'
   | 'npc'
   | 'interaction'
   | 'secret'
-  | 'anchor-actor'
-  | 'anchor-encounter'
-  | 'anchor-interaction'
-  | 'anchor-secret'
   | 'entry'
   | 'collision'
-  | 'occlusion'
   | 'exit';
 
 export interface PokeDiscoverCellSelection {
@@ -66,13 +53,9 @@ interface GeometryObject {
 export const POKEDISCOVER_CANVAS_TOOLS: Array<{ tool: PokeDiscoverCanvasTool; label: string; short: string }> = [
   { tool: 'select', label: 'Seleccionar y mover', short: 'Seleccionar' },
   { tool: 'pan', label: 'Desplazar lienzo', short: 'Mano' },
-  { tool: 'anchor', label: 'Crear ancla', short: 'Ancla' },
   { tool: 'collision-rectangle', label: 'Dibujar colisión rectangular', short: 'Colisión ▭' },
   { tool: 'collision-polygon', label: 'Dibujar colisión poligonal', short: 'Colisión ⬠' },
-  { tool: 'path', label: 'Dibujar ruta', short: 'Ruta' },
-  { tool: 'connection', label: 'Conectar con la habitación contigua', short: 'Salida' },
-  { tool: 'occlusion-rectangle', label: 'Dibujar oclusión rectangular', short: 'Oclusión ▭' },
-  { tool: 'occlusion-polygon', label: 'Dibujar oclusión poligonal', short: 'Oclusión ⬠' },
+  { tool: 'connection', label: 'Conectar con la sector contigua', short: 'Salida' },
 ];
 
 const ROOM_ZOOM_STORAGE_KEY = 'pokediscover-editor-room-zoom';
@@ -133,7 +116,7 @@ function GridIcon() {
 
 export function MapAuthoringCanvas({
   bundle,
-  roomId,
+  sectorId,
   tilemap,
   mode,
   onModeChange,
@@ -149,7 +132,7 @@ export function MapAuthoringCanvas({
   placementGhost,
 }: {
   bundle: LoadedAdventureMapBundle;
-  roomId: string;
+  sectorId: string;
   tilemap: PokeDiscoverEditableTiledMap;
   mode: 'design' | 'test';
   onModeChange: (mode: 'design' | 'test') => void;
@@ -177,9 +160,6 @@ export function MapAuthoringCanvas({
   const [draftStart, setDraftStart] = useState<PokeDiscoverGeometryPoint>();
   const [draftCurrent, setDraftCurrent] = useState<PokeDiscoverGeometryPoint>();
   const [draftPoints, setDraftPoints] = useState<PokeDiscoverGeometryPoint[]>([]);
-  const [label, setLabel] = useState('nuevo');
-  const [anchorKind, setAnchorKind] = useState<PokeDiscoverAnchorKind>('ActorAnchor');
-  const [anchorShape, setAnchorShape] = useState<'point' | 'rectangle'>('point');
   const [movePreview, setMovePreview] = useState<{ objectId: number; x: number; y: number }>();
   const [visibleLayers, setVisibleLayers] = useState<Set<PokeDiscoverObjectLayerName>>(
     () => new Set(['Anchors', 'Paths']),
@@ -215,13 +195,13 @@ export function MapAuthoringCanvas({
   const ghostAnchor = placementGhost
     ? objects.find(candidate => candidate.layerName === 'Anchors' && candidate.object.name === placementGhost.anchorId)?.object
     : undefined;
-  const room = bundle.rooms.find(candidate => candidate.room.roomId === roomId);
+  const room = bundle.sectors.find(candidate => candidate.sector.sectorId === sectorId);
   const markers = room ? getPokeDiscoverEditorContentMarkers(bundle, room) : [];
   const validSpawnIds = new Set(objects
     .filter(candidate => candidate.layerName === 'Anchors'
       && ['PlayerSpawn', 'TransitionAnchor'].includes(objectClass(candidate.object)))
     .map(candidate => candidate.object.name));
-  const canTest = Boolean(room?.room.spawnAnchorIds.some(anchorId => validSpawnIds.has(anchorId)));
+  const canTest = Boolean(room?.sector.spawnAnchorIds.some(anchorId => validSpawnIds.has(anchorId)));
   const centeredOffset = viewportRef.current ? centerPokeDiscoverCamera({
     viewportWidth: viewportRef.current.clientWidth,
     viewportHeight: viewportRef.current.clientHeight,
@@ -309,13 +289,9 @@ export function MapAuthoringCanvas({
     setCellMenu(undefined);
     const layer: PokeDiscoverObjectLayerName | undefined = nextTool.startsWith('collision')
       ? 'Collision'
-      : nextTool.startsWith('occlusion')
-        ? 'Occlusion'
-        : nextTool === 'path'
-          ? 'Paths'
-          : nextTool === 'anchor' || nextTool === 'connection'
-            ? 'Anchors'
-            : undefined;
+      : nextTool === 'connection'
+        ? 'Anchors'
+        : undefined;
     if (layer) setVisibleLayers(current => new Set([...current, layer]));
   };
 
@@ -329,13 +305,13 @@ export function MapAuthoringCanvas({
       observer.disconnect();
       window.removeEventListener('pokediscover:recenter', recenter);
     };
-  }, [recenter, roomId]);
+  }, [recenter, sectorId]);
 
   useEffect(() => {
     onOpenObject(undefined);
     setDraftPoints([]);
     setDraftStart(undefined);
-  }, [roomId]);
+  }, [sectorId]);
 
   useEffect(() => {
     const selectTool = (event: Event) => {
@@ -383,18 +359,8 @@ export function MapAuthoringCanvas({
   const finishLineTool = (points = draftPoints) => {
     try {
       if (tool === 'collision-polygon') {
-        const result = addPokeDiscoverCollisionPolygon(tilemap, points, label);
+        const result = addPokeDiscoverCollisionPolygon(tilemap, points);
         onTilemapChange(result.tilemap, 'Crear colisión poligonal');
-      } else if (tool === 'occlusion-polygon') {
-        const result = addPokeDiscoverOccluder(tilemap, {
-          label,
-          groupId: `occlusion-group:${label.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nuevo'}`,
-          points,
-        });
-        onTilemapChange(result.tilemap, 'Crear oclusión poligonal');
-      } else if (tool === 'path') {
-        const result = addPokeDiscoverPath(tilemap, points, label);
-        onTilemapChange(result.tilemap, 'Crear ruta');
       }
       setDraftPoints([]);
       setDraftCurrent(undefined);
@@ -445,24 +411,7 @@ export function MapAuthoringCanvas({
       event.currentTarget.setPointerCapture(event.pointerId);
       return;
     }
-    if (tool === 'anchor') {
-      if (anchorShape === 'rectangle') {
-        setDraftStart(point);
-        setDraftCurrent(point);
-        event.currentTarget.setPointerCapture(event.pointerId);
-      } else {
-        const result = addPokeDiscoverAnchor(tilemap, {
-          kind: anchorKind,
-          label,
-          x: point.x,
-          y: point.y,
-        });
-        onOpenObject(result.object.id);
-        onTilemapChange(result.tilemap, 'Crear ancla');
-      }
-      return;
-    }
-    if (tool === 'collision-polygon' || tool === 'occlusion-polygon' || tool === 'path') {
+    if (tool === 'collision-polygon') {
       setDraftPoints(current => [...current, point]);
       setDraftCurrent(point);
       return;
@@ -477,29 +426,8 @@ export function MapAuthoringCanvas({
     const end = pointFromEvent(event);
     try {
       if (tool === 'collision-rectangle') {
-        const result = addPokeDiscoverCollisionRectangle(tilemap, draftStart, end, label);
+        const result = addPokeDiscoverCollisionRectangle(tilemap, draftStart, end);
         onTilemapChange(result.tilemap, 'Crear colisión rectangular');
-      } else if (tool === 'anchor') {
-        const x = Math.min(draftStart.x, end.x);
-        const y = Math.min(draftStart.y, end.y);
-        const result = addPokeDiscoverAnchor(tilemap, {
-          kind: anchorKind,
-          label,
-          x,
-          y,
-          width: Math.max(16, Math.abs(end.x - draftStart.x)),
-          height: Math.max(16, Math.abs(end.y - draftStart.y)),
-        });
-        onOpenObject(result.object.id);
-        onTilemapChange(result.tilemap, 'Crear ancla rectangular');
-      } else if (tool === 'occlusion-rectangle') {
-        const result = addPokeDiscoverOccluder(tilemap, {
-          label,
-          groupId: `occlusion-group:${label.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-') || 'nuevo'}`,
-          start: draftStart,
-          end,
-        });
-        onTilemapChange(result.tilemap, 'Crear oclusión rectangular');
       } else if (tool === 'connection') {
         const center = {
           x: (draftStart.x + end.x) / 2,
@@ -526,7 +454,7 @@ export function MapAuthoringCanvas({
   };
 
   return (
-    <section className="editor-map-authoring" aria-label="Editor visual de la habitación">
+    <section className="editor-map-authoring" aria-label="Editor visual de la sector">
       <div className="editor-modebar">
         <div role="group" aria-label="Modo de trabajo">
           <button type="button" aria-pressed={mode === 'design'} onClick={() => onModeChange('design')}>Diseñar</button>
@@ -534,7 +462,7 @@ export function MapAuthoringCanvas({
             type="button"
             aria-pressed={mode === 'test'}
             disabled={!canTest}
-            title={canTest ? 'Recorrer la habitación' : 'Crea primero una entrada del jugador o una salida'}
+            title={canTest ? 'Recorrer la sector' : 'Crea primero una entrada del jugador o una salida'}
             onClick={() => onModeChange('test')}
           >Probar</button>
         </div>
@@ -575,32 +503,13 @@ export function MapAuthoringCanvas({
               >{layerLabel}</button>
             ))}
           </div>
-          {tool !== 'select' && tool !== 'pan' && tool !== 'connection' ? (
-            <label><span>Nombre</span><input value={label} onChange={event => setLabel(event.target.value)} /></label>
-          ) : null}
-          {tool === 'anchor' ? (
-            <>
-              <label><span>Uso del ancla</span><select value={anchorKind} onChange={event => setAnchorKind(event.target.value as PokeDiscoverAnchorKind)}>
-                <option value="PlayerSpawn">Entrada del jugador</option>
-                <option value="TransitionAnchor">Salida a otra habitación</option>
-                <option value="ActorAnchor">Colocación de personaje</option>
-                <option value="EncounterAnchor">Encuentro Pokémon</option>
-                <option value="InteractionAnchor">Interacción</option>
-                <option value="SecretAnchor">Secreto</option>
-              </select></label>
-              <label><span>Forma</span><select value={anchorShape} onChange={event => setAnchorShape(event.target.value as typeof anchorShape)}>
-                <option value="point">Punto</option>
-                <option value="rectangle">Área rectangular</option>
-              </select></label>
-            </>
-          ) : null}
           {draftPoints.length ? (
             <button type="button" className="is-primary" onClick={() => finishLineTool()}>
               Terminar ({draftPoints.length} puntos)
             </button>
           ) : null}
         </div>
-      ) : <div className="editor-toolstrip is-test-hint">Usa las flechas o WASD para recorrer la habitación.</div>}
+      ) : <div className="editor-toolstrip is-test-hint">Usa las flechas o WASD para recorrer la sector.</div>}
       <div
         ref={viewportRef}
         className={`editor-map-viewport${mode === 'test' ? ' is-testing' : ''}${tool === 'pan' && mode === 'design' ? ' is-pan-tool' : ''}`}
@@ -643,7 +552,7 @@ export function MapAuthoringCanvas({
               max={ROOM_MAX_ZOOM}
               step=".05"
               value={zoom}
-              aria-label="Zoom de la habitación"
+              aria-label="Zoom de la sector"
               onChange={event => changeZoom(Number(event.target.value))}
             />
             <output>{Math.round(zoom * 100)}%</output>
@@ -659,7 +568,7 @@ export function MapAuthoringCanvas({
               className={isCentered ? '' : 'is-actionable'}
               disabled={isCentered}
               onClick={recenter}
-              aria-label="Centrar habitación"
+              aria-label="Centrar sector"
             ><CenterIcon /></button>
           </span>
           <span
@@ -693,28 +602,17 @@ export function MapAuthoringCanvas({
             ['interaction', 'Interacción'],
             ['secret', 'Secreto'],
             ['collision', 'Colisión'],
-            ['occlusion', 'Oclusión'],
           ] as const).map(([command, commandLabel]) => <button
             key={command}
             type="button"
             role="menuitem"
             disabled={command === 'exit' && !canCreateExit(cellMenu)}
-            title={command === 'exit' && !canCreateExit(cellMenu) ? 'Esta celda no comparte borde con otra habitación' : undefined}
+            title={command === 'exit' && !canCreateExit(cellMenu) ? 'Esta celda no comparte borde con otra sector' : undefined}
             onClick={() => {
               onCellCommand(command, cellMenu);
               setCellMenu(undefined);
             }}
           >{commandLabel}</button>)}
-          <span>Anclas</span>
-          {([
-            ['anchor-actor', 'Personaje'],
-            ['anchor-encounter', 'Encuentro'],
-            ['anchor-interaction', 'Interacción'],
-            ['anchor-secret', 'Secreto'],
-          ] as const).map(([command, commandLabel]) => <button key={command} type="button" role="menuitem" onClick={() => {
-            onCellCommand(command, cellMenu);
-            setCellMenu(undefined);
-          }}>{commandLabel}</button>)}
         </div> : null}
         <div
           className="editor-map-surface"
@@ -724,7 +622,7 @@ export function MapAuthoringCanvas({
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
           }}
         >
-          <RuntimePreview bundle={bundle} roomId={roomId} designMode={mode === 'design'} />
+          <RuntimePreview bundle={bundle} sectorId={sectorId} designMode={mode === 'design'} />
           {mode === 'design' ? (
             <svg
               className="editor-geometry-overlay"
@@ -763,12 +661,7 @@ export function MapAuthoringCanvas({
                 const gesture = cellGestureRef.current;
                 if (gesture) {
                   cellGestureRef.current = undefined;
-                  if (gesture.dragging && gesture.points.length >= 2) {
-                    const result = addPokeDiscoverPath(tilemap, simplifyOrthogonalPoints(gesture.points), label || 'ruta');
-                    onTilemapChange(result.tilemap, 'Crear ruta ortogonal');
-                    onOpenObject(result.object.id);
-                    setDraftPoints([]);
-                  } else {
+                  if (!gesture.dragging) {
                     const cell = cellFromEvent(event);
                     const viewport = viewportRef.current;
                     setCellMenu({
@@ -776,7 +669,7 @@ export function MapAuthoringCanvas({
                       left: Math.min(Math.max(8, event.clientX - (viewport?.getBoundingClientRect().left ?? 0)), Math.max(8, (viewport?.clientWidth ?? 240) - 230)),
                       top: Math.min(Math.max(8, event.clientY - (viewport?.getBoundingClientRect().top ?? 0)), Math.max(8, (viewport?.clientHeight ?? 320) - 330)),
                     });
-                  }
+                  } else setDraftPoints([]);
                   return;
                 }
                 if (moveRef.current && movePreview) {
@@ -802,7 +695,7 @@ export function MapAuthoringCanvas({
             >
               {showGrid ? <>
                 <defs>
-                  <pattern id={`editor-grid-${roomId.replaceAll(':', '-')}`} width={tilemap.tilewidth} height={tilemap.tileheight} patternUnits="userSpaceOnUse">
+                  <pattern id={`editor-grid-${sectorId.replaceAll(':', '-')}`} width={tilemap.tilewidth} height={tilemap.tileheight} patternUnits="userSpaceOnUse">
                     <path
                       className="editor-map-grid-line"
                       d={`M 0 0 H ${tilemap.tilewidth} M 0 0 V ${tilemap.tileheight}`}
@@ -815,7 +708,7 @@ export function MapAuthoringCanvas({
                   y={-tilemap.tileheight}
                   width={mapWidth + tilemap.tilewidth * 2}
                   height={mapHeight + tilemap.tileheight * 2}
-                  fill={`url(#editor-grid-${roomId.replaceAll(':', '-')})`}
+                  fill={`url(#editor-grid-${sectorId.replaceAll(':', '-')})`}
                   pointerEvents="none"
                 />
                 <rect

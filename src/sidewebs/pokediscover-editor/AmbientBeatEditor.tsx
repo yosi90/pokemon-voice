@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   AmbientActorActionV1,
   AmbientBeatV1,
-  AmbientSequenceV1,
+  AmbientSequenceV3,
 } from '../../../packages/contracts/src/index.js';
-import type { LoadedAdventureMapBundle, LoadedAdventureRoomBundle } from '../../domain/maps/loadAdventureBundle.js';
+import type { LoadedAdventureMapBundle, LoadedAdventureSectorBundle } from '../../domain/maps/loadAdventureBundle.js';
 import {
   nextStableEditorId,
   replaceAmbientAction,
@@ -17,18 +17,19 @@ import { readPokeDiscoverEditorTiledReferences } from '../../domain/tools/pokeDi
 const DIRECTIONS = Object.freeze(['down', 'left', 'right', 'up'] as const);
 
 function defaultAction(
-  room: LoadedAdventureRoomBundle,
+  sectorBundle: LoadedAdventureSectorBundle,
   preferredPlacementId?: string,
 ): AmbientActorActionV1 | undefined {
   const placements = [
-    ...room.adventure.actorPlacements,
-    ...room.adventure.characterPlacements.filter(candidate => !candidate.controllable),
-  ].filter(candidate => candidate.roomId === room.room.roomId);
+    ...sectorBundle.adventure.actorPlacements,
+    ...sectorBundle.adventure.characterPlacements.filter(candidate => !candidate.controllable),
+  ].filter(candidate => candidate.sectorId === sectorBundle.sector.sectorId);
   const placement = placements.find(candidate => candidate.placementId === preferredPlacementId)
     ?? placements[0];
   if (!placement) return undefined;
-  const animation = room.actorAssets.get(placement.assetId)?.animations.find(candidate => candidate.name === 'Idle')
-    ?? room.actorAssets.get(placement.assetId)?.animations[0];
+  const animation = sectorBundle.actorAssets.get(placement.assetId)?.animations
+    .find(candidate => candidate.name === 'Idle')
+    ?? sectorBundle.actorAssets.get(placement.assetId)?.animations[0];
   if (!animation) return {
     kind: 'face',
     placementId: placement.placementId,
@@ -42,25 +43,25 @@ function defaultAction(
   };
 }
 
-function bundleWithAdventure(bundle: LoadedAdventureMapBundle, adventure: AdventureMapV2) {
-  const roomsById = new Map(adventure.rooms.map(room => [room.roomId, room]));
+function bundleWithAdventure(bundle: LoadedAdventureMapBundle, adventure: AdventureMapV3) {
+  const sectorsById = new Map(adventure.sectors.map(sector => [sector.sectorId, sector]));
   const pmdById = new Map(bundle.pmdManifest.assets.map(asset => [asset.assetId, asset]));
   const charactersById = new Map(bundle.characterManifest.assets.map(asset => [asset.assetId, asset]));
   return {
     ...bundle,
     adventure,
-    rooms: bundle.rooms.map(room => ({
-      ...room,
+    sectors: bundle.sectors.map(sectorBundle => ({
+      ...sectorBundle,
       adventure,
-      room: roomsById.get(room.room.roomId) ?? room.room,
+      sector: sectorsById.get(sectorBundle.sector.sectorId) ?? sectorBundle.sector,
       actorAssets: new Map(adventure.actorPlacements
-        .filter(placement => placement.roomId === room.room.roomId)
+        .filter(placement => placement.sectorId === sectorBundle.sector.sectorId)
         .flatMap(placement => {
           const asset = pmdById.get(placement.assetId);
           return asset ? [[asset.assetId, asset] as const] : [];
         })),
       characterAssets: new Map(adventure.characterPlacements
-        .filter(placement => placement.roomId === room.room.roomId)
+        .filter(placement => placement.sectorId === sectorBundle.sector.sectorId)
         .flatMap(placement => {
           const asset = charactersById.get(placement.assetId);
           return asset ? [[asset.assetId, asset] as const] : [];
@@ -69,7 +70,7 @@ function bundleWithAdventure(bundle: LoadedAdventureMapBundle, adventure: Advent
   };
 }
 
-export function applyEditorAdventure(bundle: LoadedAdventureMapBundle, adventure: AdventureMapV2) {
+export function applyEditorAdventure(bundle: LoadedAdventureMapBundle, adventure: AdventureMapV3) {
   return bundleWithAdventure(bundle, adventure);
 }
 
@@ -81,12 +82,12 @@ export function AmbientBeatEditor({
   embedded = false,
 }: {
   bundle: LoadedAdventureMapBundle;
-  room: LoadedAdventureRoomBundle;
-  onAdventureChange: (adventure: AdventureMapV2) => void;
+  room: LoadedAdventureSectorBundle;
+  onAdventureChange: (adventure: AdventureMapV3) => void;
   initialPlacementId?: string;
   embedded?: boolean;
 }) {
-  const roomSequences = bundle.adventure.ambientSequences.filter(sequence => sequence.roomId === room.room.roomId);
+  const roomSequences = bundle.adventure.ambientSequences.filter(sequence => sequence.sectorId === room.sector.sectorId);
   const visibleSequences = initialPlacementId
     ? roomSequences.filter(candidate => candidate.beats.some(candidateBeat => (
       candidateBeat.actions.some(candidateAction => candidateAction.placementId === initialPlacementId)
@@ -103,7 +104,7 @@ export function AmbientBeatEditor({
   const actors = [
     ...bundle.adventure.actorPlacements,
     ...bundle.adventure.characterPlacements.filter(placement => !placement.controllable),
-  ].filter(placement => placement.roomId === room.room.roomId);
+  ].filter(placement => placement.sectorId === room.sector.sectorId);
   const paths = useMemo(() => readPokeDiscoverEditorTiledReferences(room.tilemap).paths, [room.tilemap]);
   const selectedPlacement = actors.find(placement => placement.placementId === action?.placementId) ?? actors[0];
   const animations = selectedPlacement
@@ -123,9 +124,9 @@ export function AmbientBeatEditor({
     setActionIndex(Math.max(0, nextBeat?.actions.findIndex(candidateAction => (
       candidateAction.placementId === initialPlacementId
     )) ?? 0));
-  }, [initialPlacementId, room.room.roomId]);
+  }, [initialPlacementId, room.sector.sectorId]);
 
-  const commitSequence = (nextSequence: AmbientSequenceV1) => {
+  const commitSequence = (nextSequence: AmbientSequenceV3) => {
     onAdventureChange(replaceAmbientSequence(bundle.adventure, nextSequence));
   };
   const commitBeat = (nextBeat: AmbientBeatV1) => {
@@ -139,14 +140,14 @@ export function AmbientBeatEditor({
     const firstAction = defaultAction(room, initialPlacementId);
     if (!firstAction) return;
     const nextSequenceId = nextStableEditorId(
-      `ambient:${room.room.roomId.split(':').at(-1)}`,
+      `ambient:${room.sector.sectorId.split(':').at(-1)}`,
       bundle.adventure.ambientSequences.map(candidate => candidate.sequenceId),
     );
-    const nextBeatId = `beat:${nextSequenceId.split(':').slice(1).join(':')}:editor-1`;
-    const nextSequence: AmbientSequenceV1 = {
+    const nextBeatId = `beat:${nextSequenceId.split(':').slice(1).join(':')}:01`;
+    const nextSequence: AmbientSequenceV3 = {
       schemaVersion: 1,
       sequenceId: nextSequenceId,
-      roomId: room.room.roomId,
+      sectorId: room.sector.sectorId,
       loop: true,
       blockedPolicy: 'pauseSequence',
       beats: [{ schemaVersion: 1, beatId: nextBeatId, actions: [firstAction] }],
@@ -318,16 +319,16 @@ export function AmbientBeatEditor({
     <section className={`editor-beats${embedded ? ' is-embedded' : ''}`} aria-labelledby="editor-beats-title">
       <header>
         <div>
-          <span className="editor-eyebrow">Escena de la habitación</span>
+          <span className="editor-eyebrow">Escena de la sector</span>
           <h2 id="editor-beats-title">{embedded ? 'Guion automático' : 'Pasos de animación y movimiento'}</h2>
           <p>Organiza qué hace cada personaje y en qué orden.</p>
         </div>
-        <span>Habitación activa</span>
+        <span>Sector activa</span>
       </header>
 
       {!sequence ? (
         <div className="editor-beats__empty">
-          <p>Esta habitación todavía no contiene secuencias ambientales.</p>
+          <p>Esta sector todavía no contiene secuencias ambientales.</p>
           <button type="button" disabled={!actors.length} onClick={createSequence}>Crear secuencia</button>
         </div>
       ) : (

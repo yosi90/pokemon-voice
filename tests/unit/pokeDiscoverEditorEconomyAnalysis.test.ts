@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   MissionDefinitionV1,
   PokeDiscoverShopContentV1,
   ShopOfferV1,
 } from '../../packages/contracts/src/index.js';
 import { analyzePokeDiscoverEditorEconomy } from '../../src/domain/tools/pokeDiscoverEditorEconomyAnalysis.js';
 
-function adventure(): AdventureMapV2 {
+function adventure(): AdventureMapV3 {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     mapId: 'map:test:economy',
     title: 'Balance económico',
-    tiledMapAssets: [], rooms: [], transitions: [], requiredAssetIds: [], ambientSequences: [], companionSequences: [], rareEncounters: [], interactions: [], dialogues: [], fieldNotebookHints: [],
+    tiledMapAssets: [], sectors: [], transitions: [], requiredAssetIds: [], ambientSequences: [], companionSequences: [], rareEncounters: [], interactions: [], dialogues: [], fieldNotebookHints: [],
     actorPlacements: [], characterPlacements: [], variants: [], behaviorTriggers: [], expressionTriggers: [], worldEvents: [], missionIds: [],
     researchFacts: [{
       schemaVersion: 1,
@@ -26,7 +26,7 @@ function adventure(): AdventureMapV2 {
       requirement: { kind: 'trainerLevel', minimum: 1 },
       rewards: [{ kind: 'trainerExperience', amount: 25 }, { kind: 'discoveryPoints', amount: 10 }],
     }],
-  } as AdventureMapV2;
+  } as AdventureMapV3;
 }
 
 function mandatoryMission(requirement: MissionDefinitionV1['objectives'][number]['requirement']): MissionDefinitionV1 {

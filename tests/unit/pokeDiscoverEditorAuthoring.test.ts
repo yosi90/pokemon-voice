@@ -145,29 +145,31 @@ describe('modelo de autoría del configurador', () => {
         { schemaVersion: 1 as const, assetId: 'asset:historic', path: 'maps/tegueste-forest-02-05.tmj' },
         { schemaVersion: 1 as const, assetId: 'asset:south', path: 'maps/tegueste-forest-04-05.tmj' },
       ],
-      rooms: [{
+      sectors: [{
         schemaVersion: 1 as const,
-        roomId: 'room:tegueste-forest:02-04',
+        sectorId: 'room:tegueste-forest:02-04',
         tiledMapAssetId: 'asset:historic',
         staticCamera: true as const,
         spawnAnchorIds: [],
+        roster: { schemaVersion: 1 as const, pokemonAssetIds: [], npcAssetIds: [] },
       }, {
         schemaVersion: 1 as const,
-        roomId: 'room:tegueste-forest:04-05',
+        sectorId: 'room:tegueste-forest:04-05',
         tiledMapAssetId: 'asset:south',
         staticCamera: true as const,
         spawnAnchorIds: [],
+        roster: { schemaVersion: 1 as const, pokemonAssetIds: [], npcAssetIds: [] },
       }],
     };
     const registrations = [{
       fileName: 'tegueste-forest-02-05.tmj',
       assetId: 'asset:historic',
-      roomId: 'room:tegueste-forest:02-04',
+      sectorId: 'room:tegueste-forest:02-04',
       created: false,
     }, {
       fileName: 'tegueste-forest-04-05.tmj',
       assetId: 'asset:south',
-      roomId: 'room:tegueste-forest:04-05',
+      sectorId: 'room:tegueste-forest:04-05',
       created: false,
     }];
     const draftWorld = {
@@ -198,17 +200,17 @@ describe('modelo de autoría del configurador', () => {
     ]);
     expect(organized.registrations).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        roomId: 'room:tegueste-forest:02-04',
+        sectorId: 'room:tegueste-forest:02-04',
         fileName: 'tegueste-forest-02-05.tmj.old',
         archived: true,
       }),
       expect.objectContaining({
-        roomId: 'room:tegueste-forest:04-05',
+        sectorId: 'room:tegueste-forest:04-05',
         fileName: 'tegueste-forest-02-02.tmj',
         archived: false,
       }),
     ]));
-    expect(organized.adventure.rooms[0].roomId).toBe('room:tegueste-forest:02-04');
+    expect(organized.adventure.sectors[0].sectorId).toBe('room:tegueste-forest:02-04');
   });
 
   it('centra sin alterar el zoom y conserva el punto focal al acercar', () => {
@@ -280,12 +282,13 @@ describe('modelo de autoría del configurador', () => {
         assetId: 'tiled-map:tegueste-forest:02-04',
         path: 'assets/adventure/maps/tegueste-forest/tegueste-forest-02-05.tmj',
       }],
-      rooms: [{
+      sectors: [{
         schemaVersion: 1 as const,
-        roomId: 'room:tegueste-forest:02-04',
+        sectorId: 'room:tegueste-forest:02-04',
         tiledMapAssetId: 'tiled-map:tegueste-forest:02-04',
         staticCamera: true as const,
         spawnAnchorIds: [],
+        roster: { schemaVersion: 1 as const, pokemonAssetIds: [], npcAssetIds: [] },
       }],
     };
     const registered = registerPokeDiscoverTiledSources(adventure, [
@@ -299,10 +302,10 @@ describe('modelo de autoría del configurador', () => {
     expect(registered.registrations.find(item => item.fileName.endsWith('02-05.tmj')))
       .toMatchObject({
         assetId: 'tiled-map:tegueste-forest:02-04',
-        roomId: 'room:tegueste-forest:02-04',
+        sectorId: 'room:tegueste-forest:02-04',
         created: false,
       });
-    expect(registered.adventure.rooms.map(room => room.roomId)).toContain('room:tegueste-forest:05-05');
+    expect(registered.adventure.sectors.map(room => room.sectorId)).toContain('room:tegueste-forest:05-05');
   });
 
   it('limita el historial global a 100 transacciones y restaura snapshots completos', () => {
@@ -340,18 +343,18 @@ describe('modelo de autoría del configurador', () => {
 
     expect(connected.adventure.transitions).toHaveLength(2);
     expect(connected.adventure.transitions[0]).toMatchObject({
-      fromRoomId: source.roomId,
-      toRoomId: target.roomId,
+      fromSectorId: source.sectorId,
+      toSectorId: target.sectorId,
       destinationFacing: 'right',
     });
     expect(connected.adventure.transitions[1]).toMatchObject({
-      fromRoomId: target.roomId,
-      toRoomId: source.roomId,
+      fromSectorId: target.sectorId,
+      toSectorId: source.sectorId,
       destinationFacing: 'left',
     });
-    expect(connected.adventure.rooms.find(room => room.roomId === source.roomId)?.spawnAnchorIds)
+    expect(connected.adventure.sectors.find(room => room.sectorId === source.sectorId)?.spawnAnchorIds)
       .toContain(connected.sourceAnchorId);
-    expect(connected.adventure.rooms.find(room => room.roomId === target.roomId)?.spawnAnchorIds)
+    expect(connected.adventure.sectors.find(room => room.sectorId === target.sectorId)?.spawnAnchorIds)
       .toContain(connected.targetAnchorId);
     const targetObjects = connected.targetTilemap.layers
       .find(layer => layer.name === 'Anchors')?.objects as Array<Record<string, unknown>> | undefined;
@@ -379,14 +382,14 @@ describe('modelo de autoría del configurador', () => {
       schemaVersion: 1,
       entryPointId: 'entry:test:north',
       label: 'Entrada norte',
-      roomId: 'room:test:north',
+      sectorId: 'room:test:north',
       anchorId: 'anchor:player:north',
     });
     adventure = upsertPokeDiscoverEntryPoint(adventure, {
       schemaVersion: 1,
       entryPointId: 'entry:test:south',
       label: 'Entrada sur',
-      roomId: 'room:test:south',
+      sectorId: 'room:test:south',
       anchorId: 'anchor:player:south',
     });
     adventure = assignPokeDiscoverMissionEntry(adventure, {
@@ -401,9 +404,9 @@ describe('modelo de autoría del configurador', () => {
     });
     adventure = { ...adventure, freeExpeditionEntryPointId: 'entry:test:south' };
 
-    expect(resolvePokeDiscoverEntryPoint(adventure, { missionId: 'mission:test:one' })?.roomId)
+    expect(resolvePokeDiscoverEntryPoint(adventure, { missionId: 'mission:test:one' })?.sectorId)
       .toBe('room:test:north');
-    expect(resolvePokeDiscoverEntryPoint(adventure, { missionId: 'mission:test:two' })?.roomId)
+    expect(resolvePokeDiscoverEntryPoint(adventure, { missionId: 'mission:test:two' })?.sectorId)
       .toBe('room:test:south');
     expect(resolvePokeDiscoverEntryPoint(adventure, { freeExpedition: true })?.anchorId)
       .toBe('anchor:player:south');
@@ -415,7 +418,7 @@ describe('modelo de autoría del configurador', () => {
       actorPlacements: [{
         schemaVersion: 1 as const,
         placementId: 'placement:test',
-        roomId: 'room:test',
+        sectorId: 'room:test',
         anchorId: 'anchor:test',
         assetId: 'pokemon:test',
         animation: 'Idle',
@@ -424,7 +427,7 @@ describe('modelo de autoría del configurador', () => {
         schemaVersion: 1 as const,
         entryPointId: 'entry:test',
         label: 'Entrada',
-        roomId: 'room:test',
+        sectorId: 'room:test',
         anchorId: 'anchor:test',
       }],
     };
@@ -490,12 +493,13 @@ describe('apertura y guardado multiarchivo', () => {
         assetId: 'tiled-map:test:01',
         path: 'room-01.tmj',
       }],
-      rooms: [{
+      sectors: [{
         schemaVersion: 1 as const,
-        roomId: 'room:test:01',
+        sectorId: 'room:test:01',
         tiledMapAssetId: 'tiled-map:test:01',
         staticCamera: true as const,
         spawnAnchorIds: [],
+        roster: { schemaVersion: 1 as const, pokemonAssetIds: [], npcAssetIds: [] },
       }],
     };
     const handles = new Map<string, MemoryFileHandle>([
@@ -559,7 +563,7 @@ describe('apertura y guardado multiarchivo', () => {
       actorPlacements: [{
         schemaVersion: 1 as const,
         placementId: 'actor:test',
-        roomId: 'room:test:01',
+        sectorId: 'room:test:01',
         anchorId: 'anchor:test',
         assetId: 'pmd:test',
         animation: 'Idle',

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import type { LoadedAdventureMapBundle, LoadedAdventureRoomBundle } from '../../domain/maps/loadAdventureBundle.js';
+import type { LoadedAdventureMapBundle, LoadedAdventureSectorBundle } from '../../domain/maps/loadAdventureBundle.js';
 import {
   fileBaseName,
   previewPokeDiscoverWorldNames,
@@ -31,7 +31,7 @@ function CenterIcon() {
 interface PreparedWorldMap {
   entry: PokeDiscoverWorldMapEntry;
   registration?: PokeDiscoverRoomRegistration;
-  room?: LoadedAdventureRoomBundle;
+  sector?: LoadedAdventureSectorBundle;
   width: number;
   height: number;
   pending: boolean;
@@ -45,28 +45,28 @@ function worldMaps(
   const registrationsByFile = new Map(registrations.map(item => [fileBaseName(item.fileName), item]));
   return world.maps.map(entry => {
     const registration = registrationsByFile.get(fileBaseName(entry.fileName));
-    const room = registration
-      ? bundle.rooms.find(candidate => candidate.room.roomId === registration.roomId)
+    const sector = registration
+      ? bundle.sectors.find(candidate => candidate.sector.sectorId === registration.sectorId)
       : undefined;
     return {
       entry,
       registration,
-      room,
-      width: room ? room.tilemap.width * room.tilemap.tilewidth : Number(entry.width) || 480,
-      height: room ? room.tilemap.height * room.tilemap.tileheight : Number(entry.height) || 320,
-      pending: !registration || !room,
+      sector,
+      width: sector ? sector.tilemap.width * sector.tilemap.tilewidth : Number(entry.width) || 480,
+      height: sector ? sector.tilemap.height * sector.tilemap.tileheight : Number(entry.height) || 320,
+      pending: !registration || !sector,
     };
   });
 }
 
-function tilesetForGid(tilemap: LoadedAdventureRoomBundle['tilemap'], gid: number) {
+function tilesetForGid(tilemap: LoadedAdventureSectorBundle['tilemap'], gid: number) {
   return [...tilemap.tilesets]
     .filter(tileset => Number(tileset.firstgid) <= gid)
     .sort((left, right) => Number(right.firstgid) - Number(left.firstgid))[0];
 }
 
 async function loadImages(maps: PreparedWorldMap[]) {
-  const urls = [...new Set(maps.flatMap(map => map.room?.tilemap.tilesets ?? [])
+  const urls = [...new Set(maps.flatMap(map => map.sector?.tilemap.tilesets ?? [])
     .map(tileset => String(tileset.image ?? ''))
     .filter(Boolean))];
   const entries = await Promise.all(urls.map(url => new Promise<[string, HTMLImageElement]>((resolve, reject) => {
@@ -114,8 +114,8 @@ function drawRoom(
   origin: { x: number; y: number },
   images: Map<string, HTMLImageElement>,
 ) {
-  if (!map.room) return;
-  const tilemap = map.room.tilemap;
+  if (!map.sector) return;
+  const tilemap = map.sector.tilemap;
   for (const layer of tilemap.layers) {
     const name = String(layer.name ?? '');
     if (layer.type !== 'tilelayer' || layer.visible === false
@@ -202,7 +202,7 @@ export function WorldAuthoringCanvas({
   onCancelOrganization: () => void;
   onOrganizeRequest: () => void;
   onOrganizationDirtyChange: (dirty: boolean) => void;
-  onOpenRoom: (roomId: string) => void;
+  onOpenRoom: (sectorId: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -358,7 +358,7 @@ export function WorldAuthoringCanvas({
       setDraftWorld(nextWorld);
       onOrganizationDirtyChange(true);
     }
-    else onWorldChange(nextWorld, `Mover habitación ${displayPokeDiscoverRoomLabel(dragged.map.entry.fileName)}`);
+    else onWorldChange(nextWorld, `Mover sector ${displayPokeDiscoverRoomLabel(dragged.map.entry.fileName)}`);
     setDragged(undefined);
   };
 
@@ -390,7 +390,7 @@ export function WorldAuthoringCanvas({
   const restoreArchivedRoom = (fileName: string) => {
     const registration = registrations.find(item => item.fileName === fileName && item.archived);
     const room = registration
-      ? bundle.rooms.find(candidate => candidate.room.roomId === registration.roomId)
+      ? bundle.sectors.find(candidate => candidate.sector.sectorId === registration.sectorId)
       : undefined;
     const width = room ? room.tilemap.width * room.tilemap.tilewidth : 480;
     const height = room ? room.tilemap.height * room.tilemap.tileheight : 320;
@@ -415,14 +415,14 @@ export function WorldAuthoringCanvas({
           <span>Apartadas</span>
           <select
             value=""
-            aria-label="Reincorporar habitación apartada"
+            aria-label="Reincorporar sector apartada"
             onChange={event => {
               if (event.target.value) restoreArchivedRoom(event.target.value);
             }}
           >
             <option value="">Reincorporar…</option>
             {registrations.filter(item => item.archived).map(item => (
-              <option key={item.roomId} value={item.fileName}>{item.fileName}</option>
+              <option key={item.sectorId} value={item.fileName}>{item.fileName}</option>
             ))}
           </select>
         </label> : null}
@@ -539,7 +539,7 @@ export function WorldAuthoringCanvas({
                 className={`editor-world-room${organize ? ' is-organizable' : ''}${activeDrag ? ' is-dragging' : ''}${map.pending ? ' is-pending' : ''}${selectedFileName === fileName ? ' is-selected' : ''}`}
                 style={{ left: x, top: y, width: map.width, height: map.height }}
                 onDoubleClick={() => {
-                  if (map.registration) onOpenRoom(map.registration.roomId);
+                  if (map.registration) onOpenRoom(map.registration.sectorId);
                   else onOrganizeRequest();
                 }}
                 onPointerDown={(event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -555,7 +555,7 @@ export function WorldAuthoringCanvas({
                       y: event.clientY,
                       ox: offset.x,
                       oy: offset.y,
-                      openRoomId: map.registration.roomId,
+                      openRoomId: map.registration.sectorId,
                     };
                     event.currentTarget.setPointerCapture(event.pointerId);
                     return;

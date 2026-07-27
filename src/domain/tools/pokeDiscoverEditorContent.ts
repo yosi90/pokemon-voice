@@ -1,4 +1,4 @@
-import type { LoadedAdventureMapBundle, LoadedAdventureRoomBundle } from '../maps/loadAdventureBundle.js';
+import type { LoadedAdventureMapBundle, LoadedAdventureSectorBundle } from '../maps/loadAdventureBundle.js';
 import { readPokeDiscoverEditorAnchors } from './pokeDiscoverEditorTiledReferences.js';
 
 export type PokeDiscoverEditorContentKind = 'encounter' | 'npc' | 'portal' | 'secret' | 'trigger';
@@ -13,7 +13,7 @@ export interface PokeDiscoverEditorContentMarker {
 
 export function getPokeDiscoverEditorContentMarkers(
   bundle: LoadedAdventureMapBundle,
-  room: LoadedAdventureRoomBundle,
+  room: LoadedAdventureSectorBundle,
 ): PokeDiscoverEditorContentMarker[] {
   const anchors = new Map(readPokeDiscoverEditorAnchors(room.tilemap).map(anchor => [anchor.anchorId, anchor]));
   const marker = (contentId: string, kind: PokeDiscoverEditorContentKind, anchorId: string) => {
@@ -22,16 +22,16 @@ export function getPokeDiscoverEditorContentMarkers(
   };
   return [
     ...bundle.adventure.actorPlacements
-      .filter(placement => placement.roomId === room.room.roomId)
+      .filter(placement => placement.sectorId === room.sector.sectorId)
       .flatMap(placement => marker(placement.placementId, 'encounter', placement.anchorId)),
     ...bundle.adventure.characterPlacements
-      .filter(placement => placement.roomId === room.room.roomId && !placement.controllable)
+      .filter(placement => placement.sectorId === room.sector.sectorId && !placement.controllable)
       .flatMap(placement => marker(placement.placementId, 'npc', placement.anchorId)),
     ...bundle.adventure.transitions
-      .filter(transition => transition.fromRoomId === room.room.roomId)
+      .filter(transition => transition.fromSectorId === room.sector.sectorId)
       .flatMap(transition => marker(transition.transitionId, 'portal', transition.fromAnchorId)),
     ...(bundle.adventure.interactions ?? [])
-      .filter(interaction => interaction.roomId === room.room.roomId && interaction.target.kind === 'anchor')
+      .filter(interaction => interaction.sectorId === room.sector.sectorId && interaction.target.kind === 'anchor')
       .flatMap(interaction => marker(
         interaction.interactionId,
         interaction.meaningfulKind === 'secret' ? 'secret' : 'trigger',

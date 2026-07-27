@@ -12,6 +12,7 @@ import type { SpeciesResearchProgressV1 } from './research.js';
 import type { NarrativeProgressV1, PokeDiscoverIntroductionStateV1 } from './narrative.js';
 import type { TrainerProfileV1 } from './narrative.js';
 import type { ExpressionInputMethod } from './adventure.js';
+import { MEANINGFUL_EXPEDITION_INTERACTION_KINDS } from './adventureVocabulary.js';
 
 export interface CompanionSelectionV1 extends VersionedContractV1 {
   formId: PokemonFormId;
@@ -186,17 +187,10 @@ export interface ExpeditionLoadoutV1 extends VersionedContractV1 {
   toolId?: StableId;
 }
 
+export { MEANINGFUL_EXPEDITION_INTERACTION_KINDS };
+
 export type MeaningfulExpeditionInteractionKind =
-  | 'npcConversation'
-  | 'inspection'
-  | 'pokemonInteraction'
-  | 'speciesIdentification'
-  | 'companionBehavior'
-  | 'contextTrigger'
-  | 'secret'
-  | 'hint'
-  | 'collectible'
-  | 'research';
+  typeof MEANINGFUL_EXPEDITION_INTERACTION_KINDS[number];
 
 export interface MissionRuntimeStateV1 extends VersionedContractV1 {
   missionId: StableId;

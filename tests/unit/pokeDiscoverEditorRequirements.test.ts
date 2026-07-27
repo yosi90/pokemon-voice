@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import teguesteAdventure from '../../public/assets/adventure/maps/tegueste-forest/tegueste-forest.adventure.json';
-import type { AdventureMapV2, RequirementExpressionV1 } from '../../packages/contracts/src/index.js';
+import type { AdventureMapV3, RequirementExpressionV1 } from '../../packages/contracts/src/index.js';
+import { normalizeAdventureMapV3 } from '../../src/domain/expeditions/adventureMapV3.js';
 import {
   createRequirementAtom,
   listAdventureRequirementTargets,
@@ -11,7 +12,7 @@ import {
 
 describe('editor visual de requisitos', () => {
   it('indexa y actualiza cada definición sin mutar el sidecar original', () => {
-    const adventure = structuredClone(teguesteAdventure) as AdventureMapV2;
+    const adventure = normalizeAdventureMapV3(structuredClone(teguesteAdventure) as never);
     const target = listAdventureRequirementTargets(adventure)
       .find(candidate => candidate.definitionId === 'behavior:tegueste:burrow-left:snake-intimidation');
     expect(target?.expression).toHaveProperty('any');
@@ -41,4 +42,3 @@ describe('editor visual de requisitos', () => {
     ] });
   });
 });
-

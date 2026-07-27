@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AdventureMapV2, CompanionSpeciesProfileV1 } from '../../packages/contracts/src/index.js';
+import type { AdventureMapV3, CompanionSpeciesProfileV1 } from '../../packages/contracts/src/index.js';
 import { createPokeDiscoverResearchMatrix } from '../../src/domain/tools/pokeDiscoverEditorResearchMatrix.js';
 
 const species = [
@@ -7,8 +7,8 @@ const species = [
   { speciesId: 204, displayName: 'Pineco', generation: 2 },
 ] as CompanionSpeciesProfileV1[];
 
-function map(mapId: string, title: string, facts: Array<Record<string, unknown>>): AdventureMapV2 {
-  return { mapId, title, researchFacts: facts } as unknown as AdventureMapV2;
+function map(mapId: string, title: string, facts: Array<Record<string, unknown>>): AdventureMapV3 {
+  return { mapId, title, researchFacts: facts } as unknown as AdventureMapV3;
 }
 
 describe('matriz de investigación del editor', () => {

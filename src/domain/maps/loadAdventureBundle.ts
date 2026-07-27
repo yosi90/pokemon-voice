@@ -1,10 +1,15 @@
 import type {
-  AdventureMapV2,
+  AdventureMapDocument,
+  AdventureMapV3,
   CharacterSpriteAssetV1,
   CharacterSpriteManifestV1,
   PmdAnimationManifestV1,
   PmdSpriteAssetV1,
 } from '../../../packages/contracts/src/index.js';
+import {
+  normalizeAdventureMapV3,
+  resolveAdventureSectorId,
+} from '../expeditions/adventureMapV3.js';
 
 export interface LoadedTiledTileset {
   name: string;
@@ -20,9 +25,9 @@ export type LoadedTiledMap = Record<string, unknown> & {
   tilesets: Array<Record<string, unknown>>;
 };
 
-export interface LoadedAdventureRoomBundle {
-  adventure: AdventureMapV2;
-  room: AdventureMapV2['rooms'][number];
+export interface LoadedAdventureSectorBundle {
+  adventure: AdventureMapV3;
+  sector: AdventureMapV3['sectors'][number];
   tilemap: LoadedTiledMap;
   tilesets: LoadedTiledTileset[];
   pmdManifest: PmdAnimationManifestV1;
@@ -30,9 +35,12 @@ export interface LoadedAdventureRoomBundle {
   characterAssets: Map<string, CharacterSpriteAssetV1>;
 }
 
+/** @deprecated Utiliza LoadedAdventureSectorBundle. */
+export type LoadedAdventureRoomBundle = LoadedAdventureSectorBundle;
+
 export interface LoadedAdventureMapBundle {
-  adventure: AdventureMapV2;
-  rooms: LoadedAdventureRoomBundle[];
+  adventure: AdventureMapV3;
+  sectors: LoadedAdventureSectorBundle[];
   pmdManifest: PmdAnimationManifestV1;
   characterManifest: CharacterSpriteManifestV1;
 }
@@ -104,6 +112,23 @@ async function inlineExternalTilesets(
   return { tilemap: { ...tilemap, tilesets: resolved }, tilesets };
 }
 
+export async function loadAdventureSectorBundle({
+  adventurePath,
+  sectorId,
+  baseUrl,
+}: {
+  adventurePath: string;
+  sectorId: string;
+  baseUrl: string;
+}): Promise<LoadedAdventureSectorBundle> {
+  const mapBundle = await loadAdventureMapBundle({ adventurePath, baseUrl });
+  const resolvedSectorId = resolveAdventureSectorId(mapBundle.adventure, sectorId);
+  const sector = mapBundle.sectors.find(candidate => candidate.sector.sectorId === resolvedSectorId);
+  if (!sector) throw new Error(`Sector inexistente: ${sectorId}.`);
+  return sector;
+}
+
+/** @deprecated Utiliza loadAdventureSectorBundle. */
 export async function loadAdventureRoomBundle({
   adventurePath,
   roomId,
@@ -112,11 +137,8 @@ export async function loadAdventureRoomBundle({
   adventurePath: string;
   roomId: string;
   baseUrl: string;
-}): Promise<LoadedAdventureRoomBundle> {
-  const mapBundle = await loadAdventureMapBundle({ adventurePath, baseUrl });
-  const room = mapBundle.rooms.find(candidate => candidate.room.roomId === roomId);
-  if (!room) throw new Error(`Habitación inexistente: ${roomId}.`);
-  return room;
+}) {
+  return loadAdventureSectorBundle({ adventurePath, sectorId: roomId, baseUrl });
 }
 
 export async function loadAdventureMapBundle({
@@ -126,7 +148,7 @@ export async function loadAdventureMapBundle({
   adventurePath: string;
   baseUrl: string;
 }): Promise<LoadedAdventureMapBundle> {
-  const adventure = await fetchJson<AdventureMapV2>(assetUrl(adventurePath, baseUrl));
+  const adventure = await fetchJson<AdventureMapDocument>(assetUrl(adventurePath, baseUrl));
   return loadAdventureMapBundleFromData({ adventure, baseUrl });
 }
 
@@ -139,26 +161,28 @@ export async function loadAdventureMapBundleFromData({
   baseUrl,
   tiledMapsByAssetId = new Map(),
 }: {
-  adventure: AdventureMapV2;
+  adventure: AdventureMapDocument;
   baseUrl: string;
   tiledMapsByAssetId?: ReadonlyMap<string, LoadedTiledMap>;
 }): Promise<LoadedAdventureMapBundle> {
+  const normalizedAdventure = normalizeAdventureMapV3(adventure);
   const [pmdManifest, characterManifest] = await Promise.all([
     fetchJson<PmdAnimationManifestV1>(assetUrl('assets/sprites/pokemon/pmd/manifest.v1.json', baseUrl)),
     fetchJson<CharacterSpriteManifestV1>(assetUrl('assets/sprites/characters/manifest.v1.json', baseUrl)),
   ]);
   const pmdById = new Map(pmdManifest.assets.map(asset => [asset.assetId, asset]));
   const charactersById = new Map(characterManifest.assets.map(asset => [asset.assetId, asset]));
-  const rooms = await Promise.all(adventure.rooms.map(async room => {
-    const tiledReference = adventure.tiledMapAssets
-      .find(candidate => candidate.assetId === room.tiledMapAssetId);
-    if (!tiledReference) throw new Error(`Asset Tiled inexistente: ${room.tiledMapAssetId}.`);
+  const sectors = await Promise.all(normalizedAdventure.sectors.map(async sector => {
+    const tiledReference = normalizedAdventure.tiledMapAssets
+      .find(candidate => candidate.assetId === sector.tiledMapAssetId);
+    if (!tiledReference) throw new Error(`Asset Tiled inexistente: ${sector.tiledMapAssetId}.`);
     const tmjUrl = assetUrl(tiledReference.path, baseUrl);
     const rawTilemap = tiledMapsByAssetId.get(tiledReference.assetId)
       ?? await fetchJson<LoadedTiledMap>(tmjUrl);
     const resolved = await inlineExternalTilesets(rawTilemap, tmjUrl);
     const actorAssets = new Map<string, PmdSpriteAssetV1>();
-    for (const placement of adventure.actorPlacements.filter(item => item.roomId === room.roomId)) {
+    for (const placement of normalizedAdventure.actorPlacements
+      .filter(item => item.sectorId === sector.sectorId)) {
       const asset = pmdById.get(placement.assetId);
       if (!asset) throw new Error(`Asset PMD inexistente: ${placement.assetId}.`);
       if (!asset.animations.some(animation => animation.name === placement.animation)) {
@@ -167,14 +191,15 @@ export async function loadAdventureMapBundleFromData({
       actorAssets.set(asset.assetId, asset);
     }
     const characterAssets = new Map<string, CharacterSpriteAssetV1>();
-    for (const placement of adventure.characterPlacements.filter(item => item.roomId === room.roomId)) {
+    for (const placement of normalizedAdventure.characterPlacements
+      .filter(item => item.sectorId === sector.sectorId)) {
       const asset = charactersById.get(placement.assetId);
       if (!asset) throw new Error(`Asset de personaje inexistente: ${placement.assetId}.`);
       characterAssets.set(asset.assetId, asset);
     }
     return {
-      adventure,
-      room,
+      adventure: normalizedAdventure,
+      sector,
       tilemap: resolved.tilemap,
       tilesets: resolved.tilesets,
       pmdManifest,
@@ -183,8 +208,8 @@ export async function loadAdventureMapBundleFromData({
     };
   }));
   return {
-    adventure,
-    rooms,
+    adventure: normalizedAdventure,
+    sectors,
     pmdManifest,
     characterManifest,
   };

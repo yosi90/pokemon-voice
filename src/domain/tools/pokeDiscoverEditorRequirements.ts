@@ -1,5 +1,5 @@
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   RequirementAtomV1,
   RequirementExpressionV1,
 } from '../../../packages/contracts/src/index.js';
@@ -16,7 +16,7 @@ export function requirementTargetKey(target: Pick<AdventureRequirementTarget, 's
   return `${target.source}:${target.definitionId}`;
 }
 
-export function listAdventureRequirementTargets(adventure: AdventureMapV2): AdventureRequirementTarget[] {
+export function listAdventureRequirementTargets(adventure: AdventureMapV3): AdventureRequirementTarget[] {
   return [
     ...adventure.variants.map(definition => ({ source: 'variant' as const, definitionId: definition.variantId, label: `Variante · ${definition.variantId}`, expression: definition.requirement })),
     ...adventure.rareEncounters.map(definition => ({ source: 'rareEncounter' as const, definitionId: definition.encounterId, label: `Encuentro raro · ${definition.encounterId}`, expression: definition.requirement })),
@@ -28,10 +28,10 @@ export function listAdventureRequirementTargets(adventure: AdventureMapV2): Adve
 }
 
 export function updateAdventureRequirement(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   target: Pick<AdventureRequirementTarget, 'source' | 'definitionId'>,
   expression: RequirementExpressionV1,
-): AdventureMapV2 {
+): AdventureMapV3 {
   if (target.source === 'variant') return { ...adventure, variants: adventure.variants.map(item => item.variantId === target.definitionId ? { ...item, requirement: expression } : item) };
   if (target.source === 'rareEncounter') return { ...adventure, rareEncounters: adventure.rareEncounters.map(item => item.encounterId === target.definitionId ? { ...item, requirement: expression } : item) };
   if (target.source === 'behaviorTrigger') return { ...adventure, behaviorTriggers: adventure.behaviorTriggers.map(item => item.triggerId === target.definitionId ? { ...item, requirement: expression } : item) };

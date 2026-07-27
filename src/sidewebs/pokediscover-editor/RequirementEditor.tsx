@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AdventureMapV2, RequirementAtomV1, RequirementExpressionV1 } from '../../../packages/contracts/src/index.js';
+import type { AdventureMapV3, RequirementAtomV1, RequirementExpressionV1 } from '../../../packages/contracts/src/index.js';
 import {
   createRequirementAtom,
   listAdventureRequirementTargets,
@@ -87,7 +87,7 @@ function RequirementNode({
   </div>;
 }
 
-export function RequirementEditor({ adventure, onAdventureChange }: { adventure: AdventureMapV2; onAdventureChange: (adventure: AdventureMapV2) => void }) {
+export function RequirementEditor({ adventure, onAdventureChange }: { adventure: AdventureMapV3; onAdventureChange: (adventure: AdventureMapV3) => void }) {
   const targets = listAdventureRequirementTargets(adventure);
   const [targetKey, setTargetKey] = useState('');
   const target = targets.find(candidate => requirementTargetKey(candidate) === targetKey) ?? targets[0];

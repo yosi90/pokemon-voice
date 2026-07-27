@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { AdventureMapV2, RareEncounterDefinitionV1 } from '../../../packages/contracts/src/index.js';
-import type { LoadedAdventureMapBundle, LoadedAdventureRoomBundle } from '../../domain/maps/loadAdventureBundle.js';
+import type { AdventureMapV3, RareEncounterDefinitionV1 } from '../../../packages/contracts/src/index.js';
+import type { LoadedAdventureMapBundle, LoadedAdventureSectorBundle } from '../../domain/maps/loadAdventureBundle.js';
 import { nextStableEditorId } from '../../domain/tools/pokeDiscoverEditorBeats.js';
 import { POKEDISCOVER_EDITOR_CATALOG } from '../../domain/tools/pokeDiscoverEditorCatalog.js';
 import {
@@ -50,8 +50,8 @@ function parseFlags(value: string): Record<string, string | number | boolean> {
 
 export function EncounterWorldEditor({ bundle, room, onAdventureChange }: {
   bundle: LoadedAdventureMapBundle;
-  room: LoadedAdventureRoomBundle;
-  onAdventureChange: (adventure: AdventureMapV2) => void;
+  room: LoadedAdventureSectorBundle;
+  onAdventureChange: (adventure: AdventureMapV3) => void;
 }) {
   const adventure = bundle.adventure;
   const [tab, setTab] = useState<Tab>('deterministic');
@@ -61,7 +61,7 @@ export function EncounterWorldEditor({ bundle, room, onAdventureChange }: {
   const [eventId, setEventId] = useState('');
   const anchors = useMemo(() => readPokeDiscoverEditorAnchors(room.tilemap)
     .filter(anchor => ['ActorAnchor', 'EncounterAnchor'].includes(anchor.anchorClass)), [room.tilemap]);
-  const placements = adventure.actorPlacements.filter(item => item.roomId === room.room.roomId);
+  const placements = adventure.actorPlacements.filter(item => item.sectorId === room.sector.sectorId);
   const placement = placements.find(item => item.placementId === placementId) ?? placements[0];
   const placementAsset = bundle.pmdManifest.assets.find(item => item.assetId === placement?.assetId);
   const rare = adventure.rareEncounters.find(item => item.encounterId === rareId) ?? adventure.rareEncounters[0];
@@ -144,13 +144,13 @@ export function EncounterWorldEditor({ bundle, room, onAdventureChange }: {
     {tab === 'deterministic' ? <div className="editor-encounters__panel">
       {placement ? <div className="editor-encounters__grid">
         <label><span>Encuentro fijo</span><select value={placement.placementId} onChange={event => setPlacementId(event.target.value)}>{placements.map(item => <option key={item.placementId}>{item.placementId}</option>)}</select></label>
-        <label><span>Anclaje</span><select value={placement.anchorId} onChange={event => onAdventureChange(updateEditorDeterministicEncounter(adventure, { ...placement, anchorId: event.target.value }))}>{anchors.map(anchor => <option key={anchor.anchorId}>{anchor.anchorId}</option>)}</select></label>
-        <label><span>Pokémon y forma</span><select value={placement.assetId} onChange={event => { const asset = bundle.pmdManifest.assets.find(item => item.assetId === event.target.value); if (asset) onAdventureChange(updateEditorDeterministicEncounter(adventure, { ...placement, assetId: asset.assetId, animation: asset.animations.find(item => item.name === 'Idle')?.name ?? asset.animations[0]?.name ?? 'Idle' })); }}>{bundle.pmdManifest.assets.map(asset => <option key={asset.assetId} value={asset.assetId}>#{String(asset.speciesId).padStart(4, '0')} · {asset.formId.split(':').at(-1)}</option>)}</select></label>
+        <label><span>Anclaje</span><code>{placement.anchorId}</code></label>
+        <label><span>Pokémon y forma</span><select value={placement.assetId} onChange={event => { const asset = bundle.pmdManifest.assets.find(item => item.assetId === event.target.value); if (asset) onAdventureChange(updateEditorDeterministicEncounter(adventure, { ...placement, assetId: asset.assetId, animation: asset.animations.find(item => item.name === 'Idle')?.name ?? asset.animations[0]?.name ?? 'Idle' })); }}>{bundle.pmdManifest.assets.filter(asset => room.sector.roster.pokemonAssetIds.includes(asset.assetId)).map(asset => <option key={asset.assetId} value={asset.assetId}>#{String(asset.speciesId).padStart(4, '0')} · {asset.formId.split(':').at(-1)}</option>)}</select></label>
         <label><span>Animación</span><select value={placement.animation} onChange={event => onAdventureChange(updateEditorDeterministicEncounter(adventure, { ...placement, animation: event.target.value }))}>{placementAsset?.animations.map(animation => <option key={animation.name}>{animation.name}</option>)}</select></label>
         <label><span>Dirección</span><select value={placement.direction ?? 'down'} onChange={event => onAdventureChange(updateEditorDeterministicEncounter(adventure, { ...placement, direction: event.target.value as NonNullable<typeof placement.direction> }))}>{['down','left','right','up'].map(direction => <option key={direction}>{direction}</option>)}</select></label>
         <label><span>Colisión</span><select value={placement.collision ?? 'solid'} onChange={event => onAdventureChange(updateEditorDeterministicEncounter(adventure, { ...placement, collision: event.target.value as NonNullable<typeof placement.collision> }))}><option value="solid">Sólido</option><option value="pass-through">Atravesable</option></select></label>
         <label className="editor-encounters__check"><input type="checkbox" checked={placement.initiallyHidden ?? false} onChange={event => onAdventureChange(updateEditorDeterministicEncounter(adventure, { ...placement, initiallyHidden: event.target.checked }))} /><span>Oculto al entrar</span></label>
-      </div> : <p className="editor-catalog__empty-field">No hay encuentros fijos en esta habitación.</p>}
+      </div> : <p className="editor-catalog__empty-field">No hay encuentros fijos en esta sector.</p>}
     </div> : null}
 
     {tab === 'rare' ? <div className="editor-encounters__panel">

@@ -20,10 +20,10 @@ import { createPokeVoiceSaveV1 } from '../../src/domain/progress/pokeVoiceSave.j
 const NOW = '2026-07-18T12:00:00.000Z';
 
 describe('prólogo del profesor Alcanfor', () => {
-  it('modela un mapa lógico de habitaciones estáticas enlazadas a Tiled', () => {
+  it('modela un mapa lógico de sectores estáticos enlazados a Tiled', () => {
     expect(CAMPHOR_FOREST_MAP).toMatchObject({
-      schemaVersion: 2,
-      rooms: [{ staticCamera: true, tiledMapAssetId: 'tiled-map:camphor-forest:ambush-clearing' }],
+      schemaVersion: 3,
+      sectors: [{ staticCamera: true, tiledMapAssetId: 'tiled-map:camphor-forest:ambush-clearing' }],
     });
   });
 

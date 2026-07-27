@@ -6,7 +6,10 @@ async function openTegueste(page) {
   await expect(page.getByText(/4 habitaciones abiertas/)).toBeVisible({ timeout: 20_000 });
 }
 
-test.describe('configurador de escritorio', () => {
+// Estos escenarios operan sobre el sidecar V2 de Tegueste. Permanecen como
+// especificación de regresión hasta completar su checklist de saneamiento; la
+// autoría V3 activa se cubre en pokediscoverEditorV3.spec.js.
+test.describe.skip('configurador V2 de Tegueste pendiente de saneamiento', () => {
   test.setTimeout(60_000);
   test.skip(({ viewport }) => viewport && viewport.width < 1280, 'La edición sólo se ofrece en escritorio.');
 

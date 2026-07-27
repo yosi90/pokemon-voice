@@ -1,5 +1,5 @@
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   CharacterSpriteManifestV1,
   PmdAnimationManifestV1,
 } from '../../../packages/contracts/src/index.js';
@@ -39,7 +39,7 @@ export function createPokeDiscoverEditorExportArtifacts({
   pmdManifest,
   characterManifest,
 }: {
-  adventure: AdventureMapV2;
+  adventure: AdventureMapV3;
   sidecarFileName: string;
   pmdManifest: PmdAnimationManifestV1;
   characterManifest: CharacterSpriteManifestV1;

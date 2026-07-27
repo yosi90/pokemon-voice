@@ -1,5 +1,5 @@
 import type {
-  ExpeditionInteractionV1,
+  ExpeditionInteractionV3,
   PokeVoiceSaveV1,
 } from '../../../packages/contracts/src/index.js';
 import { recordMapDiscovery, type MapDiscoveryKind } from './adventureMapProgress.js';
@@ -7,7 +7,7 @@ import { recordMeaningfulExpeditionInteraction } from './expeditionSession.js';
 
 export interface CompleteExpeditionInteractionRequest {
   mapId: string;
-  interaction: ExpeditionInteractionV1;
+  interaction: ExpeditionInteractionV3;
 }
 
 export interface CompleteExpeditionInteractionResult {
@@ -23,7 +23,7 @@ export function completeExpeditionInteraction(
   if (!session || session.mapId !== request.mapId) {
     throw new Error('La interacción solo puede completarse dentro de su mapa activo.');
   }
-  if (request.interaction.roomId === undefined || !request.interaction.interactionId?.trim()) {
+  if (request.interaction.sectorId === undefined || !request.interaction.interactionId?.trim()) {
     throw new Error('La interacción necesita IDs estables.');
   }
 

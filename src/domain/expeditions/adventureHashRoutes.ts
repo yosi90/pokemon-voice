@@ -2,7 +2,7 @@ export type AdventureHashRoute =
   | { kind: 'pokedex' }
   | { kind: 'pokeDiscover' }
   | { kind: 'mission'; missionId: string }
-  | { kind: 'expedition'; mapId: string; roomId: string };
+  | { kind: 'expedition'; mapId: string; sectorId: string };
 
 const ROOT_HASH = '#/';
 const POKE_DISCOVER_HASH = '#/pokediscover';
@@ -28,8 +28,8 @@ export function parseAdventureHashRoute(hash: string): AdventureHashRoute {
   }
   if (segments.length === 3 && segments[0] === 'expeditions') {
     const mapId = decodeSegment(segments[1]);
-    const roomId = decodeSegment(segments[2]);
-    if (mapId && roomId) return { kind: 'expedition', mapId, roomId };
+    const sectorId = decodeSegment(segments[2]);
+    if (mapId && sectorId) return { kind: 'expedition', mapId, sectorId };
   }
   return { kind: 'pokedex' };
 }
@@ -42,8 +42,8 @@ export function buildMissionHash(missionId: string) {
   return `#/missions/${encodeURIComponent(missionId)}`;
 }
 
-export function buildExpeditionHash(mapId: string, roomId: string) {
-  return `#/expeditions/${encodeURIComponent(mapId)}/${encodeURIComponent(roomId)}`;
+export function buildExpeditionHash(mapId: string, sectorId: string) {
+  return `#/expeditions/${encodeURIComponent(mapId)}/${encodeURIComponent(sectorId)}`;
 }
 
 export function replaceWithPokedexRoute() {

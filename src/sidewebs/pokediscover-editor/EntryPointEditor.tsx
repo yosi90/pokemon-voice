@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { AdventureMapV2 } from '../../../packages/contracts/src/index.js';
+import type { AdventureMapV3 } from '../../../packages/contracts/src/index.js';
 import {
   assignPokeDiscoverMissionEntry,
   upsertPokeDiscoverEntryPoint,
@@ -18,28 +18,28 @@ export function EntryPointEditor({
 }: {
   snapshot: PokeDiscoverWorkspaceSnapshot;
   registrations: PokeDiscoverRoomRegistration[];
-  onAdventureChange: (adventure: AdventureMapV2, description: string) => void;
+  onAdventureChange: (adventure: AdventureMapV3, description: string) => void;
 }) {
   const adventure = snapshot.adventure;
   const [selectedId, setSelectedId] = useState(adventure.entryPoints?.[0]?.entryPointId ?? '');
   const [newLabel, setNewLabel] = useState('Nueva entrada');
   const selected = adventure.entryPoints?.find(entry => entry.entryPointId === selectedId);
   const firstRegistration = registrations[0];
-  const roomId = selected?.roomId ?? firstRegistration?.roomId ?? '';
+  const sectorId = selected?.sectorId ?? firstRegistration?.sectorId ?? '';
   const anchorsByRoom = useMemo(() => new Map(registrations.map(registration => [
-    registration.roomId,
+    registration.sectorId,
     readPokeDiscoverEditorAnchors(snapshot.tilemapsByFileName[registration.fileName])
       .filter(anchor => anchor.anchorClass === 'PlayerSpawn'),
   ])), [registrations, snapshot.tilemapsByFileName]);
-  const roomAnchors = anchorsByRoom.get(roomId) ?? [];
+  const roomAnchors = anchorsByRoom.get(sectorId) ?? [];
   const anchorId = selected?.anchorId ?? roomAnchors[0]?.anchorId ?? '';
   const creatableRegistration = registrations.find(registration => (
-    (anchorsByRoom.get(registration.roomId)?.length ?? 0) > 0
+    (anchorsByRoom.get(registration.sectorId)?.length ?? 0) > 0
   ));
 
   const createEntry = () => {
     if (!creatableRegistration) return;
-    const anchors = anchorsByRoom.get(creatableRegistration.roomId) ?? [];
+    const anchors = anchorsByRoom.get(creatableRegistration.sectorId) ?? [];
     if (!anchors.length) return;
     const preferred = `entry-point:${slugifyEditorLabel(newLabel)}`;
     const used = new Set((adventure.entryPoints ?? []).map(entry => entry.entryPointId));
@@ -49,17 +49,17 @@ export function EntryPointEditor({
       schemaVersion: 1,
       entryPointId,
       label: newLabel.trim() || 'Nueva entrada',
-      roomId: creatableRegistration.roomId,
+      sectorId: creatableRegistration.sectorId,
       anchorId: anchors[0].anchorId,
     }), 'Crear punto de entrada');
     setSelectedId(entryPointId);
   };
 
-  const updateSelected = (update: Partial<NonNullable<AdventureMapV2['entryPoints']>[number]>) => {
+  const updateSelected = (update: Partial<NonNullable<AdventureMapV3['entryPoints']>[number]>) => {
     if (!selected) return;
     const next = { ...selected, ...update };
-    if (update.roomId) {
-      next.anchorId = anchorsByRoom.get(update.roomId)?.[0]?.anchorId ?? '';
+    if (update.sectorId) {
+      next.anchorId = anchorsByRoom.get(update.sectorId)?.[0]?.anchorId ?? '';
     }
     onAdventureChange(upsertPokeDiscoverEntryPoint(adventure, next), 'Editar punto de entrada');
   };
@@ -76,8 +76,8 @@ export function EntryPointEditor({
       <div className="editor-entry-points__layout">
         <aside>
           <label><span>Nombre de la entrada</span><input value={newLabel} onChange={event => setNewLabel(event.target.value)} /></label>
-          <button type="button" disabled={!creatableRegistration} onClick={createEntry}>Crear entrada</button>
-          {!creatableRegistration ? <p>Dibuja primero una entrada del jugador en una habitación.</p> : null}
+          <button type="button" disabled title="Crea la entrada desde una celda del sector para generar conjuntamente PlayerSpawn y sidecar." onClick={createEntry}>Crear entrada</button>
+          {!creatableRegistration ? <p>Dibuja primero una entrada del jugador en una sector.</p> : null}
           <div className="editor-entry-points__list">
             {(adventure.entryPoints ?? []).map(entry => (
               <button
@@ -87,7 +87,7 @@ export function EntryPointEditor({
                 onClick={() => setSelectedId(entry.entryPointId)}
               >
                 <strong>{entry.label}</strong>
-                <small>{registrations.find(item => item.roomId === entry.roomId)?.fileName ?? entry.roomId}</small>
+                <small>{registrations.find(item => item.sectorId === entry.sectorId)?.fileName ?? entry.sectorId}</small>
               </button>
             ))}
           </div>
@@ -96,12 +96,8 @@ export function EntryPointEditor({
           {selected ? (
             <div className="editor-entry-points__form">
               <label><span>Nombre visible</span><input value={selected.label} onChange={event => updateSelected({ label: event.target.value })} /></label>
-              <label><span>Habitación</span><select value={selected.roomId} onChange={event => updateSelected({ roomId: event.target.value })}>
-                {registrations.map(registration => <option key={registration.roomId} value={registration.roomId}>{registration.fileName}</option>)}
-              </select></label>
-              <label><span>Ancla de llegada</span><select value={anchorId} onChange={event => updateSelected({ anchorId: event.target.value })}>
-                {(anchorsByRoom.get(selected.roomId) ?? []).map(anchor => <option key={anchor.anchorId} value={anchor.anchorId}>{anchor.anchorId}</option>)}
-              </select></label>
+              <label><span>Sector</span><code>{selected.sectorId}</code></label>
+              <label><span>Ancla de llegada</span><code>{anchorId}</code></label>
               <details><summary>Detalles avanzados</summary><code>{selected.entryPointId}</code></details>
             </div>
           ) : <p>Crea una entrada para asociar una llegada del jugador.</p>}

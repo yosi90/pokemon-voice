@@ -10,13 +10,13 @@ describe('rutas hash de misiones y expediciones', () => {
   it('mantiene IDs estables con dos puntos mediante segmentos codificados', () => {
     const missionId = 'mission:tegueste:help-professor-camphor';
     const mapId = 'map:tegueste:camphor-forest';
-    const roomId = 'room:tegueste-forest:02-04';
+    const sectorId = 'room:tegueste-forest:02-04';
 
     expect(parseAdventureHashRoute(buildMissionHash(missionId))).toEqual({ kind: 'mission', missionId });
-    expect(parseAdventureHashRoute(buildExpeditionHash(mapId, roomId))).toEqual({
+    expect(parseAdventureHashRoute(buildExpeditionHash(mapId, sectorId))).toEqual({
       kind: 'expedition',
       mapId,
-      roomId,
+      sectorId,
     });
   });
 

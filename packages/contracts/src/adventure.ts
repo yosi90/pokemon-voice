@@ -10,15 +10,59 @@ import type { RewardDefinitionV1 } from './economy.js';
 import type { RequirementExpressionV1 } from './requirements.js';
 import type { ResearchFieldKey } from './research.js';
 import type { MeaningfulExpeditionInteractionKind } from './progress.js';
+import {
+  ADVENTURE_ACTOR_COLLISIONS,
+  ADVENTURE_ENTRY_REPEAT_POLICIES,
+  AMBIENT_ACTOR_ACTION_KINDS,
+  AMBIENT_MOVEMENT_STYLES,
+  AMBIENT_PLAYBACK_MODES,
+  COMPANION_SEQUENCE_ACTION_KINDS,
+  COMPANION_TRIGGER_MODES,
+  COMPANION_TRIGGER_REPEAT_POLICIES,
+  EXPRESSION_INPUT_METHODS,
+  EXPRESSION_INTENTS,
+  EXPRESSION_MATCHER_KINDS,
+  MISSION_STATUSES,
+  ROOM_TRANSITION_KINDS,
+  SECTOR_TRANSITION_KINDS,
+  TILE_LAYER_KINDS,
+  TILED_ANCHOR_CLASSES,
+  TILED_RUNTIME_OBJECT_CLASSES,
+} from './adventureVocabulary.js';
+export {
+  ADVENTURE_ACTOR_COLLISIONS,
+  ADVENTURE_ENTRY_REPEAT_POLICIES,
+  AMBIENT_ACTOR_ACTION_KINDS,
+  AMBIENT_MOVEMENT_STYLES,
+  AMBIENT_PLAYBACK_MODES,
+  COMPANION_SEQUENCE_ACTION_KINDS,
+  COMPANION_TRIGGER_MODES,
+  COMPANION_TRIGGER_REPEAT_POLICIES,
+  EXPRESSION_INPUT_METHODS,
+  EXPRESSION_INTENTS,
+  EXPRESSION_MATCHER_KINDS,
+  MISSION_STATUSES,
+  ROOM_TRANSITION_KINDS,
+  SECTOR_TRANSITION_KINDS,
+  TILE_LAYER_KINDS,
+  TILED_ANCHOR_CLASSES,
+  TILED_RUNTIME_OBJECT_CLASSES,
+};
 
-export type TileLayerKind = 'ground' | 'decoration' | 'overlay' | 'collision';
-export type MissionStatus = 'locked' | 'available' | 'active' | 'completed';
-export type CompanionTriggerMode = 'prompt' | 'automatic' | 'ambient';
-export type CompanionTriggerRepeatPolicy = 'oncePerVisit' | 'persistent' | 'repeatable';
-export type ExpressionInputMethod = 'voice' | 'text' | 'contextAction';
-export type ExpressionIntent = 'compliment' | 'calm' | 'warn' | 'sing' | 'custom';
-export type AdventureActorCollision = 'solid' | 'pass-through';
-export type AmbientMovementStyle = 'grid' | 'continuous';
+export type TileLayerKind = typeof TILE_LAYER_KINDS[number];
+export type MissionStatus = typeof MISSION_STATUSES[number];
+export type CompanionTriggerMode = typeof COMPANION_TRIGGER_MODES[number];
+export type CompanionTriggerRepeatPolicy = typeof COMPANION_TRIGGER_REPEAT_POLICIES[number];
+export type ExpressionInputMethod = typeof EXPRESSION_INPUT_METHODS[number];
+export type ExpressionIntent = typeof EXPRESSION_INTENTS[number];
+export type AdventureActorCollision = typeof ADVENTURE_ACTOR_COLLISIONS[number];
+export type AmbientMovementStyle = typeof AMBIENT_MOVEMENT_STYLES[number];
+export type AmbientPlaybackMode = typeof AMBIENT_PLAYBACK_MODES[number];
+export type AmbientActorActionKind = typeof AMBIENT_ACTOR_ACTION_KINDS[number];
+export type CompanionSequenceActionKind = typeof COMPANION_SEQUENCE_ACTION_KINDS[number];
+export type ExpressionMatcherKind = typeof EXPRESSION_MATCHER_KINDS[number];
+export type TiledAnchorClass = typeof TILED_ANCHOR_CLASSES[number];
+export type TiledRuntimeObjectClass = typeof TILED_RUNTIME_OBJECT_CLASSES[number];
 
 export interface MillisecondRangeV1 {
   min: number;
@@ -80,7 +124,9 @@ export interface AdventureMapV1 extends VersionedContractV1 {
   requiredAssetIds: StableId[];
 }
 
-export type RoomTransitionKind = 'edge' | 'stairs' | 'door' | 'teleport';
+export type SectorTransitionKind = typeof SECTOR_TRANSITION_KINDS[number];
+/** @deprecated Nombre conservado únicamente para documentos V2. */
+export type RoomTransitionKind = SectorTransitionKind;
 
 export interface AdventureRoomV1 extends VersionedContractV1 {
   roomId: StableId;
@@ -186,7 +232,7 @@ export interface AmbientSequenceV1 extends VersionedContractV1 {
   roomId: StableId;
   loop: boolean;
   /** Modo explícito del editor; `loop` se conserva para sidecars V1 anteriores. */
-  playbackMode?: 'loop' | 'pingPong' | 'once';
+  playbackMode?: AmbientPlaybackMode;
   /** Todas las acciones se pausan juntas cuando una ruta queda bloqueada. */
   blockedPolicy: 'pauseSequence';
   loopPauseMs?: number | MillisecondRangeV1;
@@ -230,7 +276,7 @@ export interface ExpeditionInteractionV1 extends VersionedContractV1 {
   meaningfulKind: MeaningfulExpeditionInteractionKind;
   /** Distancia cardinal máxima; un tile cuando se omite. */
   rangeTiles?: number;
-  repeatPolicy?: 'oncePerVisit' | 'repeatable';
+  repeatPolicy?: typeof ADVENTURE_ENTRY_REPEAT_POLICIES[number];
   completionEffects?: {
     npcId?: StableId;
     conversationId?: StableId;
@@ -285,6 +331,93 @@ export interface AdventureMapV2 {
   worldEvents?: WorldEventV1[];
   requiredAssetIds: StableId[];
 }
+
+export interface AdventureSectorRosterV1 extends VersionedContractV1 {
+  /** Assets PMD previstos en el sector. Formas y apariencias son entradas distintas. */
+  pokemonAssetIds: StableId[];
+  /** Assets de personajes con role `npc` previstos en el sector. */
+  npcAssetIds: StableId[];
+}
+
+export interface AdventureSectorV1 extends VersionedContractV1 {
+  sectorId: StableId;
+  /** IDs V2 aceptados exclusivamente para resolver enlaces históricos. */
+  legacyRoomIds?: StableId[];
+  tiledMapAssetId: StableId;
+  staticCamera: true;
+  spawnAnchorIds: StableId[];
+  roster: AdventureSectorRosterV1;
+}
+
+export type AdventureActorPlacementV3 =
+  Omit<AdventureActorPlacementV1, 'roomId'> & { sectorId: StableId };
+
+export type AdventureCharacterPlacementV3 =
+  Omit<AdventureCharacterPlacementV1, 'roomId'> & { sectorId: StableId };
+
+export type AmbientSequenceV3 =
+  Omit<AmbientSequenceV1, 'roomId'> & { sectorId: StableId };
+
+export interface SectorTransitionV1 extends VersionedContractV1 {
+  transitionId: StableId;
+  kind: SectorTransitionKind;
+  fromSectorId: StableId;
+  fromAnchorId: StableId;
+  toSectorId: StableId;
+  toAnchorId: StableId;
+  destinationFacing?: 'up' | 'down' | 'left' | 'right';
+  requirement?: RequirementExpressionV1;
+}
+
+export type ExpeditionInteractionV3 =
+  Omit<ExpeditionInteractionV1, 'roomId'> & { sectorId: StableId };
+
+export type AdventureEntryPointV3 =
+  Omit<AdventureEntryPointV1, 'roomId'> & { sectorId: StableId };
+
+export type CompanionBehaviorTriggerV3 =
+  Omit<CompanionBehaviorTriggerV1, 'proximity'> & {
+    proximity?: Omit<NonNullable<CompanionBehaviorTriggerV1['proximity']>, 'roomId'> & {
+      sectorId: StableId;
+    };
+  };
+
+export type CompanionSequenceV3 =
+  Omit<CompanionSequenceV1, 'roomId'> & { sectorId: StableId };
+
+export type ExpeditionExpressionTriggerV3 =
+  Omit<ExpeditionExpressionTriggerV1, 'roomId'> & { sectorId?: StableId };
+
+/** Mapa lógico multisector. La geometría jugable vive en los TMJ enlazados. */
+export interface AdventureMapV3 {
+  schemaVersion: 3;
+  mapId: StableId;
+  title: string;
+  tiledMapAssets: TiledMapAssetReferenceV1[];
+  sectors: AdventureSectorV1[];
+  actorPlacements: AdventureActorPlacementV3[];
+  characterPlacements: AdventureCharacterPlacementV3[];
+  transitions: SectorTransitionV1[];
+  variants: MapVariantV1[];
+  missionIds: StableId[];
+  entryPoints?: AdventureEntryPointV3[];
+  missionEntryPoints?: AdventureMissionEntryPointV1[];
+  freeExpeditionEntryPointId?: StableId;
+  behaviorTriggers: CompanionBehaviorTriggerV3[];
+  companionSequences?: CompanionSequenceV3[];
+  mapSequences?: CompanionSequenceV3[];
+  expressionTriggers: ExpeditionExpressionTriggerV3[];
+  interactions?: ExpeditionInteractionV3[];
+  dialogues?: ExpeditionDialogueV1[];
+  fieldNotebookHints?: FieldNotebookHintV1[];
+  researchFacts?: ResearchFactV1[];
+  ambientSequences: AmbientSequenceV3[];
+  rareEncounters: RareEncounterDefinitionV1[];
+  worldEvents?: WorldEventV1[];
+  requiredAssetIds: StableId[];
+}
+
+export type AdventureMapDocument = AdventureMapV2 | AdventureMapV3;
 
 export interface MissionObjectiveV1 {
   objectiveId: StableId;

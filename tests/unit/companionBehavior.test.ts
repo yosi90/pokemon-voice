@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CompanionBehaviorTriggerV1, PokemonFormV1 } from '../../packages/contracts/src/index.js';
+import type { CompanionBehaviorTriggerV3, PokemonFormV1 } from '../../packages/contracts/src/index.js';
 import {
   executeCompanionBehavior,
   listAvailableCompanionBehaviors,
@@ -29,7 +29,7 @@ const pikachu: PokemonFormV1 = {
   fieldCapabilities: [{ id: 'light', source: 'biology' }],
 };
 
-const rattataTrigger: CompanionBehaviorTriggerV1 = {
+const rattataTrigger: CompanionBehaviorTriggerV3 = {
   schemaVersion: 1,
   triggerId: 'trigger:test-meadow:rattata-pikachu-tail',
   mode: 'automatic',
@@ -190,7 +190,7 @@ describe('comportamientos declarativos del acompañante', () => {
       fieldCapabilities: [],
     };
     setBrowserActiveExpeditionSession(createActiveSave(ekans).activeExpeditionSession!);
-    const trigger: CompanionBehaviorTriggerV1 = {
+    const trigger: CompanionBehaviorTriggerV3 = {
       ...rattataTrigger,
       triggerId: 'behavior:tegueste:burrow-middle:snake-intimidation',
       requirement: { kind: 'companionSpecies', speciesId: 23 },

@@ -1,23 +1,16 @@
 import type {
-  AdventureEntryPointV1,
-  AdventureMapV2,
+  AdventureEntryPointV3,
+  AdventureMapV3,
   AdventureMissionEntryPointV1,
+  TiledAnchorClass,
 } from '../../../packages/contracts/src/index.js';
 import {
   addPokeDiscoverTiledObject,
-  fileStem,
-  slugifyEditorLabel,
   type PokeDiscoverEditableTiledMap,
   type PokeDiscoverWorldFile,
 } from './pokeDiscoverEditorProject.js';
 
-export type PokeDiscoverAnchorKind =
-  | 'PlayerSpawn'
-  | 'TransitionAnchor'
-  | 'ActorAnchor'
-  | 'EncounterAnchor'
-  | 'InteractionAnchor'
-  | 'SecretAnchor';
+export type PokeDiscoverAnchorKind = TiledAnchorClass;
 
 export type PokeDiscoverWorldEdge = 'left' | 'right' | 'top' | 'bottom';
 
@@ -28,7 +21,7 @@ export interface PokeDiscoverGeometryPoint {
 
 export interface PokeDiscoverEditorRoomDocument {
   fileName: string;
-  roomId: string;
+  sectorId: string;
   tilemap: PokeDiscoverEditableTiledMap;
 }
 
@@ -39,12 +32,12 @@ function objectNames(tilemap: PokeDiscoverEditableTiledMap) {
     : []));
 }
 
-function uniqueName(preferred: string, used: Set<string>) {
-  if (!used.has(preferred)) return preferred;
-  for (let suffix = 2; ; suffix += 1) {
-    const candidate = `${preferred}-${suffix}`;
+function nextOrdinalObjectName(prefix: string, used: Set<string>) {
+  for (let ordinal = 1; ordinal <= 9999; ordinal += 1) {
+    const candidate = `${prefix}:${String(ordinal).padStart(2, '0')}`;
     if (!used.has(candidate)) return candidate;
   }
+  throw new Error(`No quedan ordinales disponibles para ${prefix}.`);
 }
 
 function normalizedRectangle(start: PokeDiscoverGeometryPoint, end: PokeDiscoverGeometryPoint) {
@@ -68,31 +61,29 @@ function polygonGeometry(points: PokeDiscoverGeometryPoint[]) {
   };
 }
 
-function polylineGeometry(points: PokeDiscoverGeometryPoint[]) {
-  if (points.length < 2) throw new Error('Una ruta necesita al menos dos puntos.');
-  const origin = points[0];
-  return {
-    x: origin.x,
-    y: origin.y,
-    width: 0,
-    height: 0,
-    polyline: points.map(point => ({ x: point.x - origin.x, y: point.y - origin.y })),
-  };
-}
-
-export function addPokeDiscoverAnchor(
+/**
+ * Primitiva interna para recetas funcionales. El nombre ya debe proceder de
+ * una definición sidecar; esta función no inventa nombres ni resuelve
+ * duplicados silenciosamente.
+ */
+export function addPokeDiscoverFunctionalAnchor(
   tilemap: PokeDiscoverEditableTiledMap,
   request: {
     kind: PokeDiscoverAnchorKind;
-    label: string;
+    name: string;
     x: number;
     y: number;
     width?: number;
     height?: number;
   },
 ) {
-  const preferred = `anchor:${slugifyEditorLabel(request.label)}`;
-  const name = uniqueName(preferred, objectNames(tilemap));
+  const name = request.name.trim();
+  if (!/^[a-z0-9]+(?::[a-z0-9][a-z0-9-]*)+$/u.test(name)) {
+    throw new Error(`El ID técnico no cumple la convención: ${name || '(vacío)'}.`);
+  }
+  if (objectNames(tilemap).has(name)) {
+    throw new Error(`Ya existe un objeto TMJ con el ID ${name}.`);
+  }
   const rectangle = (request.width ?? 0) > 0 && (request.height ?? 0) > 0;
   return addPokeDiscoverTiledObject(tilemap, 'Anchors', {
     name,
@@ -109,14 +100,12 @@ export function addPokeDiscoverCollisionRectangle(
   tilemap: PokeDiscoverEditableTiledMap,
   start: PokeDiscoverGeometryPoint,
   end: PokeDiscoverGeometryPoint,
-  label = '',
 ) {
   const geometry = normalizedRectangle(start, end);
   if (geometry.width <= 0 || geometry.height <= 0) {
     throw new Error('La colisión necesita anchura y altura.');
   }
-  const preferred = label.trim() ? `collision:${slugifyEditorLabel(label)}` : '';
-  const name = preferred ? uniqueName(preferred, objectNames(tilemap)) : '';
+  const name = nextOrdinalObjectName('collision', objectNames(tilemap));
   return addPokeDiscoverTiledObject(tilemap, 'Collision', {
     name,
     class: 'Collision',
@@ -127,69 +116,12 @@ export function addPokeDiscoverCollisionRectangle(
 export function addPokeDiscoverCollisionPolygon(
   tilemap: PokeDiscoverEditableTiledMap,
   points: PokeDiscoverGeometryPoint[],
-  label = '',
 ) {
-  const preferred = label.trim() ? `collision:${slugifyEditorLabel(label)}` : '';
-  const name = preferred ? uniqueName(preferred, objectNames(tilemap)) : '';
+  const name = nextOrdinalObjectName('collision', objectNames(tilemap));
   return addPokeDiscoverTiledObject(tilemap, 'Collision', {
     name,
     class: 'Collision',
     ...polygonGeometry(points),
-  });
-}
-
-export function addPokeDiscoverPath(
-  tilemap: PokeDiscoverEditableTiledMap,
-  points: PokeDiscoverGeometryPoint[],
-  label: string,
-) {
-  const name = uniqueName(`path:${slugifyEditorLabel(label)}`, objectNames(tilemap));
-  return addPokeDiscoverTiledObject(tilemap, 'Paths', {
-    name,
-    class: 'AmbientPath',
-    ...polylineGeometry(points),
-  });
-}
-
-export function addPokeDiscoverOccluder(
-  tilemap: PokeDiscoverEditableTiledMap,
-  request: {
-    label: string;
-    groupId: string;
-    start?: PokeDiscoverGeometryPoint;
-    end?: PokeDiscoverGeometryPoint;
-    points?: PokeDiscoverGeometryPoint[];
-    includePlacementIds?: string[];
-    excludePlacementIds?: string[];
-  },
-) {
-  const name = uniqueName(`occluder:${slugifyEditorLabel(request.label)}`, objectNames(tilemap));
-  const geometry = request.points
-    ? polygonGeometry(request.points)
-    : normalizedRectangle(request.start ?? { x: 0, y: 0 }, request.end ?? { x: 0, y: 0 });
-  if (!request.points && (geometry.width <= 0 || geometry.height <= 0)) {
-    throw new Error('La oclusión necesita anchura y altura.');
-  }
-  const properties: Array<Record<string, unknown>> = [{
-    name: 'occlusionGroup',
-    type: 'string',
-    value: request.groupId,
-  }];
-  if (request.includePlacementIds?.length) properties.push({
-    name: 'includePlacementIds',
-    type: 'string',
-    value: request.includePlacementIds.join(','),
-  });
-  if (request.excludePlacementIds?.length) properties.push({
-    name: 'excludePlacementIds',
-    type: 'string',
-    value: request.excludePlacementIds.join(','),
-  });
-  return addPokeDiscoverTiledObject(tilemap, 'Occlusion', {
-    name,
-    class: 'ActorOccluder',
-    ...geometry,
-    properties,
   });
 }
 
@@ -238,15 +170,15 @@ function facingForEdge(edge: PokeDiscoverWorldEdge) {
 }
 
 function updateRoomSpawn(
-  adventure: AdventureMapV2,
-  roomId: string,
+  adventure: AdventureMapV3,
+  sectorId: string,
   anchorId: string,
 ) {
   return {
     ...adventure,
-    rooms: adventure.rooms.map(room => room.roomId === roomId
-      ? { ...room, spawnAnchorIds: [...new Set([...room.spawnAnchorIds, anchorId])] }
-      : room),
+    sectors: adventure.sectors.map(sector => sector.sectorId === sectorId
+      ? { ...sector, spawnAnchorIds: [...new Set([...sector.spawnAnchorIds, anchorId])] }
+      : sector),
   };
 }
 
@@ -259,7 +191,7 @@ export function connectPokeDiscoverRoomsBidirectionally({
   targetStart = sourceStart,
   length,
 }: {
-  adventure: AdventureMapV2;
+  adventure: AdventureMapV3;
   source: PokeDiscoverEditorRoomDocument;
   target: PokeDiscoverEditorRoomDocument;
   sourceEdge: PokeDiscoverWorldEdge;
@@ -267,27 +199,37 @@ export function connectPokeDiscoverRoomsBidirectionally({
   targetStart?: number;
   length: number;
 }) {
-  const sourceSuffix = slugifyEditorLabel(fileStem(source.fileName));
-  const targetSuffix = slugifyEditorLabel(fileStem(target.fileName));
   const sourceBounds = edgeRectangle(source.tilemap, sourceEdge, sourceStart, length);
   const targetEdge = oppositeEdge(sourceEdge);
   const targetBounds = edgeRectangle(target.tilemap, targetEdge, targetStart, length);
-  const sourceAnchor = addPokeDiscoverTiledObject(source.tilemap, 'Anchors', {
-    name: uniqueName(`anchor:transition:${sourceSuffix}:to:${targetSuffix}`, objectNames(source.tilemap)),
+  const transitionIds = new Set(adventure.transitions.map(transition => transition.transitionId));
+  const forwardId = nextOrdinalObjectName('transition', transitionIds);
+  transitionIds.add(forwardId);
+  const backwardId = nextOrdinalObjectName('transition', transitionIds);
+  const sourceOutbound = addPokeDiscoverTiledObject(source.tilemap, 'Anchors', {
+    name: `${forwardId}:from`,
     class: 'TransitionAnchor',
     ...sourceBounds,
   });
-  const targetAnchor = addPokeDiscoverTiledObject(target.tilemap, 'Anchors', {
-    name: uniqueName(`anchor:transition:${targetSuffix}:to:${sourceSuffix}`, objectNames(target.tilemap)),
+  const sourceInbound = addPokeDiscoverTiledObject(sourceOutbound.tilemap, 'Anchors', {
+    name: `${backwardId}:to`,
+    class: 'TransitionAnchor',
+    ...sourceBounds,
+  });
+  const targetInbound = addPokeDiscoverTiledObject(target.tilemap, 'Anchors', {
+    name: `${forwardId}:to`,
     class: 'TransitionAnchor',
     ...targetBounds,
   });
-  let nextAdventure = updateRoomSpawn(adventure, source.roomId, sourceAnchor.object.name);
-  nextAdventure = updateRoomSpawn(nextAdventure, target.roomId, targetAnchor.object.name);
-  const transitionIds = new Set(nextAdventure.transitions.map(transition => transition.transitionId));
-  const forwardId = uniqueName(`transition:${sourceSuffix}:to:${targetSuffix}`, transitionIds);
-  transitionIds.add(forwardId);
-  const backwardId = uniqueName(`transition:${targetSuffix}:to:${sourceSuffix}`, transitionIds);
+  const targetOutbound = addPokeDiscoverTiledObject(targetInbound.tilemap, 'Anchors', {
+    name: `${backwardId}:from`,
+    class: 'TransitionAnchor',
+    ...targetBounds,
+  });
+  let nextAdventure = updateRoomSpawn(adventure, source.sectorId, sourceOutbound.object.name);
+  nextAdventure = updateRoomSpawn(nextAdventure, source.sectorId, sourceInbound.object.name);
+  nextAdventure = updateRoomSpawn(nextAdventure, target.sectorId, targetInbound.object.name);
+  nextAdventure = updateRoomSpawn(nextAdventure, target.sectorId, targetOutbound.object.name);
   nextAdventure = {
     ...nextAdventure,
     transitions: [
@@ -296,36 +238,36 @@ export function connectPokeDiscoverRoomsBidirectionally({
         schemaVersion: 1,
         transitionId: forwardId,
         kind: 'edge',
-        fromRoomId: source.roomId,
-        fromAnchorId: sourceAnchor.object.name,
-        toRoomId: target.roomId,
-        toAnchorId: targetAnchor.object.name,
+        fromSectorId: source.sectorId,
+        fromAnchorId: sourceOutbound.object.name,
+        toSectorId: target.sectorId,
+        toAnchorId: targetInbound.object.name,
         destinationFacing: facingForEdge(sourceEdge),
       },
       {
         schemaVersion: 1,
         transitionId: backwardId,
         kind: 'edge',
-        fromRoomId: target.roomId,
-        fromAnchorId: targetAnchor.object.name,
-        toRoomId: source.roomId,
-        toAnchorId: sourceAnchor.object.name,
+        fromSectorId: target.sectorId,
+        fromAnchorId: targetOutbound.object.name,
+        toSectorId: source.sectorId,
+        toAnchorId: sourceInbound.object.name,
         destinationFacing: facingForEdge(targetEdge),
       },
     ],
   };
   return {
     adventure: nextAdventure,
-    sourceTilemap: sourceAnchor.tilemap,
-    targetTilemap: targetAnchor.tilemap,
-    sourceAnchorId: sourceAnchor.object.name,
-    targetAnchorId: targetAnchor.object.name,
+    sourceTilemap: sourceInbound.tilemap,
+    targetTilemap: targetOutbound.tilemap,
+    sourceAnchorId: sourceOutbound.object.name,
+    targetAnchorId: targetInbound.object.name,
   };
 }
 
 export function upsertPokeDiscoverEntryPoint(
-  adventure: AdventureMapV2,
-  entryPoint: AdventureEntryPointV1,
+  adventure: AdventureMapV3,
+  entryPoint: AdventureEntryPointV3,
 ) {
   const entries = adventure.entryPoints ?? [];
   return {
@@ -337,7 +279,7 @@ export function upsertPokeDiscoverEntryPoint(
 }
 
 export function assignPokeDiscoverMissionEntry(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   assignment: AdventureMissionEntryPointV1,
 ) {
   const assignments = adventure.missionEntryPoints ?? [];
@@ -350,7 +292,7 @@ export function assignPokeDiscoverMissionEntry(
 }
 
 export function resolvePokeDiscoverEntryPoint(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   request: { missionId?: string; freeExpedition?: boolean },
 ) {
   const entryPointId = request.missionId
@@ -360,12 +302,12 @@ export function resolvePokeDiscoverEntryPoint(
 }
 
 export function findPokeDiscoverGeometryReferences(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   objectName: string,
 ) {
   const references: string[] = [];
-  for (const room of adventure.rooms) {
-    if (room.spawnAnchorIds.includes(objectName)) references.push(`Habitación ${room.roomId}`);
+  for (const room of adventure.sectors) {
+    if (room.spawnAnchorIds.includes(objectName)) references.push(`Sector ${room.sectorId}`);
   }
   for (const placement of [...adventure.actorPlacements, ...adventure.characterPlacements]) {
     if (placement.anchorId === objectName) references.push(`Colocación ${placement.placementId}`);

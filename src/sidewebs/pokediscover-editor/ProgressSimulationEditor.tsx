@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { AdventureMapV2, ExpressionInputMethod, JsonValue, RequirementAtomV1 } from '../../../packages/contracts/src/index.js';
+import type { AdventureMapV3, ExpressionInputMethod, JsonValue, RequirementAtomV1 } from '../../../packages/contracts/src/index.js';
 import { POKE_DISCOVER_FIELD_TOOLS } from '../../data/adventure/pokeDiscoverShop.js';
 import { POKEDISCOVER_EDITOR_CATALOG } from '../../domain/tools/pokeDiscoverEditorCatalog.js';
 import {
@@ -48,7 +48,7 @@ const INITIAL_CONFIG: PokeDiscoverEditorSimulationConfig = {
   inputMethod: 'text',
 };
 
-export function ProgressSimulationEditor({ adventure }: { adventure: AdventureMapV2 }) {
+export function ProgressSimulationEditor({ adventure }: { adventure: AdventureMapV3 }) {
   const [config, setConfig] = useState(INITIAL_CONFIG);
   const [filter, setFilter] = useState<'all' | 'available' | 'blocked'>('all');
   const [registeredText, setRegisteredText] = useState('');

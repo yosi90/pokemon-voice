@@ -1,5 +1,5 @@
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   ExpressionInputMethod,
   JsonValue,
   RequirementAtomV1,
@@ -45,7 +45,7 @@ function uniquePositiveIntegers(values: readonly number[]) {
 }
 
 export function simulatePokeDiscoverEditorRequirements(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   config: PokeDiscoverEditorSimulationConfig,
 ): PokeDiscoverEditorSimulationResult[] {
   const entry = config.companionVariantId

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ExpeditionExpressionTriggerV1 } from '../../packages/contracts/src/index.js';
+import type { ExpeditionExpressionTriggerV3 } from '../../packages/contracts/src/index.js';
 import { beginExpedition } from '../../src/domain/expeditions/expeditionSession.js';
 import {
   normalizeExpressionText,
@@ -15,7 +15,7 @@ import {
 const MAP_ID = 'map:hoenn:sharpedo-bay';
 const RESOLVED_AT = '2026-07-17T20:00:00.000Z';
 
-const sharpedoTrigger: ExpeditionExpressionTriggerV1 = {
+const sharpedoTrigger: ExpeditionExpressionTriggerV3 = {
   schemaVersion: 1,
   triggerId: 'expression:sharpedo-bay:calm-sharpedo',
   activationRequirement: { kind: 'trainerLevel', minimum: 1 },
@@ -32,7 +32,7 @@ const sharpedoTrigger: ExpeditionExpressionTriggerV1 = {
   completionEffects: { unlockSecretIds: ['secret:sharpedo-bay:calmed-sharpedo'] },
 };
 
-const shoutTrigger: ExpeditionExpressionTriggerV1 = {
+const shoutTrigger: ExpeditionExpressionTriggerV3 = {
   ...sharpedoTrigger,
   triggerId: 'expression:sharpedo-bay:scare-wingull',
   matchAny: [{ kind: 'acoustic', feature: 'loudness', minimumLevel: 0.7, minimumDurationMs: 400 }],

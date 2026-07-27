@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import type { AdventureMapV2, ResearchContributionKind, ResearchFieldKey } from '../../../packages/contracts/src/index.js';
+import type {
+  AdventureMapDocument,
+  AdventureMapV3,
+  ResearchContributionKind,
+  ResearchFieldKey,
+} from '../../../packages/contracts/src/index.js';
+import { normalizeAdventureMapV3 } from '../../domain/expeditions/adventureMapV3.js';
 import {
   createPokeDiscoverResearchMatrix,
   RESEARCH_MATRIX_FIELDS,
@@ -16,17 +22,17 @@ function normalize(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
 }
 
-function isAdventure(value: unknown): value is AdventureMapV2 {
+function isAdventure(value: unknown): value is AdventureMapDocument {
   if (!value || typeof value !== 'object') return false;
-  const candidate = value as Partial<AdventureMapV2>;
-  return candidate.schemaVersion === 2
+  const candidate = value as Partial<AdventureMapDocument>;
+  return (candidate.schemaVersion === 2 || candidate.schemaVersion === 3)
     && typeof candidate.mapId === 'string'
     && typeof candidate.title === 'string'
     && (candidate.researchFacts === undefined || Array.isArray(candidate.researchFacts));
 }
 
-export function ResearchCoverageMatrix({ adventure }: { adventure: AdventureMapV2 }) {
-  const [additional, setAdditional] = useState<AdventureMapV2[]>([]);
+export function ResearchCoverageMatrix({ adventure }: { adventure: AdventureMapV3 }) {
+  const [additional, setAdditional] = useState<AdventureMapV3[]>([]);
   const [fileSummary, setFileSummary] = useState('Ningún proyecto adicional');
   const [fileError, setFileError] = useState('');
   const [query, setQuery] = useState('');
@@ -47,13 +53,13 @@ export function ResearchCoverageMatrix({ adventure }: { adventure: AdventureMapV
   const loadSidecars = async (files: FileList | null) => {
     if (!files?.length) return;
     setFileError('');
-    const loaded: AdventureMapV2[] = [];
+    const loaded: AdventureMapV3[] = [];
     const errors: string[] = [];
     for (const file of [...files]) {
       try {
         const value = JSON.parse(await file.text()) as unknown;
-        if (!isAdventure(value)) throw new Error('no cumple AdventureMapV2');
-        loaded.push(value);
+        if (!isAdventure(value)) throw new Error('no cumple AdventureMap V2/V3');
+        loaded.push(normalizeAdventureMapV3(value));
       } catch (cause) {
         errors.push(`${file.name}: ${cause instanceof Error ? cause.message : 'JSON inválido'}`);
       }

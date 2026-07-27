@@ -1,4 +1,4 @@
-import type { ExpeditionInteractionV1 } from '../../../packages/contracts/src/index.js';
+import type { ExpeditionInteractionV3 } from '../../../packages/contracts/src/index.js';
 
 export type InteractionFacing = 'up' | 'down' | 'left' | 'right';
 
@@ -13,8 +13,8 @@ export interface RuntimeInteractionTarget extends InteractionGroundPoint {
 }
 
 export interface SpatialFacingDefinition {
-  roomId: string;
-  target: ExpeditionInteractionV1['target'];
+  sectorId: string;
+  target: ExpeditionInteractionV3['target'];
   rangeTiles?: number;
 }
 
@@ -39,19 +39,19 @@ export function interactionPointInFront(
 
 export function findFacingSpatialDefinition<T extends SpatialFacingDefinition>({
   definitions,
-  roomId,
+  sectorId,
   player,
   facing,
   resolveTarget,
 }: {
   definitions: readonly T[];
-  roomId: string;
+  sectorId: string;
   player: InteractionGroundPoint;
   facing: InteractionFacing;
   resolveTarget: (definition: T) => RuntimeInteractionTarget | undefined;
 }) {
   for (const definition of definitions) {
-    if (definition.roomId !== roomId) continue;
+    if (definition.sectorId !== sectorId) continue;
     const target = resolveTarget(definition);
     if (!target) continue;
     const expected = interactionPointInFront(player, facing, definition.rangeTiles ?? 1);
@@ -61,15 +61,15 @@ export function findFacingSpatialDefinition<T extends SpatialFacingDefinition>({
 }
 
 export function findFacingInteraction(request: {
-  interactions: readonly ExpeditionInteractionV1[];
-  roomId: string;
+  interactions: readonly ExpeditionInteractionV3[];
+  sectorId: string;
   player: InteractionGroundPoint;
   facing: InteractionFacing;
-  resolveTarget: (interaction: ExpeditionInteractionV1) => RuntimeInteractionTarget | undefined;
+  resolveTarget: (interaction: ExpeditionInteractionV3) => RuntimeInteractionTarget | undefined;
 }) {
   return findFacingSpatialDefinition({
     definitions: request.interactions,
-    roomId: request.roomId,
+    sectorId: request.sectorId,
     player: request.player,
     facing: request.facing,
     resolveTarget: request.resolveTarget,

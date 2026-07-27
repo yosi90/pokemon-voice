@@ -1,5 +1,5 @@
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   CompanionResearchFactV1,
   MissionDefinitionV1,
   ResearchFactV1,
@@ -18,8 +18,8 @@ export const CAMPHOR_RATTATA_ACTOR_IDS = Object.freeze([
   'actor:camphor-forest:rattata-right',
 ]);
 
-export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
-  schemaVersion: 2,
+export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV3>({
+  schemaVersion: 3,
   mapId: CAMPHOR_FOREST_MAP_ID,
   title: 'Bosque de Tegueste',
   tiledMapAssets: [{
@@ -27,9 +27,9 @@ export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
     assetId: 'tiled-map:camphor-forest:ambush-clearing',
     path: 'assets/adventure/maps/tegueste/camphor-forest/ambush-clearing.tmj',
   }],
-  rooms: [{
+  sectors: [{
     schemaVersion: 1,
-    roomId: 'room:camphor-forest:ambush-clearing',
+    sectorId: 'sector:camphor-forest:ambush-clearing',
     tiledMapAssetId: 'tiled-map:camphor-forest:ambush-clearing',
     staticCamera: true,
     spawnAnchorIds: [
@@ -37,6 +37,17 @@ export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
       'anchor:camphor-forest:tegueste-exit',
       'anchor:camphor-forest:cut-bush-exit',
     ],
+    roster: {
+      schemaVersion: 1,
+      pokemonAssetIds: [
+        'pmd:0019-rattata:default',
+        'pmd:0204-pineco:default',
+        'pmd:0001-bulbasaur:default',
+        'pmd:0023-ekans:default',
+        'pmd:0024-arbok:default',
+      ],
+      npcAssetIds: [],
+    },
   }],
   actorPlacements: [],
   characterPlacements: [],
@@ -50,6 +61,9 @@ export const CAMPHOR_FOREST_MAP = Object.freeze<AdventureMapV2>({
   requiredAssetIds: [
     'pmd:0019-rattata:default',
     'pmd:0204-pineco:default',
+    'pmd:0001-bulbasaur:default',
+    'pmd:0023-ekans:default',
+    'pmd:0024-arbok:default',
     'portrait:professor-camphor',
     'trainer:achaman',
     'trainer:guayota',

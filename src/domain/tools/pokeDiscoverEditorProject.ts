@@ -1,4 +1,4 @@
-import type { AdventureMapV2 } from '../../../packages/contracts/src/index.js';
+import type { AdventureMapV3 } from '../../../packages/contracts/src/index.js';
 import type { LoadedTiledMap } from '../maps/loadAdventureBundle.js';
 
 export type PokeDiscoverObjectLayerName = 'Collision' | 'Anchors' | 'Paths' | 'Occlusion';
@@ -73,7 +73,7 @@ export interface PokeDiscoverTiledSource {
 export interface PokeDiscoverRoomRegistration {
   fileName: string;
   assetId: string;
-  roomId: string;
+  sectorId: string;
   created: boolean;
   archived?: boolean;
 }
@@ -212,7 +212,7 @@ export function preparePokeDiscoverTiledMap(
   let tilemap = source as PokeDiscoverEditableTiledMap;
   const ground = tilemap.layers.find(layer => layer.name === 'Ground');
   if (!ground || ground.type !== 'tilelayer') {
-    throw new Error('La habitación necesita una capa de tiles Ground creada en Tiled.');
+    throw new Error('La sector necesita una capa de tiles Ground creada en Tiled.');
   }
   const createdLayers: PokeDiscoverEditableLayerName[] = [];
   for (const name of ['Above', ...REQUIRED_OBJECT_LAYERS] as PokeDiscoverEditableLayerName[]) {
@@ -308,22 +308,22 @@ function commonIdPrefix(ids: string[], fallback: string) {
 }
 
 export function registerPokeDiscoverTiledSources(
-  adventure: AdventureMapV2,
+  adventure: AdventureMapV3,
   sources: PokeDiscoverTiledSource[],
   directoryPath?: string,
 ) {
   let next = adventure;
   const registrations: PokeDiscoverRoomRegistration[] = [];
   const usedAssetIds = new Set(next.tiledMapAssets.map(asset => asset.assetId));
-  const usedRoomIds = new Set(next.rooms.map(room => room.roomId));
+  const usedRoomIds = new Set(next.sectors.map(sector => sector.sectorId));
   const mapSlug = slugifyEditorLabel(next.mapId.split(':').at(-1) ?? next.title);
   const assetPrefix = commonIdPrefix([...usedAssetIds], `tiled-map:${mapSlug}`);
-  const roomPrefix = commonIdPrefix([...usedRoomIds], `room:${mapSlug}`);
+  const roomPrefix = commonIdPrefix([...usedRoomIds], `sector:${mapSlug}`);
   const knownByFile = new Map(next.tiledMapAssets.map(asset => [fileBaseName(asset.path), asset]));
 
   for (const source of sources) {
     let asset = knownByFile.get(source.fileName);
-    let room = asset ? next.rooms.find(candidate => candidate.tiledMapAssetId === asset?.assetId) : undefined;
+    let room = asset ? next.sectors.find(candidate => candidate.tiledMapAssetId === asset?.assetId) : undefined;
     let created = false;
     const suffixMatch = fileStem(source.fileName).match(/(\d+-\d+)$/u);
     const suffix = suffixMatch?.[1] ?? slugifyEditorLabel(fileStem(source.fileName));
@@ -338,16 +338,21 @@ export function registerPokeDiscoverTiledSources(
       created = true;
     }
     if (!room) {
-      const roomId = uniqueStableId(`${roomPrefix}:${suffix}`, usedRoomIds);
-      usedRoomIds.add(roomId);
+      const sectorId = uniqueStableId(`${roomPrefix}:${suffix}`, usedRoomIds);
+      usedRoomIds.add(sectorId);
       room = {
         schemaVersion: 1,
-        roomId,
+        sectorId,
         tiledMapAssetId: asset.assetId,
         staticCamera: true,
         spawnAnchorIds: listPokeDiscoverSpawnAnchors(source.tilemap),
+        roster: {
+          schemaVersion: 1,
+          pokemonAssetIds: [],
+          npcAssetIds: [],
+        },
       };
-      next = { ...next, rooms: [...next.rooms, room] };
+      next = { ...next, sectors: [...next.sectors, room] };
       created = true;
     } else {
       const spawnAnchorIds = listPokeDiscoverSpawnAnchors(source.tilemap);
@@ -355,7 +360,7 @@ export function registerPokeDiscoverTiledSources(
       if (merged.length !== room.spawnAnchorIds.length) {
         next = {
           ...next,
-          rooms: next.rooms.map(candidate => candidate.roomId === room?.roomId
+          sectors: next.sectors.map(candidate => candidate.sectorId === room?.sectorId
             ? { ...candidate, spawnAnchorIds: merged }
             : candidate),
         };
@@ -365,7 +370,7 @@ export function registerPokeDiscoverTiledSources(
     registrations.push({
       fileName: source.fileName,
       assetId: asset.assetId,
-      roomId: room.roomId,
+      sectorId: room.sectorId,
       created,
     });
   }
@@ -378,13 +383,13 @@ export function createPokeDiscoverAdventure({
 }: {
   title: string;
   mapId: string;
-}): AdventureMapV2 {
+}): AdventureMapV3 {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     mapId,
     title,
     tiledMapAssets: [],
-    rooms: [],
+    sectors: [],
     actorPlacements: [],
     characterPlacements: [],
     transitions: [],
@@ -492,7 +497,7 @@ function archivedFileName(fileName: string, used: Set<string>) {
 }
 
 export interface PokeDiscoverWorldOrganizationSnapshot {
-  adventure: AdventureMapV2;
+  adventure: AdventureMapV3;
   tilemapsByFileName: Record<string, PokeDiscoverEditableTiledMap>;
   world: PokeDiscoverWorldFile;
   registrations: PokeDiscoverRoomRegistration[];
@@ -535,7 +540,7 @@ export function applyPokeDiscoverWorldOrganization<T extends PokeDiscoverWorldOr
   const sourceFileNameByFileName = Object.fromEntries(Object.keys(tilemapsByFileName).map(nextName => {
     const registration = registrations.find(item => item.fileName === nextName);
     const previous = registration
-      ? snapshot.registrations.find(item => item.roomId === registration.roomId)
+      ? snapshot.registrations.find(item => item.sectorId === registration.sectorId)
       : undefined;
     const currentName = previous?.fileName ?? nextName;
     return [nextName, snapshot.sourceFileNameByFileName[currentName] ?? currentName];

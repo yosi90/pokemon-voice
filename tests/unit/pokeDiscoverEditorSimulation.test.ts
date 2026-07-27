@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import type { AdventureMapV2 } from '../../packages/contracts/src/index.js';
+import type { AdventureMapV3 } from '../../packages/contracts/src/index.js';
 import { simulatePokeDiscoverEditorRequirements } from '../../src/domain/tools/pokeDiscoverEditorSimulation.js';
 
-function adventure(): AdventureMapV2 {
+function adventure(): AdventureMapV3 {
   return {
     schemaVersion: 2,
     mapId: 'map:test:simulation',
     title: 'Simulación',
-    tiledMapAssets: [], rooms: [], actorPlacements: [], characterPlacements: [], requiredAssetIds: [], missionIds: [], ambientSequences: [], companionSequences: [],
+    tiledMapAssets: [], sectors: [], actorPlacements: [], characterPlacements: [], requiredAssetIds: [], missionIds: [], ambientSequences: [], companionSequences: [],
     rareEncounters: [{ encounterId: 'rare:registered', speciesId: 151, requirement: { kind: 'registeredSpecies', speciesId: 25 }, baseProbability: .1 }],
     variants: [{ variantId: 'variant:night', requirement: { kind: 'worldFlag', flagId: 'night', expected: true } }],
     behaviorTriggers: [{ triggerId: 'behavior:surf', requirement: { all: [{ kind: 'companionSpecies', speciesId: 1 }, { kind: 'fieldCapability', capabilityId: 'surf' }] } }],
     expressionTriggers: [{ triggerId: 'expression:voice', activationRequirement: { kind: 'trainerLevel', minimum: 2 }, inputMethods: ['voice'] }],
     transitions: [{ transitionId: 'transition:sighted', requirement: { kind: 'sightedSpecies', speciesId: 151 } }],
     worldEvents: [{ eventId: 'event:item', activation: { kind: 'inventoryItem', itemId: 'key-item:dragon-scale' }, setFlags: {}, encounterInjections: [], mapVariants: [] }],
-  } as unknown as AdventureMapV2;
+  } as unknown as AdventureMapV3;
 }
 
 describe('simulador de progreso del editor', () => {

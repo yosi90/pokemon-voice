@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ExpeditionInteractionV1 } from '../../packages/contracts/src/index.js';
+import type { ExpeditionInteractionV3 } from '../../packages/contracts/src/index.js';
 import { beginExpedition } from '../../src/domain/expeditions/expeditionSession.js';
 import { completeExpeditionInteraction } from '../../src/domain/expeditions/expeditionInteractionCompletion.js';
 import { createPokeVoiceSaveV1 } from '../../src/domain/progress/pokeVoiceSave.js';
@@ -10,10 +10,10 @@ import {
 } from '../../src/store/browserPokeVoiceSaveStore.js';
 
 const MAP_ID = 'map:tegueste:camphor-forest';
-const interaction: ExpeditionInteractionV1 = {
+const interaction: ExpeditionInteractionV3 = {
   schemaVersion: 1,
   interactionId: 'interaction:tegueste:talk-professor-camphor',
-  roomId: 'room:tegueste-forest:02-04',
+  sectorId: 'room:tegueste-forest:02-04',
   target: { kind: 'placement', placementId: 'character:professor-alcanfor' },
   prompt: 'Hablar con Alcanfor',
   dialogueId: 'dialogue:tegueste:professor-warning',

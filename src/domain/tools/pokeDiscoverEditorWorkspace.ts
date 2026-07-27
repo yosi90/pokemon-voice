@@ -1,4 +1,8 @@
-import type { AdventureMapV2 } from '../../../packages/contracts/src/index.js';
+import type {
+  AdventureMapDocument,
+  AdventureMapV3,
+} from '../../../packages/contracts/src/index.js';
+import { normalizeAdventureMapV3 } from '../expeditions/adventureMapV3.js';
 import type { LoadedTiledMap } from '../maps/loadAdventureBundle.js';
 import {
   createPokeDiscoverAdventure,
@@ -47,7 +51,7 @@ export interface PokeDiscoverWorkspaceSourceFile {
 }
 
 export interface PokeDiscoverWorkspaceSnapshot {
-  adventure: AdventureMapV2;
+  adventure: AdventureMapV3;
   tilemapsByFileName: Record<string, PokeDiscoverEditableTiledMap>;
   world: PokeDiscoverWorldFile;
   registrations: PokeDiscoverRoomRegistration[];
@@ -68,6 +72,8 @@ export interface PokeDiscoverWorkspace {
   directoryHandle?: PokeDiscoverDirectoryHandle;
   createdProject: boolean;
   pendingLayout: boolean;
+  sourceSchemaVersion: 2 | 3;
+  legacySidecarSource?: string;
 }
 
 export interface PokeDiscoverProjectMetadata {
@@ -90,18 +96,21 @@ function parseJson(source: string, fileName: string) {
   }
 }
 
-function requireAdventureMap(value: unknown, fileName: string): AdventureMapV2 {
+function requireAdventureMap(value: unknown, fileName: string): AdventureMapDocument {
   if (!value || typeof value !== 'object') {
     throw new Error(`${fileName} debe contener un proyecto de aventura.`);
   }
-  const candidate = value as Partial<AdventureMapV2>;
-  if (candidate.schemaVersion !== 2 || typeof candidate.mapId !== 'string') {
+  const candidate = value as Partial<AdventureMapDocument>;
+  if (![2, 3].includes(Number(candidate.schemaVersion)) || typeof candidate.mapId !== 'string') {
     throw new Error(`${fileName} no cumple el contrato actual de proyecto.`);
   }
-  if (!Array.isArray(candidate.rooms) || !Array.isArray(candidate.tiledMapAssets)) {
-    throw new Error(`${fileName} no declara habitaciones y mapas de Tiled.`);
+  const hasSpatialList = candidate.schemaVersion === 3
+    ? Array.isArray((candidate as Partial<AdventureMapV3>).sectors)
+    : Array.isArray((candidate as { rooms?: unknown }).rooms);
+  if (!hasSpatialList || !Array.isArray(candidate.tiledMapAssets)) {
+    throw new Error(`${fileName} no declara sectores/habitaciones y mapas de Tiled.`);
   }
-  return candidate as AdventureMapV2;
+  return candidate as AdventureMapDocument;
 }
 
 function requireTiledMap(value: unknown, fileName: string): LoadedTiledMap {
@@ -118,7 +127,7 @@ function requireTiledMap(value: unknown, fileName: string): LoadedTiledMap {
   return candidate as LoadedTiledMap;
 }
 
-function sidecarDirectory(adventure: AdventureMapV2) {
+function sidecarDirectory(adventure: AdventureMapV3) {
   const reference = adventure.tiledMapAssets[0]?.path.replaceAll('\\', '/');
   return reference?.includes('/') ? reference.slice(0, reference.lastIndexOf('/')) : undefined;
 }
@@ -217,12 +226,14 @@ export async function openPokeDiscoverWorkspace({
   }
 
   const existingSidecar = inspection.sidecars[0];
-  const adventure = existingSidecar
+  const adventureDocument = existingSidecar
     ? requireAdventureMap(
       parseJson(rawByFileName[existingSidecar.file.name], existingSidecar.file.name),
       existingSidecar.file.name,
     )
     : createPokeDiscoverAdventure(metadata!);
+  const sourceSchemaVersion = adventureDocument.schemaVersion;
+  const adventure = normalizeAdventureMapV3(adventureDocument);
   const effectiveName = projectName || directoryHandle?.name || metadata?.title || adventure.title;
   const slug = slugifyEditorLabel(adventure.mapId.split(':').at(-1) || effectiveName);
   const sidecarFileName = existingSidecar?.file.name ?? `${slug}.adventure.json`;
@@ -283,6 +294,10 @@ export async function openPokeDiscoverWorkspace({
     directoryHandle,
     createdProject,
     pendingLayout: !existingWorld,
+    sourceSchemaVersion,
+    legacySidecarSource: sourceSchemaVersion === 2 && existingSidecar
+      ? rawByFileName[existingSidecar.file.name]
+      : undefined,
   };
 }
 
@@ -388,6 +403,50 @@ export async function savePokeDiscoverWorkspace(
       ...workspace.history,
       present: { ...workspace.history.present, sourceFileNameByFileName },
     },
+  };
+}
+
+function legacyBackupFileName(sidecarFileName: string) {
+  return sidecarFileName.replace(/\.adventure\.json$/iu, '.adventure.v2.backup.json');
+}
+
+export async function migratePokeDiscoverWorkspaceToV3(
+  workspace: PokeDiscoverWorkspace,
+) {
+  if (workspace.sourceSchemaVersion !== 2 || !workspace.legacySidecarSource) {
+    throw new Error('El proyecto abierto no necesita migración V2.');
+  }
+  const backupFileName = legacyBackupFileName(workspace.sidecarFileName);
+  if (workspace.directoryHandle) {
+    const handle = await workspace.directoryHandle.getFileHandle(backupFileName, { create: true });
+    const existing = await handle.getFile();
+    const existingSource = await existing.text();
+    if (existingSource && existingSource !== workspace.legacySidecarSource) {
+      throw new Error(`${backupFileName} ya existe con un contenido diferente.`);
+    }
+    if (!existingSource) {
+      const writable = await handle.createWritable();
+      await writable.write(workspace.legacySidecarSource);
+      await writable.close();
+    }
+  } else if (typeof document !== 'undefined') {
+    const url = URL.createObjectURL(new Blob(
+      [workspace.legacySidecarSource],
+      { type: 'application/json' },
+    ));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = backupFileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+  return {
+    workspace: {
+      ...workspace,
+      sourceSchemaVersion: 3 as const,
+      legacySidecarSource: undefined,
+    },
+    backupFileName,
   };
 }
 

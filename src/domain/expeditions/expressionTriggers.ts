@@ -1,5 +1,5 @@
 import type {
-  ExpeditionExpressionTriggerV1,
+  ExpeditionExpressionTriggerV3,
   ExpressionInputMethod,
   ExpressionIntent,
   PokemonFormV1,
@@ -28,7 +28,7 @@ export interface ExpressionAttemptV1 {
 
 export interface ResolveExpressionTriggerRequest {
   mapId: string;
-  trigger: ExpeditionExpressionTriggerV1;
+  trigger: ExpeditionExpressionTriggerV3;
   attempt: ExpressionAttemptV1;
   resolvedAt: string;
   companionForm?: PokemonFormV1;
@@ -61,7 +61,7 @@ export function normalizeExpressionText(value: string) {
 }
 
 function matchesAcoustic(
-  matcher: Extract<ExpeditionExpressionTriggerV1['matchAny'][number], { kind: 'acoustic' }>,
+  matcher: Extract<ExpeditionExpressionTriggerV3['matchAny'][number], { kind: 'acoustic' }>,
   attempt: ExpressionAttemptV1,
 ) {
   if (attempt.method !== 'voice' || !attempt.acoustic) return false;
@@ -77,7 +77,7 @@ function matchesAcoustic(
   }
 }
 
-export function matchesExpressionAttempt(trigger: ExpeditionExpressionTriggerV1, attempt: ExpressionAttemptV1) {
+export function matchesExpressionAttempt(trigger: ExpeditionExpressionTriggerV3, attempt: ExpressionAttemptV1) {
   if (attempt.method === 'contextAction') {
     return attempt.contextActionId === trigger.fallbackActionId;
   }

@@ -1,0 +1,52 @@
+export const TILE_LAYER_KINDS: readonly ['ground', 'decoration', 'overlay', 'collision'];
+export const MISSION_STATUSES: readonly ['locked', 'available', 'active', 'completed'];
+export const COMPANION_TRIGGER_MODES: readonly ['prompt', 'automatic', 'ambient'];
+export const COMPANION_TRIGGER_REPEAT_POLICIES: readonly ['oncePerVisit', 'persistent', 'repeatable'];
+export const EXPRESSION_INPUT_METHODS: readonly ['voice', 'text', 'contextAction'];
+export const EXPRESSION_INTENTS: readonly ['compliment', 'calm', 'warn', 'sing', 'custom'];
+export const ADVENTURE_ACTOR_COLLISIONS: readonly ['solid', 'pass-through'];
+export const AMBIENT_MOVEMENT_STYLES: readonly ['grid', 'continuous'];
+export const AMBIENT_PLAYBACK_MODES: readonly ['loop', 'pingPong', 'once'];
+export const AMBIENT_ACTOR_ACTION_KINDS: readonly [
+  'playAnimation', 'face', 'movePath', 'moveByTiles', 'setVisible',
+];
+export const COMPANION_SEQUENCE_ACTION_KINDS: readonly [
+  'playAnimation', 'face', 'setVisible', 'moveToAnchor', 'moveByTiles',
+  'returnToTrainer', 'dropPokeBalls', 'emitCue',
+];
+export const EXPRESSION_MATCHER_KINDS: readonly ['phrase', 'intent', 'acoustic'];
+export const SECTOR_TRANSITION_KINDS: readonly ['edge', 'stairs', 'door', 'teleport'];
+/** @deprecated Use SECTOR_TRANSITION_KINDS. */
+export const ROOM_TRANSITION_KINDS: typeof SECTOR_TRANSITION_KINDS;
+export const ADVENTURE_ENTRY_REPEAT_POLICIES: readonly ['oncePerVisit', 'repeatable'];
+export const TILED_ANCHOR_CLASSES: readonly [
+  'PlayerSpawn',
+  'TransitionAnchor',
+  'ActorAnchor',
+  'EncounterAnchor',
+  'InteractionAnchor',
+  'SecretAnchor',
+];
+export const TILED_RUNTIME_OBJECT_CLASSES: readonly [
+  'PlayerSpawn',
+  'TransitionAnchor',
+  'ActorAnchor',
+  'EncounterAnchor',
+  'InteractionAnchor',
+  'SecretAnchor',
+  'Collision',
+  'AmbientPath',
+  'ActorOccluder',
+];
+export const MEANINGFUL_EXPEDITION_INTERACTION_KINDS: readonly [
+  'npcConversation',
+  'inspection',
+  'pokemonInteraction',
+  'speciesIdentification',
+  'companionBehavior',
+  'contextTrigger',
+  'secret',
+  'hint',
+  'collectible',
+  'research',
+];

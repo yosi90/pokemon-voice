@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import teguesteAdventure from '../../public/assets/adventure/maps/tegueste-forest/tegueste-forest.adventure.json';
-import type { AdventureMapV2, RareEncounterDefinitionV1 } from '../../packages/contracts/src/index.js';
+import type { AdventureMapV3, RareEncounterDefinitionV1 } from '../../packages/contracts/src/index.js';
+import { normalizeAdventureMapV3 } from '../../src/domain/expeditions/adventureMapV3.js';
 import {
   rareEncounterProbabilityForVisit,
   updateEditorDeterministicEncounter,
@@ -16,7 +17,7 @@ describe('encuentros y estado del mundo del editor', () => {
   });
 
   it('actualiza encuentros fijos y añade su asset sin mutar el sidecar', () => {
-    const adventure = structuredClone(teguesteAdventure) as AdventureMapV2;
+    const adventure = normalizeAdventureMapV3(structuredClone(teguesteAdventure) as never);
     const placement = { ...adventure.actorPlacements[0], assetId: 'pmd:test', direction: 'left' as const };
     const updated = updateEditorDeterministicEncounter(adventure, placement);
     expect(updated.actorPlacements[0]).toEqual(placement);
@@ -25,7 +26,7 @@ describe('encuentros y estado del mundo del editor', () => {
   });
 
   it('inserta y reemplaza raros, variantes y eventos por ID estable', () => {
-    const adventure = structuredClone(teguesteAdventure) as AdventureMapV2;
+    const adventure = normalizeAdventureMapV3(structuredClone(teguesteAdventure) as never);
     const rare: RareEncounterDefinitionV1 = { encounterId: 'encounter:test', speciesId: 151, requirement: { kind: 'trainerLevel', minimum: 1 }, baseProbability: .1 };
     const withRare = upsertEditorRareEncounter(adventure, rare);
     const withVariant = upsertEditorMapVariant(withRare, { variantId: 'variant:test', requirement: { kind: 'worldFlag', flagId: 'flag:test', expected: true } });

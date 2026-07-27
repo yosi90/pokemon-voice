@@ -364,7 +364,7 @@ test('el tablero de encargos reúne briefing, recompensas y compañero antes de 
   await briefing.getByRole('button', { name: 'Comenzar encargo' }).click();
 
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(
-    '#/expeditions/map%3Ategueste%3Acamphor-forest/room%3Ategueste-forest%3A02-04',
+    '#/expeditions/map%3Ategueste%3Acamphor-forest/sector%3Ategueste-forest%3A02-04',
   );
   await expect(page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' })).toBeVisible();
 });
@@ -373,6 +373,8 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokedexRun.registeredSpeciesIds = [];
+    save.pokedexRun.discoveryOrder = [];
     save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
     localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
   });
@@ -386,7 +388,7 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(
-    '#/expeditions/map%3Ategueste%3Acamphor-forest/room%3Ategueste-forest%3A02-04',
+    '#/expeditions/map%3Ategueste%3Acamphor-forest/sector%3Ategueste-forest%3A02-04',
   );
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
@@ -416,13 +418,13 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await expect(preview.getByRole('status')).toHaveCount(0);
   await expect(runtime).toHaveAttribute('data-animation', 'playing');
   await expect(runtime).toHaveAttribute('data-map-id', 'map:tegueste:camphor-forest');
-  await expect(runtime).toHaveAttribute('data-room-id', 'room:tegueste-forest:02-04');
+  await expect(runtime).toHaveAttribute('data-sector-id', 'sector:tegueste-forest:02-04');
   await expect(runtime).toHaveAttribute('data-actor-id', 'actor:rattata:left');
   await expect(runtime).toHaveAttribute('data-actor-grounding', 'pmd-shadow');
   await expect(runtime).toHaveAttribute('data-solid-actor-count', '7');
   await expect(runtime).toHaveAttribute('data-player-asset-id', 'character:trainer:achaman');
   await expect(runtime).toHaveAttribute('data-movement', 'grid');
-  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '7');
+  await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '4');
   await expect(runtime).toHaveAttribute('data-camera', 'static');
   await expect(runtime).toHaveAttribute('data-collision', 'arcade');
   await expect(runtime).toHaveAttribute('data-occlusion-layer', 'Above');

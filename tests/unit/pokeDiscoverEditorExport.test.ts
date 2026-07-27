@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   CharacterSpriteManifestV1,
   PmdAnimationManifestV1,
 } from '../../packages/contracts/src/index.js';
@@ -15,9 +15,9 @@ const adventure = {
   mapId: 'map:test:forest',
   title: 'Bosque de prueba',
   tiledMapAssets: [{ assetId: 'tiled:test', path: 'assets/adventure/maps/test-forest/test-room.tmj' }],
-  rooms: [], transitions: [], requiredAssetIds: [], ambientSequences: [], companionSequences: [], rareEncounters: [], interactions: [], dialogues: [], fieldNotebookHints: [], researchFacts: [],
+  sectors: [], transitions: [], requiredAssetIds: [], ambientSequences: [], companionSequences: [], rareEncounters: [], interactions: [], dialogues: [], fieldNotebookHints: [], researchFacts: [],
   actorPlacements: [], characterPlacements: [], variants: [], behaviorTriggers: [], expressionTriggers: [], missionIds: [],
-} as unknown as AdventureMapV2;
+} as unknown as AdventureMapV3;
 
 const pmdManifest: PmdAnimationManifestV1 = { schemaVersion: 1, tickRate: 60, assets: [] };
 const characterManifest: CharacterSpriteManifestV1 = { schemaVersion: 1, assets: [] };

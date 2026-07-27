@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { AdventureMapV2 } from '../../packages/contracts/src/index.js';
+import type { AdventureMapV3 } from '../../packages/contracts/src/index.js';
 import { auditPokeDiscoverEditorLogic } from '../../src/domain/tools/pokeDiscoverEditorDiagnostics.js';
 
-function adventure(): AdventureMapV2 {
+function adventure(): AdventureMapV3 {
   return {
     schemaVersion: 2,
     mapId: 'map:test:audit',
     title: 'Auditoría',
-    tiledMapAssets: [], rooms: [], transitions: [], requiredAssetIds: [], ambientSequences: [], companionSequences: [], rareEncounters: [], interactions: [], dialogues: [], fieldNotebookHints: [], researchFacts: [],
+    tiledMapAssets: [], sectors: [], transitions: [], requiredAssetIds: [], ambientSequences: [], companionSequences: [], rareEncounters: [], interactions: [], dialogues: [], fieldNotebookHints: [], researchFacts: [],
     actorPlacements: [{ placementId: 'shared:id' }],
     characterPlacements: [{ placementId: 'shared:id' }],
     variants: [{ variantId: 'variant:impossible', requirement: { kind: 'companionSpecies', speciesId: 9999 } }],
@@ -23,7 +23,7 @@ function adventure(): AdventureMapV2 {
       { eventId: 'event:b', activation: { kind: 'worldFlag', flagId: 'flag:a', expected: true }, setFlags: { 'flag:b': true }, encounterInjections: [], mapVariants: [] },
     ],
     missionIds: ['mission:missing'],
-  } as unknown as AdventureMapV2;
+  } as unknown as AdventureMapV3;
 }
 
 describe('auditoría lógica del editor', () => {

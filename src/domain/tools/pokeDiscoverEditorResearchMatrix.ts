@@ -1,5 +1,5 @@
 import type {
-  AdventureMapV2,
+  AdventureMapV3,
   CompanionResearchFactV1,
   CompanionSpeciesProfileV1,
   ResearchFactV1,
@@ -46,10 +46,10 @@ function emptyFields(): Record<ResearchFieldKey, ResearchFactV1[]> {
 }
 
 export function createPokeDiscoverResearchMatrix(
-  adventures: readonly AdventureMapV2[],
+  adventures: readonly AdventureMapV3[],
   speciesCatalog: readonly CompanionSpeciesProfileV1[] = COMPANION_GAMEPLAY_SPECIES,
 ): PokeDiscoverResearchMatrix {
-  const byMap = new Map<string, AdventureMapV2>();
+  const byMap = new Map<string, AdventureMapV3>();
   for (const adventure of adventures) byMap.set(adventure.mapId, adventure);
   const maps = [...byMap.values()].map(adventure => ({ mapId: adventure.mapId, title: adventure.title }));
   const rows = speciesCatalog.map(species => {

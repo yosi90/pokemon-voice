@@ -1,3 +1,10 @@
+import {
+  ADVENTURE_ACTOR_COLLISIONS,
+  ADVENTURE_ENTRY_REPEAT_POLICIES,
+  MEANINGFUL_EXPEDITION_INTERACTION_KINDS,
+  TILED_ANCHOR_CLASSES,
+} from '../../../packages/contracts/src/adventureVocabulary.js';
+
 export const TILED_REQUIRED_LAYERS = Object.freeze({
   Ground: 'tilelayer',
   Collision: 'objectgroup',
@@ -5,21 +12,11 @@ export const TILED_REQUIRED_LAYERS = Object.freeze({
   Anchors: 'objectgroup',
 });
 
-export const TILED_ANCHOR_CLASSES = Object.freeze([
-  'PlayerSpawn',
-  'TransitionAnchor',
-  'ActorAnchor',
-  'EncounterAnchor',
-  'InteractionAnchor',
-  'SecretAnchor',
-]);
+export { TILED_ANCHOR_CLASSES };
 
 const anchorClassSet = new Set(TILED_ANCHOR_CLASSES);
 const optionalObjectLayers = Object.freeze({ Paths: 'AmbientPath', Occlusion: 'ActorOccluder' });
-const meaningfulInteractionKinds = new Set([
-  'npcConversation', 'inspection', 'pokemonInteraction', 'speciesIdentification',
-  'companionBehavior', 'contextTrigger', 'secret', 'hint', 'collectible', 'research',
-]);
+const meaningfulInteractionKinds = new Set(MEANINGFUL_EXPEDITION_INTERACTION_KINDS);
 
 function objectClass(object) {
   return object.class || object.type || '';
@@ -44,6 +41,60 @@ function validPlacementScale(value) {
   return value === undefined || (Number.isFinite(value) && value >= .1 && value <= 5);
 }
 
+function normalizeAdventureForValidation(source) {
+  if (source?.schemaVersion !== 2) return source;
+  const sectorId = roomId => roomId;
+  return {
+    ...source,
+    schemaVersion: 3,
+    sectors: (source.rooms ?? []).map(room => ({
+      ...room,
+      sectorId: sectorId(room.roomId),
+      legacyRoomIds: [room.roomId],
+      roster: {
+        schemaVersion: 1,
+        pokemonAssetIds: (source.actorPlacements ?? [])
+          .filter(placement => placement.roomId === room.roomId)
+          .map(placement => placement.assetId),
+        npcAssetIds: (source.characterPlacements ?? [])
+          .filter(placement => placement.roomId === room.roomId && !placement.controllable)
+          .map(placement => placement.assetId),
+      },
+    })),
+    actorPlacements: (source.actorPlacements ?? [])
+      .map(({ roomId, ...placement }) => ({ ...placement, sectorId: sectorId(roomId) })),
+    characterPlacements: (source.characterPlacements ?? [])
+      .map(({ roomId, ...placement }) => ({ ...placement, sectorId: sectorId(roomId) })),
+    transitions: (source.transitions ?? []).map(({ fromRoomId, toRoomId, ...transition }) => ({
+      ...transition,
+      fromSectorId: sectorId(fromRoomId),
+      toSectorId: sectorId(toRoomId),
+    })),
+    entryPoints: (source.entryPoints ?? [])
+      .map(({ roomId, ...entry }) => ({ ...entry, sectorId: sectorId(roomId) })),
+    behaviorTriggers: (source.behaviorTriggers ?? []).map(trigger => ({
+      ...trigger,
+      proximity: trigger.proximity
+        ? {
+          ...trigger.proximity,
+          sectorId: sectorId(trigger.proximity.roomId),
+          roomId: undefined,
+        }
+        : undefined,
+    })),
+    companionSequences: (source.companionSequences ?? [])
+      .map(({ roomId, ...sequence }) => ({ ...sequence, sectorId: sectorId(roomId) })),
+    mapSequences: (source.mapSequences ?? [])
+      .map(({ roomId, ...sequence }) => ({ ...sequence, sectorId: sectorId(roomId) })),
+    expressionTriggers: (source.expressionTriggers ?? [])
+      .map(({ roomId, ...trigger }) => ({ ...trigger, ...(roomId ? { sectorId: sectorId(roomId) } : {}) })),
+    interactions: (source.interactions ?? [])
+      .map(({ roomId, ...interaction }) => ({ ...interaction, sectorId: sectorId(roomId) })),
+    ambientSequences: (source.ambientSequences ?? [])
+      .map(({ roomId, ...sequence }) => ({ ...sequence, sectorId: sectorId(roomId) })),
+  };
+}
+
 function validateTiledRoom(assetId, tiled) {
   const errors = [];
   if (!tiled || typeof tiled !== 'object') return [`${assetId}: TMJ ausente o inválido`];
@@ -53,7 +104,7 @@ function validateTiledRoom(assetId, tiled) {
   if (tiled.tilewidth !== 16 || tiled.tileheight !== 16) errors.push(`${assetId}: los tiles deben medir 16x16`);
   if (!Number.isSafeInteger(tiled.width) || tiled.width <= 0
     || !Number.isSafeInteger(tiled.height) || tiled.height <= 0) {
-    errors.push(`${assetId}: dimensiones de habitación inválidas`);
+    errors.push(`${assetId}: dimensiones de sector inválidas`);
   }
 
   const layers = Array.isArray(tiled.layers) ? tiled.layers : [];
@@ -146,8 +197,10 @@ function validateTiledRoom(assetId, tiled) {
 }
 
 export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest, characterManifest }) {
+  const strictSectorRosters = adventure?.schemaVersion === 3;
+  adventure = normalizeAdventureForValidation(adventure);
   const errors = [];
-  const rooms = new Map((adventure.rooms ?? []).map(room => [room.roomId, room]));
+  const rooms = new Map((adventure.sectors ?? []).map(room => [room.sectorId, room]));
   const tiledAssets = new Map();
   for (const asset of adventure.tiledMapAssets ?? []) {
     if (tiledAssets.has(asset.assetId)) errors.push(`${asset.assetId}: referencia Tiled duplicada`);
@@ -156,10 +209,10 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   const roomAnchors = new Map();
   const roomPaths = new Map();
   const roomOccluders = new Map();
-  for (const room of adventure.rooms ?? []) {
+  for (const room of adventure.sectors ?? []) {
     const asset = tiledAssets.get(room.tiledMapAssetId);
     if (!asset) {
-      errors.push(`${room.roomId}: tiledMapAssetId no declarado`);
+      errors.push(`${room.sectorId}: tiledMapAssetId no declarado`);
       continue;
     }
     const validation = validateTiledRoom(asset.assetId, tiledMaps[asset.assetId]);
@@ -168,25 +221,49 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
       continue;
     }
     errors.push(...validation.errors);
-    roomAnchors.set(room.roomId, validation.anchors);
-    roomPaths.set(room.roomId, validation.paths);
-    roomOccluders.set(room.roomId, validation.occluders);
+    roomAnchors.set(room.sectorId, validation.anchors);
+    roomPaths.set(room.sectorId, validation.paths);
+    roomOccluders.set(room.sectorId, validation.occluders);
     for (const anchorId of room.spawnAnchorIds ?? []) {
       const anchor = validation.anchors.get(anchorId);
-      if (!anchor) errors.push(`${room.roomId}: spawnAnchorId inexistente ${anchorId}`);
+      if (!anchor) errors.push(`${room.sectorId}: spawnAnchorId inexistente ${anchorId}`);
       else if (!['PlayerSpawn', 'TransitionAnchor'].includes(anchor.class)) {
-        errors.push(`${room.roomId}: ${anchorId} no es PlayerSpawn ni TransitionAnchor`);
+        errors.push(`${room.sectorId}: ${anchorId} no es PlayerSpawn ni TransitionAnchor`);
       }
     }
   }
 
   const pmdAssets = new Map((pmdManifest?.assets ?? []).map(asset => [asset.assetId, asset]));
   const characterAssets = new Map((characterManifest?.assets ?? []).map(asset => [asset.assetId, asset]));
+  if (strictSectorRosters) {
+    const requiredAssets = new Set(adventure.requiredAssetIds ?? []);
+    for (const sector of adventure.sectors ?? []) {
+      const pokemon = sector.roster?.pokemonAssetIds ?? [];
+      const npcs = sector.roster?.npcAssetIds ?? [];
+      if (new Set(pokemon).size !== pokemon.length) {
+        errors.push(`${sector.sectorId}: el reparto Pokémon contiene assets duplicados`);
+      }
+      if (pokemon.length < 5) {
+        errors.push(`${sector.sectorId}: el reparto necesita al menos 5 assets Pokémon`);
+      }
+      if (new Set(npcs).size !== npcs.length) {
+        errors.push(`${sector.sectorId}: el reparto NPC contiene assets duplicados`);
+      }
+      for (const assetId of pokemon) {
+        if (!pmdAssets.has(assetId)) errors.push(`${sector.sectorId}: asset Pokémon inexistente ${assetId}`);
+        if (!requiredAssets.has(assetId)) errors.push(`${sector.sectorId}: requiredAssetIds no contiene ${assetId}`);
+      }
+      for (const assetId of npcs) {
+        if (!characterAssets.has(assetId)) errors.push(`${sector.sectorId}: asset NPC inexistente ${assetId}`);
+        if (!requiredAssets.has(assetId)) errors.push(`${sector.sectorId}: requiredAssetIds no contiene ${assetId}`);
+      }
+    }
+  }
   const placements = new Set();
   for (const placement of adventure.actorPlacements ?? []) {
     if (placements.has(placement.placementId)) errors.push(`${placement.placementId}: colocación duplicada`);
     placements.add(placement.placementId);
-    if (placement.collision && !['solid', 'pass-through'].includes(placement.collision)) {
+    if (placement.collision && !ADVENTURE_ACTOR_COLLISIONS.includes(placement.collision)) {
       errors.push(`${placement.placementId}: colisión de actor desconocida ${placement.collision}`);
     }
     if (placement.initiallyHidden !== undefined && typeof placement.initiallyHidden !== 'boolean') {
@@ -195,11 +272,15 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     if (!validPlacementScale(placement.renderScaleMultiplier)) {
       errors.push(`${placement.placementId}: renderScaleMultiplier debe estar entre 0.1 y 5`);
     }
-    if (!rooms.has(placement.roomId)) {
-      errors.push(`${placement.placementId}: habitación inexistente`);
+    if (!rooms.has(placement.sectorId)) {
+      errors.push(`${placement.placementId}: sector inexistente`);
       continue;
     }
-    const anchor = roomAnchors.get(placement.roomId)?.get(placement.anchorId);
+    if (strictSectorRosters
+      && !rooms.get(placement.sectorId)?.roster?.pokemonAssetIds?.includes(placement.assetId)) {
+      errors.push(`${placement.placementId}: asset fuera del reparto Pokémon del sector`);
+    }
+    const anchor = roomAnchors.get(placement.sectorId)?.get(placement.anchorId);
     if (!anchor) errors.push(`${placement.placementId}: ancla inexistente ${placement.anchorId}`);
     else if (!['ActorAnchor', 'EncounterAnchor'].includes(anchor.class)) {
       errors.push(`${placement.placementId}: ${placement.anchorId} no es ActorAnchor ni EncounterAnchor`);
@@ -219,17 +300,21 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   for (const placement of adventure.characterPlacements ?? []) {
     if (characterPlacements.has(placement.placementId)) errors.push(`${placement.placementId}: personaje duplicado`);
     characterPlacements.add(placement.placementId);
-    if (placement.collision && !['solid', 'pass-through'].includes(placement.collision)) {
+    if (placement.collision && !ADVENTURE_ACTOR_COLLISIONS.includes(placement.collision)) {
       errors.push(`${placement.placementId}: colisión de personaje desconocida ${placement.collision}`);
     }
     if (!validPlacementScale(placement.renderScaleMultiplier)) {
       errors.push(`${placement.placementId}: renderScaleMultiplier debe estar entre 0.1 y 5`);
     }
-    if (!rooms.has(placement.roomId)) {
-      errors.push(`${placement.placementId}: habitación inexistente`);
+    if (!rooms.has(placement.sectorId)) {
+      errors.push(`${placement.placementId}: sector inexistente`);
       continue;
     }
-    const anchor = roomAnchors.get(placement.roomId)?.get(placement.anchorId);
+    if (strictSectorRosters && !placement.controllable
+      && !rooms.get(placement.sectorId)?.roster?.npcAssetIds?.includes(placement.assetId)) {
+      errors.push(`${placement.placementId}: asset fuera del reparto NPC del sector`);
+    }
+    const anchor = roomAnchors.get(placement.sectorId)?.get(placement.anchorId);
     if (!anchor) errors.push(`${placement.placementId}: ancla inexistente ${placement.anchorId}`);
     else if (placement.controllable && anchor.class !== 'PlayerSpawn') {
       errors.push(`${placement.placementId}: el personaje controlable necesita PlayerSpawn`);
@@ -244,7 +329,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     }
     if (placement.controllable) controllableCount += 1;
   }
-  if (controllableCount > 1) errors.push(`${adventure.mapId}: solo puede existir un personaje controlable por habitación`);
+  if (controllableCount > 1) errors.push(`${adventure.mapId}: solo puede existir un personaje controlable por sector`);
 
   const variantIds = new Set();
   for (const variant of adventure.variants ?? []) {
@@ -324,7 +409,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   for (const interaction of adventure.interactions ?? []) {
     if (interactionIds.has(interaction.interactionId)) errors.push(`${interaction.interactionId}: interacción duplicada`);
     interactionIds.add(interaction.interactionId);
-    if (!rooms.has(interaction.roomId)) errors.push(`${interaction.interactionId}: habitación inexistente ${interaction.roomId}`);
+    if (!rooms.has(interaction.sectorId)) errors.push(`${interaction.interactionId}: sector inexistente ${interaction.sectorId}`);
     if (!interaction.prompt?.trim()) errors.push(`${interaction.interactionId}: prompt obligatorio`);
     if (!dialogueIds.has(interaction.dialogueId)) errors.push(`${interaction.interactionId}: diálogo inexistente ${interaction.dialogueId}`);
     if (!meaningfulInteractionKinds.has(interaction.meaningfulKind)) {
@@ -333,7 +418,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     if (interaction.rangeTiles !== undefined && (!Number.isInteger(interaction.rangeTiles) || interaction.rangeTiles < 1)) {
       errors.push(`${interaction.interactionId}: rangeTiles debe ser un entero positivo`);
     }
-    if (interaction.repeatPolicy && !['oncePerVisit', 'repeatable'].includes(interaction.repeatPolicy)) {
+    if (interaction.repeatPolicy && !ADVENTURE_ENTRY_REPEAT_POLICIES.includes(interaction.repeatPolicy)) {
       errors.push(`${interaction.interactionId}: repeatPolicy desconocido ${interaction.repeatPolicy}`);
     }
     const effects = interaction.completionEffects;
@@ -357,11 +442,11 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     }
     if (interaction.target?.kind === 'placement') {
       const placement = allPlacements.get(interaction.target.placementId);
-      if (!placement || placement.roomId !== interaction.roomId) {
+      if (!placement || placement.sectorId !== interaction.sectorId) {
         errors.push(`${interaction.interactionId}: placement objetivo inexistente ${interaction.target.placementId}`);
       }
     } else if (interaction.target?.kind === 'anchor') {
-      const anchor = roomAnchors.get(interaction.roomId)?.get(interaction.target.anchorId);
+      const anchor = roomAnchors.get(interaction.sectorId)?.get(interaction.target.anchorId);
       if (!anchor) errors.push(`${interaction.interactionId}: ancla objetivo inexistente ${interaction.target.anchorId}`);
       else {
         const allowedClasses = interaction.meaningfulKind === 'secret'
@@ -396,23 +481,23 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   for (const trigger of adventure.expressionTriggers ?? []) {
     if (expressionTriggerIds.has(trigger.triggerId)) errors.push(`${trigger.triggerId}: trigger expresivo duplicado`);
     expressionTriggerIds.add(trigger.triggerId);
-    const hasSpatialField = Boolean(trigger.roomId || trigger.target || trigger.prompt);
+    const hasSpatialField = Boolean(trigger.sectorId || trigger.target || trigger.prompt);
     if (!hasSpatialField) continue;
-    if (!trigger.roomId || !trigger.target || !trigger.prompt?.trim()) {
-      errors.push(`${trigger.triggerId}: roomId, target y prompt deben declararse juntos`);
+    if (!trigger.sectorId || !trigger.target || !trigger.prompt?.trim()) {
+      errors.push(`${trigger.triggerId}: sectorId, target y prompt deben declararse juntos`);
       continue;
     }
-    if (!rooms.has(trigger.roomId)) errors.push(`${trigger.triggerId}: habitación inexistente ${trigger.roomId}`);
+    if (!rooms.has(trigger.sectorId)) errors.push(`${trigger.triggerId}: sector inexistente ${trigger.sectorId}`);
     if (trigger.rangeTiles !== undefined && (!Number.isInteger(trigger.rangeTiles) || trigger.rangeTiles < 1)) {
       errors.push(`${trigger.triggerId}: rangeTiles debe ser un entero positivo`);
     }
     if (trigger.target.kind === 'placement') {
       const placement = allPlacements.get(trigger.target.placementId);
-      if (!placement || placement.roomId !== trigger.roomId) {
+      if (!placement || placement.sectorId !== trigger.sectorId) {
         errors.push(`${trigger.triggerId}: placement objetivo inexistente ${trigger.target.placementId}`);
       }
     } else if (trigger.target.kind === 'anchor') {
-      const anchor = roomAnchors.get(trigger.roomId)?.get(trigger.target.anchorId);
+      const anchor = roomAnchors.get(trigger.sectorId)?.get(trigger.target.anchorId);
       if (!anchor) errors.push(`${trigger.triggerId}: ancla objetivo inexistente ${trigger.target.anchorId}`);
       else if (anchor.class !== 'InteractionAnchor') errors.push(`${trigger.triggerId}: ${trigger.target.anchorId} no es InteractionAnchor`);
     } else errors.push(`${trigger.triggerId}: target desconocido`);
@@ -456,8 +541,8 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     }
   }
 
-  for (const [roomId, occluders] of roomOccluders) {
-    const roomPlacements = [...allPlacements.values()].filter(placement => placement.roomId === roomId);
+  for (const [sectorId, occluders] of roomOccluders) {
+    const roomPlacements = [...allPlacements.values()].filter(placement => placement.sectorId === sectorId);
     const roomPlacementIds = new Set(roomPlacements.map(placement => placement.placementId));
     for (const occluder of occluders) {
       const groupMembers = roomPlacements.filter(placement => placement.occlusionGroupIds?.includes(occluder.groupId));
@@ -474,7 +559,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   for (const sequence of adventure.ambientSequences ?? []) {
     if (sequenceIds.has(sequence.sequenceId)) errors.push(`${sequence.sequenceId}: secuencia ambiental duplicada`);
     sequenceIds.add(sequence.sequenceId);
-    if (!rooms.has(sequence.roomId)) errors.push(`${sequence.sequenceId}: habitación inexistente ${sequence.roomId}`);
+    if (!rooms.has(sequence.sectorId)) errors.push(`${sequence.sequenceId}: sector inexistente ${sequence.sectorId}`);
     if (sequence.blockedPolicy !== 'pauseSequence') errors.push(`${sequence.sequenceId}: blockedPolicy debe ser pauseSequence`);
     if (sequence.playbackMode !== undefined && !['loop', 'pingPong', 'once'].includes(sequence.playbackMode)) {
       errors.push(`${sequence.sequenceId}: playbackMode desconocido ${sequence.playbackMode}`);
@@ -499,7 +584,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
         if (beatPlacements.has(action.placementId)) errors.push(`${beat.beatId}: más de una acción para ${action.placementId}`);
         beatPlacements.add(action.placementId);
         const placement = allPlacements.get(action.placementId);
-        if (!placement || placement.roomId !== sequence.roomId) {
+        if (!placement || placement.sectorId !== sequence.sectorId) {
           errors.push(`${beat.beatId}: placement inexistente ${action.placementId}`);
           continue;
         }
@@ -515,7 +600,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
           errors.push(`${beat.beatId}: repetitions inválido para ${action.placementId}`);
         }
         if (action.kind === 'movePath') {
-          const path = roomPaths.get(sequence.roomId)?.get(action.pathId);
+          const path = roomPaths.get(sequence.sectorId)?.get(action.pathId);
           if (!path) errors.push(`${beat.beatId}: ruta inexistente ${action.pathId}`);
           if (!['grid', 'continuous'].includes(action.movementStyle)) errors.push(`${beat.beatId}: movementStyle inválido`);
           if (!(action.speedPixelsPerSecond > 0)) errors.push(`${beat.beatId}: velocidad inválida`);
@@ -546,7 +631,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   for (const sequence of allMapSequences) {
     if (companionSequenceIds.has(sequence.sequenceId)) errors.push(`${sequence.sequenceId}: secuencia de mapa duplicada`);
     companionSequenceIds.add(sequence.sequenceId);
-    if (!rooms.has(sequence.roomId)) errors.push(`${sequence.sequenceId}: habitación inexistente ${sequence.roomId}`);
+    if (!rooms.has(sequence.sectorId)) errors.push(`${sequence.sequenceId}: sector inexistente ${sequence.sectorId}`);
     if (!Array.isArray(sequence.beats) || !sequence.beats.length) {
       errors.push(`${sequence.sequenceId}: necesita al menos un beat`);
       continue;
@@ -564,7 +649,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
         actorRefs.add(action.actorRef);
         const dynamic = ['dynamic:companion', 'dynamic:player'].includes(action.actorRef);
         const placement = dynamic ? undefined : allPlacements.get(action.actorRef);
-        if (!dynamic && (!placement || placement.roomId !== sequence.roomId)) {
+        if (!dynamic && (!placement || placement.sectorId !== sequence.sectorId)) {
           errors.push(`${beat.beatId}: actorRef inexistente ${action.actorRef}`);
           continue;
         }
@@ -588,7 +673,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
           }
         }
         if (action.kind === 'moveToAnchor') {
-          const anchor = roomAnchors.get(sequence.roomId)?.get(action.anchorId);
+          const anchor = roomAnchors.get(sequence.sectorId)?.get(action.anchorId);
           if (!anchor || anchor.class !== 'ActorAnchor') errors.push(`${beat.beatId}: ancla de movimiento inexistente ${action.anchorId}`);
         }
         if (action.kind === 'moveByTiles' && (!Number.isInteger(action.tiles) || action.tiles < 1)) {
@@ -616,7 +701,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
       errors.push(`${trigger.triggerId}: una recompensa necesita rewardOriginId`);
     }
     if (trigger.proximity) {
-      if (!rooms.has(trigger.proximity.roomId)) errors.push(`${trigger.triggerId}: habitación de proximidad inexistente`);
+      if (!rooms.has(trigger.proximity.sectorId)) errors.push(`${trigger.triggerId}: sector de proximidad inexistente`);
       if (trigger.proximity.rangeTiles !== undefined
         && (!Number.isInteger(trigger.proximity.rangeTiles) || trigger.proximity.rangeTiles < 1)) {
         errors.push(`${trigger.triggerId}: rangeTiles debe ser un entero positivo`);
@@ -626,11 +711,11 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
       }
       if (trigger.proximity.target?.kind === 'placement') {
         const placement = allPlacements.get(trigger.proximity.target.placementId);
-        if (!placement || placement.roomId !== trigger.proximity.roomId) {
+        if (!placement || placement.sectorId !== trigger.proximity.sectorId) {
           errors.push(`${trigger.triggerId}: placement de proximidad inexistente ${trigger.proximity.target.placementId}`);
         }
       } else if (trigger.proximity.target?.kind === 'anchor') {
-        if (!roomAnchors.get(trigger.proximity.roomId)?.has(trigger.proximity.target.anchorId)) {
+        if (!roomAnchors.get(trigger.proximity.sectorId)?.has(trigger.proximity.target.anchorId)) {
           errors.push(`${trigger.triggerId}: ancla de proximidad inexistente ${trigger.proximity.target.anchorId}`);
         }
       } else errors.push(`${trigger.triggerId}: target de proximidad desconocido`);
@@ -638,8 +723,8 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   }
 
   for (const transition of adventure.transitions ?? []) {
-    const from = roomAnchors.get(transition.fromRoomId)?.get(transition.fromAnchorId);
-    const to = roomAnchors.get(transition.toRoomId)?.get(transition.toAnchorId);
+    const from = roomAnchors.get(transition.fromSectorId)?.get(transition.fromAnchorId);
+    const to = roomAnchors.get(transition.toSectorId)?.get(transition.toAnchorId);
     if (!from) errors.push(`${transition.transitionId}: ancla Tiled de origen inexistente`);
     else if (from.class !== 'TransitionAnchor') errors.push(`${transition.transitionId}: el origen no es TransitionAnchor`);
     if (!to) errors.push(`${transition.transitionId}: ancla Tiled de destino inexistente`);
@@ -654,7 +739,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     if (entryPoints.has(entry.entryPointId)) errors.push(`${entry.entryPointId}: punto de entrada duplicado`);
     entryPoints.set(entry.entryPointId, entry);
     if (!entry.label?.trim()) errors.push(`${entry.entryPointId}: nombre visible vacío`);
-    const anchor = roomAnchors.get(entry.roomId)?.get(entry.anchorId);
+    const anchor = roomAnchors.get(entry.sectorId)?.get(entry.anchorId);
     if (!anchor) errors.push(`${entry.entryPointId}: ancla de entrada inexistente`);
     else if (anchor.class !== 'PlayerSpawn') errors.push(`${entry.entryPointId}: la entrada necesita PlayerSpawn`);
   }

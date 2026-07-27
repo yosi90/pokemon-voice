@@ -37,8 +37,8 @@ import { browserDiscoveryStore } from '../store/browserDiscoveryStore.js';
 import { captureLocalAcousticExpression } from '../services/captureLocalAcousticExpression.js';
 import type { AcousticExpressionFeatures } from '../domain/expeditions/expressionTriggers.js';
 import type {
-  ExpeditionExpressionTriggerV1,
-  ExpeditionInteractionV1,
+  ExpeditionExpressionTriggerV3,
+  ExpeditionInteractionV3,
 } from '../../packages/contracts/src/index.js';
 import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
 import {
@@ -63,7 +63,7 @@ export interface MapExpressionFeedback {
 
 const PREVIEW_ADVENTURE_PATH = 'assets/adventure/maps/tegueste-forest/tegueste-forest.adventure.json';
 export const TEGUESTE_FOREST_PREVIEW_MAP_ID = 'map:tegueste:camphor-forest';
-export const TEGUESTE_FOREST_PREVIEW_ROOM_ID = 'room:tegueste-forest:02-04';
+export const TEGUESTE_FOREST_PREVIEW_SECTOR_ID = 'sector:tegueste-forest:02-04';
 
 export function MapConceptPreview({
   open,
@@ -89,7 +89,7 @@ export function MapConceptPreview({
   onSubmitText: (value: string) => boolean | Promise<boolean>;
   onVisibleSpeciesIdsChange: (speciesIds: number[]) => void;
   onInteractionStart: () => void;
-  onExpressionStart: (trigger: ExpeditionExpressionTriggerV1) => void;
+  onExpressionStart: (trigger: ExpeditionExpressionTriggerV3) => void;
   onExpressionEnd: () => void;
   onExpressionFallback: () => void;
   onExpressionAcoustic: (features: AcousticExpressionFeatures) => void;
@@ -102,9 +102,9 @@ export function MapConceptPreview({
   const bundleRef = useRef<Awaited<ReturnType<typeof loadAdventureMapBundle>> | undefined>(undefined);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [writtenName, setWrittenName] = useState('');
-  const [availableInteraction, setAvailableInteraction] = useState<ExpeditionInteractionV1>();
-  const [availableExpression, setAvailableExpression] = useState<ExpeditionExpressionTriggerV1>();
-  const [activeExpression, setActiveExpression] = useState<ExpeditionExpressionTriggerV1>();
+  const [availableInteraction, setAvailableInteraction] = useState<ExpeditionInteractionV3>();
+  const [availableExpression, setAvailableExpression] = useState<ExpeditionExpressionTriggerV3>();
+  const [activeExpression, setActiveExpression] = useState<ExpeditionExpressionTriggerV3>();
   const [acousticStatus, setAcousticStatus] = useState<'idle' | 'requesting' | 'listening' | 'error'>('idle');
   const [acousticProgress, setAcousticProgress] = useState(0);
   const [acousticError, setAcousticError] = useState<string>();
@@ -254,7 +254,7 @@ export function MapConceptPreview({
     let game: import('phaser').Game | undefined;
     const host = hostRef.current;
     const interactionAvailable = (event: Event) => {
-      const detail = (event as CustomEvent<{ interaction?: ExpeditionInteractionV1 }>).detail;
+      const detail = (event as CustomEvent<{ interaction?: ExpeditionInteractionV3 }>).detail;
       setAvailableInteraction(detail?.interaction);
     };
     const interactionStarted = (event: Event) => {
@@ -266,11 +266,11 @@ export function MapConceptPreview({
       setDialoguePageId(detail.dialogue.initialPageId);
     };
     const expressionAvailable = (event: Event) => {
-      const detail = (event as CustomEvent<{ trigger?: ExpeditionExpressionTriggerV1 }>).detail;
+      const detail = (event as CustomEvent<{ trigger?: ExpeditionExpressionTriggerV3 }>).detail;
       setAvailableExpression(detail?.trigger);
     };
     const expressionStarted = (event: Event) => {
-      const trigger = (event as CustomEvent<{ trigger?: ExpeditionExpressionTriggerV1 }>).detail?.trigger;
+      const trigger = (event as CustomEvent<{ trigger?: ExpeditionExpressionTriggerV3 }>).detail?.trigger;
       if (!trigger) return;
       onExpressionStart(trigger);
       setAvailableExpression(undefined);
@@ -344,7 +344,7 @@ export function MapConceptPreview({
       }
     };
     const interactionCompleted = (event: Event) => {
-      const interaction = (event as CustomEvent<{ interaction?: ExpeditionInteractionV1 }>).detail?.interaction;
+      const interaction = (event as CustomEvent<{ interaction?: ExpeditionInteractionV3 }>).detail?.interaction;
       if (!interaction || !getBrowserPokeVoiceSave().activeExpeditionSession) return;
       completeBrowserExpeditionInteraction({
         mapId: bundleRef.current!.adventure.mapId,
@@ -386,10 +386,10 @@ export function MapConceptPreview({
         : bundle.adventure.freeExpeditionEntryPointId;
       const initialEntryPoint = bundle.adventure.entryPoints
         ?.find(entry => entry.entryPointId === entryPointId);
-      const initialRoomId = initialEntryPoint?.roomId ?? TEGUESTE_FOREST_PREVIEW_ROOM_ID;
-      const room = bundle.rooms.find(candidate => candidate.room.roomId === initialRoomId);
+      const initialSectorId = initialEntryPoint?.sectorId ?? TEGUESTE_FOREST_PREVIEW_SECTOR_ID;
+      const room = bundle.sectors.find(candidate => candidate.sector.sectorId === initialSectorId);
       const visibleSpeciesIds = [...new Set(bundle.adventure.actorPlacements
-        .filter(placement => placement.roomId === initialRoomId && placement.initiallyHidden !== true)
+        .filter(placement => placement.sectorId === initialSectorId && placement.initiallyHidden !== true)
         .map(placement => room?.actorAssets.get(placement.assetId)?.speciesId)
         .filter((speciesId): speciesId is number => Number.isSafeInteger(speciesId)))];
       onVisibleSpeciesIdsChange(visibleSpeciesIds);
@@ -448,7 +448,7 @@ export function MapConceptPreview({
         Phaser,
         parent: host,
         bundle,
-        initialRoomId,
+        initialSectorId,
         initialSpawnAnchorId: initialEntryPoint?.anchorId,
         reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         registeredSpeciesIds: new Set(save.pokedexRun.registeredSpeciesIds),
@@ -472,7 +472,7 @@ export function MapConceptPreview({
         },
       });
     }).catch(error => {
-      console.error('No se pudo iniciar la habitación de Tegueste:', error);
+      console.error('No se pudo iniciar la sector de Tegueste:', error);
       if (!cancelled) {
         host.dataset.runtime = 'error';
         setStatus('error');
@@ -549,7 +549,7 @@ export function MapConceptPreview({
               data-testid="technical-map-runtime"
               role="img"
               tabIndex={0}
-              aria-label="Habitación del Bosque de Tegueste con protagonista, Alcanfor y Pokémon animados"
+              aria-label="Sector del Bosque de Tegueste con protagonista, Alcanfor y Pokémon animados"
             />
             {status !== 'ready' && (
               <div className="map-concept-preview__status" role="status">

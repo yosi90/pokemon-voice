@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AdventureMapV2, AmbientSequenceV1 } from '../../packages/contracts/src/index.js';
+import type { AdventureMapV3, AmbientSequenceV3 } from '../../packages/contracts/src/index.js';
 import {
   nextStableEditorId,
   replaceAmbientAction,
@@ -7,10 +7,10 @@ import {
   replaceAmbientSequence,
 } from '../../src/domain/tools/pokeDiscoverEditorBeats.js';
 
-const sequence: AmbientSequenceV1 = {
+const sequence: AmbientSequenceV3 = {
   schemaVersion: 1,
   sequenceId: 'ambient:test',
-  roomId: 'room:test',
+  sectorId: 'room:test',
   loop: true,
   blockedPolicy: 'pauseSequence',
   beats: [{
@@ -22,7 +22,7 @@ const sequence: AmbientSequenceV1 = {
 
 describe('edición inmutable de beats ambientales', () => {
   it('reemplaza acción, beat y secuencia sin modificar el documento original', () => {
-    const adventure = { ambientSequences: [sequence] } as AdventureMapV2;
+    const adventure = { ambientSequences: [sequence] } as AdventureMapV3;
     const action = { kind: 'movePath', placementId: 'actor:test', pathId: 'path:test', movementStyle: 'continuous', speedPixelsPerSecond: 48 } as const;
     const beat = replaceAmbientAction(sequence.beats[0], 0, action);
     const nextSequence = replaceAmbientBeat(sequence, { ...beat, pauseAfterMs: 250 });
@@ -33,8 +33,7 @@ describe('edición inmutable de beats ambientales', () => {
   });
 
   it('genera el siguiente ID de autoría sin colisiones', () => {
-    expect(nextStableEditorId('beat:test', ['beat:test:editor-1', 'beat:test:editor-2']))
-      .toBe('beat:test:editor-3');
+    expect(nextStableEditorId('beat:test', ['beat:test:01', 'beat:test:02']))
+      .toBe('beat:test:03');
   });
 });
-
