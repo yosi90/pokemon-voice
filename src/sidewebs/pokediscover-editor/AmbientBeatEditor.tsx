@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
   AdventureMapV2,
   AmbientActorActionV1,
@@ -16,12 +16,24 @@ import { readPokeDiscoverEditorTiledReferences } from '../../domain/tools/pokeDi
 
 const DIRECTIONS = Object.freeze(['down', 'left', 'right', 'up'] as const);
 
-function defaultAction(room: LoadedAdventureRoomBundle): AmbientActorActionV1 | undefined {
-  const placement = room.adventure.actorPlacements.find(candidate => candidate.roomId === room.room.roomId);
+function defaultAction(
+  room: LoadedAdventureRoomBundle,
+  preferredPlacementId?: string,
+): AmbientActorActionV1 | undefined {
+  const placements = [
+    ...room.adventure.actorPlacements,
+    ...room.adventure.characterPlacements.filter(candidate => !candidate.controllable),
+  ].filter(candidate => candidate.roomId === room.room.roomId);
+  const placement = placements.find(candidate => candidate.placementId === preferredPlacementId)
+    ?? placements[0];
   if (!placement) return undefined;
   const animation = room.actorAssets.get(placement.assetId)?.animations.find(candidate => candidate.name === 'Idle')
     ?? room.actorAssets.get(placement.assetId)?.animations[0];
-  if (!animation) return undefined;
+  if (!animation) return {
+    kind: 'face',
+    placementId: placement.placementId,
+    direction: placement.direction ?? 'down',
+  };
   return {
     kind: 'playAnimation',
     placementId: placement.placementId,
@@ -65,25 +77,53 @@ export function AmbientBeatEditor({
   bundle,
   room,
   onAdventureChange,
+  initialPlacementId,
+  embedded = false,
 }: {
   bundle: LoadedAdventureMapBundle;
   room: LoadedAdventureRoomBundle;
   onAdventureChange: (adventure: AdventureMapV2) => void;
+  initialPlacementId?: string;
+  embedded?: boolean;
 }) {
   const roomSequences = bundle.adventure.ambientSequences.filter(sequence => sequence.roomId === room.room.roomId);
+  const visibleSequences = initialPlacementId
+    ? roomSequences.filter(candidate => candidate.beats.some(candidateBeat => (
+      candidateBeat.actions.some(candidateAction => candidateAction.placementId === initialPlacementId)
+    )))
+    : roomSequences;
   const [sequenceId, setSequenceId] = useState('');
   const [beatId, setBeatId] = useState('');
   const [actionIndex, setActionIndex] = useState(0);
-  const sequence = roomSequences.find(candidate => candidate.sequenceId === sequenceId) ?? roomSequences[0];
+  const sequence = visibleSequences.find(candidate => candidate.sequenceId === sequenceId)
+    ?? visibleSequences[0];
   const beat = sequence?.beats.find(candidate => candidate.beatId === beatId) ?? sequence?.beats[0];
   const selectedActionIndex = beat?.actions[actionIndex] ? actionIndex : 0;
   const action = beat?.actions[selectedActionIndex];
-  const actors = bundle.adventure.actorPlacements.filter(placement => placement.roomId === room.room.roomId);
+  const actors = [
+    ...bundle.adventure.actorPlacements,
+    ...bundle.adventure.characterPlacements.filter(placement => !placement.controllable),
+  ].filter(placement => placement.roomId === room.room.roomId);
   const paths = useMemo(() => readPokeDiscoverEditorTiledReferences(room.tilemap).paths, [room.tilemap]);
   const selectedPlacement = actors.find(placement => placement.placementId === action?.placementId) ?? actors[0];
   const animations = selectedPlacement
     ? room.actorAssets.get(selectedPlacement.assetId)?.animations ?? []
     : [];
+
+  useEffect(() => {
+    if (!initialPlacementId) return;
+    const nextSequence = visibleSequences.find(candidate => candidate.beats.some(candidateBeat => (
+      candidateBeat.actions.some(candidateAction => candidateAction.placementId === initialPlacementId)
+    )));
+    setSequenceId(nextSequence?.sequenceId ?? '');
+    const nextBeat = nextSequence?.beats.find(candidateBeat => (
+      candidateBeat.actions.some(candidateAction => candidateAction.placementId === initialPlacementId)
+    ));
+    setBeatId(nextBeat?.beatId ?? '');
+    setActionIndex(Math.max(0, nextBeat?.actions.findIndex(candidateAction => (
+      candidateAction.placementId === initialPlacementId
+    )) ?? 0));
+  }, [initialPlacementId, room.room.roomId]);
 
   const commitSequence = (nextSequence: AmbientSequenceV1) => {
     onAdventureChange(replaceAmbientSequence(bundle.adventure, nextSequence));
@@ -96,7 +136,7 @@ export function AmbientBeatEditor({
   };
 
   const createSequence = () => {
-    const firstAction = defaultAction(room);
+    const firstAction = defaultAction(room, initialPlacementId);
     if (!firstAction) return;
     const nextSequenceId = nextStableEditorId(
       `ambient:${room.room.roomId.split(':').at(-1)}`,
@@ -122,7 +162,7 @@ export function AmbientBeatEditor({
 
   const addBeat = () => {
     if (!sequence) return;
-    const firstAction = defaultAction(room);
+    const firstAction = defaultAction(room, initialPlacementId);
     if (!firstAction) return;
     const nextBeatId = nextStableEditorId(
       `beat:${sequence.sequenceId.split(':').slice(1).join(':')}`,
@@ -156,7 +196,7 @@ export function AmbientBeatEditor({
 
   const addAction = () => {
     if (!beat) return;
-    const nextAction = defaultAction(room);
+    const nextAction = defaultAction(room, initialPlacementId);
     if (!nextAction) return;
     commitBeat({ ...beat, actions: [...beat.actions, nextAction] });
     setActionIndex(beat.actions.length);
@@ -164,6 +204,10 @@ export function AmbientBeatEditor({
 
   const changeActionKind = (kind: AmbientActorActionV1['kind']) => {
     if (!selectedPlacement) return;
+    if (kind === 'setVisible') {
+      commitAction({ kind, placementId: selectedPlacement.placementId, visible: true });
+      return;
+    }
     if (kind === 'face') {
       commitAction({ kind, placementId: selectedPlacement.placementId, direction: selectedPlacement.direction ?? 'down' });
       return;
@@ -200,7 +244,7 @@ export function AmbientBeatEditor({
     const nextAnimation = nextAnimations.find(candidate => candidate.name === ('animation' in action ? action.animation : ''))
       ?? nextAnimations.find(candidate => candidate.name === 'Idle')
       ?? nextAnimations[0];
-    if (action.kind === 'face') commitAction({ ...action, placementId });
+    if (action.kind === 'face' || action.kind === 'setVisible') commitAction({ ...action, placementId });
     else if (action.kind === 'playAnimation' && nextAnimation) {
       commitAction({ ...action, placementId, animation: nextAnimation.name });
     } else if (action.kind === 'movePath' || action.kind === 'moveByTiles') {
@@ -215,12 +259,67 @@ export function AmbientBeatEditor({
     commitBeat({ ...beat, pauseAfterMs: mode === 'range' ? { min: value, max: typeof current === 'object' ? current.max : value } : value });
   };
 
+  const removeSequence = () => {
+    if (!sequence) return;
+    onAdventureChange({
+      ...bundle.adventure,
+      ambientSequences: bundle.adventure.ambientSequences.filter(candidate => candidate.sequenceId !== sequence.sequenceId),
+    });
+    setSequenceId('');
+    setBeatId('');
+    setActionIndex(0);
+  };
+
+  const moveBeat = (direction: -1 | 1) => {
+    if (!sequence || !beat) return;
+    const index = sequence.beats.findIndex(candidate => candidate.beatId === beat.beatId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= sequence.beats.length) return;
+    const beats = [...sequence.beats];
+    [beats[index], beats[target]] = [beats[target], beats[index]];
+    commitSequence({ ...sequence, beats });
+  };
+
+  const removeBeat = () => {
+    if (!sequence || !beat || sequence.beats.length <= 1) return;
+    const index = sequence.beats.findIndex(candidate => candidate.beatId === beat.beatId);
+    const beats = sequence.beats.filter(candidate => candidate.beatId !== beat.beatId);
+    commitSequence({ ...sequence, beats });
+    setBeatId(beats[Math.min(index, beats.length - 1)].beatId);
+    setActionIndex(0);
+  };
+
+  const moveAction = (direction: -1 | 1) => {
+    if (!beat || !action) return;
+    const target = selectedActionIndex + direction;
+    if (target < 0 || target >= beat.actions.length) return;
+    const actions = [...beat.actions];
+    [actions[selectedActionIndex], actions[target]] = [actions[target], actions[selectedActionIndex]];
+    commitBeat({ ...beat, actions });
+    setActionIndex(target);
+  };
+
+  const duplicateAction = () => {
+    if (!beat || !action) return;
+    const actions = [...beat.actions];
+    actions.splice(selectedActionIndex + 1, 0, { ...action });
+    commitBeat({ ...beat, actions });
+    setActionIndex(selectedActionIndex + 1);
+  };
+
+  const removeAction = () => {
+    if (!beat || beat.actions.length <= 1) return;
+    const actions = beat.actions.filter((_, index) => index !== selectedActionIndex);
+    commitBeat({ ...beat, actions });
+    setActionIndex(Math.min(selectedActionIndex, actions.length - 1));
+  };
+
   return (
-    <section className="editor-beats" aria-labelledby="editor-beats-title">
+    <section className={`editor-beats${embedded ? ' is-embedded' : ''}`} aria-labelledby="editor-beats-title">
       <header>
         <div>
           <span className="editor-eyebrow">Escena de la habitación</span>
-          <h2 id="editor-beats-title">Pasos de animación y movimiento</h2>
+          <h2 id="editor-beats-title">{embedded ? 'Guion automático' : 'Pasos de animación y movimiento'}</h2>
           <p>Organiza qué hace cada personaje y en qué orden.</p>
         </div>
         <span>Habitación activa</span>
@@ -237,7 +336,7 @@ export function AmbientBeatEditor({
             <label>
               <span>Secuencia</span>
               <select value={sequence.sequenceId} onChange={event => { setSequenceId(event.target.value); setBeatId(''); setActionIndex(0); }}>
-                {roomSequences.map((candidate, index) => <option key={candidate.sequenceId} value={candidate.sequenceId}>Secuencia {index + 1}</option>)}
+                {visibleSequences.map((candidate, index) => <option key={candidate.sequenceId} value={candidate.sequenceId}>Secuencia {index + 1}</option>)}
               </select>
             </label>
             <div className="editor-beats__list" role="listbox" aria-label="Pasos de la secuencia">
@@ -257,6 +356,12 @@ export function AmbientBeatEditor({
             </div>
             <button type="button" className="editor-beats__add" onClick={addBeat}>Añadir paso</button>
             <button type="button" className="editor-beats__add" disabled={!beat} onClick={duplicateBeat}>Duplicar paso</button>
+            <div className="editor-beats__ordering">
+              <button type="button" disabled={sequence.beats[0]?.beatId === beat?.beatId} onClick={() => moveBeat(-1)}>Subir</button>
+              <button type="button" disabled={sequence.beats.at(-1)?.beatId === beat?.beatId} onClick={() => moveBeat(1)}>Bajar</button>
+              <button type="button" disabled={sequence.beats.length <= 1} onClick={removeBeat}>Eliminar paso</button>
+            </div>
+            <button type="button" className="is-danger" onClick={removeSequence}>Eliminar secuencia</button>
           </aside>
 
           {beat && action ? (
@@ -283,10 +388,14 @@ export function AmbientBeatEditor({
                   </select>
                 </label>
                 <button type="button" onClick={addAction}>Añadir acción</button>
+                <button type="button" onClick={duplicateAction}>Duplicar acción</button>
+                <button type="button" disabled={selectedActionIndex === 0} onClick={() => moveAction(-1)}>Anterior</button>
+                <button type="button" disabled={selectedActionIndex >= beat.actions.length - 1} onClick={() => moveAction(1)}>Siguiente</button>
+                <button type="button" disabled={beat.actions.length <= 1} onClick={removeAction}>Eliminar</button>
               </div>
               <div className="editor-beats__grid">
                 <label><span>Tipo</span><select value={action.kind} onChange={event => changeActionKind(event.target.value as AmbientActorActionV1['kind'])}>
-                  <option value="playAnimation">Animación</option><option value="face">Orientación</option><option value="movePath" disabled={!paths.length}>Movimiento por ruta</option><option value="moveByTiles">Desplazamiento relativo</option>
+                  <option value="playAnimation" disabled={!animations.length}>Animación</option><option value="face">Orientación</option><option value="movePath" disabled={!paths.length}>Movimiento por ruta</option><option value="moveByTiles">Desplazamiento relativo</option><option value="setVisible">Mostrar u ocultar</option>
                 </select></label>
                 <label><span>Actor</span><select value={action.placementId} onChange={event => changeActor(event.target.value)}>
                   {actors.map(actor => <option key={actor.placementId}>{actor.placementId}</option>)}
@@ -304,6 +413,8 @@ export function AmbientBeatEditor({
                 {action.kind === 'face' ? <label><span>Dirección</span><select value={action.direction} onChange={event => commitAction({ ...action, direction: event.target.value as typeof DIRECTIONS[number] })}>
                   {DIRECTIONS.map(direction => <option key={direction}>{direction}</option>)}
                 </select></label> : null}
+
+                {action.kind === 'setVisible' ? <label className="editor-beats__check"><input type="checkbox" checked={action.visible} onChange={event => commitAction({ ...action, visible: event.target.checked })} /><span>Entidad visible</span></label> : null}
 
                 {action.kind === 'movePath' ? <>
                   <label><span>Ruta</span><select value={action.pathId} onChange={event => commitAction({ ...action, pathId: event.target.value })}>

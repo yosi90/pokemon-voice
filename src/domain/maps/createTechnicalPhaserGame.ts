@@ -32,6 +32,10 @@ import {
   rectangleOverlapsCollision,
   type TiledCollisionShape,
 } from './tiledCollisionGeometry.js';
+import {
+  tiledObjectRectanglePoints,
+  transformTiledObjectPoint,
+} from './tiledObjectTransform.js';
 
 type PhaserModule = typeof import('phaser');
 type Facing = 'up' | 'down' | 'left' | 'right';
@@ -92,6 +96,7 @@ interface ActiveActorState {
   cropOccluders?: Bounds[];
   cropHeight?: number;
   baseAnimation?: string;
+  renderScaleMultiplier: number;
   asset?: LoadedAdventureRoomBundle['actorAssets'] extends Map<string, infer Asset> ? Asset : never;
   characterAsset?: LoadedAdventureRoomBundle['characterAssets'] extends Map<string, infer Asset> ? Asset : never;
 }
@@ -112,6 +117,13 @@ interface AmbientSequenceState {
   phase: 'start' | 'actions' | 'pause' | 'complete';
   cycles: number;
   forward: boolean;
+}
+
+export function effectiveAdventureActorScale(
+  renderScale = 1,
+  renderScaleMultiplier = 1,
+) {
+  return renderScale * renderScaleMultiplier;
 }
 
 function requiredNumber(object: Record<string, unknown> | undefined, key: string, label: string) {
@@ -170,6 +182,7 @@ export function createTechnicalPhaserGame({
   resolvedExpressionTriggerIds = new Set<string>(),
   companion,
   initialSequenceId,
+  fitParent = true,
   onReady,
 }: {
   Phaser: PhaserModule;
@@ -183,6 +196,7 @@ export function createTechnicalPhaserGame({
   resolvedExpressionTriggerIds?: ReadonlySet<string>;
   companion?: MapCompanionRuntimeContext;
   initialSequenceId?: string;
+  fitParent?: boolean;
   onReady: () => void;
 }) {
   const initialRoom = bundle.rooms.find(candidate => candidate.room.roomId === initialRoomId);
@@ -477,11 +491,9 @@ export function createTechnicalPhaserGame({
       const ambientPathPoints = (room: LoadedAdventureRoomBundle, pathId: string) => {
         const path = layerObjects(room, 'Paths').find(object => object.name === pathId);
         const polyline = Array.isArray(path?.polyline) ? path.polyline as Array<Record<string, unknown>> : [];
-        const originX = requiredNumber(path, 'x', pathId);
-        const originY = requiredNumber(path, 'y', pathId);
-        return polyline.map((point, index) => ({
-          x: originX + requiredNumber(point, 'x', `${pathId}[${index}]`),
-          y: originY + requiredNumber(point, 'y', `${pathId}[${index}]`),
+        return polyline.map((point, index) => transformTiledObjectPoint(path ?? {}, {
+          x: requiredNumber(point, 'x', `${pathId}[${index}]`),
+          y: requiredNumber(point, 'y', `${pathId}[${index}]`),
         }));
       };
 
@@ -526,7 +538,10 @@ export function createTechnicalPhaserGame({
         if (state.placementId === 'dynamic:companion') parent.dataset.lastCompanionAnimation = animationName;
         state.sprite.stop();
         state.sprite.setTexture(actorSheetKey(state.asset.assetId, animation.name, animation.copyOf), frames[0]);
-        state.sprite.setOrigin(origin.x, origin.y).setScale(state.asset.renderScale ?? 1);
+        state.sprite.setOrigin(origin.x, origin.y).setScale(effectiveAdventureActorScale(
+          state.asset.renderScale,
+          state.renderScaleMultiplier,
+        ));
         state.cropHeight = undefined;
         updateActorCropOcclusion(state);
         if (!reducedMotion) state.sprite.play(animationKey);
@@ -578,6 +593,7 @@ export function createTechnicalPhaserGame({
           baseDirection: direction,
           baseAnimation: 'Idle',
           currentAnimation: 'Idle',
+          renderScaleMultiplier: 1,
           asset: companion.asset,
         };
         if (state.asset) startActorAnimation(state, 'Idle', direction, -1);
@@ -595,14 +611,18 @@ export function createTechnicalPhaserGame({
             && (included.includes(state.placementId) || groupIds.includes(groupId));
         });
         if (!occluders.length) return;
-        const rectangularOccluders = occluders.filter(occluder => !Array.isArray(occluder.polygon));
+        const rectangularOccluders = occluders.filter(occluder => (
+          !Array.isArray(occluder.polygon) && !(Number(occluder.rotation) || 0)
+        ));
         state.cropOccluders = rectangularOccluders.map(occluder => ({
           x: requiredNumber(occluder, 'x', String(occluder.name)),
           y: requiredNumber(occluder, 'y', String(occluder.name)),
           width: requiredNumber(occluder, 'width', String(occluder.name)),
           height: requiredNumber(occluder, 'height', String(occluder.name)),
         }));
-        const polygonOccluders = occluders.filter(occluder => Array.isArray(occluder.polygon));
+        const polygonOccluders = occluders.filter(occluder => (
+          Array.isArray(occluder.polygon) || Boolean(Number(occluder.rotation) || 0)
+        ));
         if (!polygonOccluders.length) {
           occludedActorCount += 1;
           return;
@@ -610,20 +630,20 @@ export function createTechnicalPhaserGame({
         const graphics = this.add.graphics();
         graphics.fillStyle(0xffffff, 1);
         for (const occluder of polygonOccluders) {
-          const x = requiredNumber(occluder, 'x', String(occluder.name));
-          const y = requiredNumber(occluder, 'y', String(occluder.name));
           if (Array.isArray(occluder.polygon)) {
-            const points = (occluder.polygon as Array<Record<string, unknown>>).map((point, index) => new Phaser.Math.Vector2(
-              x + requiredNumber(point, 'x', `${String(occluder.name)}[${index}]`),
-              y + requiredNumber(point, 'y', `${String(occluder.name)}[${index}]`),
-            ));
+            const points = (occluder.polygon as Array<Record<string, unknown>>).map((point, index) => {
+              const transformed = transformTiledObjectPoint(occluder, {
+                x: requiredNumber(point, 'x', `${String(occluder.name)}[${index}]`),
+                y: requiredNumber(point, 'y', `${String(occluder.name)}[${index}]`),
+              });
+              return new Phaser.Math.Vector2(transformed.x, transformed.y);
+            });
             graphics.fillPoints(points, true);
           } else {
-            graphics.fillRect(
-              x,
-              y,
-              requiredNumber(occluder, 'width', String(occluder.name)),
-              requiredNumber(occluder, 'height', String(occluder.name)),
+            graphics.fillPoints(
+              tiledObjectRectanglePoints(occluder)
+                .map(point => new Phaser.Math.Vector2(point.x, point.y)),
+              true,
             );
           }
         }
@@ -692,7 +712,7 @@ export function createTechnicalPhaserGame({
             sheetKey,
             frames[0],
           ).setOrigin(origin.x, origin.y)
-            .setScale((asset.renderScale ?? 1) * (placement.renderScaleMultiplier ?? 1))
+            .setScale(effectiveAdventureActorScale(asset.renderScale, placement.renderScaleMultiplier))
             .setDepth(anchorPoint.y)
             .setVisible(placement.initiallyHidden !== true);
           if (!revealedSpeciesIds.has(asset.speciesId)) {
@@ -714,6 +734,7 @@ export function createTechnicalPhaserGame({
             baseDirection: placement.direction ?? 'down',
             baseAnimation: placement.animation,
             currentAnimation: placement.animation,
+            renderScaleMultiplier: placement.renderScaleMultiplier ?? 1,
             asset,
           };
           activeActorsByPlacement.set(placement.placementId, actorState);
@@ -752,7 +773,7 @@ export function createTechnicalPhaserGame({
             characterSheetKey(asset.assetId),
             asset.directionRows[direction] * asset.columns + asset.idleFrame,
           ).setOrigin(.5, 1)
-            .setScale((asset.renderScale ?? 1) * (placement.renderScaleMultiplier ?? 1))
+            .setScale(effectiveAdventureActorScale(asset.renderScale, placement.renderScaleMultiplier))
             .setDepth(anchorPoint.y)
             .setVisible(placement.initiallyHidden !== true);
           sprite.setName(placement.placementId);
@@ -765,6 +786,7 @@ export function createTechnicalPhaserGame({
             baseX: anchorPoint.x,
             baseY: anchorPoint.y,
             baseDirection: direction,
+            renderScaleMultiplier: placement.renderScaleMultiplier ?? 1,
             characterAsset: asset,
           };
           activeActorsByPlacement.set(placement.placementId, actorState);
@@ -794,7 +816,7 @@ export function createTechnicalPhaserGame({
             characterSheetKey(controllableAsset.assetId),
             controllableAsset.directionRows[playerFacing] * controllableAsset.columns + controllableAsset.idleFrame,
           ).setOrigin(.5, 1)
-            .setScale((controllableAsset.renderScale ?? 1) * (controllable.renderScaleMultiplier ?? 1))
+            .setScale(effectiveAdventureActorScale(controllableAsset.renderScale, controllable.renderScaleMultiplier))
             .setDepth(spawn.y);
           player = playerCharacterSprite;
         } else {
@@ -1001,6 +1023,10 @@ export function createTechnicalPhaserGame({
           if (!actor) return { action, complete: true };
           if (action.kind === 'face') {
             setActorFacing(actor, action.direction);
+            return { action, complete: true };
+          }
+          if (action.kind === 'setVisible') {
+            actor.sprite.setVisible(action.visible);
             return { action, complete: true };
           }
           if (action.kind === 'playAnimation') {
@@ -2009,7 +2035,9 @@ export function createTechnicalPhaserGame({
     antialias: false,
     roundPixels: true,
     physics: { default: 'arcade', arcade: { debug: false } },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scale: fitParent
+      ? { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }
+      : { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.NO_CENTER },
     scene: TechnicalRoomScene,
     render: { pixelArt: true, antialias: false, roundPixels: true },
   });

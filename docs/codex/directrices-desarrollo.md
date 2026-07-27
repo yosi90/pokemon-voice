@@ -116,10 +116,19 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - El configurador PokeDiscover es la herramienta principal de autoría salvo para pintar tiles. Abre una carpeta de aventura, detecta o crea su `.adventure.json`, registra todos los `.tmj` y permite editar tanto las habitaciones ya declaradas como las recién descubiertas.
 - Tiled conserva la autoría exclusiva de `Ground`, `Above`, `Detail:*` y los tilesets. El configurador puede crear y editar `Anchors`, `Collision`, `Paths` y `Occlusion`, manteniendo `nextlayerid`, `nextobjectid` y todos los campos desconocidos del TMJ.
 - La distribución global vive en un archivo `.world` nativo de Tiled. Tiled y el configurador pueden reorganizarlo; el README solo documenta intención y avance.
+- Un `.world` puede reservar una habitación cuyo TMJ todavía no exista. El configurador debe mostrarla como mapa pendiente y contarla al calcular la nomenclatura, los límites y el centrado del mundo.
+- Los TMJ activos siguen la convención `<prefijo>-<posición>-<total>.tmj`, ordenados de izquierda a derecha y de arriba abajo sobre la cuadrícula de 16 px. Esta convención nunca migra `roomId`, asset IDs ni referencias históricas.
+- Quitar una habitación del `.world` no borra su TMJ: se aparta con `.old` al final del nombre y queda disponible para reincorporarlo desde el organizador.
 - El configurador guarda directamente sidecar, TMJ y `.world` cuando el navegador concede acceso a la carpeta, con exportación de copia como fallback. Las operaciones que afecten varios documentos forman una única transacción de Deshacer/Rehacer.
+- La última carpeta abierta se conserva durante 24 horas. Si existe un `FileSystemDirectoryHandle` válido se releen los archivos reales; en navegadores sin ese permiso se restaura una copia local temporal de los documentos y el guardado continúa mediante exportación.
 - La interfaz de autoría es de escritorio: no tiene scroll de documento entre `1280×720` y pantallas ultrawide, mantiene el lienzo sin deformación y usa scroll únicamente dentro de ventanas y listas.
 - El catálogo del configurador pagina los resultados y distingue forma base, forma alternativa y apariencia. La ficha reproduce el asset PMD y la animación seleccionados, sin sintetizar previews para variantes sin asset.
 - Las secuencias ambientales pueden encadenar beats de animación y transiciones por ruta o por desplazamiento relativo en tiles. Su final se declara como reinicio, ida y vuelta o terminación conservando la posición; no inferirlo desde las animaciones elegidas.
+- El inspector lateral del configurador es la superficie común para entidades y objetos TMJ. Las coordenadas de una entidad editan su ancla estable; una ancla compartida debe enumerar sus dependencias antes de moverlas conjuntamente.
+- El menú contextual de una celda crea geometría en el centro o los límites de su tile. Pokémon, NPC, interacciones y secretos deben confirmar sidecar y ancla TMJ en una única transacción, sin dejar objetos temporales al cancelar.
+- La creación contextual por clic o arrastre admite una preferencia local entre activación directa y activación manteniendo `Shift`; la opción directa es el comportamiento predeterminado.
+- La rejilla de autoría es una ayuda visual roja, discontinua y sin relleno. Debe compartir transformación con el mapa y extenderse un tile fuera de sus límites sin alterar el TMJ.
+- El guion automático de una entidad reutiliza `ambientSequences`; nunca mantener un segundo formato de comportamiento exclusivo del editor. Una secuencia compartida se muestra completa y conserva la entidad responsable de cada acción.
 
 ## Sprites de expedición PMD
 

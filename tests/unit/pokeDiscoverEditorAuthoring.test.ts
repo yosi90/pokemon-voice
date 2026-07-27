@@ -8,12 +8,14 @@ import {
 } from '../../src/domain/tools/pokeDiscoverEditorGeometry.js';
 import {
   addPokeDiscoverTiledObject,
+  applyPokeDiscoverWorldOrganization,
   commitPokeDiscoverEditorHistory,
   createPokeDiscoverAdventure,
   createPokeDiscoverEditorHistory,
   createPokeDiscoverWorld,
   preparePokeDiscoverTiledMap,
   registerPokeDiscoverTiledSources,
+  previewPokeDiscoverWorldNames,
   type PokeDiscoverEditableTiledMap,
 } from '../../src/domain/tools/pokeDiscoverEditorProject.js';
 import {
@@ -27,6 +29,22 @@ import {
   type PokeDiscoverDirectoryHandle,
   type PokeDiscoverWritableFileHandle,
 } from '../../src/domain/tools/pokeDiscoverEditorWorkspace.js';
+import {
+  centerPokeDiscoverCamera,
+  zoomPokeDiscoverCameraAtPoint,
+} from '../../src/domain/tools/pokeDiscoverEditorCamera.js';
+import {
+  readTiledTileTransform,
+  transformTiledObjectPoint,
+} from '../../src/domain/maps/tiledObjectTransform.js';
+import {
+  getPokeDiscoverEntityScaleMultiplier,
+  getPokeDiscoverEntityScalePercent,
+} from '../../src/domain/tools/pokeDiscoverEditorEntityScale.js';
+import {
+  isPokeDiscoverRecentFolderValid,
+  POKEDISCOVER_RECENT_FOLDER_TTL_MS,
+} from '../../src/domain/tools/pokeDiscoverEditorRecentFolder.js';
 
 function tiledMap(extra: Partial<PokeDiscoverEditableTiledMap> = {}): PokeDiscoverEditableTiledMap {
   return {
@@ -52,6 +70,174 @@ function tiledMap(extra: Partial<PokeDiscoverEditableTiledMap> = {}): PokeDiscov
 }
 
 describe('modelo de autoría del configurador', () => {
+  it('muestra y edita la escala efectiva combinando recurso y entidad', () => {
+    const bundle = {
+      pmdManifest: { assets: [{ assetId: 'pmd:rattata', renderScale: .8 }] },
+      characterManifest: { assets: [{ assetId: 'character:player', renderScale: .6 }] },
+    } as never;
+    expect(getPokeDiscoverEntityScalePercent(bundle, {
+      assetId: 'pmd:rattata',
+    })).toBe(80);
+    expect(getPokeDiscoverEntityScalePercent(bundle, {
+      assetId: 'character:player',
+      renderScaleMultiplier: 1.5,
+    })).toBe(90);
+    expect(getPokeDiscoverEntityScaleMultiplier(bundle, 'pmd:rattata', 120)).toBeCloseTo(1.5);
+    expect(getPokeDiscoverEntityScaleMultiplier(bundle, 'pmd:rattata', 80)).toBeUndefined();
+  });
+
+  it('conserva una carpeta reciente durante 24 horas', () => {
+    const now = Date.UTC(2026, 6, 26);
+    expect(isPokeDiscoverRecentFolderValid({
+      expiresAt: now + POKEDISCOVER_RECENT_FOLDER_TTL_MS,
+    }, now + POKEDISCOVER_RECENT_FOLDER_TTL_MS)).toBe(true);
+    expect(isPokeDiscoverRecentFolderValid({
+      expiresAt: now + POKEDISCOVER_RECENT_FOLDER_TTL_MS,
+    }, now + POKEDISCOVER_RECENT_FOLDER_TTL_MS + 1)).toBe(false);
+  });
+
+  it('interpreta las ocho orientaciones ortogonales de Tiled', () => {
+    const H = 0x80000000;
+    const V = 0x40000000;
+    const D = 0x20000000;
+    expect([
+      readTiledTileTransform(0),
+      readTiledTileTransform(H),
+      readTiledTileTransform(V),
+      readTiledTileTransform(H | V),
+      readTiledTileTransform(D),
+      readTiledTileTransform(D | H),
+      readTiledTileTransform(D | V),
+      readTiledTileTransform(D | H | V),
+    ]).toEqual([
+      { rotation: 0, scaleX: 1, scaleY: 1 },
+      { rotation: 0, scaleX: -1, scaleY: 1 },
+      { rotation: 0, scaleX: 1, scaleY: -1 },
+      { rotation: 0, scaleX: -1, scaleY: -1 },
+      { rotation: Math.PI / 2, scaleX: 1, scaleY: -1 },
+      { rotation: Math.PI / 2, scaleX: 1, scaleY: 1 },
+      { rotation: -Math.PI / 2, scaleX: 1, scaleY: 1 },
+      { rotation: Math.PI / 2, scaleX: -1, scaleY: 1 },
+    ]);
+  });
+
+  it('aplica la rotación horaria de Tiled a paths y colisiones', () => {
+    expect(transformTiledObjectPoint(
+      { x: 32, y: 48, rotation: 90 },
+      { x: 16, y: 0 },
+    )).toEqual({ x: 32, y: 64 });
+    const collision = readTiledCollisionShape({
+      x: 32,
+      y: 48,
+      rotation: -90,
+      polygon: [{ x: 0, y: 0 }, { x: 16, y: 0 }, { x: 16, y: 16 }],
+    });
+    expect(collision).toEqual({
+      kind: 'polygon',
+      points: [{ x: 32, y: 48 }, { x: 32, y: 32 }, { x: 48, y: 32 }],
+    });
+  });
+
+  it('numera el mundo por posición, conserva IDs y aparta los TMJ quitados', () => {
+    const adventure = {
+      ...createPokeDiscoverAdventure({ title: 'Bosque', mapId: 'map:tegueste-forest' }),
+      tiledMapAssets: [
+        { schemaVersion: 1 as const, assetId: 'asset:historic', path: 'maps/tegueste-forest-02-05.tmj' },
+        { schemaVersion: 1 as const, assetId: 'asset:south', path: 'maps/tegueste-forest-04-05.tmj' },
+      ],
+      rooms: [{
+        schemaVersion: 1 as const,
+        roomId: 'room:tegueste-forest:02-04',
+        tiledMapAssetId: 'asset:historic',
+        staticCamera: true as const,
+        spawnAnchorIds: [],
+      }, {
+        schemaVersion: 1 as const,
+        roomId: 'room:tegueste-forest:04-05',
+        tiledMapAssetId: 'asset:south',
+        staticCamera: true as const,
+        spawnAnchorIds: [],
+      }],
+    };
+    const registrations = [{
+      fileName: 'tegueste-forest-02-05.tmj',
+      assetId: 'asset:historic',
+      roomId: 'room:tegueste-forest:02-04',
+      created: false,
+    }, {
+      fileName: 'tegueste-forest-04-05.tmj',
+      assetId: 'asset:south',
+      roomId: 'room:tegueste-forest:04-05',
+      created: false,
+    }];
+    const draftWorld = {
+      type: 'world' as const,
+      maps: [
+        { fileName: 'tegueste-forest-04-05.tmj', x: 0, y: 640, width: 480, height: 320 },
+        { fileName: 'pending.tmj', x: 480, y: 0, width: 480, height: 320 },
+      ],
+    };
+    expect([...previewPokeDiscoverWorldNames(draftWorld, registrations).values()])
+      .toEqual(['tegueste-forest-01-02.tmj', 'tegueste-forest-02-02.tmj']);
+    const organized = applyPokeDiscoverWorldOrganization({
+      adventure,
+      registrations,
+      world: draftWorld,
+      tilemapsByFileName: {
+        'tegueste-forest-02-05.tmj': tiledMap(),
+        'tegueste-forest-04-05.tmj': tiledMap(),
+      },
+      sourceFileNameByFileName: {
+        'tegueste-forest-02-05.tmj': 'tegueste-forest-02-05.tmj',
+        'tegueste-forest-04-05.tmj': 'tegueste-forest-04-05.tmj',
+      },
+    }, draftWorld);
+    expect(organized.world.maps.map(entry => entry.fileName)).toEqual([
+      'tegueste-forest-02-02.tmj',
+      'tegueste-forest-01-02.tmj',
+    ]);
+    expect(organized.registrations).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        roomId: 'room:tegueste-forest:02-04',
+        fileName: 'tegueste-forest-02-05.tmj.old',
+        archived: true,
+      }),
+      expect.objectContaining({
+        roomId: 'room:tegueste-forest:04-05',
+        fileName: 'tegueste-forest-02-02.tmj',
+        archived: false,
+      }),
+    ]));
+    expect(organized.adventure.rooms[0].roomId).toBe('room:tegueste-forest:02-04');
+  });
+
+  it('centra sin alterar el zoom y conserva el punto focal al acercar', () => {
+    const centered = centerPokeDiscoverCamera({
+      viewportWidth: 1200,
+      viewportHeight: 700,
+      contentWidth: 480,
+      contentHeight: 320,
+      zoom: 2,
+    });
+    expect(centered).toEqual({ x: 120, y: 30 });
+
+    const focalPoint = { x: 600, y: 350 };
+    const mapPointBefore = {
+      x: (focalPoint.x - centered.x) / 2,
+      y: (focalPoint.y - centered.y) / 2,
+    };
+    const zoomed = zoomPokeDiscoverCameraAtPoint({
+      offset: centered,
+      currentZoom: 2,
+      nextZoom: 1.5,
+      focalPoint,
+    });
+    expect({
+      x: (focalPoint.x - zoomed.x) / 1.5,
+      y: (focalPoint.y - zoomed.y) / 1.5,
+    }).toEqual(mapPointBefore);
+  });
+
   it('crea capas editables con IDs correctos y conserva campos desconocidos', () => {
     const prepared = preparePokeDiscoverTiledMap(tiledMap({
       nextlayerid: 8,
@@ -295,6 +481,7 @@ class MemoryFileHandle implements PokeDiscoverWritableFileHandle {
 describe('apertura y guardado multiarchivo', () => {
   function memoryProject() {
     const writes: string[] = [];
+    const deletes: string[] = [];
     const map = tiledMap();
     const adventure = {
       ...createPokeDiscoverAdventure({ title: 'Prueba', mapId: 'map:test:save' }),
@@ -328,8 +515,12 @@ describe('apertura y guardado multiarchivo', () => {
         handles.set(name, created);
         return created;
       },
+      async removeEntry(name) {
+        if (!handles.delete(name)) throw new Error('missing');
+        deletes.push(name);
+      },
     };
-    return { writes, handles, directory };
+    return { writes, deletes, handles, directory };
   }
 
   it('guarda TMJ modificados, world y proyecto en ese orden', async () => {
@@ -351,6 +542,72 @@ describe('apertura y guardado multiarchivo', () => {
     ]);
     expect(saved.baselineByFileName['test.world']).toContain('"type": "world"');
     expect(saved.baselineByFileName['room-01.tmj']).toContain('"name": "Anchors"');
+  });
+
+  it('persiste el tamaño de una entidad en el sidecar', async () => {
+    const memory = memoryProject();
+    const sources = [...memory.handles.values()].map(handle => ({
+      file: new File([handle.content], handle.name, { lastModified: handle.lastModified }),
+      handle,
+    }));
+    const workspace = await openPokeDiscoverWorkspace({
+      files: sources,
+      directoryHandle: memory.directory,
+    });
+    const adventure = {
+      ...workspace.history.present.adventure,
+      actorPlacements: [{
+        schemaVersion: 1 as const,
+        placementId: 'actor:test',
+        roomId: 'room:test:01',
+        anchorId: 'anchor:test',
+        assetId: 'pmd:test',
+        animation: 'Idle',
+        renderScaleMultiplier: 1.25,
+      }],
+    };
+    await savePokeDiscoverWorkspace({
+      ...workspace,
+      history: {
+        ...workspace.history,
+        present: { ...workspace.history.present, adventure },
+      },
+    });
+
+    expect(memory.handles.get('test.adventure.json')?.content)
+      .toContain('"renderScaleMultiplier": 1.25');
+  });
+
+  it('consolida un renombrado físico después de escribir world y sidecar', async () => {
+    const memory = memoryProject();
+    const sources = [...memory.handles.values()].map(handle => ({
+      file: new File([handle.content], handle.name, { lastModified: handle.lastModified }),
+      handle,
+    }));
+    const workspace = await openPokeDiscoverWorkspace({
+      files: sources,
+      directoryHandle: memory.directory,
+    });
+    const organized = applyPokeDiscoverWorldOrganization(
+      workspace.history.present,
+      workspace.history.present.world,
+    );
+    const saved = await savePokeDiscoverWorkspace({
+      ...workspace,
+      history: { ...workspace.history, present: organized },
+    });
+
+    expect(memory.writes).toEqual([
+      'mapa-01-01.tmj',
+      'test.world',
+      'test.adventure.json',
+    ]);
+    expect(memory.deletes).toEqual(['room-01.tmj']);
+    expect(memory.handles.has('mapa-01-01.tmj')).toBe(true);
+    expect(memory.handles.has('room-01.tmj')).toBe(false);
+    expect(saved.history.present.sourceFileNameByFileName).toEqual({
+      'mapa-01-01.tmj': 'mapa-01-01.tmj',
+    });
   });
 
   it('detecta una modificación externa antes de sobrescribir', async () => {

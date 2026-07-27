@@ -103,6 +103,7 @@ export function RuntimePreview({
         initialRoomId: roomId,
         reducedMotion: designMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         registeredSpeciesIds: new Set(previewBundle.pmdManifest.assets.map(asset => asset.speciesId)),
+        fitParent: false,
         onReady: () => {
           if (cancelled) return;
           host.dataset.runtime = 'ready';

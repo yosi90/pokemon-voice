@@ -75,6 +75,7 @@ export interface PokeDiscoverRoomRegistration {
   assetId: string;
   roomId: string;
   created: boolean;
+  archived?: boolean;
 }
 
 export interface PokeDiscoverPreparedMap {
@@ -443,6 +444,125 @@ export function mergePokeDiscoverWorldSources(
     nextX += width;
   }
   return { ...world, maps };
+}
+
+function worldFilePrefix(world: PokeDiscoverWorldFile, registrations: PokeDiscoverRoomRegistration[]) {
+  const candidates = [
+    ...world.maps.map(entry => fileBaseName(entry.fileName)),
+    ...registrations.map(registration => fileBaseName(registration.fileName)),
+  ];
+  for (const candidate of candidates) {
+    const match = candidate.match(/^(.*)-\d{2}-\d{2}\.tmj(?:\.\d+)?(?:\.old)?$/iu);
+    if (match?.[1]) return match[1];
+  }
+  return 'mapa';
+}
+
+export function previewPokeDiscoverWorldNames(
+  world: PokeDiscoverWorldFile,
+  registrations: PokeDiscoverRoomRegistration[],
+) {
+  const prefix = worldFilePrefix(world, registrations);
+  const ordered = [...world.maps].sort((left, right) => {
+    const leftY = Math.round(left.y / 16);
+    const rightY = Math.round(right.y / 16);
+    return leftY - rightY || Math.round(left.x / 16) - Math.round(right.x / 16);
+  });
+  const total = String(ordered.length).padStart(2, '0');
+  return new Map(ordered.map((entry, index) => [
+    entry,
+    `${prefix}-${String(index + 1).padStart(2, '0')}-${total}.tmj`,
+  ]));
+}
+
+function replaceAssetFileName(path: string, fileName: string) {
+  const normalized = path.replaceAll('\\', '/');
+  const separator = normalized.lastIndexOf('/');
+  return separator < 0 ? fileName : `${normalized.slice(0, separator + 1)}${fileName}`;
+}
+
+function archivedFileName(fileName: string, used: Set<string>) {
+  if (fileName.endsWith('.old')) return fileName;
+  const candidate = `${fileName}.old`;
+  if (!used.has(candidate)) return candidate;
+  for (let suffix = 2; ; suffix += 1) {
+    const numbered = `${fileName}.${suffix}.old`;
+    if (!used.has(numbered)) return numbered;
+  }
+}
+
+export interface PokeDiscoverWorldOrganizationSnapshot {
+  adventure: AdventureMapV2;
+  tilemapsByFileName: Record<string, PokeDiscoverEditableTiledMap>;
+  world: PokeDiscoverWorldFile;
+  registrations: PokeDiscoverRoomRegistration[];
+  sourceFileNameByFileName: Record<string, string>;
+}
+
+export function applyPokeDiscoverWorldOrganization<T extends PokeDiscoverWorldOrganizationSnapshot>(
+  snapshot: T,
+  draftWorld: PokeDiscoverWorldFile,
+): T {
+  const proposedNames = previewPokeDiscoverWorldNames(draftWorld, snapshot.registrations);
+  const registrationByFileName = new Map(snapshot.registrations.map(item => [fileBaseName(item.fileName), item]));
+  const activeOriginalNames = new Set(draftWorld.maps.map(entry => fileBaseName(entry.fileName)));
+  const usedNames = new Set<string>([...proposedNames.values()]);
+  const renameByCurrentName = new Map<string, string>();
+
+  for (const [entry, proposedName] of proposedNames) {
+    const currentName = fileBaseName(entry.fileName);
+    if (registrationByFileName.has(currentName)) renameByCurrentName.set(currentName, proposedName);
+  }
+  for (const registration of snapshot.registrations) {
+    if (activeOriginalNames.has(fileBaseName(registration.fileName))) continue;
+    const currentName = fileBaseName(registration.fileName);
+    const nextName = archivedFileName(currentName, usedNames);
+    usedNames.add(nextName);
+    renameByCurrentName.set(currentName, nextName);
+  }
+
+  const registrations = snapshot.registrations.map(registration => {
+    const nextName = renameByCurrentName.get(fileBaseName(registration.fileName)) ?? registration.fileName;
+    return {
+      ...registration,
+      fileName: nextName,
+      archived: !draftWorld.maps.some(entry => fileBaseName(entry.fileName) === fileBaseName(registration.fileName)),
+    };
+  });
+  const tilemapsByFileName = Object.fromEntries(Object.entries(snapshot.tilemapsByFileName).map(
+    ([fileName, tilemap]) => [renameByCurrentName.get(fileBaseName(fileName)) ?? fileName, tilemap],
+  ));
+  const sourceFileNameByFileName = Object.fromEntries(Object.keys(tilemapsByFileName).map(nextName => {
+    const registration = registrations.find(item => item.fileName === nextName);
+    const previous = registration
+      ? snapshot.registrations.find(item => item.roomId === registration.roomId)
+      : undefined;
+    const currentName = previous?.fileName ?? nextName;
+    return [nextName, snapshot.sourceFileNameByFileName[currentName] ?? currentName];
+  }));
+  const fileNameByAssetId = new Map(registrations.map(item => [item.assetId, item.fileName]));
+  const adventure = {
+    ...snapshot.adventure,
+    tiledMapAssets: snapshot.adventure.tiledMapAssets.map(asset => {
+      const nextName = fileNameByAssetId.get(asset.assetId);
+      return nextName ? { ...asset, path: replaceAssetFileName(asset.path, nextName) } : asset;
+    }),
+  };
+  const world = {
+    ...draftWorld,
+    maps: draftWorld.maps.map(entry => ({
+      ...entry,
+      fileName: proposedNames.get(entry) ?? entry.fileName,
+    })),
+  };
+  return {
+    ...snapshot,
+    adventure,
+    tilemapsByFileName,
+    world,
+    registrations,
+    sourceFileNameByFileName,
+  };
 }
 
 export function createPokeDiscoverEditorHistory<T>(initial: T): PokeDiscoverEditorHistory<T> {

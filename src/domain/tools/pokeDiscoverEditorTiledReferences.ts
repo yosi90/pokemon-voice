@@ -1,4 +1,5 @@
 import type { LoadedTiledMap } from '../maps/loadAdventureBundle.js';
+import { transformTiledObjectPoint } from '../maps/tiledObjectTransform.js';
 
 export interface PokeDiscoverEditorPathReference {
   pathId: string;
@@ -62,11 +63,9 @@ export function readPokeDiscoverEditorTiledReferences(
       ? object.polyline as Array<Record<string, unknown>>
       : [];
     if (!pathId || objectClass(object) !== 'AmbientPath' || polyline.length < 2) return [];
-    const originX = Number(object.x) || 0;
-    const originY = Number(object.y) || 0;
-    const points = polyline.map(point => ({
-      x: originX + (Number(point.x) || 0),
-      y: originY + (Number(point.y) || 0),
+    const points = polyline.map(point => transformTiledObjectPoint(object, {
+      x: Number(point.x) || 0,
+      y: Number(point.y) || 0,
     }));
     return [{ pathId, pointCount: points.length, start: points[0], end: points.at(-1)! }];
   });
@@ -90,10 +89,9 @@ export function readPokeDiscoverEditorAnchors(tilemap: LoadedTiledMap): PokeDisc
     const anchorId = String(object.name ?? '').trim();
     const anchorClass = objectClass(object) as PokeDiscoverEditorAnchorClass;
     if (!anchorId || !ANCHOR_CLASSES.has(anchorClass)) return [];
-    const x = Number(object.x) || 0;
-    const y = Number(object.y) || 0;
     const width = Math.max(0, Number(object.width) || 0);
     const height = Math.max(0, Number(object.height) || 0);
-    return [{ anchorId, anchorClass, x: x + width / 2, y: y + height }];
+    const point = transformTiledObjectPoint(object, { x: width / 2, y: height });
+    return [{ anchorId, anchorClass, ...point }];
   });
 }

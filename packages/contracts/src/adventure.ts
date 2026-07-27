@@ -162,11 +162,18 @@ export interface AmbientMoveByTilesActionV1 {
   animation?: string;
 }
 
+export interface AmbientSetVisibleActionV1 {
+  kind: 'setVisible';
+  placementId: StableId;
+  visible: boolean;
+}
+
 export type AmbientActorActionV1 =
   | AmbientPlayAnimationActionV1
   | AmbientFaceActionV1
   | AmbientMovePathActionV1
-  | AmbientMoveByTilesActionV1;
+  | AmbientMoveByTilesActionV1
+  | AmbientSetVisibleActionV1;
 
 export interface AmbientBeatV1 extends VersionedContractV1 {
   beatId: StableId;

@@ -100,14 +100,23 @@ export function readTiledCollisionShape(
   if (Array.isArray(object.polygon) && object.polygon.length >= 3) {
     return {
       kind: 'polygon',
-      points: (object.polygon as Array<Record<string, unknown>>).map(point => ({
-        x: originX + (Number(point.x) || 0),
-        y: originY + (Number(point.y) || 0),
-      })),
+      points: (object.polygon as Array<Record<string, unknown>>).map(point => (
+        transformTiledObjectPoint(object, {
+          x: Number(point.x) || 0,
+          y: Number(point.y) || 0,
+        })
+      )),
     };
   }
   const width = Number(object.width) || 0;
   const height = Number(object.height) || 0;
   if (width <= 0 || height <= 0) return undefined;
+  if (Number(object.rotation) || 0) {
+    return { kind: 'polygon', points: tiledObjectRectanglePoints(object) };
+  }
   return { kind: 'rectangle', x: originX, y: originY, width, height };
 }
+import {
+  tiledObjectRectanglePoints,
+  transformTiledObjectPoint,
+} from './tiledObjectTransform.js';

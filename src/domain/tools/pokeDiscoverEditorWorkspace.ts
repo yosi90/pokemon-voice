@@ -32,10 +32,13 @@ export interface PokeDiscoverDirectoryHandle {
   kind?: 'directory';
   name: string;
   values(): AsyncIterableIterator<PokeDiscoverWritableFileHandle | PokeDiscoverDirectoryHandle>;
+  queryPermission?(descriptor?: { mode?: 'read' | 'readwrite' }): Promise<PermissionState>;
+  requestPermission?(descriptor?: { mode?: 'read' | 'readwrite' }): Promise<PermissionState>;
   getFileHandle(
     name: string,
     options?: { create?: boolean },
   ): Promise<PokeDiscoverWritableFileHandle>;
+  removeEntry?(name: string): Promise<void>;
 }
 
 export interface PokeDiscoverWorkspaceSourceFile {
@@ -47,12 +50,15 @@ export interface PokeDiscoverWorkspaceSnapshot {
   adventure: AdventureMapV2;
   tilemapsByFileName: Record<string, PokeDiscoverEditableTiledMap>;
   world: PokeDiscoverWorldFile;
+  registrations: PokeDiscoverRoomRegistration[];
+  sourceFileNameByFileName: Record<string, string>;
 }
 
 export interface PokeDiscoverWorkspace {
   projectName: string;
   sidecarFileName: string;
   worldFileName: string;
+  /** @deprecated Use history.present.registrations so undo/redo remains atomic. */
   registrations: PokeDiscoverRoomRegistration[];
   history: PokeDiscoverEditorHistory<PokeDiscoverWorkspaceSnapshot>;
   baselineByFileName: Record<string, string>;
@@ -73,6 +79,7 @@ export interface PokeDiscoverWorkspaceInspection {
   sidecars: PokeDiscoverWorkspaceSourceFile[];
   tiledMaps: PokeDiscoverWorkspaceSourceFile[];
   worlds: PokeDiscoverWorkspaceSourceFile[];
+  archivedTiledMaps: PokeDiscoverWorkspaceSourceFile[];
 }
 
 function parseJson(source: string, fileName: string) {
@@ -149,6 +156,7 @@ export function inspectPokeDiscoverWorkspaceFiles(
     sidecars: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.adventure.json')),
     tiledMaps: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.tmj')),
     worlds: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.world')),
+    archivedTiledMaps: files.filter(source => /\.tmj(?:\.\d+)?\.old$/iu.test(source.file.name)),
   };
 }
 
@@ -199,6 +207,7 @@ export async function openPokeDiscoverWorkspace({
   const documentSources = [
     ...inspection.sidecars,
     ...inspection.tiledMaps,
+    ...inspection.archivedTiledMaps,
     ...inspection.worlds,
   ];
   for (const source of documentSources) {
@@ -225,7 +234,8 @@ export async function openPokeDiscoverWorkspace({
   if (existingSidecar) {
     baselineByFileName[sidecarFileName] = serializePokeDiscoverProjectJson(adventure);
   }
-  const sources: PokeDiscoverTiledSource[] = inspection.tiledMaps.map(source => {
+  const tiledSources = [...inspection.tiledMaps, ...inspection.archivedTiledMaps];
+  const sources: PokeDiscoverTiledSource[] = tiledSources.map(source => {
     const raw = requireTiledMap(
       parseJson(rawByFileName[source.file.name], source.file.name),
       source.file.name,
@@ -245,18 +255,26 @@ export async function openPokeDiscoverWorkspace({
   if (existingWorld) {
     baselineByFileName[worldFileName] = serializePokeDiscoverProjectJson(parsedWorld);
   }
-  const world = mergePokeDiscoverWorldSources(parsedWorld, sources);
+  const world = existingWorld ? parsedWorld : mergePokeDiscoverWorldSources(parsedWorld, sources);
+  const placedFileNames = new Set(world.maps.map(entry => fileBaseName(entry.fileName)));
+  const registrations = registered.registrations.map(registration => ({
+    ...registration,
+    archived: /\.tmj(?:\.\d+)?\.old$/iu.test(registration.fileName)
+      || !placedFileNames.has(fileBaseName(registration.fileName)),
+  }));
   const snapshot: PokeDiscoverWorkspaceSnapshot = {
     adventure: registered.adventure,
     tilemapsByFileName: Object.fromEntries(sources.map(source => [source.fileName, source.tilemap])),
     world,
+    registrations,
+    sourceFileNameByFileName: Object.fromEntries(sources.map(source => [source.fileName, source.fileName])),
   };
 
   return {
     projectName: effectiveName,
     sidecarFileName,
     worldFileName,
-    registrations: registered.registrations,
+    registrations,
     history: createPokeDiscoverEditorHistory(snapshot),
     baselineByFileName,
     diskContentByFileName: rawByFileName,
@@ -283,9 +301,11 @@ export function getPokeDiscoverWorkspaceDirtyFiles(workspace: PokeDiscoverWorksp
 
 export async function findPokeDiscoverWorkspaceConflicts(workspace: PokeDiscoverWorkspace) {
   const conflicts: string[] = [];
+  const documents = getPokeDiscoverWorkspaceDocuments(workspace);
+  const renameSources = new Set(Object.values(workspace.history.present.sourceFileNameByFileName));
   for (const [fileName, diskContent] of Object.entries(workspace.diskContentByFileName)) {
     const handle = workspace.handlesByFileName[fileName];
-    if (!handle || !(fileName in getPokeDiscoverWorkspaceDocuments(workspace))) continue;
+    if (!handle || (!(fileName in documents) && !renameSources.has(fileName))) continue;
     const current = await handle.getFile();
     if (current.lastModified !== workspace.lastModifiedByFileName[fileName]
       && await current.text() !== diskContent) {
@@ -317,6 +337,13 @@ export async function savePokeDiscoverWorkspace(
   }
   const documents = getPokeDiscoverWorkspaceDocuments(workspace);
   const dirtyFiles = new Set(getPokeDiscoverWorkspaceDirtyFiles(workspace));
+  const finalNames = new Set(Object.keys(documents));
+  const renamedSources = new Set(Object.entries(workspace.history.present.sourceFileNameByFileName)
+    .filter(([target, source]) => target !== source && !finalNames.has(source))
+    .map(([, source]) => source));
+  if (renamedSources.size && !workspace.directoryHandle.removeEntry) {
+    throw new Error('El navegador no permite completar el renombrado de archivos. Usa Exportar copia.');
+  }
   const orderedNames = [
     ...Object.keys(workspace.history.present.tilemapsByFileName)
       .filter(fileName => dirtyFiles.has(fileName)),
@@ -339,13 +366,28 @@ export async function savePokeDiscoverWorkspace(
     diskContentByFileName[fileName] = documents[fileName];
     lastModifiedByFileName[fileName] = saved.lastModified;
   }
+  for (const sourceName of renamedSources) {
+    await workspace.directoryHandle.removeEntry?.(sourceName);
+    delete handlesByFileName[sourceName];
+    delete baselineByFileName[sourceName];
+    delete diskContentByFileName[sourceName];
+    delete lastModifiedByFileName[sourceName];
+  }
+  const sourceFileNameByFileName = Object.fromEntries(
+    Object.keys(workspace.history.present.tilemapsByFileName).map(fileName => [fileName, fileName]),
+  );
   return {
     ...workspace,
+    registrations: workspace.history.present.registrations,
     handlesByFileName,
     baselineByFileName,
     diskContentByFileName,
     lastModifiedByFileName,
     createdProject: false,
+    history: {
+      ...workspace.history,
+      present: { ...workspace.history.present, sourceFileNameByFileName },
+    },
   };
 }
 

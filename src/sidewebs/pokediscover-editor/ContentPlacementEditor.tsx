@@ -7,6 +7,15 @@ import {
 } from '../../domain/tools/pokeDiscoverEditorContent.js';
 import { nextStableEditorId } from '../../domain/tools/pokeDiscoverEditorBeats.js';
 import {
+  clampPokeDiscoverEntityScalePercent,
+  getPokeDiscoverEntityBaseScale,
+  getPokeDiscoverEntityScaleMultiplier,
+  getPokeDiscoverEntityScalePercent,
+  POKEDISCOVER_ENTITY_SCALE_MAX_PERCENT,
+  POKEDISCOVER_ENTITY_SCALE_MIN_PERCENT,
+  POKEDISCOVER_ENTITY_SCALE_STEP_PERCENT,
+} from '../../domain/tools/pokeDiscoverEditorEntityScale.js';
+import {
   readPokeDiscoverEditorAnchors,
   readPokeDiscoverEditorTiledReferences,
   type PokeDiscoverEditorAnchorClass,
@@ -27,6 +36,113 @@ const ANCHOR_CLASSES: Record<PokeDiscoverEditorContentKind, PokeDiscoverEditorAn
   secret: ['SecretAnchor'],
   trigger: ['InteractionAnchor'],
 };
+
+export function PlacementPropertiesEditor({
+  bundle,
+  room,
+  placementId,
+  onAdventureChange,
+  onClose,
+  compact = false,
+}: {
+  bundle: LoadedAdventureMapBundle;
+  room: LoadedAdventureRoomBundle;
+  placementId: string;
+  onAdventureChange: (adventure: AdventureMapV2) => void;
+  onClose?: () => void;
+  compact?: boolean;
+}) {
+  const actor = bundle.adventure.actorPlacements.find(item => item.placementId === placementId);
+  const character = bundle.adventure.characterPlacements.find(item => item.placementId === placementId);
+  const placement = actor ?? character;
+  const anchors = useMemo(() => readPokeDiscoverEditorAnchors(room.tilemap), [room.tilemap]);
+  const compatibleAnchors = anchors.filter(anchor => actor
+    ? ['ActorAnchor', 'EncounterAnchor'].includes(anchor.anchorClass)
+    : anchor.anchorClass === 'ActorAnchor');
+  if (!placement) return null;
+
+  const updatePlacement = (
+    update: {
+      anchorId?: string;
+      direction?: 'up' | 'down' | 'left' | 'right';
+      collision?: 'solid' | 'pass-through';
+      initiallyHidden?: true;
+      renderScaleMultiplier?: number;
+      animation?: string;
+    },
+  ) => {
+    const { animation: _animation, ...characterUpdate } = update;
+    onAdventureChange(actor ? {
+      ...bundle.adventure,
+      actorPlacements: bundle.adventure.actorPlacements.map(item => item.placementId === placementId
+        ? { ...item, ...update }
+        : item),
+    } : {
+      ...bundle.adventure,
+      characterPlacements: bundle.adventure.characterPlacements.map(item => item.placementId === placementId
+        ? { ...item, ...characterUpdate }
+        : item),
+    });
+  };
+
+  const scalePercent = getPokeDiscoverEntityScalePercent(bundle, placement);
+  const sliderScalePercent = clampPokeDiscoverEntityScalePercent(scalePercent);
+  return (
+    <section className={`editor-placement-properties${compact ? ' is-compact' : ''}`} aria-label="Propiedades de la entidad">
+      <header>
+        <div>
+          <span>{actor ? 'Pokémon' : 'Personaje'}</span>
+          <strong>Entidad seleccionada</strong>
+        </div>
+        {onClose ? <button type="button" aria-label="Cerrar propiedades" onClick={onClose}>×</button> : null}
+      </header>
+      <p>{placement.assetId}</p>
+      <label><span>Posición del mapa</span><select value={placement.anchorId} onChange={event => updatePlacement({ anchorId: event.target.value })}>
+        {compatibleAnchors.map(anchor => <option key={anchor.anchorId} value={anchor.anchorId}>{anchor.anchorId}</option>)}
+      </select></label>
+      <label><span>Tamaño de la entidad · {scalePercent}%</span><input
+        type="range"
+        min={POKEDISCOVER_ENTITY_SCALE_MIN_PERCENT}
+        max={POKEDISCOVER_ENTITY_SCALE_MAX_PERCENT}
+        step={POKEDISCOVER_ENTITY_SCALE_STEP_PERCENT}
+        value={sliderScalePercent}
+        onChange={event => {
+          const next = Number(event.target.value);
+          updatePlacement({
+            renderScaleMultiplier: getPokeDiscoverEntityScaleMultiplier(bundle, placement.assetId, next),
+          });
+        }}
+      /></label>
+      <label><span>Orientación</span><select value={placement.direction ?? 'down'} onChange={event => updatePlacement({
+        direction: event.target.value as 'up' | 'down' | 'left' | 'right',
+      })}>
+        <option value="up">Arriba</option>
+        <option value="down">Abajo</option>
+        <option value="left">Izquierda</option>
+        <option value="right">Derecha</option>
+      </select></label>
+      <label><span>Colisión</span><select value={placement.collision ?? 'solid'} onChange={event => updatePlacement({
+        collision: event.target.value as 'solid' | 'pass-through',
+      })}>
+        <option value="solid">Sólida</option>
+        <option value="pass-through">Atravesable</option>
+      </select></label>
+      {actor ? <label><span>Animación</span><select value={actor.animation} onChange={event => updatePlacement({
+        animation: event.target.value,
+      })}>
+        {bundle.pmdManifest.assets.find(asset => asset.assetId === actor.assetId)?.animations.map(animation => (
+          <option key={animation.name}>{animation.name}</option>
+        ))}
+      </select></label> : null}
+      <label className="editor-content__visibility"><input
+        type="checkbox"
+        checked={placement.initiallyHidden !== true}
+        onChange={event => updatePlacement({ initiallyHidden: event.target.checked ? undefined : true })}
+      /><span>Visible al entrar</span></label>
+      <details><summary>Detalles avanzados</summary><code>{placementId}</code></details>
+    </section>
+  );
+}
 
 export function ContentPlacementEditor({
   bundle,
@@ -91,8 +207,25 @@ export function ContentPlacementEditor({
 
   useEffect(() => {
     const placement = selectedExistingActor ?? selectedExistingCharacter;
-    if (placement) setScalePercent(Math.round((placement.renderScaleMultiplier ?? 1) * 100));
-  }, [selectedExistingActor, selectedExistingCharacter]);
+    if (placement) setScalePercent(clampPokeDiscoverEntityScalePercent(
+      getPokeDiscoverEntityScalePercent(bundle, placement),
+    ));
+  }, [bundle, selectedExistingActor, selectedExistingCharacter]);
+
+  useEffect(() => {
+    if (selectedExistingActor || selectedExistingCharacter) return;
+    const asset = kind === 'encounter' ? selectedPmdAsset : selectedCharacterAsset;
+    if (asset) setScalePercent(clampPokeDiscoverEntityScalePercent(
+      Math.round(getPokeDiscoverEntityBaseScale(bundle, asset.assetId) * 100),
+    ));
+  }, [
+    bundle,
+    kind,
+    selectedCharacterAsset?.assetId,
+    selectedExistingActor,
+    selectedExistingCharacter,
+    selectedPmdAsset?.assetId,
+  ]);
 
   useEffect(() => {
     if (!catalogSelection) return;
@@ -183,7 +316,11 @@ export function ContentPlacementEditor({
           direction,
           collision,
           initiallyHidden: visible ? undefined : true,
-          renderScaleMultiplier: scalePercent === 100 ? undefined : scalePercent / 100,
+          renderScaleMultiplier: getPokeDiscoverEntityScaleMultiplier(
+            bundle,
+            selectedPmdAsset.assetId,
+            scalePercent,
+          ),
         }],
         requiredAssetIds: adventure.requiredAssetIds.includes(selectedPmdAsset.assetId)
           ? adventure.requiredAssetIds
@@ -205,7 +342,11 @@ export function ContentPlacementEditor({
           direction,
           collision,
           initiallyHidden: visible ? undefined : true,
-          renderScaleMultiplier: scalePercent === 100 ? undefined : scalePercent / 100,
+          renderScaleMultiplier: getPokeDiscoverEntityScaleMultiplier(
+            bundle,
+            selectedCharacterAsset.assetId,
+            scalePercent,
+          ),
         }],
         requiredAssetIds: adventure.requiredAssetIds.includes(selectedCharacterAsset.assetId)
           ? adventure.requiredAssetIds
@@ -281,7 +422,7 @@ export function ContentPlacementEditor({
             <label><span>Animación inicial</span><select value={selectedAnimation?.name ?? ''} onChange={event => setAnimationName(event.target.value)}>
               {selectedPmdAsset?.animations.map(animation => <option key={animation.name}>{animation.name}</option>)}
             </select></label>
-            <label><span>Tamaño visual · {scalePercent}%</span><input type="range" min="10" max="500" step="5" value={scalePercent} onChange={event => setScalePercent(Number(event.target.value))} /></label>
+            <label><span>Tamaño de la entidad · {scalePercent}%</span><input type="range" min={POKEDISCOVER_ENTITY_SCALE_MIN_PERCENT} max={POKEDISCOVER_ENTITY_SCALE_MAX_PERCENT} step={POKEDISCOVER_ENTITY_SCALE_STEP_PERCENT} value={scalePercent} onChange={event => setScalePercent(Number(event.target.value))} /></label>
             <label><span>Movimiento</span><select value={movementMode} onChange={event => setMovementMode(event.target.value as typeof movementMode)}>
               <option value="none">Sin movimiento automático</option>
               <option value="path">Recorrer una ruta dibujada</option>
@@ -310,7 +451,7 @@ export function ContentPlacementEditor({
             <label><span>Personaje</span><select value={selectedCharacterAsset?.assetId ?? ''} onChange={event => setAssetId(event.target.value)}>
               {bundle.characterManifest.assets.map(asset => <option key={asset.assetId}>{asset.assetId}</option>)}
             </select></label>
-            <label><span>Tamaño visual · {scalePercent}%</span><input type="range" min="10" max="500" step="5" value={scalePercent} onChange={event => setScalePercent(Number(event.target.value))} /></label>
+            <label><span>Tamaño de la entidad · {scalePercent}%</span><input type="range" min={POKEDISCOVER_ENTITY_SCALE_MIN_PERCENT} max={POKEDISCOVER_ENTITY_SCALE_MAX_PERCENT} step={POKEDISCOVER_ENTITY_SCALE_STEP_PERCENT} value={scalePercent} onChange={event => setScalePercent(Number(event.target.value))} /></label>
           </> : null}
           {(kind === 'encounter' || kind === 'npc') ? <div className="editor-content__movement-grid">
             <label><span>Orientación</span><select value={direction} onChange={event => setDirection(event.target.value as typeof direction)}>
@@ -339,76 +480,12 @@ export function ContentPlacementEditor({
             </button>
           </li>)}</ul>
           {selectedExistingActor || selectedExistingCharacter ? <div className="editor-content__selected">
-            <h3>Colocación seleccionada</h3>
-            <strong>{selectedPlacementId}</strong>
-            <label><span>Tamaño visual · {scalePercent}%</span><input type="range" min="10" max="500" step="5" value={scalePercent} onChange={event => {
-              const next = Number(event.target.value);
-              setScalePercent(next);
-              onAdventureChange(selectedExistingActor ? {
-                ...bundle.adventure,
-                actorPlacements: bundle.adventure.actorPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, renderScaleMultiplier: next === 100 ? undefined : next / 100 }
-                  : placement),
-              } : {
-                ...bundle.adventure,
-                characterPlacements: bundle.adventure.characterPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, renderScaleMultiplier: next === 100 ? undefined : next / 100 }
-                  : placement),
-              });
-            }} /></label>
-            <label><span>Orientación</span><select value={(selectedExistingActor ?? selectedExistingCharacter)?.direction ?? 'down'} onChange={event => {
-              const nextDirection = event.target.value as 'up' | 'down' | 'left' | 'right';
-              onAdventureChange(selectedExistingActor ? {
-                ...bundle.adventure,
-                actorPlacements: bundle.adventure.actorPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, direction: nextDirection }
-                  : placement),
-              } : {
-                ...bundle.adventure,
-                characterPlacements: bundle.adventure.characterPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, direction: nextDirection }
-                  : placement),
-              });
-            }}>
-              <option value="up">Arriba</option><option value="down">Abajo</option><option value="left">Izquierda</option><option value="right">Derecha</option>
-            </select></label>
-            <label><span>Colisión</span><select value={(selectedExistingActor ?? selectedExistingCharacter)?.collision ?? 'solid'} onChange={event => {
-              const nextCollision = event.target.value as 'solid' | 'pass-through';
-              onAdventureChange(selectedExistingActor ? {
-                ...bundle.adventure,
-                actorPlacements: bundle.adventure.actorPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, collision: nextCollision }
-                  : placement),
-              } : {
-                ...bundle.adventure,
-                characterPlacements: bundle.adventure.characterPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, collision: nextCollision }
-                  : placement),
-              });
-            }}><option value="solid">Sólida</option><option value="pass-through">Atravesable</option></select></label>
-            {selectedExistingActor ? <label><span>Animación</span><select value={selectedExistingActor.animation} onChange={event => onAdventureChange({
-              ...bundle.adventure,
-              actorPlacements: bundle.adventure.actorPlacements.map(placement => placement.placementId === selectedPlacementId
-                ? { ...placement, animation: event.target.value }
-                : placement),
-            })}>
-              {bundle.pmdManifest.assets.find(asset => asset.assetId === selectedExistingActor.assetId)?.animations.map(animation => <option key={animation.name}>{animation.name}</option>)}
-            </select></label> : null}
-            <label className="editor-content__visibility"><input type="checkbox" checked={(selectedExistingActor ?? selectedExistingCharacter)?.initiallyHidden !== true} onChange={event => {
-              const initiallyHidden = event.target.checked ? undefined : true;
-              onAdventureChange(selectedExistingActor ? {
-                ...bundle.adventure,
-                actorPlacements: bundle.adventure.actorPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, initiallyHidden }
-                  : placement),
-              } : {
-                ...bundle.adventure,
-                characterPlacements: bundle.adventure.characterPlacements.map(placement => placement.placementId === selectedPlacementId
-                  ? { ...placement, initiallyHidden }
-                  : placement),
-              });
-            }} /><span>Visible al entrar</span></label>
-            <details><summary>Detalles avanzados</summary><code>{selectedPlacementId}</code></details>
+            <PlacementPropertiesEditor
+              bundle={bundle}
+              room={room}
+              placementId={selectedPlacementId}
+              onAdventureChange={onAdventureChange}
+            />
           </div> : null}
         </div>
       </div>

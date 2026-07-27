@@ -1,21 +1,40 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { LoadedAdventureMapBundle, LoadedAdventureRoomBundle } from '../../domain/maps/loadAdventureBundle.js';
 import {
   fileBaseName,
+  previewPokeDiscoverWorldNames,
   type PokeDiscoverRoomRegistration,
   type PokeDiscoverWorldFile,
   type PokeDiscoverWorldMapEntry,
 } from '../../domain/tools/pokeDiscoverEditorProject.js';
+import {
+  centerPokeDiscoverCamera,
+  clampPokeDiscoverCameraZoom,
+  readPokeDiscoverCameraZoom,
+  writePokeDiscoverCameraZoom,
+  zoomPokeDiscoverCameraAtPoint,
+} from '../../domain/tools/pokeDiscoverEditorCamera.js';
 import { displayPokeDiscoverRoomLabel } from '../../domain/tools/pokeDiscoverEditorWorkspace.js';
+import {
+  readTiledTileTransform,
+  TILED_GID_MASK,
+} from '../../domain/maps/tiledObjectTransform.js';
 
-const GID_MASK = 0x0fffffff;
+const WORLD_ZOOM_STORAGE_KEY = 'pokediscover-editor-world-zoom';
+const WORLD_MIN_ZOOM = .15;
+const WORLD_MAX_ZOOM = 3;
+
+function CenterIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6" /><circle cx="10" cy="10" r="2" /><path d="M10 1v3M10 16v3M1 10h3M16 10h3" /></svg>;
+}
 
 interface PreparedWorldMap {
   entry: PokeDiscoverWorldMapEntry;
-  registration: PokeDiscoverRoomRegistration;
-  room: LoadedAdventureRoomBundle;
+  registration?: PokeDiscoverRoomRegistration;
+  room?: LoadedAdventureRoomBundle;
   width: number;
   height: number;
+  pending: boolean;
 }
 
 function worldMaps(
@@ -24,19 +43,19 @@ function worldMaps(
   registrations: PokeDiscoverRoomRegistration[],
 ) {
   const registrationsByFile = new Map(registrations.map(item => [fileBaseName(item.fileName), item]));
-  return world.maps.flatMap(entry => {
+  return world.maps.map(entry => {
     const registration = registrationsByFile.get(fileBaseName(entry.fileName));
     const room = registration
       ? bundle.rooms.find(candidate => candidate.room.roomId === registration.roomId)
       : undefined;
-    if (!registration || !room) return [];
-    return [{
+    return {
       entry,
       registration,
       room,
-      width: room.tilemap.width * room.tilemap.tilewidth,
-      height: room.tilemap.height * room.tilemap.tileheight,
-    }];
+      width: room ? room.tilemap.width * room.tilemap.tilewidth : Number(entry.width) || 480,
+      height: room ? room.tilemap.height * room.tilemap.tileheight : Number(entry.height) || 320,
+      pending: !registration || !room,
+    };
   });
 }
 
@@ -47,7 +66,7 @@ function tilesetForGid(tilemap: LoadedAdventureRoomBundle['tilemap'], gid: numbe
 }
 
 async function loadImages(maps: PreparedWorldMap[]) {
-  const urls = [...new Set(maps.flatMap(map => map.room.tilemap.tilesets)
+  const urls = [...new Set(maps.flatMap(map => map.room?.tilemap.tilesets ?? [])
     .map(tileset => String(tileset.image ?? ''))
     .filter(Boolean))];
   const entries = await Promise.all(urls.map(url => new Promise<[string, HTMLImageElement]>((resolve, reject) => {
@@ -66,17 +85,15 @@ function drawTile(
   destination: { x: number; y: number; width: number; height: number },
   gid: number,
 ) {
-  const flipHorizontal = Boolean(gid & 0x80000000);
-  const flipVertical = Boolean(gid & 0x40000000);
-  const flipDiagonal = Boolean(gid & 0x20000000);
-  if (!flipHorizontal && !flipVertical && !flipDiagonal) {
+  const transform = readTiledTileTransform(gid);
+  if (!transform.rotation && transform.scaleX === 1 && transform.scaleY === 1) {
     context.drawImage(image, source.x, source.y, source.width, source.height, destination.x, destination.y, destination.width, destination.height);
     return;
   }
   context.save();
   context.translate(destination.x + destination.width / 2, destination.y + destination.height / 2);
-  if (flipDiagonal) context.rotate(Math.PI / 2);
-  context.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1);
+  context.rotate(transform.rotation);
+  context.scale(transform.scaleX, transform.scaleY);
   context.drawImage(
     image,
     source.x,
@@ -97,6 +114,7 @@ function drawRoom(
   origin: { x: number; y: number },
   images: Map<string, HTMLImageElement>,
 ) {
+  if (!map.room) return;
   const tilemap = map.room.tilemap;
   for (const layer of tilemap.layers) {
     const name = String(layer.name ?? '');
@@ -105,7 +123,7 @@ function drawRoom(
     const data = Array.isArray(layer.data) ? layer.data as number[] : [];
     context.globalAlpha = Number(layer.opacity) || 1;
     data.forEach((encodedGid, index) => {
-      const gid = (Number(encodedGid) >>> 0) & GID_MASK;
+      const gid = (Number(encodedGid) >>> 0) & TILED_GID_MASK;
       if (!gid) return;
       const tileset = tilesetForGid(tilemap, gid);
       const image = tileset ? images.get(String(tileset.image ?? '')) : undefined;
@@ -169,6 +187,10 @@ export function WorldAuthoringCanvas({
   registrations,
   organize,
   onWorldChange,
+  onApplyOrganization,
+  onCancelOrganization,
+  onOrganizeRequest,
+  onOrganizationDirtyChange,
   onOpenRoom,
 }: {
   bundle: LoadedAdventureMapBundle;
@@ -176,11 +198,32 @@ export function WorldAuthoringCanvas({
   registrations: PokeDiscoverRoomRegistration[];
   organize: boolean;
   onWorldChange: (world: PokeDiscoverWorldFile, description: string) => void;
+  onApplyOrganization: (world: PokeDiscoverWorldFile, description: string) => void;
+  onCancelOrganization: () => void;
+  onOrganizeRequest: () => void;
+  onOrganizationDirtyChange: (dirty: boolean) => void;
   onOpenRoom: (roomId: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const maps = useMemo(() => worldMaps(bundle, world, registrations), [bundle, registrations, world]);
+  const [draftWorld, setDraftWorld] = useState(world);
+  const [selectedFileName, setSelectedFileName] = useState('');
+  useEffect(() => {
+    if (organize) {
+      setDraftWorld(structuredClone(world));
+      setSelectedFileName('');
+      onOrganizationDirtyChange(false);
+    }
+  }, [onOrganizationDirtyChange, organize, world]);
+  const visibleWorld = organize ? draftWorld : world;
+  const maps = useMemo(
+    () => worldMaps(bundle, visibleWorld, registrations),
+    [bundle, registrations, visibleWorld],
+  );
+  const previewNames = useMemo(
+    () => previewPokeDiscoverWorldNames(visibleWorld, registrations),
+    [registrations, visibleWorld],
+  );
   const bounds = useMemo(() => {
     const minX = Math.min(0, ...maps.map(map => map.entry.x));
     const minY = Math.min(0, ...maps.map(map => map.entry.y));
@@ -188,7 +231,13 @@ export function WorldAuthoringCanvas({
     const maxY = Math.max(1, ...maps.map(map => map.entry.y + map.height));
     return { minX, minY, width: maxX - minX, height: maxY - minY };
   }, [maps]);
-  const [zoom, setZoom] = useState(.8);
+  const [zoom, setZoom] = useState(() => readPokeDiscoverCameraZoom(
+    WORLD_ZOOM_STORAGE_KEY,
+    .8,
+    WORLD_MIN_ZOOM,
+    WORLD_MAX_ZOOM,
+  ));
+  const zoomRef = useRef(zoom);
   const [offset, setOffset] = useState({ x: 24, y: 24 });
   const [dragged, setDragged] = useState<{
     map: PreparedWorldMap;
@@ -199,30 +248,77 @@ export function WorldAuthoringCanvas({
     previewX: number;
     previewY: number;
   }>();
-  const panRef = useRef<{ x: number; y: number; ox: number; oy: number } | undefined>(undefined);
+  const panRef = useRef<{
+    x: number;
+    y: number;
+    ox: number;
+    oy: number;
+    moved?: boolean;
+    openRoomId?: string;
+  } | undefined>(undefined);
 
-  const recenter = () => {
+  const recenter = useCallback(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const nextZoom = Math.min(2, Math.max(.2, Math.min(
-      (viewport.clientWidth - 80) / bounds.width,
-      (viewport.clientHeight - 80) / bounds.height,
-    )));
+    setOffset(centerPokeDiscoverCamera({
+      viewportWidth: viewport.clientWidth,
+      viewportHeight: viewport.clientHeight,
+      contentWidth: bounds.width,
+      contentHeight: bounds.height,
+      zoom: zoomRef.current,
+    }));
+  }, [bounds.height, bounds.width]);
+  const centeredOffset = viewportRef.current ? centerPokeDiscoverCamera({
+    viewportWidth: viewportRef.current.clientWidth,
+    viewportHeight: viewportRef.current.clientHeight,
+    contentWidth: bounds.width,
+    contentHeight: bounds.height,
+    zoom,
+  }) : offset;
+  const isCentered = Math.abs(centeredOffset.x - offset.x) < .5
+    && Math.abs(centeredOffset.y - offset.y) < .5;
+
+  const changeZoom = useCallback((
+    requestedZoom: number,
+    clientPoint?: { x: number; y: number },
+  ) => {
+    const viewport = viewportRef.current;
+    const nextZoom = clampPokeDiscoverCameraZoom(
+      Math.round(requestedZoom * 100) / 100,
+      WORLD_MIN_ZOOM,
+      WORLD_MAX_ZOOM,
+    );
+    if (!viewport || nextZoom === zoomRef.current) return;
+    const viewportBounds = viewport.getBoundingClientRect();
+    const focalPoint = clientPoint
+      ? { x: clientPoint.x - viewportBounds.left, y: clientPoint.y - viewportBounds.top }
+      : { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 };
+    setOffset(current => zoomPokeDiscoverCameraAtPoint({
+      offset: current,
+      currentZoom: zoomRef.current,
+      nextZoom,
+      focalPoint,
+    }));
+    zoomRef.current = nextZoom;
     setZoom(nextZoom);
-    setOffset({
-      x: (viewport.clientWidth - bounds.width * nextZoom) / 2,
-      y: (viewport.clientHeight - bounds.height * nextZoom) / 2,
-    });
-  };
+  }, []);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+    writePokeDiscoverCameraZoom(WORLD_ZOOM_STORAGE_KEY, zoom);
+  }, [zoom]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(recenter);
+    const observer = new ResizeObserver(recenter);
+    if (viewportRef.current) observer.observe(viewportRef.current);
     window.addEventListener('pokediscover:recenter', recenter);
     return () => {
       cancelAnimationFrame(frame);
+      observer.disconnect();
       window.removeEventListener('pokediscover:recenter', recenter);
     };
-  }, [bounds.height, bounds.width]);
+  }, [recenter]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -250,39 +346,118 @@ export function WorldAuthoringCanvas({
     const position = snapWorldPosition(
       { x: dragged.previewX, y: dragged.previewY },
       dragged.map,
-      maps.filter(map => map.registration.fileName !== dragged.map.registration.fileName),
+      maps.filter(map => fileBaseName(map.entry.fileName) !== fileBaseName(dragged.map.entry.fileName)),
     );
-    onWorldChange({
-      ...world,
-      maps: world.maps.map(entry => fileBaseName(entry.fileName) === dragged.map.registration.fileName
+    const nextWorld = {
+      ...visibleWorld,
+      maps: visibleWorld.maps.map(entry => fileBaseName(entry.fileName) === fileBaseName(dragged.map.entry.fileName)
         ? { ...entry, ...position }
         : entry),
-    }, `Mover habitación ${displayPokeDiscoverRoomLabel(dragged.map.registration.fileName)}`);
+    };
+    if (organize) {
+      setDraftWorld(nextWorld);
+      onOrganizationDirtyChange(true);
+    }
+    else onWorldChange(nextWorld, `Mover habitación ${displayPokeDiscoverRoomLabel(dragged.map.entry.fileName)}`);
     setDragged(undefined);
   };
 
+  const addPendingRoom = () => {
+    const reference = maps.find(map => fileBaseName(map.entry.fileName) === selectedFileName) ?? maps[0];
+    const width = reference?.width ?? 480;
+    const height = reference?.height ?? 320;
+    const x = maps.reduce((right, map) => Math.max(right, map.entry.x + map.width), 0) + 16;
+    const y = maps.length ? Math.min(...maps.map(map => map.entry.y)) : 0;
+    const temporaryName = `mapa-pendiente-${crypto.randomUUID()}.tmj`;
+    setDraftWorld(current => ({
+      ...current,
+      maps: [...current.maps, { fileName: temporaryName, x, y, width, height }],
+    }));
+    onOrganizationDirtyChange(true);
+    setSelectedFileName(temporaryName);
+  };
+
+  const removeSelectedRoom = () => {
+    if (!selectedFileName) return;
+    setDraftWorld(current => ({
+      ...current,
+      maps: current.maps.filter(entry => fileBaseName(entry.fileName) !== selectedFileName),
+    }));
+    onOrganizationDirtyChange(true);
+    setSelectedFileName('');
+  };
+
+  const restoreArchivedRoom = (fileName: string) => {
+    const registration = registrations.find(item => item.fileName === fileName && item.archived);
+    const room = registration
+      ? bundle.rooms.find(candidate => candidate.room.roomId === registration.roomId)
+      : undefined;
+    const width = room ? room.tilemap.width * room.tilemap.tilewidth : 480;
+    const height = room ? room.tilemap.height * room.tilemap.tileheight : 320;
+    const x = maps.reduce((right, map) => Math.max(right, map.entry.x + map.width), 0) + 16;
+    const y = maps.length ? Math.min(...maps.map(map => map.entry.y)) : 0;
+    setDraftWorld(current => ({
+      ...current,
+      maps: [...current.maps, { fileName, x, y, width, height }],
+    }));
+    onOrganizationDirtyChange(true);
+    setSelectedFileName(fileName);
+  };
+
   return (
-    <section className="editor-world-authoring" aria-label="Vista completa de la aventura">
-      <div className="editor-modebar">
-        <strong>{organize ? 'Organizar mundo' : 'Vista completa'}</strong>
-        <span>{maps.length} habitaciones · {Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => setZoom(value => Math.max(.15, value - .1))}>−</button>
-        <button type="button" onClick={() => setZoom(value => Math.min(3, value + .1))}>+</button>
-        <button type="button" onClick={recenter}>Recentrar</button>
-      </div>
+    <section className={`editor-world-authoring${organize ? ' is-organizing' : ''}`} aria-label="Vista completa de la aventura">
+      {organize ? <div className="editor-world-organizer">
+        <strong>Organizar mundo</strong>
+        <span>{maps.filter(map => !map.pending).length}/{maps.length} disponibles</span>
+        <button type="button" onClick={addPendingRoom}>Añadir pieza</button>
+        <button type="button" disabled={!selectedFileName} onClick={removeSelectedRoom}>Quitar pieza</button>
+        {registrations.some(item => item.archived) ? <label>
+          <span>Apartadas</span>
+          <select
+            value=""
+            aria-label="Reincorporar habitación apartada"
+            onChange={event => {
+              if (event.target.value) restoreArchivedRoom(event.target.value);
+            }}
+          >
+            <option value="">Reincorporar…</option>
+            {registrations.filter(item => item.archived).map(item => (
+              <option key={item.roomId} value={item.fileName}>{item.fileName}</option>
+            ))}
+          </select>
+        </label> : null}
+        <span className="editor-world-organizer__spacer" />
+        <button type="button" onClick={onCancelOrganization}>Cancelar</button>
+        <button
+          type="button"
+          className="is-primary"
+          onClick={() => {
+            onOrganizationDirtyChange(false);
+            onApplyOrganization(draftWorld, 'Aplicar organización del mundo');
+          }}
+        >Aplicar organización</button>
+      </div> : null}
       <div
         ref={viewportRef}
         className="editor-world-viewport"
+        data-camera-zoom={zoom}
+        data-camera-offset-x={offset.x}
+        data-camera-offset-y={offset.y}
         onPointerDown={event => {
           if ((event.target as HTMLElement).closest('.editor-world-room')) return;
           panRef.current = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={event => {
-          if (panRef.current) setOffset({
-            x: panRef.current.ox + event.clientX - panRef.current.x,
-            y: panRef.current.oy + event.clientY - panRef.current.y,
-          });
+          if (panRef.current) {
+            const deltaX = event.clientX - panRef.current.x;
+            const deltaY = event.clientY - panRef.current.y;
+            if (Math.hypot(deltaX, deltaY) > 4) panRef.current.moved = true;
+            setOffset({
+              x: panRef.current.ox + deltaX,
+              y: panRef.current.oy + deltaY,
+            });
+          }
           if (dragged) setDragged(current => current ? {
             ...current,
             previewX: current.startX + (event.clientX - current.pointerX) / zoom,
@@ -290,14 +465,54 @@ export function WorldAuthoringCanvas({
           } : current);
         }}
         onPointerUp={() => {
+          const completedPan = panRef.current;
           panRef.current = undefined;
+          if (completedPan?.openRoomId && !completedPan.moved) onOpenRoom(completedPan.openRoomId);
           finishRoomDrag();
+        }}
+        onPointerCancel={() => {
+          panRef.current = undefined;
+          setDragged(undefined);
         }}
         onWheel={event => {
           event.preventDefault();
-          setZoom(value => Math.min(3, Math.max(.15, value + (event.deltaY < 0 ? .1 : -.1))));
+          changeZoom(zoomRef.current + (event.deltaY < 0 ? .1 : -.1), {
+            x: event.clientX,
+            y: event.clientY,
+          });
         }}
       >
+        <div className="editor-canvas-controls" onPointerDown={event => event.stopPropagation()}>
+          <span
+            className="editor-control-tooltip is-zoom"
+            data-tooltip="Zoom: cambia el tamaño visual del mundo sin modificar sus posiciones."
+          >
+            <input
+              type="range"
+              min={WORLD_MIN_ZOOM}
+              max={WORLD_MAX_ZOOM}
+              step=".05"
+              value={zoom}
+              aria-label="Zoom de la vista completa"
+              onChange={event => changeZoom(Number(event.target.value))}
+            />
+            <output>{Math.round(zoom * 100)}%</output>
+          </span>
+          <span
+            className="editor-control-tooltip"
+            data-tooltip={isCentered
+              ? 'La vista completa ya está centrada.'
+              : 'Centra el mundo conservando el zoom actual.'}
+          >
+            <button
+              type="button"
+              className={isCentered ? '' : 'is-actionable'}
+              disabled={isCentered}
+              onClick={recenter}
+              aria-label="Centrar vista completa"
+            ><CenterIcon /></button>
+          </span>
+        </div>
         <div
           className="editor-world-surface"
           style={{
@@ -308,20 +523,41 @@ export function WorldAuthoringCanvas({
         >
           <canvas ref={canvasRef} data-testid="pokediscover-world-canvas" />
           {maps.map(map => {
-            const activeDrag = dragged?.map.registration.fileName === map.registration.fileName;
-            const x = (activeDrag ? dragged.previewX : map.entry.x) - bounds.minX;
-            const y = (activeDrag ? dragged.previewY : map.entry.y) - bounds.minY;
+            const currentDrag = dragged
+              && fileBaseName(dragged.map.entry.fileName) === fileBaseName(map.entry.fileName)
+              ? dragged
+              : undefined;
+            const activeDrag = Boolean(currentDrag);
+            const x = (currentDrag?.previewX ?? map.entry.x) - bounds.minX;
+            const y = (currentDrag?.previewY ?? map.entry.y) - bounds.minY;
+            const expectedName = previewNames.get(map.entry) ?? map.entry.fileName;
+            const fileName = fileBaseName(map.entry.fileName);
             return (
               <button
-                key={map.registration.roomId}
+                key={fileName}
                 type="button"
-                className={`editor-world-room${organize ? ' is-organizable' : ''}${activeDrag ? ' is-dragging' : ''}`}
+                className={`editor-world-room${organize ? ' is-organizable' : ''}${activeDrag ? ' is-dragging' : ''}${map.pending ? ' is-pending' : ''}${selectedFileName === fileName ? ' is-selected' : ''}`}
                 style={{ left: x, top: y, width: map.width, height: map.height }}
-                onDoubleClick={() => onOpenRoom(map.registration.roomId)}
+                onDoubleClick={() => {
+                  if (map.registration) onOpenRoom(map.registration.roomId);
+                  else onOrganizeRequest();
+                }}
                 onPointerDown={(event: ReactPointerEvent<HTMLButtonElement>) => {
                   event.stopPropagation();
+                  setSelectedFileName(fileName);
                   if (!organize) {
-                    onOpenRoom(map.registration.roomId);
+                    if (!map.registration) {
+                      onOrganizeRequest();
+                      return;
+                    }
+                    panRef.current = {
+                      x: event.clientX,
+                      y: event.clientY,
+                      ox: offset.x,
+                      oy: offset.y,
+                      openRoomId: map.registration.roomId,
+                    };
+                    event.currentTarget.setPointerCapture(event.pointerId);
                     return;
                   }
                   setDragged({
@@ -336,7 +572,7 @@ export function WorldAuthoringCanvas({
                   event.currentTarget.setPointerCapture(event.pointerId);
                 }}
                 onPointerMove={event => {
-                  if (!dragged || dragged.map.registration.fileName !== map.registration.fileName) return;
+                  if (!dragged || fileBaseName(dragged.map.entry.fileName) !== fileName) return;
                   setDragged(current => current ? {
                     ...current,
                     previewX: current.startX + (event.clientX - current.pointerX) / zoom,
@@ -345,7 +581,8 @@ export function WorldAuthoringCanvas({
                 }}
                 onPointerUp={finishRoomDrag}
               >
-                <span>{displayPokeDiscoverRoomLabel(map.registration.fileName)}</span>
+                <span>{displayPokeDiscoverRoomLabel(expectedName)}</span>
+                {map.pending ? <small>Mapa pendiente</small> : null}
               </button>
             );
           })}

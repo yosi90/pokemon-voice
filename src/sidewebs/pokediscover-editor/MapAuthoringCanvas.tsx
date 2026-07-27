@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { LoadedAdventureMapBundle } from '../../domain/maps/loadAdventureBundle.js';
 import { getPokeDiscoverEditorContentMarkers } from '../../domain/tools/pokeDiscoverEditorContent.js';
 import {
@@ -16,7 +16,15 @@ import {
   type PokeDiscoverObjectLayerName,
   type PokeDiscoverTiledObject,
 } from '../../domain/tools/pokeDiscoverEditorProject.js';
+import {
+  centerPokeDiscoverCamera,
+  clampPokeDiscoverCameraZoom,
+  readPokeDiscoverCameraZoom,
+  writePokeDiscoverCameraZoom,
+  zoomPokeDiscoverCameraAtPoint,
+} from '../../domain/tools/pokeDiscoverEditorCamera.js';
 import { RuntimePreview } from './RuntimePreview.js';
+import { transformTiledObjectPoint } from '../../domain/maps/tiledObjectTransform.js';
 
 export type PokeDiscoverCanvasTool =
   | 'select'
@@ -29,12 +37,33 @@ export type PokeDiscoverCanvasTool =
   | 'occlusion-rectangle'
   | 'occlusion-polygon';
 
+export type PokeDiscoverCellCommand =
+  | 'pokemon'
+  | 'npc'
+  | 'interaction'
+  | 'secret'
+  | 'anchor-actor'
+  | 'anchor-encounter'
+  | 'anchor-interaction'
+  | 'anchor-secret'
+  | 'entry'
+  | 'collision'
+  | 'occlusion'
+  | 'exit';
+
+export interface PokeDiscoverCellSelection {
+  center: PokeDiscoverGeometryPoint;
+  start: PokeDiscoverGeometryPoint;
+  end: PokeDiscoverGeometryPoint;
+  edge?: 'left' | 'right' | 'top' | 'bottom';
+}
+
 interface GeometryObject {
   layerName: PokeDiscoverObjectLayerName;
   object: PokeDiscoverTiledObject;
 }
 
-const TOOL_LABELS: Array<{ tool: PokeDiscoverCanvasTool; label: string; short: string }> = [
+export const POKEDISCOVER_CANVAS_TOOLS: Array<{ tool: PokeDiscoverCanvasTool; label: string; short: string }> = [
   { tool: 'select', label: 'Seleccionar y mover', short: 'Seleccionar' },
   { tool: 'pan', label: 'Desplazar lienzo', short: 'Mano' },
   { tool: 'anchor', label: 'Crear ancla', short: 'Ancla' },
@@ -45,6 +74,12 @@ const TOOL_LABELS: Array<{ tool: PokeDiscoverCanvasTool; label: string; short: s
   { tool: 'occlusion-rectangle', label: 'Dibujar oclusión rectangular', short: 'Oclusión ▭' },
   { tool: 'occlusion-polygon', label: 'Dibujar oclusión poligonal', short: 'Oclusión ⬠' },
 ];
+
+const ROOM_ZOOM_STORAGE_KEY = 'pokediscover-editor-room-zoom';
+const ROOM_MIN_ZOOM = .25;
+const ROOM_MAX_ZOOM = 4;
+const ROOM_GRID_STORAGE_KEY = 'pokediscover-editor-room-grid';
+const CELL_MENU_DISMISS_DISTANCE = 100;
 
 function objectClass(object: PokeDiscoverTiledObject) {
   return String(object.class || object.type || '');
@@ -68,11 +103,32 @@ function objectPoints(
   object: PokeDiscoverTiledObject,
   key: 'polygon' | 'polyline',
 ) {
-  return object[key]?.map(point => `${object.x + point.x},${object.y + point.y}`).join(' ') ?? '';
+  return object[key]?.map(point => {
+    const transformed = transformTiledObjectPoint(object, point);
+    return `${transformed.x},${transformed.y}`;
+  }).join(' ') ?? '';
 }
 
 function layerClass(layerName: PokeDiscoverObjectLayerName) {
   return `is-${layerName.toLocaleLowerCase()}`;
+}
+
+function simplifyOrthogonalPoints(points: PokeDiscoverGeometryPoint[]) {
+  return points.filter((point, index) => {
+    if (index === 0 || index === points.length - 1) return true;
+    const previous = points[index - 1];
+    const next = points[index + 1];
+    return !((previous.x === point.x && point.x === next.x)
+      || (previous.y === point.y && point.y === next.y));
+  });
+}
+
+function CenterIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6" /><circle cx="10" cy="10" r="2" /><path d="M10 1v3M10 16v3M1 10h3M16 10h3" /></svg>;
+}
+
+function GridIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M2 2h16v16H2zM2 8h16M2 14h16M8 2v16M14 2v16" /></svg>;
 }
 
 export function MapAuthoringCanvas({
@@ -83,7 +139,12 @@ export function MapAuthoringCanvas({
   onModeChange,
   onTilemapChange,
   onDeleteObject,
+  selectedObjectId,
+  onOpenObject,
   onOpenPlacement,
+  onCellCommand,
+  canCreateExit,
+  directAuthoringGesture,
   onConnectEdge,
   placementGhost,
 }: {
@@ -94,15 +155,25 @@ export function MapAuthoringCanvas({
   onModeChange: (mode: 'design' | 'test') => void;
   onTilemapChange: (tilemap: PokeDiscoverEditableTiledMap, description: string) => void;
   onDeleteObject: (object: PokeDiscoverTiledObject) => void;
-  onOpenPlacement: (placementId: string) => void;
+  selectedObjectId?: number;
+  onOpenObject: (objectId?: number) => void;
+  onOpenPlacement: (placementId: string, kind: 'encounter' | 'npc' | 'portal' | 'secret' | 'trigger') => void;
+  onCellCommand: (command: PokeDiscoverCellCommand, cell: PokeDiscoverCellSelection) => void;
+  canCreateExit: (cell: PokeDiscoverCellSelection) => boolean;
+  directAuthoringGesture: 'direct' | 'shift';
   onConnectEdge: (edge: 'left' | 'right' | 'top' | 'bottom', start: number, length: number) => void;
   placementGhost?: { anchorId: string; label: string; scalePercent: number };
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<PokeDiscoverCanvasTool>('select');
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(() => readPokeDiscoverCameraZoom(
+    ROOM_ZOOM_STORAGE_KEY,
+    2,
+    ROOM_MIN_ZOOM,
+    ROOM_MAX_ZOOM,
+  ));
+  const zoomRef = useRef(zoom);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [selectedId, setSelectedId] = useState<number>();
   const [draftStart, setDraftStart] = useState<PokeDiscoverGeometryPoint>();
   const [draftCurrent, setDraftCurrent] = useState<PokeDiscoverGeometryPoint>();
   const [draftPoints, setDraftPoints] = useState<PokeDiscoverGeometryPoint[]>([]);
@@ -113,6 +184,15 @@ export function MapAuthoringCanvas({
   const [visibleLayers, setVisibleLayers] = useState<Set<PokeDiscoverObjectLayerName>>(
     () => new Set(['Anchors', 'Paths']),
   );
+  const [showGrid, setShowGrid] = useState(() => {
+    try {
+      return window.localStorage.getItem(ROOM_GRID_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [cellMenu, setCellMenu] = useState<(PokeDiscoverCellSelection & { left: number; top: number })>();
+  const cellMenuRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{ x: number; y: number; ox: number; oy: number } | undefined>(undefined);
   const moveRef = useRef<{
     objectId: number;
@@ -121,10 +201,17 @@ export function MapAuthoringCanvas({
     objectX: number;
     objectY: number;
   } | undefined>(undefined);
+  const cellGestureRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    points: PokeDiscoverGeometryPoint[];
+    dragging: boolean;
+  } | undefined>(undefined);
   const mapWidth = tilemap.width * tilemap.tilewidth;
   const mapHeight = tilemap.height * tilemap.tileheight;
   const objects = useMemo(() => mapGeometry(tilemap), [tilemap]);
-  const selected = objects.find(candidate => candidate.object.id === selectedId);
+  const selected = objects.find(candidate => candidate.object.id === selectedObjectId);
   const ghostAnchor = placementGhost
     ? objects.find(candidate => candidate.layerName === 'Anchors' && candidate.object.name === placementGhost.anchorId)?.object
     : undefined;
@@ -135,29 +222,91 @@ export function MapAuthoringCanvas({
       && ['PlayerSpawn', 'TransitionAnchor'].includes(objectClass(candidate.object)))
     .map(candidate => candidate.object.name));
   const canTest = Boolean(room?.room.spawnAnchorIds.some(anchorId => validSpawnIds.has(anchorId)));
+  const centeredOffset = viewportRef.current ? centerPokeDiscoverCamera({
+    viewportWidth: viewportRef.current.clientWidth,
+    viewportHeight: viewportRef.current.clientHeight,
+    contentWidth: mapWidth,
+    contentHeight: mapHeight,
+    zoom,
+  }) : offset;
+  const isCentered = Math.abs(centeredOffset.x - offset.x) < .5
+    && Math.abs(centeredOffset.y - offset.y) < .5;
 
   useEffect(() => {
     if (mode === 'test' && !canTest) onModeChange('design');
   }, [canTest, mode, onModeChange]);
 
-  const recenter = () => {
+  const recenter = useCallback(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const nextZoom = Math.min(
-      2,
-      Math.max(.35, Math.min((viewport.clientWidth - 56) / mapWidth, (viewport.clientHeight - 56) / mapHeight)),
+    setOffset(centerPokeDiscoverCamera({
+      viewportWidth: viewport.clientWidth,
+      viewportHeight: viewport.clientHeight,
+      contentWidth: mapWidth,
+      contentHeight: mapHeight,
+      zoom: zoomRef.current,
+    }));
+  }, [mapHeight, mapWidth]);
+
+  const changeZoom = useCallback((
+    requestedZoom: number,
+    clientPoint?: PokeDiscoverGeometryPoint,
+  ) => {
+    const viewport = viewportRef.current;
+    const nextZoom = clampPokeDiscoverCameraZoom(
+      Math.round(requestedZoom * 100) / 100,
+      ROOM_MIN_ZOOM,
+      ROOM_MAX_ZOOM,
     );
+    if (!viewport || nextZoom === zoomRef.current) return;
+    const bounds = viewport.getBoundingClientRect();
+    const focalPoint = clientPoint
+      ? { x: clientPoint.x - bounds.left, y: clientPoint.y - bounds.top }
+      : { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 };
+    setOffset(current => zoomPokeDiscoverCameraAtPoint({
+      offset: current,
+      currentZoom: zoomRef.current,
+      nextZoom,
+      focalPoint,
+    }));
+    zoomRef.current = nextZoom;
     setZoom(nextZoom);
-    setOffset({
-      x: (viewport.clientWidth - mapWidth * nextZoom) / 2,
-      y: (viewport.clientHeight - mapHeight * nextZoom) / 2,
-    });
-  };
+  }, []);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+    writePokeDiscoverCameraZoom(ROOM_ZOOM_STORAGE_KEY, zoom);
+  }, [zoom]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(ROOM_GRID_STORAGE_KEY, String(showGrid));
+    } catch {
+      // La preferencia es opcional.
+    }
+  }, [showGrid]);
+
+  useEffect(() => {
+    if (!cellMenu) return undefined;
+    const closeWhenPointerLeavesSafetyArea = (event: PointerEvent) => {
+      const bounds = cellMenuRef.current?.getBoundingClientRect();
+      if (!bounds) return;
+      if (event.clientX < bounds.left - CELL_MENU_DISMISS_DISTANCE
+        || event.clientX > bounds.right + CELL_MENU_DISMISS_DISTANCE
+        || event.clientY < bounds.top - CELL_MENU_DISMISS_DISTANCE
+        || event.clientY > bounds.bottom + CELL_MENU_DISMISS_DISTANCE) {
+        setCellMenu(undefined);
+      }
+    };
+    window.addEventListener('pointermove', closeWhenPointerLeavesSafetyArea);
+    return () => window.removeEventListener('pointermove', closeWhenPointerLeavesSafetyArea);
+  }, [cellMenu]);
 
   const chooseTool = (nextTool: PokeDiscoverCanvasTool) => {
     setTool(nextTool);
     setDraftPoints([]);
     setDraftStart(undefined);
+    setCellMenu(undefined);
     const layer: PokeDiscoverObjectLayerName | undefined = nextTool.startsWith('collision')
       ? 'Collision'
       : nextTool.startsWith('occlusion')
@@ -180,10 +329,10 @@ export function MapAuthoringCanvas({
       observer.disconnect();
       window.removeEventListener('pokediscover:recenter', recenter);
     };
-  }, [mapHeight, mapWidth, roomId]);
+  }, [recenter, roomId]);
 
   useEffect(() => {
-    setSelectedId(undefined);
+    onOpenObject(undefined);
     setDraftPoints([]);
     setDraftStart(undefined);
   }, [roomId]);
@@ -191,7 +340,7 @@ export function MapAuthoringCanvas({
   useEffect(() => {
     const selectTool = (event: Event) => {
       const requested = (event as CustomEvent<{ tool?: PokeDiscoverCanvasTool }>).detail?.tool;
-      if (!requested || !TOOL_LABELS.some(option => option.tool === requested)) return;
+      if (!requested || !POKEDISCOVER_CANVAS_TOOLS.some(option => option.tool === requested)) return;
       chooseTool(requested);
     };
     window.addEventListener('pokediscover:select-map-tool', selectTool);
@@ -203,6 +352,31 @@ export function MapAuthoringCanvas({
     return {
       x: Math.min(mapWidth, Math.max(0, snap((event.clientX - bounds.left) * mapWidth / bounds.width, event.altKey))),
       y: Math.min(mapHeight, Math.max(0, snap((event.clientY - bounds.top) * mapHeight / bounds.height, event.altKey))),
+    };
+  };
+
+  const cellFromEvent = (event: ReactPointerEvent<SVGSVGElement>): PokeDiscoverCellSelection => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const rawX = Math.min(mapWidth - .001, Math.max(0, (event.clientX - bounds.left) * mapWidth / bounds.width));
+    const rawY = Math.min(mapHeight - .001, Math.max(0, (event.clientY - bounds.top) * mapHeight / bounds.height));
+    const column = Math.floor(rawX / tilemap.tilewidth);
+    const row = Math.floor(rawY / tilemap.tileheight);
+    const start = { x: column * tilemap.tilewidth, y: row * tilemap.tileheight };
+    const end = { x: start.x + tilemap.tilewidth, y: start.y + tilemap.tileheight };
+    const edge = column === 0
+      ? 'left'
+      : column === tilemap.width - 1
+        ? 'right'
+        : row === 0
+          ? 'top'
+          : row === tilemap.height - 1
+            ? 'bottom'
+            : undefined;
+    return {
+      start,
+      end,
+      center: { x: start.x + tilemap.tilewidth / 2, y: start.y + tilemap.tileheight / 2 },
+      edge,
     };
   };
 
@@ -236,6 +410,7 @@ export function MapAuthoringCanvas({
         setDraftPoints([]);
         setDraftStart(undefined);
         setDraftCurrent(undefined);
+        setCellMenu(undefined);
       }
       if ((event.key === 'Delete' || event.key === 'Backspace') && selected
         && !(event.target instanceof HTMLElement && event.target.closest('input, textarea, select'))) {
@@ -249,9 +424,25 @@ export function MapAuthoringCanvas({
 
   const startSurfaceAction = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (mode !== 'design') return;
+    if (event.button !== 0) return;
+    if (tool === 'pan') return;
     const point = pointFromEvent(event);
     if (tool === 'select') {
-      setSelectedId(undefined);
+      if (cellMenu) {
+        setCellMenu(undefined);
+        return;
+      }
+      onOpenObject(undefined);
+      if (directAuthoringGesture === 'shift' && !event.shiftKey) return;
+      const cell = cellFromEvent(event);
+      cellGestureRef.current = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        points: [cell.center],
+        dragging: false,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
       return;
     }
     if (tool === 'anchor') {
@@ -266,7 +457,7 @@ export function MapAuthoringCanvas({
           x: point.x,
           y: point.y,
         });
-        setSelectedId(result.object.id);
+        onOpenObject(result.object.id);
         onTilemapChange(result.tilemap, 'Crear ancla');
       }
       return;
@@ -299,7 +490,7 @@ export function MapAuthoringCanvas({
           width: Math.max(16, Math.abs(end.x - draftStart.x)),
           height: Math.max(16, Math.abs(end.y - draftStart.y)),
         });
-        setSelectedId(result.object.id);
+        onOpenObject(result.object.id);
         onTilemapChange(result.tilemap, 'Crear ancla rectangular');
       } else if (tool === 'occlusion-rectangle') {
         const result = addPokeDiscoverOccluder(tilemap, {
@@ -334,16 +525,6 @@ export function MapAuthoringCanvas({
     }
   };
 
-  const selectedValue = (field: 'x' | 'y' | 'width' | 'height') => Number(selected?.object[field]) || 0;
-  const updateSelectedNumber = (field: 'x' | 'y' | 'width' | 'height', value: number) => {
-    if (!selected) return;
-    onTilemapChange(updatePokeDiscoverTiledObject(
-      tilemap,
-      selected.object.id,
-      object => ({ ...object, [field]: value }),
-    ), `Cambiar ${field === 'width' || field === 'height' ? 'tamaño' : 'posición'}`);
-  };
-
   return (
     <section className="editor-map-authoring" aria-label="Editor visual de la habitación">
       <div className="editor-modebar">
@@ -358,16 +539,17 @@ export function MapAuthoringCanvas({
           >Probar</button>
         </div>
         <span>{Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => setZoom(value => Math.max(.25, value - .1))} aria-label="Alejar">−</button>
-        <button type="button" onClick={() => setZoom(value => Math.min(4, value + .1))} aria-label="Acercar">+</button>
+        <button type="button" onClick={() => changeZoom(zoomRef.current - .1)} aria-label="Alejar">−</button>
+        <button type="button" onClick={() => changeZoom(zoomRef.current + .1)} aria-label="Acercar">+</button>
         <button type="button" onClick={recenter}>Recentrar</button>
       </div>
       {mode === 'design' ? (
         <div className="editor-toolstrip" role="toolbar" aria-label="Herramientas del mapa">
-          {TOOL_LABELS.map(option => (
+          {POKEDISCOVER_CANVAS_TOOLS.map(option => (
             <button
               key={option.tool}
               type="button"
+              className="editor-tool-command"
               title={option.label}
               aria-pressed={tool === option.tool}
               onClick={() => chooseTool(option.tool)}
@@ -421,9 +603,14 @@ export function MapAuthoringCanvas({
       ) : <div className="editor-toolstrip is-test-hint">Usa las flechas o WASD para recorrer la habitación.</div>}
       <div
         ref={viewportRef}
-        className={`editor-map-viewport${mode === 'test' ? ' is-testing' : ''}`}
+        className={`editor-map-viewport${mode === 'test' ? ' is-testing' : ''}${tool === 'pan' && mode === 'design' ? ' is-pan-tool' : ''}`}
+        data-camera-zoom={zoom}
+        data-camera-offset-x={offset.x}
+        data-camera-offset-y={offset.y}
         onPointerDown={event => {
-          if (tool !== 'pan' || mode !== 'design') return;
+          const middleButton = event.button === 1;
+          if ((!middleButton && (tool !== 'pan' || mode !== 'design')) || panRef.current) return;
+          event.preventDefault();
           panRef.current = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
@@ -436,11 +623,99 @@ export function MapAuthoringCanvas({
           }
         }}
         onPointerUp={() => { panRef.current = undefined; }}
+        onPointerCancel={() => { panRef.current = undefined; }}
         onWheel={event => {
           event.preventDefault();
-          setZoom(value => Math.min(4, Math.max(.25, value + (event.deltaY < 0 ? .1 : -.1))));
+          changeZoom(zoomRef.current + (event.deltaY < 0 ? .1 : -.1), {
+            x: event.clientX,
+            y: event.clientY,
+          });
         }}
       >
+        <div className="editor-canvas-controls" onPointerDown={event => event.stopPropagation()}>
+          <span
+            className="editor-control-tooltip is-zoom"
+            data-tooltip="Zoom: cambia el tamaño visual del mapa sin alterar sus tiles."
+          >
+            <input
+              type="range"
+              min={ROOM_MIN_ZOOM}
+              max={ROOM_MAX_ZOOM}
+              step=".05"
+              value={zoom}
+              aria-label="Zoom de la habitación"
+              onChange={event => changeZoom(Number(event.target.value))}
+            />
+            <output>{Math.round(zoom * 100)}%</output>
+          </span>
+          <span
+            className="editor-control-tooltip"
+            data-tooltip={isCentered
+              ? 'El mapa ya está centrado.'
+              : 'Centra el mapa conservando el zoom actual.'}
+          >
+            <button
+              type="button"
+              className={isCentered ? '' : 'is-actionable'}
+              disabled={isCentered}
+              onClick={recenter}
+              aria-label="Centrar habitación"
+            ><CenterIcon /></button>
+          </span>
+          <span
+            className="editor-control-tooltip"
+            data-tooltip={showGrid
+              ? 'Oculta la rejilla de tiles del mapa.'
+              : 'Muestra una rejilla alineada con los tiles del mapa.'}
+          >
+            <button
+              type="button"
+              aria-pressed={showGrid}
+              onClick={() => setShowGrid(current => !current)}
+              aria-label="Mostrar grilla"
+            ><GridIcon /></button>
+          </span>
+        </div>
+        {cellMenu ? <div
+          ref={cellMenuRef}
+          className="editor-cell-menu"
+          style={{ left: cellMenu.left, top: cellMenu.top }}
+          role="menu"
+          aria-label="Añadir en la celda"
+          onPointerDown={event => event.stopPropagation()}
+        >
+          <strong>Añadir aquí</strong>
+          {([
+            ['pokemon', 'Pokémon'],
+            ['npc', 'Personaje / NPC'],
+            ['entry', 'Entrada del jugador'],
+            ['exit', 'Salida'],
+            ['interaction', 'Interacción'],
+            ['secret', 'Secreto'],
+            ['collision', 'Colisión'],
+            ['occlusion', 'Oclusión'],
+          ] as const).map(([command, commandLabel]) => <button
+            key={command}
+            type="button"
+            role="menuitem"
+            disabled={command === 'exit' && !canCreateExit(cellMenu)}
+            title={command === 'exit' && !canCreateExit(cellMenu) ? 'Esta celda no comparte borde con otra habitación' : undefined}
+            onClick={() => {
+              onCellCommand(command, cellMenu);
+              setCellMenu(undefined);
+            }}
+          >{commandLabel}</button>)}
+          <span>Anclas</span>
+          {([
+            ['anchor-actor', 'Personaje'],
+            ['anchor-encounter', 'Encuentro'],
+            ['anchor-interaction', 'Interacción'],
+            ['anchor-secret', 'Secreto'],
+          ] as const).map(([command, commandLabel]) => <button key={command} type="button" role="menuitem" onClick={() => {
+            onCellCommand(command, cellMenu);
+            setCellMenu(undefined);
+          }}>{commandLabel}</button>)}
+        </div> : null}
         <div
           className="editor-map-surface"
           style={{
@@ -457,6 +732,24 @@ export function MapAuthoringCanvas({
               onPointerDown={startSurfaceAction}
               onPointerMove={event => {
                 setDraftCurrent(pointFromEvent(event));
+                const gesture = cellGestureRef.current;
+                if (gesture) {
+                  const distance = Math.hypot(event.clientX - gesture.clientX, event.clientY - gesture.clientY);
+                  if (distance >= 6) gesture.dragging = true;
+                  if (gesture.dragging) {
+                    const next = cellFromEvent(event).center;
+                    const previous = gesture.points.at(-1)!;
+                    if (previous.x !== next.x || previous.y !== next.y) {
+                      if (previous.x !== next.x && previous.y !== next.y) {
+                        gesture.points.push({ x: next.x, y: previous.y });
+                      }
+                      gesture.points.push(next);
+                      gesture.points = simplifyOrthogonalPoints(gesture.points);
+                    }
+                    setDraftPoints([...gesture.points]);
+                  }
+                  return;
+                }
                 const moving = moveRef.current;
                 if (!moving) return;
                 const point = pointFromEvent(event);
@@ -467,6 +760,25 @@ export function MapAuthoringCanvas({
                 });
               }}
               onPointerUp={event => {
+                const gesture = cellGestureRef.current;
+                if (gesture) {
+                  cellGestureRef.current = undefined;
+                  if (gesture.dragging && gesture.points.length >= 2) {
+                    const result = addPokeDiscoverPath(tilemap, simplifyOrthogonalPoints(gesture.points), label || 'ruta');
+                    onTilemapChange(result.tilemap, 'Crear ruta ortogonal');
+                    onOpenObject(result.object.id);
+                    setDraftPoints([]);
+                  } else {
+                    const cell = cellFromEvent(event);
+                    const viewport = viewportRef.current;
+                    setCellMenu({
+                      ...cell,
+                      left: Math.min(Math.max(8, event.clientX - (viewport?.getBoundingClientRect().left ?? 0)), Math.max(8, (viewport?.clientWidth ?? 240) - 230)),
+                      top: Math.min(Math.max(8, event.clientY - (viewport?.getBoundingClientRect().top ?? 0)), Math.max(8, (viewport?.clientHeight ?? 320) - 330)),
+                    });
+                  }
+                  return;
+                }
                 if (moveRef.current && movePreview) {
                   onTilemapChange(updatePokeDiscoverTiledObject(
                     tilemap,
@@ -481,18 +793,51 @@ export function MapAuthoringCanvas({
               onDoubleClick={() => {
                 if (draftPoints.length) finishLineTool(draftPoints);
               }}
+              onPointerCancel={() => {
+                cellGestureRef.current = undefined;
+                moveRef.current = undefined;
+                setMovePreview(undefined);
+                setDraftPoints([]);
+              }}
             >
+              {showGrid ? <>
+                <defs>
+                  <pattern id={`editor-grid-${roomId.replaceAll(':', '-')}`} width={tilemap.tilewidth} height={tilemap.tileheight} patternUnits="userSpaceOnUse">
+                    <path
+                      className="editor-map-grid-line"
+                      d={`M 0 0 H ${tilemap.tilewidth} M 0 0 V ${tilemap.tileheight}`}
+                    />
+                  </pattern>
+                </defs>
+                <rect
+                  className="editor-map-grid"
+                  x={-tilemap.tilewidth}
+                  y={-tilemap.tileheight}
+                  width={mapWidth + tilemap.tilewidth * 2}
+                  height={mapHeight + tilemap.tileheight * 2}
+                  fill={`url(#editor-grid-${roomId.replaceAll(':', '-')})`}
+                  pointerEvents="none"
+                />
+                <rect
+                  className="editor-map-grid-line"
+                  x={-tilemap.tilewidth}
+                  y={-tilemap.tileheight}
+                  width={mapWidth + tilemap.tilewidth * 2}
+                  height={mapHeight + tilemap.tileheight * 2}
+                  pointerEvents="none"
+                />
+              </> : null}
               {objects.filter(candidate => visibleLayers.has(candidate.layerName)).map(({ layerName, object }) => {
-                const className = `editor-geometry-object ${layerClass(layerName)}${object.id === selectedId ? ' is-selected' : ''}`;
+                const className = `editor-geometry-object ${layerClass(layerName)}${object.id === selectedObjectId ? ' is-selected' : ''}`;
                 const preview = movePreview?.objectId === object.id ? movePreview : undefined;
                 const transform = preview ? `translate(${preview.x - object.x} ${preview.y - object.y})` : undefined;
                 const common = {
                   className,
                   transform,
                   onPointerDown: (event: ReactPointerEvent<SVGElement>) => {
-                    if (tool !== 'select') return;
+                    if (tool !== 'select' || event.button !== 0) return;
                     event.stopPropagation();
-                    setSelectedId(object.id);
+                    onOpenObject(object.id);
                     const bounds = event.currentTarget.ownerSVGElement!.getBoundingClientRect();
                     const x = snap((event.clientX - bounds.left) * mapWidth / bounds.width, event.altKey);
                     const y = snap((event.clientY - bounds.top) * mapHeight / bounds.height, event.altKey);
@@ -505,7 +850,18 @@ export function MapAuthoringCanvas({
                 if (object.point || (!object.width && !object.height)) {
                   return <circle key={object.id} {...common} cx={object.x} cy={object.y} r={7} />;
                 }
-                return <rect key={object.id} {...common} x={object.x} y={object.y} width={object.width} height={object.height} />;
+                return <rect
+                  key={object.id}
+                  {...common}
+                  transform={[
+                    transform,
+                    object.rotation ? `rotate(${object.rotation} ${object.x} ${object.y})` : '',
+                  ].filter(Boolean).join(' ') || undefined}
+                  x={object.x}
+                  y={object.y}
+                  width={object.width}
+                  height={object.height}
+                />;
               })}
               {draftStart && draftCurrent ? (
                 <rect
@@ -526,9 +882,15 @@ export function MapAuthoringCanvas({
                 <g
                   key={`${marker.kind}:${marker.contentId}`}
                   className={`editor-content-marker is-${marker.kind}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Editar colocación ${marker.contentId}`}
                   onPointerDown={event => {
                     event.stopPropagation();
-                    onOpenPlacement(marker.contentId);
+                    onOpenPlacement(marker.contentId, marker.kind);
+                  }}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') onOpenPlacement(marker.contentId, marker.kind);
                   }}
                 >
                   <circle cx={marker.x} cy={marker.y} r={8} />
@@ -553,57 +915,6 @@ export function MapAuthoringCanvas({
           ) : null}
         </div>
       </div>
-      {mode === 'design' && selected ? (
-        <aside className="editor-selection-inspector" aria-label="Objeto seleccionado">
-          <div>
-            <strong>{selected.object.name || 'Objeto sin nombre'}</strong>
-            <span>{selected.layerName === 'Anchors' ? 'Ancla' : selected.layerName}</span>
-          </div>
-          {(['x', 'y', 'width', 'height'] as const).map(field => (
-            <label key={field}><span>{field === 'width' ? 'Ancho' : field === 'height' ? 'Alto' : field.toUpperCase()}</span>
-              <input type="number" step="1" value={selectedValue(field)} onChange={event => updateSelectedNumber(field, Number(event.target.value))} />
-            </label>
-          ))}
-          <button type="button" className="is-danger" onClick={() => onDeleteObject(selected.object)}>Eliminar</button>
-          <details><summary>Detalles avanzados</summary><code>#{selected.object.id} · {objectClass(selected.object) || 'sin clase'}</code></details>
-          {selected.object.polygon || selected.object.polyline ? (
-            <details className="editor-selection-points">
-              <summary>Editar vértices</summary>
-              {(selected.object.polygon ?? selected.object.polyline ?? []).map((point, index) => (
-                <div key={index}>
-                  <span>{index + 1}</span>
-                  <label><span>X</span><input type="number" value={point.x} onChange={event => onTilemapChange(updatePokeDiscoverTiledObject(
-                    tilemap,
-                    selected.object.id,
-                    object => {
-                      const key = object.polygon ? 'polygon' : 'polyline';
-                      return {
-                        ...object,
-                        [key]: object[key]?.map((candidate, pointIndex) => pointIndex === index
-                          ? { ...candidate, x: Number(event.target.value) }
-                          : candidate),
-                      };
-                    },
-                  ), 'Editar vértice')} /></label>
-                  <label><span>Y</span><input type="number" value={point.y} onChange={event => onTilemapChange(updatePokeDiscoverTiledObject(
-                    tilemap,
-                    selected.object.id,
-                    object => {
-                      const key = object.polygon ? 'polygon' : 'polyline';
-                      return {
-                        ...object,
-                        [key]: object[key]?.map((candidate, pointIndex) => pointIndex === index
-                          ? { ...candidate, y: Number(event.target.value) }
-                          : candidate),
-                      };
-                    },
-                  ), 'Editar vértice')} /></label>
-                </div>
-              ))}
-            </details>
-          ) : null}
-        </aside>
-      ) : null}
     </section>
   );
 }

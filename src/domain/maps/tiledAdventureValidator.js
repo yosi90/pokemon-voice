@@ -492,6 +492,10 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
       if (!Array.isArray(beat.actions) || !beat.actions.length) errors.push(`${beat.beatId}: necesita acciones`);
       const beatPlacements = new Set();
       for (const action of beat.actions ?? []) {
+        if (!['playAnimation', 'face', 'movePath', 'moveByTiles', 'setVisible'].includes(action.kind)) {
+          errors.push(`${beat.beatId}: acción ambiental desconocida ${action.kind}`);
+          continue;
+        }
         if (beatPlacements.has(action.placementId)) errors.push(`${beat.beatId}: más de una acción para ${action.placementId}`);
         beatPlacements.add(action.placementId);
         const placement = allPlacements.get(action.placementId);

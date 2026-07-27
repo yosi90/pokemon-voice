@@ -14,43 +14,63 @@ interface StoredEditorWindowGeometry {
   height: number;
 }
 
-const DESKTOP_TOP = 62;
-const DESKTOP_BOTTOM = 28;
 const MIN_WIDTH = 360;
 const MIN_HEIGHT = 220;
 
-function clampGeometry(value: EditorWindowGeometry) {
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const width = Math.min(Math.max(MIN_WIDTH, value.width), Math.max(MIN_WIDTH, viewportWidth - 24));
+interface EditorWindowBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+function readCanvasBounds(): EditorWindowBounds {
+  const target = document.querySelector<HTMLElement>('.editor-window-bounds');
+  const rectangle = target?.getBoundingClientRect();
+  if (rectangle?.width && rectangle.height) {
+    return {
+      left: rectangle.left,
+      top: rectangle.top,
+      width: rectangle.width,
+      height: rectangle.height,
+    };
+  }
+  return { left: 0, top: 94, width: window.innerWidth, height: Math.max(220, window.innerHeight - 119) };
+}
+
+function clampGeometry(value: EditorWindowGeometry, bounds: EditorWindowBounds) {
+  const minimumWidth = Math.min(MIN_WIDTH, bounds.width);
+  const minimumHeight = Math.min(MIN_HEIGHT, bounds.height);
+  const width = Math.min(Math.max(minimumWidth, value.width), bounds.width);
   const height = Math.min(
-    Math.max(MIN_HEIGHT, value.height),
-    Math.max(MIN_HEIGHT, viewportHeight - DESKTOP_TOP - DESKTOP_BOTTOM - 12),
+    Math.max(minimumHeight, value.height),
+    bounds.height,
   );
   return {
     width,
     height,
-    x: Math.min(Math.max(12, value.x), Math.max(12, viewportWidth - width - 12)),
-    y: Math.min(
-      Math.max(DESKTOP_TOP, value.y),
-      Math.max(DESKTOP_TOP, viewportHeight - DESKTOP_BOTTOM - height - 8),
-    ),
+    x: Math.min(Math.max(bounds.left, value.x), bounds.left + bounds.width - width),
+    y: Math.min(Math.max(bounds.top, value.y), bounds.top + bounds.height - height),
   };
 }
 
-function readStoredGeometry(id: string, fallback: EditorWindowGeometry) {
+function readStoredGeometry(
+  id: string,
+  fallback: EditorWindowGeometry,
+  bounds: EditorWindowBounds,
+) {
   try {
     const raw = localStorage.getItem(`pokediscover:window:${id}`);
-    if (!raw) return clampGeometry(fallback);
+    if (!raw) return clampGeometry(fallback, bounds);
     const stored = JSON.parse(raw) as StoredEditorWindowGeometry;
     return clampGeometry({
-      x: stored.xRatio * window.innerWidth,
-      y: stored.yRatio * window.innerHeight,
+      x: bounds.left + stored.xRatio * bounds.width,
+      y: bounds.top + stored.yRatio * bounds.height,
       width: stored.width,
       height: stored.height,
-    });
+    }, bounds);
   } catch {
-    return clampGeometry(fallback);
+    return clampGeometry(fallback, bounds);
   }
 }
 
@@ -73,7 +93,8 @@ export function EditorWindow({
   onFocus: () => void;
   children: ReactNode;
 }) {
-  const [geometry, setGeometry] = useState(() => readStoredGeometry(id, initialGeometry));
+  const [bounds, setBounds] = useState(readCanvasBounds);
+  const [geometry, setGeometry] = useState(() => readStoredGeometry(id, initialGeometry, readCanvasBounds()));
   const [minimized, setMinimized] = useState(false);
   const [maximized, setMaximized] = useState(false);
   const dragRef = useRef<{
@@ -86,21 +107,27 @@ export function EditorWindow({
   useEffect(() => {
     const persist = () => {
       const value: StoredEditorWindowGeometry = {
-        xRatio: geometry.x / window.innerWidth,
-        yRatio: geometry.y / window.innerHeight,
+        xRatio: bounds.width ? (geometry.x - bounds.left) / bounds.width : 0,
+        yRatio: bounds.height ? (geometry.y - bounds.top) / bounds.height : 0,
         width: geometry.width,
         height: geometry.height,
       };
       localStorage.setItem(`pokediscover:window:${id}`, JSON.stringify(value));
     };
     persist();
-  }, [geometry, id]);
+  }, [bounds, geometry, id]);
 
   useEffect(() => {
-    const keepInsideViewport = () => setGeometry(current => clampGeometry(current));
+    const keepInsideCanvas = () => {
+      const nextBounds = readCanvasBounds();
+      setBounds(nextBounds);
+      setGeometry(current => clampGeometry(current, nextBounds));
+    };
     const restore = () => {
       localStorage.removeItem(`pokediscover:window:${id}`);
-      setGeometry(clampGeometry(initialGeometry));
+      const nextBounds = readCanvasBounds();
+      setBounds(nextBounds);
+      setGeometry(clampGeometry(initialGeometry, nextBounds));
       setMaximized(false);
       setMinimized(false);
     };
@@ -109,11 +136,16 @@ export function EditorWindow({
       if (action === 'minimize') setMinimized(true);
       if (action === 'recover') setMinimized(false);
     };
-    window.addEventListener('resize', keepInsideViewport);
+    const resizeObserver = new ResizeObserver(keepInsideCanvas);
+    const boundsElement = document.querySelector<HTMLElement>('.editor-window-bounds');
+    if (boundsElement) resizeObserver.observe(boundsElement);
+    keepInsideCanvas();
+    window.addEventListener('resize', keepInsideCanvas);
     window.addEventListener('pokediscover:restore-layout', restore);
     window.addEventListener('pokediscover:window-action', applyWindowAction);
     return () => {
-      window.removeEventListener('resize', keepInsideViewport);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', keepInsideCanvas);
       window.removeEventListener('pokediscover:restore-layout', restore);
       window.removeEventListener('pokediscover:window-action', applyWindowAction);
     };
@@ -122,10 +154,10 @@ export function EditorWindow({
   if (!open) return null;
   const displayed = maximized
     ? {
-      x: 12,
-      y: DESKTOP_TOP,
-      width: window.innerWidth - 24,
-      height: window.innerHeight - DESKTOP_TOP - DESKTOP_BOTTOM - 8,
+      x: bounds.left,
+      y: bounds.top,
+      width: bounds.width,
+      height: bounds.height,
     }
     : geometry;
 
@@ -155,7 +187,7 @@ export function EditorWindow({
         ...drag.start,
         width: drag.start.width + dx,
         height: drag.start.height + dy,
-      }));
+      }, bounds));
   };
 
   return (
