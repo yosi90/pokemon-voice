@@ -41,4 +41,28 @@ describe('editor visual de requisitos', () => {
       { any: [{ kind: 'companionSpecies', speciesId: 25 }] },
     ] });
   });
+
+  it('incluye y actualiza los requisitos de eventos espaciales', () => {
+    const adventure = normalizeAdventureMapV3(structuredClone(teguesteAdventure) as never);
+    const withEvent: AdventureMapV3 = {
+      ...adventure,
+      mapEventTriggers: [{
+        schemaVersion: 1,
+        triggerId: 'trigger:map:01',
+        sectorId: adventure.sectors[0].sectorId,
+        activation: { kind: 'enterZone', zoneId: 'trigger:map:01:zone:01' },
+        requirement: { kind: 'trainerLevel', minimum: 1 },
+        sequenceId: 'sequence:map-event:01',
+        repeatPolicy: 'oncePerVisit',
+        resultingActorStates: [],
+      }],
+    };
+    const target = listAdventureRequirementTargets(withEvent)
+      .find(candidate => candidate.source === 'mapEventTrigger')!;
+    const requirement: RequirementExpressionV1 = { kind: 'worldFlag', flagId: 'flag:test', expected: true };
+    const updated = updateAdventureRequirement(withEvent, target, requirement);
+
+    expect(target.definitionId).toBe('trigger:map:01');
+    expect(updated.mapEventTriggers?.[0].requirement).toEqual(requirement);
+  });
 });

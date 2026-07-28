@@ -4,7 +4,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
     status: 200,
     contentType: 'image/png',
-    path: 'public/assets/sprites/pokemon/pmd/0019-rattata/default/Idle-Anim.png',
+    path: 'public/assets/sprites/pokemon/pmd/gen1/0019-rattata/default/Idle-Anim.png',
   }));
   await page.goto('/tools/pokediscover-randomizer/');
 });

@@ -127,6 +127,7 @@ function collectStableIds(adventure: AdventureMapV3) {
   for (const item of adventure.rareEncounters ?? []) add(item.encounterId, 'encuentro raro');
   for (const item of adventure.behaviorTriggers ?? []) add(item.triggerId, 'comportamiento');
   for (const item of adventure.expressionTriggers ?? []) add(item.triggerId, 'trigger expresivo');
+  for (const item of adventure.mapEventTriggers ?? []) add(item.triggerId, 'evento de mapa');
   for (const item of adventure.worldEvents ?? []) add(item.eventId, 'evento global');
   for (const item of adventure.interactions ?? []) add(item.interactionId, 'interacción');
   for (const item of adventure.dialogues ?? []) { add(item.dialogueId, 'diálogo'); for (const page of item.pages ?? []) add(page.pageId, 'página'); }
@@ -134,6 +135,7 @@ function collectStableIds(adventure: AdventureMapV3) {
   for (const item of adventure.researchFacts ?? []) add(item.factId, 'investigación');
   for (const item of adventure.ambientSequences ?? []) { add(item.sequenceId, 'secuencia ambiental'); for (const beat of item.beats ?? []) add(beat.beatId, 'beat ambiental'); }
   for (const item of adventure.companionSequences ?? []) { add(item.sequenceId, 'secuencia de compañero'); for (const beat of item.beats ?? []) add(beat.beatId, 'beat de compañero'); }
+  for (const item of adventure.mapSequences ?? []) { add(item.sequenceId, 'secuencia de mapa'); for (const beat of item.beats ?? []) add(beat.beatId, 'beat de mapa'); }
   return entries;
 }
 
@@ -151,6 +153,7 @@ function circularDiagnostics(adventure: AdventureMapV3) {
     ...(adventure.worldEvents ?? []).map(event => ({ id: event.eventId, requirement: event.activation, produces: Object.entries(event.setFlags).map(([id, value]) => `flag:${id}:${JSON.stringify(value)}`) })),
     ...(adventure.behaviorTriggers ?? []).map(trigger => ({ id: trigger.triggerId, requirement: trigger.requirement, produces: (trigger.completionEffects?.unlockSecretIds ?? []).map(id => `secret:${id}`) })),
     ...(adventure.expressionTriggers ?? []).map(trigger => ({ id: trigger.triggerId, requirement: trigger.activationRequirement, produces: (trigger.completionEffects?.unlockSecretIds ?? []).map(id => `secret:${id}`) })),
+    ...(adventure.mapEventTriggers ?? []).map(trigger => ({ id: trigger.triggerId, requirement: trigger.requirement, produces: [] })),
   ];
   const producers = new Map<string, string[]>();
   for (const node of nodes) for (const token of node.produces) producers.set(token, [...(producers.get(token) ?? []), node.id]);

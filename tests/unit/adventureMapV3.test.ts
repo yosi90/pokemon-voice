@@ -64,7 +64,22 @@ function legacyMap(): AdventureMapV2 {
       roomId: 'room:test:historic-id',
       beats: [],
     }],
-    mapSequences: [],
+    mapSequences: [{
+      schemaVersion: 1,
+      sequenceId: 'sequence:map-event:01',
+      roomId: 'room:test:historic-id',
+      beats: [],
+    }],
+    mapEventTriggers: [{
+      schemaVersion: 1,
+      triggerId: 'trigger:map:01',
+      roomId: 'room:test:historic-id',
+      activation: { kind: 'enterZone', zoneId: 'trigger:map:01:zone:01' },
+      requirement: { kind: 'trainerLevel', minimum: 1 },
+      sequenceId: 'sequence:map-event:01',
+      repeatPolicy: 'oncePerVisit',
+      resultingActorStates: [],
+    }],
     expressionTriggers: [],
     interactions: [{
       schemaVersion: 1,
@@ -106,6 +121,8 @@ describe('AdventureMapV3', () => {
     });
     expect(migrated.entryPoints?.[0].sectorId).toBe('sector:test:historic-id');
     expect(migrated.companionSequences?.[0].sectorId).toBe('sector:test:historic-id');
+    expect(migrated.mapSequences?.[0].sectorId).toBe('sector:test:historic-id');
+    expect(migrated.mapEventTriggers?.[0].sectorId).toBe('sector:test:historic-id');
     expect(migrated.interactions?.[0].sectorId).toBe('sector:test:historic-id');
     expect(migrated.ambientSequences[0].sectorId).toBe('sector:test:historic-id');
     expect(resolveAdventureSectorId(migrated, 'room:test:historic-id'))

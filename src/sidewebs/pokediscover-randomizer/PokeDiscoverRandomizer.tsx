@@ -51,6 +51,16 @@ export function PokeDiscoverRandomizer() {
 
         <div className="randomizer-filters" aria-label="Filtros del sorteo">
           <label>
+            <span>Buscar</span>
+            <input
+              aria-label="Buscar Pokémon"
+              type="search"
+              value={filters.query}
+              placeholder="Nombre, número o asset…"
+              onChange={event => changeFilter('query', event.target.value)}
+            />
+          </label>
+          <label>
             <span>Tipo principal</span>
             <select
               aria-label="Tipo principal"

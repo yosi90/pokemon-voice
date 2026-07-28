@@ -1,7 +1,13 @@
 import type { AdventureMapV3 } from '../../../packages/contracts/src/index.js';
 import type { LoadedTiledMap } from '../maps/loadAdventureBundle.js';
 
-export type PokeDiscoverObjectLayerName = 'Collision' | 'Anchors' | 'Paths' | 'Occlusion';
+export type PokeDiscoverObjectLayerName =
+  | 'Collision'
+  | 'Anchors'
+  | 'Triggers'
+  | 'Paths'
+  | 'Occlusion'
+  | 'Comments';
 export type PokeDiscoverEditableLayerName = 'Above' | PokeDiscoverObjectLayerName;
 
 export interface PokeDiscoverTiledObject extends Record<string, unknown> {
@@ -177,7 +183,16 @@ function canonicalLayerInsertionIndex(
   layers: Array<Record<string, unknown>>,
   name: PokeDiscoverEditableLayerName,
 ) {
-  const order = ['Ground', 'Collision', 'Above', 'Anchors', 'Occlusion', 'Paths'];
+  const order = [
+    'Ground',
+    'Collision',
+    'Above',
+    'Anchors',
+    'Triggers',
+    'Paths',
+    'Occlusion',
+    'Comments',
+  ];
   const desired = order.indexOf(name);
   for (let index = 0; index < layers.length; index += 1) {
     const current = order.indexOf(String(layers[index].name));

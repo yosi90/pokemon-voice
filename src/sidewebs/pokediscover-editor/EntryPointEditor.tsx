@@ -76,7 +76,7 @@ export function EntryPointEditor({
       <div className="editor-entry-points__layout">
         <aside>
           <label><span>Nombre de la entrada</span><input value={newLabel} onChange={event => setNewLabel(event.target.value)} /></label>
-          <button type="button" disabled title="Crea la entrada desde una celda del sector para generar conjuntamente PlayerSpawn y sidecar." onClick={createEntry}>Crear entrada</button>
+          <button type="button" disabled title="Crea la entrada desde una celda del sector para generar toda su configuración." onClick={createEntry}>Crear entrada</button>
           {!creatableRegistration ? <p>Dibuja primero una entrada del jugador en una sector.</p> : null}
           <div className="editor-entry-points__list">
             {(adventure.entryPoints ?? []).map(entry => (

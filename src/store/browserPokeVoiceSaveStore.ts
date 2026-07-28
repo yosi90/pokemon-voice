@@ -76,6 +76,10 @@ import {
   type CompleteExpeditionInteractionRequest,
 } from '../domain/expeditions/expeditionInteractionCompletion.js';
 import {
+  completeMapEventTrigger,
+  enterMapEventSector,
+} from '../domain/expeditions/mapEventTriggers.js';
+import {
   createCompanionCatalogSpecies,
   type CompanionCandidate,
 } from '../domain/companions/companionCandidates.js';
@@ -500,6 +504,23 @@ export function completeBrowserExpeditionInteraction(
   const result = completeExpeditionInteraction(current, request);
   if (result.save !== current) persist(result.save);
   return result;
+}
+
+export function completeBrowserMapEventTrigger(
+  mapId: string,
+  trigger: import('../../packages/contracts/src/index.js').MapEventTriggerV3,
+) {
+  const current = readCurrentSave();
+  const result = completeMapEventTrigger(current, mapId, trigger);
+  if (result.save !== current) persist(result.save);
+  return result;
+}
+
+export function enterBrowserMapEventSector(mapId: string, sectorId: string) {
+  const current = readCurrentSave();
+  const next = enterMapEventSector(current, mapId, sectorId);
+  if (next !== current) persist(next);
+  return next.activeExpeditionSession;
 }
 
 export function identifyBrowserVisibleExpeditionSpecies(request: IdentifyVisibleSpeciesRequest) {

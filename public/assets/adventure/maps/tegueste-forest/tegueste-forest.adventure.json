@@ -1,59 +1,619 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "mapId": "map:tegueste:camphor-forest",
   "title": "Bosque de Tegueste",
-  "tiledMapAssets": [{
-    "schemaVersion": 1,
-    "assetId": "tiled-map:tegueste-forest:02-04",
-    "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-02-05.tmj"
-  }],
-  "rooms": [{
-    "schemaVersion": 1,
-    "roomId": "room:tegueste-forest:02-04",
-    "tiledMapAssetId": "tiled-map:tegueste-forest:02-04",
-    "staticCamera": true,
-    "spawnAnchorIds": [
-      "anchor:player:entrance-south",
-      "anchor:transition:east",
-      "anchor:transition:north",
-      "anchor:transition:south"
-    ]
-  }],
+  "tiledMapAssets": [
+    {
+      "schemaVersion": 1,
+      "assetId": "tiled-map:tegueste-forest:02-04",
+      "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-02-05.tmj"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "tiled-map:tegueste-forest:01-05",
+      "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-01-05.tmj"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "tiled-map:tegueste-forest:04-05",
+      "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-04-05.tmj"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "tiled-map:tegueste-forest:05-05",
+      "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-05-05.tmj"
+    }
+  ],
   "actorPlacements": [
-    { "schemaVersion": 1, "placementId": "actor:rattata:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:left", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "right", "initiallyHidden": true },
-    { "schemaVersion": 1, "placementId": "actor:rattata:middle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:middle", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "up", "initiallyHidden": true },
-    { "schemaVersion": 1, "placementId": "actor:rattata:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:right", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "left", "initiallyHidden": true },
-    { "schemaVersion": 1, "placementId": "actor:gyarados:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:left", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "right", "occlusionGroupIds": ["occlusion-group:water-actors"] },
-    { "schemaVersion": 1, "placementId": "actor:gyarados:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:right", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "left", "occlusionGroupIds": ["occlusion-group:water-actors"] },
-    { "schemaVersion": 1, "placementId": "actor:cramorant", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cramorant", "assetId": "pmd:0845-cramorant:default", "animation": "Idle", "direction": "down" },
-    { "schemaVersion": 1, "placementId": "actor:cottonee", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cottonee", "assetId": "pmd:0546-cottonee:default", "animation": "Idle", "direction": "down", "collision": "pass-through" },
-    { "schemaVersion": 1, "placementId": "actor:starter:bulbasaur", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "pmd:0001-bulbasaur:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
-    { "schemaVersion": 1, "placementId": "actor:starter:charmander", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "pmd:0004-charmander:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
-    { "schemaVersion": 1, "placementId": "actor:starter:squirtle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "pmd:0007-squirtle:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
-    { "schemaVersion": 1, "placementId": "actor:pineco:prologue", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:pineco:1", "assetId": "pmd:0204-pineco:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true }
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:rattata:default:01",
+      "anchorId": "placement:pokemon:rattata:default:01",
+      "assetId": "pmd:0019-rattata:default",
+      "animation": "Idle",
+      "direction": "right",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:rattata:default:02",
+      "anchorId": "placement:pokemon:rattata:default:02",
+      "assetId": "pmd:0019-rattata:default",
+      "animation": "Idle",
+      "direction": "up",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:rattata:default:03",
+      "anchorId": "placement:pokemon:rattata:default:03",
+      "assetId": "pmd:0019-rattata:default",
+      "animation": "Idle",
+      "direction": "left",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:gyarados:default:01",
+      "anchorId": "placement:pokemon:gyarados:default:01",
+      "assetId": "pmd:0130-gyarados:default",
+      "animation": "Idle",
+      "direction": "right",
+      "occlusionGroupIds": [
+        "occlusion-group:water-actors"
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:gyarados:default:02",
+      "anchorId": "placement:pokemon:gyarados:default:02",
+      "assetId": "pmd:0130-gyarados:default",
+      "animation": "Idle",
+      "direction": "left",
+      "occlusionGroupIds": [
+        "occlusion-group:water-actors"
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:cramorant:default:01",
+      "anchorId": "placement:pokemon:cramorant:default:01",
+      "assetId": "pmd:0845-cramorant:default",
+      "animation": "Idle",
+      "direction": "down",
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:cottonee:default:01",
+      "anchorId": "placement:pokemon:cottonee:default:01",
+      "assetId": "pmd:0546-cottonee:default",
+      "animation": "Idle",
+      "direction": "down",
+      "collision": "pass-through",
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:bulbasaur:default:01",
+      "anchorId": "placement:pokemon:bulbasaur:default:01",
+      "assetId": "pmd:0001-bulbasaur:default",
+      "animation": "Idle",
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:charmander:default:01",
+      "anchorId": "placement:pokemon:charmander:default:01",
+      "assetId": "pmd:0004-charmander:default",
+      "animation": "Idle",
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:squirtle:default:01",
+      "anchorId": "placement:pokemon:squirtle:default:01",
+      "assetId": "pmd:0007-squirtle:default",
+      "animation": "Idle",
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:01",
+      "anchorId": "placement:pokemon:pineco:default:01",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pelipper:default:01",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:pelipper:default:01",
+      "assetId": "pmd:0279-pelipper:default",
+      "animation": "Sleep",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pidove:default:01",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:pidove:default:01",
+      "assetId": "pmd:0519-pidove:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:shellos:default:01",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:shellos:default:01",
+      "assetId": "pmd:0422-shellos:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:shellos:default:02",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:shellos:default:02",
+      "assetId": "pmd:0422-shellos:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:shellos:default:03",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:shellos:default:03",
+      "assetId": "pmd:0422-shellos:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:froakie:default:01",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:froakie:default:01",
+      "assetId": "pmd:0656-froakie:default",
+      "animation": "DeepBreath",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:froakie:default:02",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:froakie:default:02",
+      "assetId": "pmd:0656-froakie:default",
+      "animation": "Float",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:froakie:default:03",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:froakie:default:03",
+      "assetId": "pmd:0656-froakie:default",
+      "animation": "Shoot",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:froakie:default:04",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:froakie:default:04",
+      "assetId": "pmd:0656-froakie:default",
+      "animation": "Head",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:froakie:default:05",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:froakie:default:05",
+      "assetId": "pmd:0656-froakie:default",
+      "animation": "EventSleep",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:froakie:default:06",
+      "sectorId": "sector:tegueste-forest:01-05",
+      "anchorId": "placement:pokemon:froakie:default:06",
+      "assetId": "pmd:0656-froakie:default",
+      "animation": "Head",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:02",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:02",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:03",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:03",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:04",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:04",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:05",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:05",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:06",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:06",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:07",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:07",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:08",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:08",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pineco:default:09",
+      "sectorId": "sector:tegueste-forest:02-04",
+      "anchorId": "placement:pokemon:pineco:default:09",
+      "assetId": "pmd:0204-pineco:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:pikachu:default:01",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:pikachu:default:01",
+      "assetId": "pmd:0025-pikachu:default",
+      "animation": "Charge",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:chikorita:default:01",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:chikorita:default:01",
+      "assetId": "pmd:0152-chikorita:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:chikorita:default:02",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:chikorita:default:02",
+      "assetId": "pmd:0152-chikorita:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:chikorita:default:03",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:chikorita:default:03",
+      "assetId": "pmd:0152-chikorita:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:chikorita:default:04",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:chikorita:default:04",
+      "assetId": "pmd:0152-chikorita:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:chikorita:default:05",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:chikorita:default:05",
+      "assetId": "pmd:0152-chikorita:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:bayleef:default:01",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:bayleef:default:01",
+      "assetId": "pmd:0153-bayleef:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:ledyba:default:01",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:ledyba:default:01",
+      "assetId": "pmd:0165-ledyba:default",
+      "animation": "Walk",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:sirfetchd:default:01",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:sirfetchd:default:01",
+      "assetId": "pmd:0865-sirfetchd:default",
+      "animation": "Walk",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:sirfetchd:default:02",
+      "sectorId": "sector:tegueste-forest:04-05",
+      "anchorId": "placement:pokemon:sirfetchd:default:02",
+      "assetId": "pmd:0865-sirfetchd:default",
+      "animation": "Walk",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:heracross:default:01",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:heracross:default:01",
+      "assetId": "pmd:0214-heracross:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:tauros:default:01",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:tauros:default:01",
+      "assetId": "pmd:0128-tauros:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:tauros:default:02",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:tauros:default:02",
+      "assetId": "pmd:0128-tauros:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:tauros:default:03",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:tauros:default:03",
+      "assetId": "pmd:0128-tauros:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:tauros:default:04",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:tauros:default:04",
+      "assetId": "pmd:0128-tauros:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:staraptor:default:01",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:staraptor:default:01",
+      "assetId": "pmd:0398-staraptor:default",
+      "animation": "Idle",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:appletun:default:01",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:appletun:default:01",
+      "assetId": "pmd:0842-appletun:default",
+      "animation": "Shoot",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:klefki:default:01",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:klefki:default:01",
+      "assetId": "pmd:0707-klefki:default",
+      "animation": "Sleep",
+      "direction": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "placement:pokemon:rellor:default:01",
+      "sectorId": "sector:tegueste-forest:05-05",
+      "anchorId": "placement:pokemon:rellor:default:01",
+      "assetId": "pmd:0953-rellor:default",
+      "animation": "Walk",
+      "direction": "down"
+    }
   ],
   "characterPlacements": [
-    { "schemaVersion": 1, "placementId": "character:player", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:player:entrance-south", "assetId": "character:trainer:achaman", "direction": "up", "controllable": true },
-    { "schemaVersion": 1, "placementId": "character:professor-alcanfor", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor", "assetId": "character:npc:professor-alcanfor", "direction": "down" },
-    { "schemaVersion": 1, "placementId": "character:professor-alcanfor-fallen", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "character:npc:professor-alcanfor-fallen", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
-    { "schemaVersion": 1, "placementId": "character:scientist:one", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:scientific:init1", "assetId": "character:npc:scientist", "direction": "left", "collision": "pass-through" },
-    { "schemaVersion": 1, "placementId": "character:scientist:two", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:scientific:init2", "assetId": "character:npc:scientist", "direction": "left", "collision": "pass-through" }
+    {
+      "schemaVersion": 1,
+      "placementId": "character:player",
+      "anchorId": "character:player",
+      "assetId": "character:trainer:achaman",
+      "direction": "up",
+      "controllable": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "character:professor-alcanfor",
+      "anchorId": "character:professor-alcanfor",
+      "assetId": "character:npc:professor-alcanfor",
+      "direction": "down",
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "character:professor-alcanfor-fallen",
+      "anchorId": "character:professor-alcanfor-fallen",
+      "assetId": "character:npc:professor-alcanfor-fallen",
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true,
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "character:scientist:one",
+      "anchorId": "character:scientist:one",
+      "assetId": "character:npc:scientist",
+      "direction": "left",
+      "collision": "pass-through",
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "placementId": "character:scientist:two",
+      "anchorId": "character:scientist:two",
+      "assetId": "character:npc:scientist",
+      "direction": "left",
+      "collision": "pass-through",
+      "sectorId": "sector:tegueste-forest:02-04"
+    }
   ],
-  "transitions": [],
+  "transitions": [
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:01",
+      "kind": "edge",
+      "fromSectorId": "sector:tegueste-forest:01-05",
+      "fromAnchorId": "transition:01:from",
+      "toSectorId": "sector:tegueste-forest:02-04",
+      "toAnchorId": "transition:01:to",
+      "destinationFacing": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:02",
+      "kind": "edge",
+      "fromSectorId": "sector:tegueste-forest:02-04",
+      "fromAnchorId": "transition:02:from",
+      "toSectorId": "sector:tegueste-forest:01-05",
+      "toAnchorId": "transition:02:to",
+      "destinationFacing": "up"
+    },
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:03",
+      "kind": "edge",
+      "fromSectorId": "sector:tegueste-forest:02-04",
+      "fromAnchorId": "transition:03:from",
+      "toSectorId": "sector:tegueste-forest:05-05",
+      "toAnchorId": "transition:03:to",
+      "destinationFacing": "down"
+    },
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:04",
+      "kind": "edge",
+      "fromSectorId": "sector:tegueste-forest:05-05",
+      "fromAnchorId": "transition:04:from",
+      "toSectorId": "sector:tegueste-forest:02-04",
+      "toAnchorId": "transition:04:to",
+      "destinationFacing": "up"
+    },
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:05",
+      "kind": "edge",
+      "fromSectorId": "sector:tegueste-forest:05-05",
+      "fromAnchorId": "transition:05:from",
+      "toSectorId": "sector:tegueste-forest:04-05",
+      "toAnchorId": "transition:05:to",
+      "destinationFacing": "left"
+    },
+    {
+      "schemaVersion": 1,
+      "transitionId": "transition:06",
+      "kind": "edge",
+      "fromSectorId": "sector:tegueste-forest:04-05",
+      "fromAnchorId": "transition:06:from",
+      "toSectorId": "sector:tegueste-forest:05-05",
+      "toAnchorId": "transition:06:to",
+      "destinationFacing": "right"
+    }
+  ],
   "variants": [],
-  "missionIds": ["mission:tegueste:help-professor-camphor"],
-  "entryPoints": [{
-    "schemaVersion": 1,
-    "entryPointId": "entry-point:tegueste-forest:camphor-rescue",
-    "label": "Llegada para ayudar al profesor",
-    "roomId": "room:tegueste-forest:02-04",
-    "anchorId": "anchor:player:entrance-south"
-  }],
-  "missionEntryPoints": [{
-    "schemaVersion": 1,
-    "missionId": "mission:tegueste:help-professor-camphor",
-    "entryPointId": "entry-point:tegueste-forest:camphor-rescue"
-  }],
+  "missionIds": [
+    "mission:tegueste:help-professor-camphor"
+  ],
+  "entryPoints": [
+    {
+      "schemaVersion": 1,
+      "entryPointId": "entry-point:tegueste-forest:camphor-rescue",
+      "label": "Llegada para ayudar al profesor",
+      "anchorId": "entry-point:tegueste-forest:camphor-rescue",
+      "sectorId": "sector:tegueste-forest:02-04"
+    }
+  ],
+  "missionEntryPoints": [
+    {
+      "schemaVersion": 1,
+      "missionId": "mission:tegueste:help-professor-camphor",
+      "entryPointId": "entry-point:tegueste-forest:camphor-rescue"
+    }
+  ],
   "freeExpeditionEntryPointId": "entry-point:tegueste-forest:camphor-rescue",
   "behaviorTriggers": [
     {
@@ -62,22 +622,40 @@
       "mode": "automatic",
       "actionLabel": "Investigar los ruidos de la madriguera",
       "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
-      "requirement": { "any": [
-        { "kind": "companionSpecies", "speciesId": 23 },
-        { "kind": "companionSpecies", "speciesId": 24 },
-        { "kind": "companionSpecies", "speciesId": 336 }
-      ] },
-      "sequenceId": "sequence:tegueste:burrow-left:snake-intimidation",
-      "proximity": {
-        "roomId": "room:tegueste-forest:02-04",
-        "target": { "kind": "placement", "placementId": "actor:rattata:left" },
-        "rangeTiles": 2,
-        "failureSequenceId": "sequence:tegueste:burrow-left:rattata-ambush"
+      "requirement": {
+        "any": [
+          {
+            "kind": "companionSpecies",
+            "speciesId": 23
+          },
+          {
+            "kind": "companionSpecies",
+            "speciesId": 24
+          },
+          {
+            "kind": "companionSpecies",
+            "speciesId": 336
+          }
+        ]
       },
+      "sequenceId": "sequence:tegueste:burrow-left:snake-intimidation",
       "repeatPolicy": "persistent",
       "rewardOriginId": "reward:tegueste:burrow-intimidation",
       "rewardPackageId": "reward-package:companion-secret",
-      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+      "completionEffects": {
+        "unlockSecretIds": [
+          "secret:tegueste-forest:burrow-intimidation"
+        ]
+      },
+      "proximity": {
+        "target": {
+          "kind": "placement",
+          "placementId": "placement:pokemon:rattata:default:01"
+        },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-left:rattata-ambush",
+        "sectorId": "sector:tegueste-forest:02-04"
+      }
     },
     {
       "schemaVersion": 1,
@@ -85,18 +663,29 @@
       "mode": "automatic",
       "actionLabel": "Sellar la madriguera con Tumba Rocas",
       "loreHint": "Las piedras sueltas podrían cerrar el paso sin dañar la madriguera.",
-      "requirement": { "kind": "fieldCapability", "capabilityId": "rock-tomb", "minimumStrength": 1 },
-      "sequenceId": "sequence:tegueste:burrow-left:rock-tomb",
-      "proximity": {
-        "roomId": "room:tegueste-forest:02-04",
-        "target": { "kind": "placement", "placementId": "actor:rattata:left" },
-        "rangeTiles": 2,
-        "failureSequenceId": "sequence:tegueste:burrow-left:rattata-ambush"
+      "requirement": {
+        "kind": "fieldCapability",
+        "capabilityId": "rock-tomb",
+        "minimumStrength": 1
       },
+      "sequenceId": "sequence:tegueste:burrow-left:rock-tomb",
       "repeatPolicy": "persistent",
       "rewardOriginId": "reward:tegueste:burrow-intimidation",
       "rewardPackageId": "reward-package:companion-secret",
-      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+      "completionEffects": {
+        "unlockSecretIds": [
+          "secret:tegueste-forest:burrow-intimidation"
+        ]
+      },
+      "proximity": {
+        "target": {
+          "kind": "placement",
+          "placementId": "placement:pokemon:rattata:default:01"
+        },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-left:rattata-ambush",
+        "sectorId": "sector:tegueste-forest:02-04"
+      }
     },
     {
       "schemaVersion": 1,
@@ -104,22 +693,40 @@
       "mode": "automatic",
       "actionLabel": "Investigar los ruidos de la madriguera",
       "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
-      "requirement": { "any": [
-        { "kind": "companionSpecies", "speciesId": 23 },
-        { "kind": "companionSpecies", "speciesId": 24 },
-        { "kind": "companionSpecies", "speciesId": 336 }
-      ] },
-      "sequenceId": "sequence:tegueste:burrow-middle:snake-intimidation",
-      "proximity": {
-        "roomId": "room:tegueste-forest:02-04",
-        "target": { "kind": "placement", "placementId": "actor:rattata:middle" },
-        "rangeTiles": 2,
-        "failureSequenceId": "sequence:tegueste:burrow-middle:rattata-ambush"
+      "requirement": {
+        "any": [
+          {
+            "kind": "companionSpecies",
+            "speciesId": 23
+          },
+          {
+            "kind": "companionSpecies",
+            "speciesId": 24
+          },
+          {
+            "kind": "companionSpecies",
+            "speciesId": 336
+          }
+        ]
       },
+      "sequenceId": "sequence:tegueste:burrow-middle:snake-intimidation",
       "repeatPolicy": "persistent",
       "rewardOriginId": "reward:tegueste:burrow-intimidation",
       "rewardPackageId": "reward-package:companion-secret",
-      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+      "completionEffects": {
+        "unlockSecretIds": [
+          "secret:tegueste-forest:burrow-intimidation"
+        ]
+      },
+      "proximity": {
+        "target": {
+          "kind": "placement",
+          "placementId": "placement:pokemon:rattata:default:02"
+        },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-middle:rattata-ambush",
+        "sectorId": "sector:tegueste-forest:02-04"
+      }
     },
     {
       "schemaVersion": 1,
@@ -127,427 +734,1446 @@
       "mode": "automatic",
       "actionLabel": "Investigar los ruidos de la madriguera",
       "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
-      "requirement": { "any": [
-        { "kind": "companionSpecies", "speciesId": 23 },
-        { "kind": "companionSpecies", "speciesId": 24 },
-        { "kind": "companionSpecies", "speciesId": 336 }
-      ] },
-      "sequenceId": "sequence:tegueste:burrow-right:snake-intimidation",
-      "proximity": {
-        "roomId": "room:tegueste-forest:02-04",
-        "target": { "kind": "placement", "placementId": "actor:rattata:right" },
-        "rangeTiles": 2,
-        "failureSequenceId": "sequence:tegueste:burrow-right:rattata-ambush"
+      "requirement": {
+        "any": [
+          {
+            "kind": "companionSpecies",
+            "speciesId": 23
+          },
+          {
+            "kind": "companionSpecies",
+            "speciesId": 24
+          },
+          {
+            "kind": "companionSpecies",
+            "speciesId": 336
+          }
+        ]
       },
+      "sequenceId": "sequence:tegueste:burrow-right:snake-intimidation",
       "repeatPolicy": "persistent",
       "rewardOriginId": "reward:tegueste:burrow-intimidation",
       "rewardPackageId": "reward-package:companion-secret",
-      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+      "completionEffects": {
+        "unlockSecretIds": [
+          "secret:tegueste-forest:burrow-intimidation"
+        ]
+      },
+      "proximity": {
+        "target": {
+          "kind": "placement",
+          "placementId": "placement:pokemon:rattata:default:03"
+        },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-right:rattata-ambush",
+        "sectorId": "sector:tegueste-forest:02-04"
+      }
     }
   ],
   "companionSequences": [
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:tegueste:burrow-left:rattata-ambush",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:burrow-left:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true }] },
-        { "schemaVersion": 1, "beatId": "beat:burrow-left:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:left", "animation": "TailWhip" }], "pauseAfterMs": 100 },
-        { "schemaVersion": 1, "beatId": "beat:burrow-left:attack", "actions": [
-          { "kind": "playAnimation", "actorRef": "actor:rattata:left", "animation": "Attack" },
-          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "right", "tiles": 2 }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:burrow-left:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-left:emerge",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-left:warning",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "animation": "TailWhip"
+            }
+          ],
+          "pauseAfterMs": 100
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-left:attack",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "animation": "Attack"
+            },
+            {
+              "kind": "moveByTiles",
+              "actorRef": "dynamic:player",
+              "direction": "right",
+              "tiles": 2
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-left:hide",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": false
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:tegueste:burrow-middle:rattata-ambush",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:burrow-middle:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true }] },
-        { "schemaVersion": 1, "beatId": "beat:burrow-middle:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:middle", "animation": "TailWhip" }], "pauseAfterMs": 100 },
-        { "schemaVersion": 1, "beatId": "beat:burrow-middle:attack", "actions": [
-          { "kind": "playAnimation", "actorRef": "actor:rattata:middle", "animation": "Attack" },
-          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "up", "tiles": 2 }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:burrow-middle:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-middle:emerge",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-middle:warning",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "animation": "TailWhip"
+            }
+          ],
+          "pauseAfterMs": 100
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-middle:attack",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "animation": "Attack"
+            },
+            {
+              "kind": "moveByTiles",
+              "actorRef": "dynamic:player",
+              "direction": "up",
+              "tiles": 2
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-middle:hide",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": false
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:tegueste:burrow-right:rattata-ambush",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:burrow-right:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true }] },
-        { "schemaVersion": 1, "beatId": "beat:burrow-right:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:right", "animation": "TailWhip" }], "pauseAfterMs": 100 },
-        { "schemaVersion": 1, "beatId": "beat:burrow-right:attack", "actions": [
-          { "kind": "playAnimation", "actorRef": "actor:rattata:right", "animation": "Attack" },
-          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "down", "tiles": 2 }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:burrow-right:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-right:emerge",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-right:warning",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "animation": "TailWhip"
+            }
+          ],
+          "pauseAfterMs": 100
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-right:attack",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "animation": "Attack"
+            },
+            {
+              "kind": "moveByTiles",
+              "actorRef": "dynamic:player",
+              "direction": "down",
+              "tiles": 2
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:burrow-right:hide",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": false
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:tegueste:burrow-left:snake-intimidation",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:snake-left:approach", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
-          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:left" }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:snake-left:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-left:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-left:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-left:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-left:approach",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": true
+            },
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "dynamic:companion",
+              "anchorId": "sequence:tegueste:burrow-left:snake-intimidation:beat:snake-left:approach:destination:02"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-left:charge",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "dynamic:companion",
+              "animation": "Charge"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-left:threat",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "dynamic:companion",
+              "animationByCompanionSpecies": {
+                "23": "Eat",
+                "24": "Shoot",
+                "336": "Bite"
+              }
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-left:retreat",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": false
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-left:return",
+          "actions": [
+            {
+              "kind": "returnToTrainer",
+              "actorRef": "dynamic:companion"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:tegueste:burrow-middle:snake-intimidation",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:snake-middle:approach", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true },
-          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:middle" }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:snake-middle:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-middle:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-middle:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-middle:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-middle:approach",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": true
+            },
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "dynamic:companion",
+              "anchorId": "sequence:tegueste:burrow-middle:snake-intimidation:beat:snake-middle:approach:destination:02"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-middle:charge",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "dynamic:companion",
+              "animation": "Charge"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-middle:threat",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "dynamic:companion",
+              "animationByCompanionSpecies": {
+                "23": "Eat",
+                "24": "Shoot",
+                "336": "Bite"
+              }
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-middle:retreat",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": false
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-middle:return",
+          "actions": [
+            {
+              "kind": "returnToTrainer",
+              "actorRef": "dynamic:companion"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:tegueste:burrow-right:snake-intimidation",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:snake-right:approach", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true },
-          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:right" }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:snake-right:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-right:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-right:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }] },
-        { "schemaVersion": 1, "beatId": "beat:snake-right:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-right:approach",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": true
+            },
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "dynamic:companion",
+              "anchorId": "sequence:tegueste:burrow-right:snake-intimidation:beat:snake-right:approach:destination:02"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-right:charge",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "dynamic:companion",
+              "animation": "Charge"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-right:threat",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "dynamic:companion",
+              "animationByCompanionSpecies": {
+                "23": "Eat",
+                "24": "Shoot",
+                "336": "Bite"
+              }
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-right:retreat",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": false
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:snake-right:return",
+          "actions": [
+            {
+              "kind": "returnToTrainer",
+              "actorRef": "dynamic:companion"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:tegueste:burrow-left:rock-tomb",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:approach", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
-          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:left" }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:move", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Attack" }] },
-        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:sealed", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] },
-        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:rock-tomb-left:approach",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": true
+            },
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "dynamic:companion",
+              "anchorId": "sequence:tegueste:burrow-left:rock-tomb:beat:rock-tomb-left:approach:destination:02"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:rock-tomb-left:move",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "dynamic:companion",
+              "animation": "Attack"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:rock-tomb-left:sealed",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": false
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:rock-tomb-left:return",
+          "actions": [
+            {
+              "kind": "returnToTrainer",
+              "actorRef": "dynamic:companion"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     }
   ],
   "mapSequences": [
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:camphor-prologue:assault-with-choice",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:prologue:choice:rattata-emerge", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
-          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true },
-          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:choice:scientists-flee", "actions": [
-          { "kind": "moveToAnchor", "actorRef": "character:scientist:one", "anchorId": "anchor:scientific:scared1", "speedPixelsPerSecond": 88 },
-          { "kind": "moveToAnchor", "actorRef": "character:scientist:two", "anchorId": "anchor:scientific:scared2", "speedPixelsPerSecond": 88 }
-        ], "pauseAfterMs": 120 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:choice:professor-falls", "actions": [
-          { "kind": "setVisible", "actorRef": "character:professor-alcanfor", "visible": false },
-          { "kind": "setVisible", "actorRef": "character:professor-alcanfor-fallen", "visible": true }
-        ], "pauseAfterMs": 220 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:choice:balls-fall", "actions": [
-          { "kind": "dropPokeBalls", "actorRef": "character:professor-alcanfor-fallen", "count": 3, "spreadTiles": 2, "fallTiles": 2 }
-        ], "pauseAfterMs": 160 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:choice:request", "actions": [
-          { "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:starter-choice" }
-        ] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:choice:rattata-emerge",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": true
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": true
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:choice:scientists-flee",
+          "actions": [
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "character:scientist:one",
+              "anchorId": "sequence:camphor-prologue:assault-with-choice:beat:prologue:choice:scientists-flee:destination:01",
+              "speedPixelsPerSecond": 88
+            },
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "character:scientist:two",
+              "anchorId": "sequence:camphor-prologue:assault-with-choice:beat:prologue:choice:scientists-flee:destination:02",
+              "speedPixelsPerSecond": 88
+            }
+          ],
+          "pauseAfterMs": 120
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:choice:professor-falls",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "character:professor-alcanfor",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "character:professor-alcanfor-fallen",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 220
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:choice:balls-fall",
+          "actions": [
+            {
+              "kind": "dropPokeBalls",
+              "actorRef": "character:professor-alcanfor-fallen",
+              "count": 3,
+              "spreadTiles": 2,
+              "fallTiles": 2
+            }
+          ],
+          "pauseAfterMs": 160
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:choice:request",
+          "actions": [
+            {
+              "kind": "emitCue",
+              "actorRef": "dynamic:player",
+              "cueId": "cue:camphor-prologue:starter-choice"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:camphor-prologue:assault-with-companion",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:prologue:companion:rattata-emerge", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
-          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true },
-          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:companion:scientists-flee", "actions": [
-          { "kind": "moveToAnchor", "actorRef": "character:scientist:one", "anchorId": "anchor:scientific:scared1", "speedPixelsPerSecond": 88 },
-          { "kind": "moveToAnchor", "actorRef": "character:scientist:two", "anchorId": "anchor:scientific:scared2", "speedPixelsPerSecond": 88 }
-        ], "pauseAfterMs": 120 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:companion:professor-falls", "actions": [
-          { "kind": "setVisible", "actorRef": "character:professor-alcanfor", "visible": false },
-          { "kind": "setVisible", "actorRef": "character:professor-alcanfor-fallen", "visible": true }
-        ], "pauseAfterMs": 220 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:companion:rescue-request", "actions": [
-          { "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescue" }
-        ] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:companion:rattata-emerge",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": true
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": true
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:companion:scientists-flee",
+          "actions": [
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "character:scientist:one",
+              "anchorId": "sequence:camphor-prologue:assault-with-companion:beat:prologue:companion:scientists-flee:destination:01",
+              "speedPixelsPerSecond": 88
+            },
+            {
+              "kind": "moveToAnchor",
+              "actorRef": "character:scientist:two",
+              "anchorId": "sequence:camphor-prologue:assault-with-companion:beat:prologue:companion:scientists-flee:destination:02",
+              "speedPixelsPerSecond": 88
+            }
+          ],
+          "pauseAfterMs": 120
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:companion:professor-falls",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "character:professor-alcanfor",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "character:professor-alcanfor-fallen",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 220
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:companion:rescue-request",
+          "actions": [
+            {
+              "kind": "emitCue",
+              "actorRef": "dynamic:player",
+              "cueId": "cue:camphor-prologue:rescue"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:camphor-prologue:starter-bulbasaur-rescue",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:appears", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:starter:bulbasaur", "visible": true }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:attacks", "actions": [
-          { "kind": "playAnimation", "actorRef": "actor:starter:bulbasaur", "animation": "Attack" }
-        ] },
-        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:rescues", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:bulbasaur:appears",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:bulbasaur:default:01",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:bulbasaur:attacks",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:bulbasaur:default:01",
+              "animation": "Attack"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:bulbasaur:rescues",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": false
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:bulbasaur:resolved",
+          "actions": [
+            {
+              "kind": "emitCue",
+              "actorRef": "dynamic:player",
+              "cueId": "cue:camphor-prologue:rescued"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:camphor-prologue:starter-charmander-rescue",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:appears", "actions": [{ "kind": "setVisible", "actorRef": "actor:starter:charmander", "visible": true }], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:attacks", "actions": [{ "kind": "playAnimation", "actorRef": "actor:starter:charmander", "animation": "Attack" }] },
-        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:rescues", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:charmander:appears",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:charmander:default:01",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:charmander:attacks",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:charmander:default:01",
+              "animation": "Attack"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:charmander:rescues",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": false
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:charmander:resolved",
+          "actions": [
+            {
+              "kind": "emitCue",
+              "actorRef": "dynamic:player",
+              "cueId": "cue:camphor-prologue:rescued"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:camphor-prologue:starter-squirtle-rescue",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:appears", "actions": [{ "kind": "setVisible", "actorRef": "actor:starter:squirtle", "visible": true }], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:attacks", "actions": [{ "kind": "playAnimation", "actorRef": "actor:starter:squirtle", "animation": "Attack" }] },
-        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:rescues", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:squirtle:appears",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:squirtle:default:01",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:squirtle:attacks",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "actorRef": "placement:pokemon:squirtle:default:01",
+              "animation": "Attack"
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:squirtle:rescues",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": false
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:squirtle:resolved",
+          "actions": [
+            {
+              "kind": "emitCue",
+              "actorRef": "dynamic:player",
+              "cueId": "cue:camphor-prologue:rescued"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:camphor-prologue:companion-rescue",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:prologue:companion:steps-in", "actions": [{ "kind": "face", "actorRef": "dynamic:companion", "direction": "up" }], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:companion:rescues", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
-          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:companion:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
-      ]
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:companion:steps-in",
+          "actions": [
+            {
+              "kind": "face",
+              "actorRef": "dynamic:companion",
+              "direction": "up"
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:companion:rescues",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:01",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:02",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:rattata:default:03",
+              "visible": false
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:companion:resolved",
+          "actions": [
+            {
+              "kind": "emitCue",
+              "actorRef": "dynamic:player",
+              "cueId": "cue:camphor-prologue:rescued"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
     },
     {
       "schemaVersion": 1,
       "sequenceId": "sequence:camphor-prologue:aftermath",
-      "roomId": "room:tegueste-forest:02-04",
       "beats": [
-        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:professor-rises", "actions": [
-          { "kind": "setVisible", "actorRef": "character:professor-alcanfor-fallen", "visible": false },
-          { "kind": "setVisible", "actorRef": "character:professor-alcanfor", "visible": true }
-        ], "pauseAfterMs": 220 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:scientists-depart", "actions": [
-          { "kind": "moveByTiles", "actorRef": "character:scientist:one", "direction": "right", "tiles": 7, "speedPixelsPerSecond": 104 },
-          { "kind": "moveByTiles", "actorRef": "character:scientist:two", "direction": "right", "tiles": 8, "speedPixelsPerSecond": 104 }
-        ], "pauseAfterMs": 100 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:scientists-exit", "actions": [
-          { "kind": "setVisible", "actorRef": "character:scientist:one", "visible": false },
-          { "kind": "setVisible", "actorRef": "character:scientist:two", "visible": false }
-        ], "pauseAfterMs": 180 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:pineco-falls", "actions": [
-          { "kind": "setVisible", "actorRef": "actor:pineco:prologue", "visible": true }
-        ], "pauseAfterMs": 120 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:pineco-lands", "actions": [
-          { "kind": "moveByTiles", "actorRef": "actor:pineco:prologue", "direction": "down", "tiles": 4, "speedPixelsPerSecond": 112 }
-        ], "pauseAfterMs": 220 },
-        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:complete", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:complete" }] }
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:aftermath:professor-rises",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "character:professor-alcanfor-fallen",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "character:professor-alcanfor",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 220
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:aftermath:scientists-depart",
+          "actions": [
+            {
+              "kind": "moveByTiles",
+              "actorRef": "character:scientist:one",
+              "direction": "right",
+              "tiles": 7,
+              "speedPixelsPerSecond": 104
+            },
+            {
+              "kind": "moveByTiles",
+              "actorRef": "character:scientist:two",
+              "direction": "right",
+              "tiles": 8,
+              "speedPixelsPerSecond": 104
+            }
+          ],
+          "pauseAfterMs": 100
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:aftermath:scientists-exit",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "character:scientist:one",
+              "visible": false
+            },
+            {
+              "kind": "setVisible",
+              "actorRef": "character:scientist:two",
+              "visible": false
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:aftermath:pineco-falls",
+          "actions": [
+            {
+              "kind": "setVisible",
+              "actorRef": "placement:pokemon:pineco:default:01",
+              "visible": true
+            }
+          ],
+          "pauseAfterMs": 120
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:aftermath:pineco-lands",
+          "actions": [
+            {
+              "kind": "moveByTiles",
+              "actorRef": "placement:pokemon:pineco:default:01",
+              "direction": "down",
+              "tiles": 4,
+              "speedPixelsPerSecond": 112
+            }
+          ],
+          "pauseAfterMs": 220
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:prologue:aftermath:complete",
+          "actions": [
+            {
+              "kind": "emitCue",
+              "actorRef": "dynamic:player",
+              "cueId": "cue:camphor-prologue:complete"
+            }
+          ]
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
+    }
+  ],
+  "expressionTriggers": [
+    {
+      "schemaVersion": 1,
+      "triggerId": "expression:tegueste:compliment-cottonee",
+      "target": {
+        "kind": "placement",
+        "placementId": "placement:pokemon:cottonee:default:01"
+      },
+      "prompt": "Hablarle a Cottonee",
+      "rangeTiles": 1,
+      "activationRequirement": {
+        "kind": "trainerLevel",
+        "minimum": 1
+      },
+      "inputMethods": [
+        "voice",
+        "text",
+        "contextAction"
+      ],
+      "matchAny": [
+        {
+          "kind": "phrase",
+          "phrases": [
+            "qué suave eres",
+            "eres muy suave"
+          ],
+          "aliases": [
+            "algodoncito bonito"
+          ]
+        },
+        {
+          "kind": "intent",
+          "intent": "compliment",
+          "examples": [
+            "eres precioso",
+            "qué bonito eres",
+            "eres adorable"
+          ]
+        }
+      ],
+      "knownHintIds": [],
+      "successSequenceId": "sequence:tegueste:cottonee-happy",
+      "fallbackActionId": "action:tegueste:smile-at-cottonee",
+      "fallbackLabel": "Sonreír y saludar",
+      "successText": "Cottonee gira feliz: parece que le ha gustado.",
+      "retryText": "Cottonee ladea la cabeza. Quizá esperaba algo más amable.",
+      "rewardOriginId": "reward:tegueste:compliment-cottonee",
+      "rewardPackageId": "reward-package:map-secret",
+      "completionEffects": {
+        "unlockSecretIds": [
+          "secret:tegueste-forest:compliment-cottonee"
+        ]
+      },
+      "sectorId": "sector:tegueste-forest:02-04"
+    },
+    {
+      "schemaVersion": 1,
+      "triggerId": "expression:tegueste:scare-cramorant",
+      "target": {
+        "kind": "placement",
+        "placementId": "placement:pokemon:cramorant:default:01"
+      },
+      "prompt": "Espantar a Cramorant",
+      "rangeTiles": 1,
+      "activationRequirement": {
+        "kind": "trainerLevel",
+        "minimum": 1
+      },
+      "inputMethods": [
+        "voice",
+        "contextAction"
+      ],
+      "matchAny": [
+        {
+          "kind": "acoustic",
+          "feature": "loudness",
+          "minimumLevel": 0.62,
+          "minimumDurationMs": 500
+        }
+      ],
+      "knownHintIds": [
+        "hint:tegueste:cramorant-startle"
+      ],
+      "successSequenceId": "sequence:tegueste:cramorant-startled",
+      "fallbackActionId": "action:tegueste:wave-arms-at-cramorant",
+      "fallbackLabel": "Agitar los brazos",
+      "successText": "Cramorant da un respingo y se aparta, muy ofendido.",
+      "retryText": "Cramorant ni se inmuta. Tendrás que hacerlo con más decisión.",
+      "rewardOriginId": "reward:tegueste:scare-cramorant",
+      "rewardPackageId": "reward-package:map-secret",
+      "completionEffects": {
+        "unlockSecretIds": [
+          "secret:tegueste-forest:scare-cramorant"
+        ]
+      },
+      "sectorId": "sector:tegueste-forest:02-04"
+    }
+  ],
+  "interactions": [
+    {
+      "schemaVersion": 1,
+      "interactionId": "interaction:tegueste:talk-professor-camphor",
+      "target": {
+        "kind": "placement",
+        "placementId": "character:professor-alcanfor"
+      },
+      "prompt": "Hablar con Alcanfor",
+      "dialogueId": "dialogue:tegueste:professor-warning",
+      "meaningfulKind": "npcConversation",
+      "repeatPolicy": "repeatable",
+      "completionEffects": {
+        "npcId": "npc:tegueste:professor-alcanfor",
+        "conversationId": "conversation:tegueste:professor-warning",
+        "hintIds": [
+          "hint:tegueste:rattata-follow-food",
+          "hint:tegueste:cramorant-startle"
+        ]
+      },
+      "sectorId": "sector:tegueste-forest:02-04"
+    }
+  ],
+  "dialogues": [
+    {
+      "schemaVersion": 1,
+      "dialogueId": "dialogue:tegueste:professor-warning",
+      "initialPageId": "dialogue-page:tegueste:professor-warning:1",
+      "pages": [
+        {
+          "schemaVersion": 1,
+          "pageId": "dialogue-page:tegueste:professor-warning:1",
+          "speakerName": "Profesor Alcanfor",
+          "text": "¡Menos mal que has venido! Esos Rattata llevan un rato siguiendo mi mochila.",
+          "nextPageId": "dialogue-page:tegueste:professor-warning:2"
+        },
+        {
+          "schemaVersion": 1,
+          "pageId": "dialogue-page:tegueste:professor-warning:2",
+          "speakerName": "Profesor Alcanfor",
+          "text": "Acércate a ellos y pulsa Espacio o E para ahuyentarlos. Tu compañero también podrá ayudarte.",
+          "nextPageId": "dialogue-page:tegueste:professor-warning:3"
+        },
+        {
+          "schemaVersion": 1,
+          "pageId": "dialogue-page:tegueste:professor-warning:3",
+          "speakerName": "Profesor Alcanfor",
+          "text": "Cramorant se queda embobado junto al agua. Si necesitas que se aparte, un ruido decidido o un gesto amplio debería sobresaltarlo."
+        }
       ]
     }
   ],
-  "expressionTriggers": [{
-    "schemaVersion": 1,
-    "triggerId": "expression:tegueste:compliment-cottonee",
-    "roomId": "room:tegueste-forest:02-04",
-    "target": { "kind": "placement", "placementId": "actor:cottonee" },
-    "prompt": "Hablarle a Cottonee",
-    "rangeTiles": 1,
-    "activationRequirement": { "kind": "trainerLevel", "minimum": 1 },
-    "inputMethods": ["voice", "text", "contextAction"],
-    "matchAny": [{
-      "kind": "phrase",
-      "phrases": ["qué suave eres", "eres muy suave"],
-      "aliases": ["algodoncito bonito"]
-    }, {
-      "kind": "intent",
-      "intent": "compliment",
-      "examples": ["eres precioso", "qué bonito eres", "eres adorable"]
-    }],
-    "knownHintIds": [],
-    "successSequenceId": "sequence:tegueste:cottonee-happy",
-    "fallbackActionId": "action:tegueste:smile-at-cottonee",
-    "fallbackLabel": "Sonreír y saludar",
-    "successText": "Cottonee gira feliz: parece que le ha gustado.",
-    "retryText": "Cottonee ladea la cabeza. Quizá esperaba algo más amable.",
-    "rewardOriginId": "reward:tegueste:compliment-cottonee",
-    "rewardPackageId": "reward-package:map-secret",
-    "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:compliment-cottonee"] }
-  }, {
-    "schemaVersion": 1,
-    "triggerId": "expression:tegueste:scare-cramorant",
-    "roomId": "room:tegueste-forest:02-04",
-    "target": { "kind": "placement", "placementId": "actor:cramorant" },
-    "prompt": "Espantar a Cramorant",
-    "rangeTiles": 1,
-    "activationRequirement": { "kind": "trainerLevel", "minimum": 1 },
-    "inputMethods": ["voice", "contextAction"],
-    "matchAny": [{
-      "kind": "acoustic",
-      "feature": "loudness",
-      "minimumLevel": 0.62,
-      "minimumDurationMs": 500
-    }],
-    "knownHintIds": ["hint:tegueste:cramorant-startle"],
-    "successSequenceId": "sequence:tegueste:cramorant-startled",
-    "fallbackActionId": "action:tegueste:wave-arms-at-cramorant",
-    "fallbackLabel": "Agitar los brazos",
-    "successText": "Cramorant da un respingo y se aparta, muy ofendido.",
-    "retryText": "Cramorant ni se inmuta. Tendrás que hacerlo con más decisión.",
-    "rewardOriginId": "reward:tegueste:scare-cramorant",
-    "rewardPackageId": "reward-package:map-secret",
-    "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:scare-cramorant"] }
-  }],
-  "interactions": [{
-    "schemaVersion": 1,
-    "interactionId": "interaction:tegueste:talk-professor-camphor",
-    "roomId": "room:tegueste-forest:02-04",
-    "target": { "kind": "placement", "placementId": "character:professor-alcanfor" },
-    "prompt": "Hablar con Alcanfor",
-    "dialogueId": "dialogue:tegueste:professor-warning",
-    "meaningfulKind": "npcConversation",
-    "repeatPolicy": "repeatable",
-    "completionEffects": {
-      "npcId": "npc:tegueste:professor-alcanfor",
-      "conversationId": "conversation:tegueste:professor-warning",
-      "hintIds": [
-        "hint:tegueste:rattata-follow-food",
-        "hint:tegueste:cramorant-startle"
-      ]
+  "fieldNotebookHints": [
+    {
+      "schemaVersion": 1,
+      "hintId": "hint:tegueste:rattata-follow-food",
+      "mapId": "map:tegueste:camphor-forest",
+      "title": "Tras la mochila de Alcanfor",
+      "text": "Los Rattata siguen el olor de la comida. Un compañero atento puede hacerles frente sin dañarlos.",
+      "sourceNpcId": "npc:tegueste:professor-alcanfor"
+    },
+    {
+      "schemaVersion": 1,
+      "hintId": "hint:tegueste:cramorant-startle",
+      "mapId": "map:tegueste:camphor-forest",
+      "title": "La distracción de Cramorant",
+      "text": "Un ruido decidido o un gesto amplio puede sacar a Cramorant de su ensimismamiento.",
+      "sourceNpcId": "npc:tegueste:professor-alcanfor",
+      "relatedTriggerId": "expression:tegueste:scare-cramorant"
     }
-  }],
-  "dialogues": [{
-    "schemaVersion": 1,
-    "dialogueId": "dialogue:tegueste:professor-warning",
-    "initialPageId": "dialogue-page:tegueste:professor-warning:1",
-    "pages": [{
+  ],
+  "ambientSequences": [
+    {
       "schemaVersion": 1,
-      "pageId": "dialogue-page:tegueste:professor-warning:1",
-      "speakerName": "Profesor Alcanfor",
-      "text": "¡Menos mal que has venido! Esos Rattata llevan un rato siguiendo mi mochila.",
-      "nextPageId": "dialogue-page:tegueste:professor-warning:2"
-    }, {
-      "schemaVersion": 1,
-      "pageId": "dialogue-page:tegueste:professor-warning:2",
-      "speakerName": "Profesor Alcanfor",
-      "text": "Acércate a ellos y pulsa Espacio o E para ahuyentarlos. Tu compañero también podrá ayudarte.",
-      "nextPageId": "dialogue-page:tegueste:professor-warning:3"
-    }, {
-      "schemaVersion": 1,
-      "pageId": "dialogue-page:tegueste:professor-warning:3",
-      "speakerName": "Profesor Alcanfor",
-      "text": "Cramorant se queda embobado junto al agua. Si necesitas que se aparte, un ruido decidido o un gesto amplio debería sobresaltarlo."
-    }]
-  }],
-  "fieldNotebookHints": [{
-    "schemaVersion": 1,
-    "hintId": "hint:tegueste:rattata-follow-food",
-    "mapId": "map:tegueste:camphor-forest",
-    "title": "Tras la mochila de Alcanfor",
-    "text": "Los Rattata siguen el olor de la comida. Un compañero atento puede hacerles frente sin dañarlos.",
-    "sourceNpcId": "npc:tegueste:professor-alcanfor"
-  }, {
-    "schemaVersion": 1,
-    "hintId": "hint:tegueste:cramorant-startle",
-    "mapId": "map:tegueste:camphor-forest",
-    "title": "La distracción de Cramorant",
-    "text": "Un ruido decidido o un gesto amplio puede sacar a Cramorant de su ensimismamiento.",
-    "sourceNpcId": "npc:tegueste:professor-alcanfor",
-    "relatedTriggerId": "expression:tegueste:scare-cramorant"
-  }],
-  "ambientSequences": [{
-    "schemaVersion": 1,
-    "sequenceId": "ambient:tegueste:gyarados-duel",
-    "roomId": "room:tegueste-forest:02-04",
-    "loop": true,
-    "blockedPolicy": "pauseSequence",
-    "loopPauseMs": { "min": 700, "max": 1400 },
-    "beats": [
-      { "schemaVersion": 1, "beatId": "beat:gyarados:challenge", "actions": [
-        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "RearUp", "direction": "right" },
-        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Rumble", "direction": "left" }
-      ], "pauseAfterMs": { "min": 250, "max": 500 } },
-      { "schemaVersion": 1, "beatId": "beat:gyarados:first-strike", "actions": [
-        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Attack", "direction": "right" },
-        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Strike", "direction": "left" }
-      ], "pauseAfterMs": 180 },
-      { "schemaVersion": 1, "beatId": "beat:gyarados:advance", "actions": [
-        { "kind": "movePath", "placementId": "actor:gyarados:left", "pathId": "path:gyarados:left-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Charge" },
-        { "kind": "movePath", "placementId": "actor:gyarados:right", "pathId": "path:gyarados:right-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Charge" }
-      ], "pauseAfterMs": { "min": 160, "max": 320 } },
-      { "schemaVersion": 1, "beatId": "beat:gyarados:answer", "actions": [
-        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Rumble", "direction": "right" },
-        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "RearUp", "direction": "left" }
-      ], "pauseAfterMs": 220 },
-      { "schemaVersion": 1, "beatId": "beat:gyarados:retreat", "actions": [
-        { "kind": "movePath", "placementId": "actor:gyarados:left", "pathId": "path:gyarados:left-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Walk", "reverse": true },
-        { "kind": "movePath", "placementId": "actor:gyarados:right", "pathId": "path:gyarados:right-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Walk", "reverse": true }
-      ] },
-      { "schemaVersion": 1, "beatId": "beat:gyarados:counter", "actions": [
-        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Strike", "direction": "right" },
-        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Attack", "direction": "left" }
-      ], "pauseAfterMs": { "min": 350, "max": 700 } }
-    ]
-  }],
+      "sequenceId": "ambient:tegueste:gyarados-duel",
+      "loop": true,
+      "blockedPolicy": "pauseSequence",
+      "loopPauseMs": {
+        "min": 700,
+        "max": 1400
+      },
+      "beats": [
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:gyarados:challenge",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:01",
+              "animation": "RearUp",
+              "direction": "right"
+            },
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:02",
+              "animation": "Rumble",
+              "direction": "left"
+            }
+          ],
+          "pauseAfterMs": {
+            "min": 250,
+            "max": 500
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:gyarados:first-strike",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:01",
+              "animation": "Attack",
+              "direction": "right"
+            },
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:02",
+              "animation": "Strike",
+              "direction": "left"
+            }
+          ],
+          "pauseAfterMs": 180
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:gyarados:advance",
+          "actions": [
+            {
+              "kind": "movePath",
+              "placementId": "placement:pokemon:gyarados:default:01",
+              "pathId": "path:gyarados:left-lunge",
+              "movementStyle": "continuous",
+              "speedPixelsPerSecond": 32,
+              "animation": "Charge"
+            },
+            {
+              "kind": "movePath",
+              "placementId": "placement:pokemon:gyarados:default:02",
+              "pathId": "path:gyarados:right-lunge",
+              "movementStyle": "continuous",
+              "speedPixelsPerSecond": 32,
+              "animation": "Charge"
+            }
+          ],
+          "pauseAfterMs": {
+            "min": 160,
+            "max": 320
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:gyarados:answer",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:01",
+              "animation": "Rumble",
+              "direction": "right"
+            },
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:02",
+              "animation": "RearUp",
+              "direction": "left"
+            }
+          ],
+          "pauseAfterMs": 220
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:gyarados:retreat",
+          "actions": [
+            {
+              "kind": "movePath",
+              "placementId": "placement:pokemon:gyarados:default:01",
+              "pathId": "path:gyarados:left-lunge",
+              "movementStyle": "continuous",
+              "speedPixelsPerSecond": 32,
+              "animation": "Walk",
+              "reverse": true
+            },
+            {
+              "kind": "movePath",
+              "placementId": "placement:pokemon:gyarados:default:02",
+              "pathId": "path:gyarados:right-lunge",
+              "movementStyle": "continuous",
+              "speedPixelsPerSecond": 32,
+              "animation": "Walk",
+              "reverse": true
+            }
+          ]
+        },
+        {
+          "schemaVersion": 1,
+          "beatId": "beat:gyarados:counter",
+          "actions": [
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:01",
+              "animation": "Strike",
+              "direction": "right"
+            },
+            {
+              "kind": "playAnimation",
+              "placementId": "placement:pokemon:gyarados:default:02",
+              "animation": "Attack",
+              "direction": "left"
+            }
+          ],
+          "pauseAfterMs": {
+            "min": 350,
+            "max": 700
+          }
+        }
+      ],
+      "sectorId": "sector:tegueste-forest:02-04"
+    }
+  ],
   "rareEncounters": [],
   "requiredAssetIds": [
     "pmd:0019-rattata:default",
     "pmd:0130-gyarados:default",
-    "pmd:0546-cottonee:default",
     "pmd:0845-cramorant:default",
-    "pmd:0204-pineco:default",
+    "pmd:0546-cottonee:default",
     "pmd:0001-bulbasaur:default",
     "pmd:0004-charmander:default",
     "pmd:0007-squirtle:default",
-    "pmd:0023-ekans:default",
-    "pmd:0024-arbok:default",
-    "pmd:0025-pikachu:default",
-    "pmd:0336-seviper:default",
-    "character:trainer:achaman",
+    "pmd:0204-pineco:default",
     "character:npc:professor-alcanfor",
     "character:npc:professor-alcanfor-fallen",
-    "character:npc:scientist"
-  ]
+    "character:npc:scientist",
+    "pmd:0279-pelipper:default",
+    "pmd:0519-pidove:default",
+    "pmd:0422-shellos:default",
+    "pmd:0656-froakie:default",
+    "pmd:0183-marill:default",
+    "pmd:0025-pikachu:default",
+    "pmd:0152-chikorita:default",
+    "pmd:0153-bayleef:default",
+    "pmd:0165-ledyba:default",
+    "pmd:0865-sirfetchd:default",
+    "pmd:0413-wormadam:default",
+    "pmd:0290-nincada:default",
+    "pmd:0214-heracross:default",
+    "pmd:0128-tauros:default",
+    "pmd:0398-staraptor:default",
+    "pmd:0842-appletun:default",
+    "pmd:0707-klefki:default",
+    "pmd:0953-rellor:default",
+    "character:trainer:achaman",
+    "pmd:0023-ekans:default",
+    "pmd:0024-arbok:default",
+    "pmd:0336-seviper:default"
+  ],
+  "sectors": [
+    {
+      "schemaVersion": 1,
+      "sectorId": "sector:tegueste-forest:02-04",
+      "legacyRoomIds": [
+        "room:tegueste-forest:02-04"
+      ],
+      "tiledMapAssetId": "tiled-map:tegueste-forest:02-04",
+      "staticCamera": true,
+      "spawnAnchorIds": [
+        "entry-point:tegueste-forest:camphor-rescue",
+        "transition:01:to",
+        "transition:02:from",
+        "transition:03:from",
+        "transition:04:to"
+      ],
+      "roster": {
+        "schemaVersion": 1,
+        "pokemonAssetIds": [
+          "pmd:0019-rattata:default",
+          "pmd:0130-gyarados:default",
+          "pmd:0845-cramorant:default",
+          "pmd:0546-cottonee:default",
+          "pmd:0001-bulbasaur:default",
+          "pmd:0004-charmander:default",
+          "pmd:0007-squirtle:default",
+          "pmd:0204-pineco:default"
+        ],
+        "npcAssetIds": [
+          "character:npc:professor-alcanfor",
+          "character:npc:professor-alcanfor-fallen",
+          "character:npc:scientist"
+        ]
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "sectorId": "sector:tegueste-forest:01-05",
+      "tiledMapAssetId": "tiled-map:tegueste-forest:01-05",
+      "staticCamera": true,
+      "spawnAnchorIds": [
+        "transition:01:from",
+        "transition:02:to"
+      ],
+      "roster": {
+        "schemaVersion": 1,
+        "pokemonAssetIds": [
+          "pmd:0279-pelipper:default",
+          "pmd:0519-pidove:default",
+          "pmd:0422-shellos:default",
+          "pmd:0656-froakie:default",
+          "pmd:0183-marill:default"
+        ],
+        "npcAssetIds": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "sectorId": "sector:tegueste-forest:04-05",
+      "tiledMapAssetId": "tiled-map:tegueste-forest:04-05",
+      "staticCamera": true,
+      "spawnAnchorIds": [
+        "transition:05:to",
+        "transition:06:from"
+      ],
+      "roster": {
+        "schemaVersion": 1,
+        "pokemonAssetIds": [
+          "pmd:0025-pikachu:default",
+          "pmd:0152-chikorita:default",
+          "pmd:0153-bayleef:default",
+          "pmd:0165-ledyba:default",
+          "pmd:0865-sirfetchd:default",
+          "pmd:0413-wormadam:default",
+          "pmd:0290-nincada:default"
+        ],
+        "npcAssetIds": []
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "sectorId": "sector:tegueste-forest:05-05",
+      "tiledMapAssetId": "tiled-map:tegueste-forest:05-05",
+      "staticCamera": true,
+      "spawnAnchorIds": [
+        "transition:03:to",
+        "transition:04:from",
+        "transition:05:from",
+        "transition:06:to"
+      ],
+      "roster": {
+        "schemaVersion": 1,
+        "pokemonAssetIds": [
+          "pmd:0214-heracross:default",
+          "pmd:0128-tauros:default",
+          "pmd:0398-staraptor:default",
+          "pmd:0842-appletun:default",
+          "pmd:0707-klefki:default",
+          "pmd:0953-rellor:default"
+        ],
+        "npcAssetIds": []
+      }
+    }
+  ],
+  "mapEventTriggers": []
 }

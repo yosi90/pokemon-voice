@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateTiledAdventureBundle } from '../src/domain/maps/tiledAdventureValidator.js';
 
@@ -28,6 +28,16 @@ function pngDimensions(path) {
   const buffer = readFileSync(path);
   if (buffer.length < 24 || buffer.toString('ascii', 1, 4) !== 'PNG') return undefined;
   return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+function externalTilesetImages(path) {
+  if (extname(path).toLowerCase() !== '.tsx') {
+    const definition = json(path);
+    return definition.image ? [definition.image] : [];
+  }
+  const source = readFileSync(path, 'utf8');
+  return [...source.matchAll(/<image\b[^>]*\bsource="([^"]+)"/gu)]
+    .map(match => match[1]);
 }
 
 if (!existsSync(manifestPath)) throw new Error('Falta el manifiesto PMD. Ejecuta npm run assets:pmd:manifest.');
@@ -102,9 +112,10 @@ for (const sidecarPath of sidecarPaths) {
         errors.push(`${asset.assetId}: no existe el tileset ${tileset.source}`);
         continue;
       }
-      const definition = json(tilesetPath);
-      if (definition.image && !existsSync(resolve(dirname(tilesetPath), definition.image))) {
-        errors.push(`${asset.assetId}: no existe la imagen ${definition.image}`);
+      for (const image of externalTilesetImages(tilesetPath)) {
+        if (!existsSync(resolve(dirname(tilesetPath), image))) {
+          errors.push(`${asset.assetId}: no existe la imagen ${image}`);
+        }
       }
     }
   }

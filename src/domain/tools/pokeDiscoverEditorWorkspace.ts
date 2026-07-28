@@ -74,6 +74,12 @@ export interface PokeDiscoverWorkspace {
   pendingLayout: boolean;
   sourceSchemaVersion: 2 | 3;
   legacySidecarSource?: string;
+  legacyBackup?: {
+    fileName: string;
+    lastModified: number;
+    matchesSource: boolean;
+    recent: boolean;
+  };
 }
 
 export interface PokeDiscoverProjectMetadata {
@@ -86,6 +92,21 @@ export interface PokeDiscoverWorkspaceInspection {
   tiledMaps: PokeDiscoverWorkspaceSourceFile[];
   worlds: PokeDiscoverWorkspaceSourceFile[];
   archivedTiledMaps: PokeDiscoverWorkspaceSourceFile[];
+  legacyBackups: PokeDiscoverWorkspaceSourceFile[];
+}
+
+export const RECENT_LEGACY_BACKUP_MAX_AGE_MS = 60 * 60 * 1000;
+
+export function isPokeDiscoverLegacyBackupRecent(
+  lastModified: number,
+  now = Date.now(),
+) {
+  return Number.isFinite(lastModified)
+    && now - lastModified <= RECENT_LEGACY_BACKUP_MAX_AGE_MS;
+}
+
+export function legacyBackupFileName(sidecarFileName: string) {
+  return sidecarFileName.replace(/\.adventure\.json$/iu, '.adventure.v2.backup.json');
 }
 
 function parseJson(source: string, fileName: string) {
@@ -166,6 +187,7 @@ export function inspectPokeDiscoverWorkspaceFiles(
     tiledMaps: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.tmj')),
     worlds: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.world')),
     archivedTiledMaps: files.filter(source => /\.tmj(?:\.\d+)?\.old$/iu.test(source.file.name)),
+    legacyBackups: files.filter(source => /\.adventure\.v2\.backup\.json$/iu.test(source.file.name)),
   };
 }
 
@@ -185,6 +207,66 @@ export async function readPokeDiscoverDirectory(
   };
   await visit(directoryHandle);
   return files;
+}
+
+export async function requestPokeDiscoverDirectoryWritePermission(
+  directoryHandle: PokeDiscoverDirectoryHandle,
+) {
+  const permission = await directoryHandle.queryPermission?.({
+    mode: 'readwrite',
+  }) ?? 'granted';
+  if (permission !== 'prompt') return permission;
+  return directoryHandle.requestPermission?.({
+    mode: 'readwrite',
+  }) ?? 'denied';
+}
+
+export async function attachPokeDiscoverWorkspaceDirectory(
+  workspace: PokeDiscoverWorkspace,
+  directoryHandle: PokeDiscoverDirectoryHandle,
+) {
+  const files = await readPokeDiscoverDirectory(directoryHandle);
+  const inspection = inspectPokeDiscoverWorkspaceFiles(files);
+  const selectedSidecar = inspection.sidecars.find(
+    source => source.file.name === workspace.sidecarFileName,
+  );
+  if (!workspace.createdProject && !selectedSidecar) {
+    throw new Error(`Selecciona la carpeta que contiene ${workspace.sidecarFileName}.`);
+  }
+  if (selectedSidecar) {
+    let selectedMapId = '';
+    try {
+      selectedMapId = String(JSON.parse(await selectedSidecar.file.text()).mapId ?? '');
+    } catch {
+      throw new Error(`${workspace.sidecarFileName} no contiene un proyecto válido.`);
+    }
+    if (selectedMapId !== workspace.history.present.adventure.mapId) {
+      throw new Error('La carpeta seleccionada pertenece a otro mapa.');
+    }
+  }
+  const selectedFileNames = new Set(files.map(source => source.file.name));
+  const missingTilemap = Object.keys(workspace.history.present.tilemapsByFileName)
+    .find(fileName => !selectedFileNames.has(
+      workspace.history.present.sourceFileNameByFileName[fileName] ?? fileName,
+    ));
+  if (missingTilemap) {
+    throw new Error(`La carpeta seleccionada no contiene ${missingTilemap}.`);
+  }
+  const handlesByFileName = { ...workspace.handlesByFileName };
+  const diskContentByFileName = { ...workspace.diskContentByFileName };
+  const lastModifiedByFileName = { ...workspace.lastModifiedByFileName };
+  for (const source of files) {
+    handlesByFileName[source.file.name] = source.handle;
+    diskContentByFileName[source.file.name] = await source.file.text();
+    lastModifiedByFileName[source.file.name] = source.file.lastModified;
+  }
+  return {
+    ...workspace,
+    directoryHandle,
+    handlesByFileName,
+    diskContentByFileName,
+    lastModifiedByFileName,
+  };
 }
 
 export async function openPokeDiscoverWorkspace({
@@ -218,6 +300,7 @@ export async function openPokeDiscoverWorkspace({
     ...inspection.tiledMaps,
     ...inspection.archivedTiledMaps,
     ...inspection.worlds,
+    ...inspection.legacyBackups,
   ];
   for (const source of documentSources) {
     rawByFileName[source.file.name] = await source.file.text();
@@ -237,6 +320,10 @@ export async function openPokeDiscoverWorkspace({
   const effectiveName = projectName || directoryHandle?.name || metadata?.title || adventure.title;
   const slug = slugifyEditorLabel(adventure.mapId.split(':').at(-1) || effectiveName);
   const sidecarFileName = existingSidecar?.file.name ?? `${slug}.adventure.json`;
+  const backupFileName = legacyBackupFileName(sidecarFileName);
+  const legacyBackupSource = inspection.legacyBackups.find(
+    source => source.file.name === backupFileName,
+  );
   const existingWorld = inspection.worlds[0];
   const worldFileName = existingWorld?.file.name
     ?? sidecarFileName.replace(/\.adventure\.json$/iu, '.world');
@@ -298,6 +385,14 @@ export async function openPokeDiscoverWorkspace({
     legacySidecarSource: sourceSchemaVersion === 2 && existingSidecar
       ? rawByFileName[existingSidecar.file.name]
       : undefined,
+    legacyBackup: sourceSchemaVersion === 2 && existingSidecar && legacyBackupSource
+      ? {
+        fileName: backupFileName,
+        lastModified: legacyBackupSource.file.lastModified,
+        matchesSource: rawByFileName[backupFileName] === rawByFileName[existingSidecar.file.name],
+        recent: isPokeDiscoverLegacyBackupRecent(legacyBackupSource.file.lastModified),
+      }
+      : undefined,
   };
 }
 
@@ -312,6 +407,24 @@ export function getPokeDiscoverWorkspaceDocuments(workspace: PokeDiscoverWorkspa
 export function getPokeDiscoverWorkspaceDirtyFiles(workspace: PokeDiscoverWorkspace) {
   const documents = getPokeDiscoverWorkspaceDocuments(workspace);
   return Object.keys(documents).filter(fileName => documents[fileName] !== workspace.baselineByFileName[fileName]);
+}
+
+export function markPokeDiscoverWorkspaceExported(
+  workspace: PokeDiscoverWorkspace,
+  options?: { dirtyOnly?: boolean },
+) {
+  const documents = getPokeDiscoverWorkspaceDocuments(workspace);
+  const exportedFileNames = options?.dirtyOnly
+    ? getPokeDiscoverWorkspaceDirtyFiles(workspace)
+    : Object.keys(documents);
+  const baselineByFileName = { ...workspace.baselineByFileName };
+  for (const fileName of exportedFileNames) {
+    baselineByFileName[fileName] = documents[fileName];
+  }
+  return {
+    ...workspace,
+    baselineByFileName,
+  };
 }
 
 export async function findPokeDiscoverWorkspaceConflicts(workspace: PokeDiscoverWorkspace) {
@@ -362,8 +475,8 @@ export async function savePokeDiscoverWorkspace(
   const orderedNames = [
     ...Object.keys(workspace.history.present.tilemapsByFileName)
       .filter(fileName => dirtyFiles.has(fileName)),
-    workspace.worldFileName,
-    workspace.sidecarFileName,
+    ...(dirtyFiles.has(workspace.worldFileName) ? [workspace.worldFileName] : []),
+    ...(dirtyFiles.has(workspace.sidecarFileName) ? [workspace.sidecarFileName] : []),
   ];
   const handlesByFileName = { ...workspace.handlesByFileName };
   const baselineByFileName = { ...workspace.baselineByFileName };
@@ -406,10 +519,6 @@ export async function savePokeDiscoverWorkspace(
   };
 }
 
-function legacyBackupFileName(sidecarFileName: string) {
-  return sidecarFileName.replace(/\.adventure\.json$/iu, '.adventure.v2.backup.json');
-}
-
 export async function migratePokeDiscoverWorkspaceToV3(
   workspace: PokeDiscoverWorkspace,
 ) {
@@ -417,19 +526,23 @@ export async function migratePokeDiscoverWorkspaceToV3(
     throw new Error('El proyecto abierto no necesita migración V2.');
   }
   const backupFileName = legacyBackupFileName(workspace.sidecarFileName);
-  if (workspace.directoryHandle) {
+  const backupReused = Boolean(
+    workspace.legacyBackup?.recent && workspace.legacyBackup.matchesSource,
+  );
+  if (workspace.legacyBackup?.recent && !workspace.legacyBackup.matchesSource) {
+    throw new Error(`${backupFileName} es reciente, pero no corresponde al documento V2 abierto.`);
+  }
+  if (!backupReused && workspace.directoryHandle) {
     const handle = await workspace.directoryHandle.getFileHandle(backupFileName, { create: true });
     const existing = await handle.getFile();
     const existingSource = await existing.text();
     if (existingSource && existingSource !== workspace.legacySidecarSource) {
       throw new Error(`${backupFileName} ya existe con un contenido diferente.`);
     }
-    if (!existingSource) {
-      const writable = await handle.createWritable();
-      await writable.write(workspace.legacySidecarSource);
-      await writable.close();
-    }
-  } else if (typeof document !== 'undefined') {
+    const writable = await handle.createWritable();
+    await writable.write(workspace.legacySidecarSource);
+    await writable.close();
+  } else if (!backupReused && typeof document !== 'undefined') {
     const url = URL.createObjectURL(new Blob(
       [workspace.legacySidecarSource],
       { type: 'application/json' },
@@ -445,15 +558,24 @@ export async function migratePokeDiscoverWorkspaceToV3(
       ...workspace,
       sourceSchemaVersion: 3 as const,
       legacySidecarSource: undefined,
+      legacyBackup: undefined,
     },
     backupFileName,
+    backupReused,
   };
 }
 
-export function downloadPokeDiscoverWorkspaceCopy(workspace: PokeDiscoverWorkspace) {
+export function downloadPokeDiscoverWorkspaceCopy(
+  workspace: PokeDiscoverWorkspace,
+  options?: { dirtyOnly?: boolean },
+) {
   if (typeof document === 'undefined') return;
   const documents = getPokeDiscoverWorkspaceDocuments(workspace);
-  for (const [fileName, content] of Object.entries(documents)) {
+  const dirtyFiles = options?.dirtyOnly
+    ? new Set(getPokeDiscoverWorkspaceDirtyFiles(workspace))
+    : undefined;
+  for (const [fileName, content] of Object.entries(documents)
+    .filter(([fileName]) => !dirtyFiles || dirtyFiles.has(fileName))) {
     const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
     const anchor = document.createElement('a');
     anchor.href = url;

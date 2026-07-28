@@ -45,7 +45,7 @@ export function nextStableEditorId(prefix: string, existingIds: readonly string[
     .replace(/[^a-z0-9:-]+/gu, '-')
     .replace(/-+/gu, '-')
     .replace(/^-+|-+$/gu, '');
-  if (!/^[a-z0-9]+(?::[a-z0-9][a-z0-9-]*)+$/u.test(canonicalPrefix)) {
+  if (!/^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)+$/u.test(canonicalPrefix)) {
     throw new Error(`Prefijo de ID técnico inválido: ${prefix}.`);
   }
   const existing = new Set(existingIds);

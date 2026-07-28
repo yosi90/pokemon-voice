@@ -23,8 +23,12 @@ import {
   rectangleOverlapsCollision,
 } from '../../src/domain/maps/tiledCollisionGeometry.js';
 import {
+  attachPokeDiscoverWorkspaceDirectory,
   findPokeDiscoverWorkspaceConflicts,
+  getPokeDiscoverWorkspaceDirtyFiles,
+  markPokeDiscoverWorkspaceExported,
   openPokeDiscoverWorkspace,
+  requestPokeDiscoverDirectoryWritePermission,
   savePokeDiscoverWorkspace,
   type PokeDiscoverDirectoryHandle,
   type PokeDiscoverWritableFileHandle,
@@ -42,6 +46,7 @@ import {
   getPokeDiscoverEntityScalePercent,
 } from '../../src/domain/tools/pokeDiscoverEditorEntityScale.js';
 import {
+  createPokeDiscoverRecentWorkspaceSources,
   isPokeDiscoverRecentFolderValid,
   POKEDISCOVER_RECENT_FOLDER_TTL_MS,
 } from '../../src/domain/tools/pokeDiscoverEditorRecentFolder.js';
@@ -527,7 +532,37 @@ describe('apertura y guardado multiarchivo', () => {
     return { writes, deletes, handles, directory };
   }
 
-  it('guarda TMJ modificados, world y proyecto en ese orden', async () => {
+  it('genera la caché reciente desde el estado actual y no desde los archivos abiertos', async () => {
+    const memory = memoryProject();
+    const workspace = await openPokeDiscoverWorkspace({
+      files: [...memory.handles.values()].map(handle => ({
+        file: new File([handle.content], handle.name, {
+          lastModified: handle.lastModified,
+        }),
+      })),
+    });
+    const current = {
+      ...workspace,
+      history: {
+        ...workspace.history,
+        present: {
+          ...workspace.history.present,
+          adventure: {
+            ...workspace.history.present.adventure,
+            schemaVersion: 3 as const,
+            title: 'Versión actual de la caché',
+          },
+        },
+      },
+    };
+    const sidecar = createPokeDiscoverRecentWorkspaceSources(current)
+      .find(source => source.file.name === 'test.adventure.json');
+
+    expect(await sidecar?.file.text()).toContain('Versión actual de la caché');
+    expect(await sidecar?.file.text()).toContain('"schemaVersion": 3');
+  });
+
+  it('guarda únicamente los documentos modificados y respeta su orden', async () => {
     const memory = memoryProject();
     const sources = [...memory.handles.values()].map(handle => ({
       file: new File([handle.content], handle.name, { lastModified: handle.lastModified }),
@@ -542,10 +577,104 @@ describe('apertura y guardado multiarchivo', () => {
     expect(memory.writes).toEqual([
       'room-01.tmj',
       'test.world',
-      'test.adventure.json',
     ]);
     expect(saved.baselineByFileName['test.world']).toContain('"type": "world"');
     expect(saved.baselineByFileName['room-01.tmj']).toContain('"name": "Anchors"');
+    expect(getPokeDiscoverWorkspaceDirtyFiles(saved)).toEqual([]);
+  });
+
+  it('limpia los cambios pendientes después de exportar sin permiso de escritura', async () => {
+    const memory = memoryProject();
+    const sources = [...memory.handles.values()].map(handle => ({
+      file: new File([handle.content], handle.name, { lastModified: handle.lastModified }),
+      handle,
+    }));
+    const workspace = await openPokeDiscoverWorkspace({ files: sources });
+    const exported = markPokeDiscoverWorkspaceExported(workspace);
+
+    expect(getPokeDiscoverWorkspaceDirtyFiles(workspace)).not.toEqual([]);
+    expect(getPokeDiscoverWorkspaceDirtyFiles(exported)).toEqual([]);
+    expect(exported.history).toBe(workspace.history);
+  });
+
+  it('vincula de nuevo la misma carpeta sin perder los cambios pendientes', async () => {
+    const memory = memoryProject();
+    const sources = [...memory.handles.values()].map(handle => ({
+      file: new File([handle.content], handle.name, { lastModified: handle.lastModified }),
+    }));
+    const workspace = await openPokeDiscoverWorkspace({ files: sources });
+    const changed = {
+      ...workspace,
+      history: {
+        ...workspace.history,
+        present: {
+          ...workspace.history.present,
+          adventure: {
+            ...workspace.history.present.adventure,
+            title: 'Título pendiente',
+          },
+        },
+      },
+    };
+
+    const attached = await attachPokeDiscoverWorkspaceDirectory(changed, memory.directory);
+
+    expect(attached.directoryHandle).toBe(memory.directory);
+    expect(attached.history.present.adventure.title).toBe('Título pendiente');
+    expect(getPokeDiscoverWorkspaceDirtyFiles(attached))
+      .toContain('test.adventure.json');
+    expect(getPokeDiscoverWorkspaceDirtyFiles(
+      await savePokeDiscoverWorkspace(attached),
+    )).toEqual([]);
+  });
+
+  it('solicita permiso de escritura cuando el navegador mantiene el handle en prompt', async () => {
+    let requested = false;
+    const directory = {
+      ...memoryProject().directory,
+      queryPermission: async () => 'prompt' as PermissionState,
+      requestPermission: async ({ mode }: { mode?: 'read' | 'readwrite' } = {}) => {
+        requested = mode === 'readwrite';
+        return 'granted' as PermissionState;
+      },
+    };
+
+    expect(await requestPokeDiscoverDirectoryWritePermission(directory)).toBe('granted');
+    expect(requested).toBe(true);
+  });
+
+  it('no vuelve a guardar otros documentos cuando sólo cambia un sector', async () => {
+    const memory = memoryProject();
+    const sources = [...memory.handles.values()].map(handle => ({
+      file: new File([handle.content], handle.name, { lastModified: handle.lastModified }),
+      handle,
+    }));
+    const initial = await openPokeDiscoverWorkspace({
+      files: sources,
+      directoryHandle: memory.directory,
+    });
+    const saved = await savePokeDiscoverWorkspace(initial);
+    memory.writes.length = 0;
+    const changedTilemap = {
+      ...saved.history.present.tilemapsByFileName['room-01.tmj'],
+      customDocumentField: 'cambio-local',
+    };
+
+    await savePokeDiscoverWorkspace({
+      ...saved,
+      history: {
+        ...saved.history,
+        present: {
+          ...saved.history.present,
+          tilemapsByFileName: {
+            ...saved.history.present.tilemapsByFileName,
+            'room-01.tmj': changedTilemap,
+          },
+        },
+      },
+    });
+
+    expect(memory.writes).toEqual(['room-01.tmj']);
   });
 
   it('persiste el tamaño de una entidad en el sidecar', async () => {

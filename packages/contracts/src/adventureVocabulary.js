@@ -2,6 +2,13 @@ export const TILE_LAYER_KINDS = Object.freeze(['ground', 'decoration', 'overlay'
 export const MISSION_STATUSES = Object.freeze(['locked', 'available', 'active', 'completed']);
 export const COMPANION_TRIGGER_MODES = Object.freeze(['prompt', 'automatic', 'ambient']);
 export const COMPANION_TRIGGER_REPEAT_POLICIES = Object.freeze(['oncePerVisit', 'persistent', 'repeatable']);
+export const MAP_EVENT_ACTIVATION_KINDS = Object.freeze(['enterZone', 'contextAction', 'proximity']);
+export const MAP_EVENT_REPEAT_POLICIES = Object.freeze([
+  'oncePerSectorVisit',
+  'oncePerVisit',
+  'repeatable',
+  'persistent',
+]);
 export const EXPRESSION_INPUT_METHODS = Object.freeze(['voice', 'text', 'contextAction']);
 export const EXPRESSION_INTENTS = Object.freeze(['compliment', 'calm', 'warn', 'sing', 'custom']);
 export const ADVENTURE_ACTOR_COLLISIONS = Object.freeze(['solid', 'pass-through']);
@@ -13,6 +20,10 @@ export const AMBIENT_ACTOR_ACTION_KINDS = Object.freeze([
 export const COMPANION_SEQUENCE_ACTION_KINDS = Object.freeze([
   'playAnimation', 'face', 'setVisible', 'moveToAnchor', 'moveByTiles',
   'returnToTrainer', 'dropPokeBalls', 'emitCue',
+]);
+export const MAP_SEQUENCE_ACTION_KINDS = Object.freeze([
+  'playAnimation', 'face', 'setVisible', 'moveToAnchor', 'moveByTiles',
+  'returnToTrainer', 'dropPokeBalls', 'emitCue', 'movePath',
 ]);
 export const EXPRESSION_MATCHER_KINDS = Object.freeze(['phrase', 'intent', 'acoustic']);
 export const SECTOR_TRANSITION_KINDS = Object.freeze(['edge', 'stairs', 'door', 'teleport']);
@@ -32,6 +43,7 @@ export const TILED_RUNTIME_OBJECT_CLASSES = Object.freeze([
   'Collision',
   'AmbientPath',
   'ActorOccluder',
+  'TriggerZone',
 ]);
 export const MEANINGFUL_EXPEDITION_INTERACTION_KINDS = Object.freeze([
   'npcConversation',

@@ -5,7 +5,8 @@ export function PmdAnimationPreview({ animation, label }: { animation: PmdAnimat
   const [frame, setFrame] = useState(0);
   useEffect(() => {
     setFrame(0);
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || animation.frameCount < 2) return undefined;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      || animation.frameCount < 2) return undefined;
     let timer = 0;
     let current = 0;
     const schedule = () => {
@@ -26,7 +27,10 @@ export function PmdAnimationPreview({ animation, label }: { animation: PmdAnimat
       style={{
         width: animation.frameWidth,
         height: animation.frameHeight,
-        backgroundImage: `url(${new URL(animation.animationSheetPath, new URL('../../', window.location.href)).href})`,
+        backgroundImage: `url("${new URL(
+          animation.animationSheetPath,
+          new URL('../../', window.location.href),
+        ).href}")`,
         backgroundPosition: `${-frame * animation.frameWidth}px 0`,
       }}
     />

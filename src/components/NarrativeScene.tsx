@@ -125,7 +125,14 @@ export function NarrativeScene({
   };
 
   return (
-    <section className="narrative-scene" role="dialog" aria-modal="true" aria-label="Conversación con el profesor Alcanfor" data-testid="narrative-scene">
+    <section
+      className="narrative-scene"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Conversación con el profesor Alcanfor"
+      data-testid="narrative-scene"
+      data-page-id={page.pageId}
+    >
       {backgroundPath && (
         <div
           className="narrative-scene__background"

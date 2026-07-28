@@ -62035,11 +62035,11 @@
     },
     {
       "schemaVersion": 1,
-      "assetId": "pmd:0865-sirfetch'd:default",
+      "assetId": "pmd:0865-sirfetchd:default",
       "speciesId": 865,
       "formId": "pokemon-form:865:default",
       "source": "PMDCollab",
-      "basePath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default",
+      "basePath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default",
       "shadowSize": 1,
       "renderScale": 0.8,
       "animations": [
@@ -62090,9 +62090,9 @@
               "y": 0.55
             }
           ],
-          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Walk-Anim.png",
-          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Walk-Offsets.png",
-          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Walk-Shadow.png"
+          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Walk-Anim.png",
+          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Walk-Offsets.png",
+          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Walk-Shadow.png"
         },
         {
           "name": "Idle",
@@ -62141,9 +62141,9 @@
               "y": 0.55
             }
           ],
-          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Idle-Anim.png",
-          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Idle-Offsets.png",
-          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Idle-Shadow.png"
+          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Idle-Anim.png",
+          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Idle-Offsets.png",
+          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Idle-Shadow.png"
         },
         {
           "name": "Swing",
@@ -62197,9 +62197,9 @@
               "y": 0.5333333333333333
             }
           ],
-          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Swing-Anim.png",
-          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Swing-Offsets.png",
-          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Swing-Shadow.png",
+          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Swing-Anim.png",
+          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Swing-Offsets.png",
+          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Swing-Shadow.png",
           "hitFrame": 5,
           "returnFrame": 5
         },
@@ -62262,9 +62262,9 @@
               "y": 0.5384615384615384
             }
           ],
-          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Double-Anim.png",
-          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Double-Offsets.png",
-          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Double-Shadow.png"
+          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Double-Anim.png",
+          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Double-Offsets.png",
+          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Double-Shadow.png"
         },
         {
           "name": "Rotate",
@@ -62318,9 +62318,9 @@
               "y": 0.55
             }
           ],
-          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Rotate-Anim.png",
-          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Rotate-Offsets.png",
-          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetch'd/default/Rotate-Shadow.png",
+          "animationSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Rotate-Anim.png",
+          "offsetsSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Rotate-Offsets.png",
+          "shadowSheetPath": "assets/sprites/pokemon/pmd/gen8/0865-sirfetchd/default/Rotate-Shadow.png",
           "hitFrame": 8
         }
       ],

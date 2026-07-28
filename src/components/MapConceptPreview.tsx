@@ -16,6 +16,10 @@ import {
   MAP_INTERACTION_CONTROL_EVENT,
   MAP_INTERACTION_REQUEST_EVENT,
   MAP_INTERACTION_STARTED_EVENT,
+  MAP_EVENT_AVAILABLE_EVENT,
+  MAP_EVENT_COMPLETED_EVENT,
+  MAP_EVENT_REQUEST_EVENT,
+  MAP_SECTOR_ENTERED_EVENT,
   MAP_SPECIES_IDENTIFIED_EVENT,
   MAP_SEQUENCE_CUE_EVENT,
   MAP_VISIBLE_SPECIES_CHANGED_EVENT,
@@ -30,6 +34,8 @@ import {
   getBrowserPokeVoiceSave,
   executeBrowserCompanionBehavior,
   completeBrowserExpeditionInteraction,
+  completeBrowserMapEventTrigger,
+  enterBrowserMapEventSector,
   reachBrowserCamphorStarterChoice,
   resolveBrowserCamphorRescue,
 } from '../store/browserPokeVoiceSaveStore.js';
@@ -39,6 +45,7 @@ import type { AcousticExpressionFeatures } from '../domain/expeditions/expressio
 import type {
   ExpeditionExpressionTriggerV3,
   ExpeditionInteractionV3,
+  MapEventTriggerV3,
 } from '../../packages/contracts/src/index.js';
 import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
 import {
@@ -52,6 +59,7 @@ import {
 import { getPokeDiscoverRewardPackage } from '../data/adventure/rewardBalance.js';
 import { POKE_DISCOVER_FIELD_TOOLS } from '../data/adventure/pokeDiscoverShop.js';
 import { resolveExpeditionCapabilities } from '../domain/expeditions/expeditionCapabilities.js';
+import { listRequirementEligibleMapEventTriggers } from '../domain/expeditions/mapEventTriggers.js';
 
 export interface MapExpressionFeedback {
   status: 'resolved' | 'alreadyResolved' | 'ineligible' | 'methodUnavailable' | 'notMatched';
@@ -104,6 +112,7 @@ export function MapConceptPreview({
   const [writtenName, setWrittenName] = useState('');
   const [availableInteraction, setAvailableInteraction] = useState<ExpeditionInteractionV3>();
   const [availableExpression, setAvailableExpression] = useState<ExpeditionExpressionTriggerV3>();
+  const [availableMapEvent, setAvailableMapEvent] = useState<MapEventTriggerV3>();
   const [activeExpression, setActiveExpression] = useState<ExpeditionExpressionTriggerV3>();
   const [acousticStatus, setAcousticStatus] = useState<'idle' | 'requesting' | 'listening' | 'error'>('idle');
   const [acousticProgress, setAcousticProgress] = useState(0);
@@ -351,6 +360,23 @@ export function MapConceptPreview({
         interaction,
       });
     };
+    const mapEventAvailable = (event: Event) => {
+      const trigger = (event as CustomEvent<{ trigger?: MapEventTriggerV3 }>).detail?.trigger;
+      setAvailableMapEvent(trigger);
+    };
+    const mapEventCompleted = (event: Event) => {
+      const trigger = (event as CustomEvent<{ trigger?: MapEventTriggerV3 }>).detail?.trigger;
+      const mapId = bundleRef.current?.adventure.mapId;
+      if (!trigger || !mapId || !getBrowserPokeVoiceSave().activeExpeditionSession) return;
+      completeBrowserMapEventTrigger(mapId, trigger);
+      setAvailableMapEvent(undefined);
+    };
+    const sectorEntered = (event: Event) => {
+      const sectorId = (event as CustomEvent<{ sectorId?: string }>).detail?.sectorId;
+      const mapId = bundleRef.current?.adventure.mapId;
+      if (!sectorId || !mapId || !getBrowserPokeVoiceSave().activeExpeditionSession) return;
+      enterBrowserMapEventSector(mapId, sectorId);
+    };
     host.addEventListener(MAP_INTERACTION_AVAILABLE_EVENT, interactionAvailable);
     host.addEventListener(MAP_INTERACTION_STARTED_EVENT, interactionStarted);
     host.addEventListener(MAP_INTERACTION_COMPLETED_EVENT, interactionCompleted);
@@ -361,6 +387,9 @@ export function MapConceptPreview({
     host.addEventListener(MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT, companionBehaviorCompleted);
     host.addEventListener(MAP_SEQUENCE_CUE_EVENT, sequenceCue);
     host.addEventListener(MAP_VISIBLE_SPECIES_CHANGED_EVENT, visibleSpeciesChanged);
+    host.addEventListener(MAP_EVENT_AVAILABLE_EVENT, mapEventAvailable);
+    host.addEventListener(MAP_EVENT_COMPLETED_EVENT, mapEventCompleted);
+    host.addEventListener(MAP_SECTOR_ENTERED_EVENT, sectorEntered);
     setStatus('loading');
     host.dataset.runtime = 'loading';
     host.focus({ preventScroll: true });
@@ -444,6 +473,30 @@ export function MapConceptPreview({
             behaviorContext,
           ))
         : [];
+      const mapEventContext = {
+        ...(companionCandidate ? { companionForm: companionCandidate.form } : {}),
+        species: catalog.map(createCompanionCatalogSpecies),
+        ...(activeSession && companionCandidate ? {
+          expeditionCapabilities: resolveExpeditionCapabilities(save, {
+            companionForm: companionCandidate.form,
+            tools: POKE_DISCOVER_FIELD_TOOLS,
+          }),
+        } : {}),
+      };
+      const eligibleMapEvents = listRequirementEligibleMapEventTriggers(
+        save,
+        bundle.adventure.mapEventTriggers ?? [],
+        mapEventContext,
+      );
+      const completedMapEventTriggerIds = new Set([
+        ...(mapProgress?.completedMapEventTriggerIds ?? []),
+        ...(activeSession?.completedMapEventTriggerIds ?? []),
+      ]);
+      const completedSectorMapEventTriggerIds = new Set(
+        activeSession?.activeSectorVisit?.sectorId === initialSectorId
+          ? activeSession.activeSectorVisit.completedMapEventTriggerIds
+          : [],
+      );
       game = createTechnicalPhaserGame({
         Phaser,
         parent: host,
@@ -454,6 +507,9 @@ export function MapConceptPreview({
         registeredSpeciesIds: new Set(save.pokedexRun.registeredSpeciesIds),
         expressionsEnabled: Boolean(activeSession),
         resolvedExpressionTriggerIds: new Set(Object.keys(mapProgress?.resolvedExpressionTriggers ?? {})),
+        completedMapEventTriggerIds,
+        completedSectorMapEventTriggerIds,
+        eligibleMapEventTriggerIds: new Set(eligibleMapEvents.map(trigger => trigger.triggerId)),
         companion: companionCandidate ? {
           displayName: companionCandidate.displayName,
           form: companionCandidate.form,
@@ -492,10 +548,14 @@ export function MapConceptPreview({
       host.removeEventListener(MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT, companionBehaviorCompleted);
       host.removeEventListener(MAP_SEQUENCE_CUE_EVENT, sequenceCue);
       host.removeEventListener(MAP_VISIBLE_SPECIES_CHANGED_EVENT, visibleSpeciesChanged);
+      host.removeEventListener(MAP_EVENT_AVAILABLE_EVENT, mapEventAvailable);
+      host.removeEventListener(MAP_EVENT_COMPLETED_EVENT, mapEventCompleted);
+      host.removeEventListener(MAP_SECTOR_ENTERED_EVENT, sectorEntered);
       host.replaceChildren();
       onVisibleSpeciesIdsChange([]);
       setAvailableInteraction(undefined);
       setAvailableExpression(undefined);
+      setAvailableMapEvent(undefined);
       setActiveExpression(undefined);
       setInteractionPresentation(undefined);
       setDialoguePageId(undefined);
@@ -581,7 +641,19 @@ export function MapConceptPreview({
                 <button type="button" onClick={() => setStoryCueId(undefined)}>Explorar el bosque</button>
               </section>
             )}
-            {availableInteraction && !interactionPresentation && (
+            {availableMapEvent?.activation.kind === 'contextAction' && !interactionPresentation && (
+              <button
+                className="map-concept-preview__interaction-prompt"
+                type="button"
+                onClick={() => hostRef.current?.dispatchEvent(new CustomEvent(MAP_EVENT_REQUEST_EVENT, {
+                  detail: { triggerId: availableMapEvent.triggerId },
+                }))}
+              >
+                <kbd>E</kbd>
+                {availableMapEvent.activation.prompt}
+              </button>
+            )}
+            {availableInteraction && !availableMapEvent && !interactionPresentation && (
               <button
                 className="map-concept-preview__interaction-prompt"
                 type="button"
@@ -593,7 +665,7 @@ export function MapConceptPreview({
                 {availableInteraction.prompt}
               </button>
             )}
-            {availableExpression && !availableInteraction && !interactionPresentation && !activeExpression && (
+            {availableExpression && !availableMapEvent && !availableInteraction && !interactionPresentation && !activeExpression && (
               <button
                 className="map-concept-preview__interaction-prompt map-concept-preview__interaction-prompt--expression"
                 type="button"
@@ -605,7 +677,7 @@ export function MapConceptPreview({
                 {availableExpression.prompt}
               </button>
             )}
-            {companionAvailable && !availableInteraction && !availableExpression && !interactionPresentation && !activeExpression && !companionPresentation && (
+            {companionAvailable && !availableMapEvent && !availableInteraction && !availableExpression && !interactionPresentation && !activeExpression && !companionPresentation && (
               <button
                 className="map-concept-preview__interaction-prompt map-concept-preview__interaction-prompt--companion"
                 type="button"

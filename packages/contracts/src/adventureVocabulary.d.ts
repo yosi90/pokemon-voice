@@ -2,6 +2,13 @@ export const TILE_LAYER_KINDS: readonly ['ground', 'decoration', 'overlay', 'col
 export const MISSION_STATUSES: readonly ['locked', 'available', 'active', 'completed'];
 export const COMPANION_TRIGGER_MODES: readonly ['prompt', 'automatic', 'ambient'];
 export const COMPANION_TRIGGER_REPEAT_POLICIES: readonly ['oncePerVisit', 'persistent', 'repeatable'];
+export const MAP_EVENT_ACTIVATION_KINDS: readonly ['enterZone', 'contextAction', 'proximity'];
+export const MAP_EVENT_REPEAT_POLICIES: readonly [
+  'oncePerSectorVisit',
+  'oncePerVisit',
+  'repeatable',
+  'persistent',
+];
 export const EXPRESSION_INPUT_METHODS: readonly ['voice', 'text', 'contextAction'];
 export const EXPRESSION_INTENTS: readonly ['compliment', 'calm', 'warn', 'sing', 'custom'];
 export const ADVENTURE_ACTOR_COLLISIONS: readonly ['solid', 'pass-through'];
@@ -13,6 +20,10 @@ export const AMBIENT_ACTOR_ACTION_KINDS: readonly [
 export const COMPANION_SEQUENCE_ACTION_KINDS: readonly [
   'playAnimation', 'face', 'setVisible', 'moveToAnchor', 'moveByTiles',
   'returnToTrainer', 'dropPokeBalls', 'emitCue',
+];
+export const MAP_SEQUENCE_ACTION_KINDS: readonly [
+  'playAnimation', 'face', 'setVisible', 'moveToAnchor', 'moveByTiles',
+  'returnToTrainer', 'dropPokeBalls', 'emitCue', 'movePath',
 ];
 export const EXPRESSION_MATCHER_KINDS: readonly ['phrase', 'intent', 'acoustic'];
 export const SECTOR_TRANSITION_KINDS: readonly ['edge', 'stairs', 'door', 'teleport'];
@@ -37,6 +48,7 @@ export const TILED_RUNTIME_OBJECT_CLASSES: readonly [
   'Collision',
   'AmbientPath',
   'ActorOccluder',
+  'TriggerZone',
 ];
 export const MEANINGFUL_EXPEDITION_INTERACTION_KINDS: readonly [
   'npcConversation',

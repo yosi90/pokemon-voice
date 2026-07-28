@@ -91,6 +91,8 @@ export interface AdventureMapProgressV1 extends VersionedContractV1 {
   injectedEncounterIds?: StableId[];
   /** Escenas de acompañante que no deben repetirse en visitas futuras. */
   completedBehaviorTriggerIds?: StableId[];
+  /** Eventos del mapa cuya política los conserva entre visitas. */
+  completedMapEventTriggerIds?: StableId[];
   /** No almacena audio ni transcripciones, solo el método de la primera resolución. */
   resolvedExpressionTriggers?: Record<StableId, ExpressionResolutionRecordV1>;
 }
@@ -224,6 +226,12 @@ export interface ExpeditionEntrySnapshotV1 extends VersionedContractV1 {
   discoveryPoints: number;
 }
 
+export interface ActiveExpeditionSectorVisitV1 extends VersionedContractV1 {
+  sectorId: StableId;
+  /** Eventos que sólo deben repetirse después de abandonar este sector. */
+  completedMapEventTriggerIds: StableId[];
+}
+
 export interface ActiveExpeditionSessionV1 extends VersionedContractV1 {
   mapId: StableId;
   enteredAt: ISODateString;
@@ -238,6 +246,10 @@ export interface ActiveExpeditionSessionV1 extends VersionedContractV1 {
   evaluatedEncounterResults?: Record<StableId, boolean>;
   /** Escenas limitadas a una ejecución durante esta visita. */
   completedBehaviorTriggerIds?: StableId[];
+  /** Eventos del mapa limitados a esta visita, conservados entre sectores y recargas. */
+  completedMapEventTriggerIds?: StableId[];
+  /** Estado efímero de la estancia actual, conservado al recargar. */
+  activeSectorVisit?: ActiveExpeditionSectorVisitV1;
   /** Interacciones útiles únicas realizadas durante esta visita. */
   meaningfulInteractionIds?: StableId[];
   meaningfulInteractionKinds?: MeaningfulExpeditionInteractionKind[];

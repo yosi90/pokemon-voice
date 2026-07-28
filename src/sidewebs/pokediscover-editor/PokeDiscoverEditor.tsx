@@ -8,6 +8,7 @@ import {
   addPokeDiscoverCollisionRectangle,
   connectPokeDiscoverRoomsBidirectionally,
   findPokeDiscoverGeometryReferences,
+  type PokeDiscoverGeometryPoint,
   type PokeDiscoverWorldEdge,
 } from '../../domain/tools/pokeDiscoverEditorGeometry.js';
 import {
@@ -16,32 +17,51 @@ import {
 } from '../../domain/tools/pokeDiscoverEditorAuthoringRegistry.js';
 import {
   auditPokeDiscoverAuthoringSnapshot,
+  extendPokeDiscoverSanitationIssueOrder,
+  findIntroducedPokeDiscoverValidationErrors,
+  removePokeDiscoverPokemonPlacement,
   repairPokeDiscoverAuthoringIssue,
+  type PokeDiscoverAuthoringIssue,
 } from '../../domain/tools/pokeDiscoverEditorAuthoringAudit.js';
+import {
+  defaultPokeDiscoverMigrationComment,
+  isPokeDiscoverEditorComment,
+  replacePokeDiscoverTiledObjectWithComment,
+} from '../../domain/tools/pokeDiscoverEditorComments.js';
+import { inferPokemonAssetsFromAnchorName } from '../../domain/tools/pokeDiscoverRosterInference.js';
+import { createPokeDiscoverMapEventFromComment } from '../../domain/tools/pokeDiscoverMapEventAuthoring.js';
 import {
   synchronizeAdventureRequiredAssetIds,
   validateAdventureSectorRoster,
 } from '../../domain/expeditions/adventureMapV3.js';
 import { validateTiledAdventureBundle } from '../../domain/maps/tiledAdventureValidator.js';
 import {
+  readTiledCollisionShape,
+  rectangleOverlapsCollision,
+} from '../../domain/maps/tiledCollisionGeometry.js';
+import {
   commitPokeDiscoverEditorHistory,
   applyPokeDiscoverWorldOrganization,
   fileBaseName,
   redoPokeDiscoverEditorHistory,
   removePokeDiscoverTiledObject,
+  updatePokeDiscoverTiledObject,
   undoPokeDiscoverEditorHistory,
   type PokeDiscoverEditableTiledMap,
   type PokeDiscoverTiledObject,
 } from '../../domain/tools/pokeDiscoverEditorProject.js';
 import {
+  attachPokeDiscoverWorkspaceDirectory,
   displayPokeDiscoverRoomLabel,
   downloadPokeDiscoverWorkspaceCopy,
   findPokeDiscoverWorkspaceConflicts,
   getPokeDiscoverWorkspaceDirtyFiles,
   inspectPokeDiscoverWorkspaceFiles,
+  markPokeDiscoverWorkspaceExported,
   migratePokeDiscoverWorkspaceToV3,
   openPokeDiscoverWorkspace,
   readPokeDiscoverDirectory,
+  requestPokeDiscoverDirectoryWritePermission,
   savePokeDiscoverWorkspace,
   type PokeDiscoverDirectoryHandle,
   type PokeDiscoverProjectMetadata,
@@ -49,9 +69,17 @@ import {
   type PokeDiscoverWorkspaceSnapshot,
   type PokeDiscoverWorkspaceSourceFile,
 } from '../../domain/tools/pokeDiscoverEditorWorkspace.js';
+import {
+  createPokeDiscoverMovementRoute,
+  lastPokeDiscoverMovementPoint,
+  linkedPokeDiscoverMovementSequences,
+  movePokeDiscoverMovementPath,
+  type PokeDiscoverMovementRouteDraft,
+} from '../../domain/tools/pokeDiscoverMovementAuthoring.js';
 import { auditPokeDiscoverEditorProject } from '../../domain/tools/pokeDiscoverEditorDiagnostics.js';
 import { nextStableEditorId } from '../../domain/tools/pokeDiscoverEditorBeats.js';
 import {
+  createPokeDiscoverRecentWorkspaceSources,
   readPokeDiscoverRecentFolder,
   rememberPokeDiscoverRecentFolder,
   type PokeDiscoverRecentFolder,
@@ -72,7 +100,10 @@ import {
   type PokeDiscoverCellCommand,
   type PokeDiscoverCellSelection,
 } from './MapAuthoringCanvas.js';
+import { MapEventFromCommentEditor } from './MapEventFromCommentEditor.js';
+import { MovementAndEventsEditor } from './MovementAndEventsEditor.js';
 import { NarrativeConfigurationEditor } from './NarrativeConfigurationEditor.js';
+import { OrphanPokemonAnchorRepairEditor } from './OrphanPokemonAnchorRepairEditor.js';
 import { ProgressSimulationEditor } from './ProgressSimulationEditor.js';
 import { ProjectDiagnosticsPanel } from './ProjectDiagnosticsPanel.js';
 import { RequirementEditor } from './RequirementEditor.js';
@@ -93,6 +124,10 @@ type PendingNavigation = {
   message: string;
   action: () => void | Promise<void>;
 };
+type PokeDiscoverDirectoryPicker = (options?: {
+  id?: string;
+  mode?: 'read' | 'readwrite';
+}) => Promise<PokeDiscoverDirectoryHandle>;
 type DirectAuthoringGesture = 'direct' | 'shift';
 type UtilityId =
   | 'roster'
@@ -222,6 +257,127 @@ function MenuAction({
   </button>;
 }
 
+function SanitationIssueDetails({
+  issue,
+  onRepair,
+  customRepair,
+}: {
+  issue: PokeDiscoverAuthoringIssue;
+  onRepair: () => void;
+  customRepair?: ReactNode;
+}) {
+  if (issue.kind === 'roster') return null;
+  const coordinate = (value: number | undefined) => {
+    const normalized = Math.trunc((value ?? 0) * 100) / 100;
+    return Object.is(normalized, -0) ? '0' : String(normalized);
+  };
+  const position = `x ${coordinate(issue.position?.x)} · y ${coordinate(issue.position?.y)}${
+    issue.position?.width || issue.position?.height
+      ? ` · ${coordinate(issue.position.width)}×${coordinate(issue.position.height)} px`
+      : ' · punto'
+  }`;
+  const metadata = [
+    { label: 'Elemento', value: `Objeto Tiled #${issue.objectId}` },
+    { label: 'Capa', value: issue.layerName ?? 'Sin capa identificada' },
+    { label: 'Posición', value: position },
+    { label: 'Nombre actual', value: issue.currentName || '(vacío)', code: true },
+    { label: 'Clase actual', value: issue.currentClass || '(vacía)', code: true },
+  ];
+  return <section className="editor-sanitation-resolution" aria-label="Resolución de la incidencia">
+    {issue.objectId !== undefined ? <dl className="editor-sanitation-object">
+      {metadata.map(item => <div
+        className={item.value.length > 32 ? 'is-wide' : undefined}
+        key={item.label}
+      >
+        <dt>{item.label}</dt>
+        <dd>{item.code ? <code>{item.value}</code> : item.value}</dd>
+      </div>)}
+    </dl> : null}
+
+    {issue.kind === 'pending-transition-ready' ? <fieldset>
+      <legend>El sector de destino ya está disponible</legend>
+      <p>
+        La conexión pendiente puede completarse ahora. Se crearán automáticamente
+        la ida, la vuelta y sus extremos en ambos sectores.
+      </p>
+      <button type="button" className="is-primary" onClick={onRepair}>
+        Crear conexión
+      </button>
+    </fieldset> : issue.kind === 'pending-transition' ? <fieldset>
+      <legend>Conexión pendiente</legend>
+      <p>
+        El sector de destino todavía no existe. Se conservará la posición como una
+        nota del mapa y la conexión funcional se creará cuando estén disponibles ambos sectores.
+      </p>
+      <button type="button" className="is-primary" onClick={onRepair}>
+        Guardar para más tarde
+      </button>
+    </fieldset> : issue.kind === 'unlinked-transition' ? <fieldset>
+      <legend>Conexión encontrada</legend>
+      <p>
+        Los bordes coinciden con un sector contiguo. Se crearán automáticamente
+        la ida y la vuelta.
+      </p>
+      <button type="button" className="is-primary" onClick={onRepair}>
+        Corregir y continuar
+      </button>
+    </fieldset> : issue.kind === 'shared-anchor' ? <fieldset>
+      <legend>Reparación propuesta</legend>
+      <p>
+        Se creará una ancla independiente para cada colocación, conservando exactamente
+        la posición actual.
+      </p>
+      <button type="button" className="is-primary" onClick={onRepair}>
+        Corregir y continuar
+      </button>
+    </fieldset> : issue.canRepair && issue.expectedName && issue.expectedClass ? <fieldset>
+      <legend>Reparación propuesta</legend>
+      <p>
+        Para conservar este elemento se aplicarán automáticamente estos valores.
+        No necesitan editarse.
+      </p>
+      <dl className="editor-sanitation-derived-values">
+        <div>
+          <dt>ID resultante</dt>
+          <dd><code>{issue.expectedName}</code></dd>
+        </div>
+        <div>
+          <dt>Tipo</dt>
+          <dd>{issue.expectedClass}</dd>
+        </div>
+      </dl>
+      <button type="button" className="is-primary" onClick={onRepair}>
+        Corregir y continuar
+      </button>
+    </fieldset> : customRepair ?? (
+      <p className="editor-sanitation-no-repair">
+        {issue.canDelete
+          ? 'Esta ancla estaba huérfana en el sistema anterior y no puede traducirse al nuevo, por lo que debe eliminarse.'
+          : 'Este elemento no puede traducirse automáticamente al nuevo sistema y necesita una corrección antes de continuar.'}
+      </p>
+    )}
+  </section>;
+}
+
+function SanitationCommentEditor({
+  text,
+  onChange,
+}: {
+  text: string;
+  onChange: (text: string) => void;
+}) {
+  return <section className="editor-sanitation-delete" aria-label="Retirada del elemento">
+    <label>
+      <span>Comentario para conservar en el sector</span>
+      <textarea
+        value={text}
+        onChange={event => onChange(event.target.value)}
+        placeholder="Describe por qué se eliminó este elemento"
+      />
+    </label>
+  </section>;
+}
+
 export function PokeDiscoverEditor() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const recentFolderRestoreStartedRef = useRef(false);
@@ -257,17 +413,34 @@ export function PokeDiscoverEditor() {
   const [activePlacementId, setActivePlacementId] = useState('');
   const [inspectorPlacementId, setInspectorPlacementId] = useState('');
   const [inspectorObjectId, setInspectorObjectId] = useState<number>();
+  const [eventCommentObjectId, setEventCommentObjectId] = useState<number>();
   const [inspectorSidecarContentId, setInspectorSidecarContentId] = useState('');
   const [cellContentDraft, setCellContentDraft] = useState<{
     kind: PokeDiscoverCellContentKind;
     cell: PokeDiscoverCellSelection;
   }>();
   const [placementGhost, setPlacementGhost] = useState<{ anchorId: string; label: string; scalePercent: number }>();
+  const [movementPathDraft, setMovementPathDraft] = useState<{
+    placementId: string;
+    points: PokeDiscoverGeometryPoint[];
+  }>();
+  const [movementTriggerZoneDraft, setMovementTriggerZoneDraft] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>();
+  const [activeMovementSequenceId, setActiveMovementSequenceId] = useState('');
   const [catalogSelection, setCatalogSelection] = useState<{ assetId: string; animation: string }>();
   const [catalogForPlacement, setCatalogForPlacement] = useState(false);
   const [organizationDirty, setOrganizationDirty] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation>();
   const [recentFolder, setRecentFolder] = useState<PokeDiscoverRecentFolder>();
+  const [sanitationIssueOrder, setSanitationIssueOrder] = useState<string[]>([]);
+  const [sanitationRosterStep, setSanitationRosterStep] = useState<'pokemon' | 'npc'>('pokemon');
+  const [sanitationUndoCount, setSanitationUndoCount] = useState(0);
+  const [pendingSanitationDeletion, setPendingSanitationDeletion] = useState(false);
+  const [sanitationCommentText, setSanitationCommentText] = useState('');
   const activeMenu = menu ?? 'map';
   const dirtyFiles = useMemo(
     () => workspace ? getPokeDiscoverWorkspaceDirtyFiles(workspace) : [],
@@ -297,11 +470,49 @@ export function PokeDiscoverEditor() {
     [bundle, snapshot, workspace?.sourceSchemaVersion],
   );
   const currentAuthoringIssue = authoringIssues[0];
+  const trackedIssueIndex = currentAuthoringIssue
+    ? sanitationIssueOrder.indexOf(currentAuthoringIssue.issueId)
+    : -1;
+  const currentSanitationNumber = currentAuthoringIssue
+    ? trackedIssueIndex >= 0 ? trackedIssueIndex + 1 : sanitationIssueOrder.length + 1
+    : 0;
+  const sanitationTotal = Math.max(
+    sanitationIssueOrder.length,
+    authoringIssues.length,
+    currentSanitationNumber,
+  );
+  const currentIssueHasPreferredRepair = Boolean(
+    currentAuthoringIssue?.canRepair
+    || (currentAuthoringIssue?.kind === 'orphan' && bundle
+      && inferPokemonAssetsFromAnchorName(
+        currentAuthoringIssue.currentName ?? '',
+        bundle.pmdManifest,
+      ).length === 1),
+  );
 
   useEffect(() => {
     if (!workspace) return;
     setBundle(current => current ? snapshotBundle(current, workspace) : current);
   }, [workspace?.history.present]);
+
+  useEffect(() => {
+    if (workspace?.sourceSchemaVersion !== 3) return;
+    setSanitationIssueOrder(current => (
+      extendPokeDiscoverSanitationIssueOrder(current, authoringIssues)
+    ));
+  }, [authoringIssues, workspace?.sourceSchemaVersion]);
+
+  useEffect(() => {
+    setSanitationRosterStep('pokemon');
+    setPendingSanitationDeletion(false);
+    setSanitationCommentText(currentAuthoringIssue
+      ? defaultPokeDiscoverMigrationComment({
+        layerName: currentAuthoringIssue.layerName,
+        className: currentAuthoringIssue.currentClass,
+        objectName: currentAuthoringIssue.currentName,
+      })
+      : '');
+  }, [currentAuthoringIssue?.issueId]);
 
   useEffect(() => {
     try {
@@ -313,13 +524,13 @@ export function PokeDiscoverEditor() {
 
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirtyFiles.length && !organizationDirty) return;
+      if (!dirtyFiles.length && !organizationDirty && !movementPathDraft) return;
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', beforeUnload);
     return () => window.removeEventListener('beforeunload', beforeUnload);
-  }, [dirtyFiles.length, organizationDirty]);
+  }, [dirtyFiles.length, movementPathDraft, organizationDirty]);
 
   useEffect(() => {
     if (!workspace?.directoryHandle) return undefined;
@@ -397,6 +608,7 @@ export function PokeDiscoverEditor() {
         ?? loadedBundle.sectors[0]?.sector.sectorId
         ?? '';
       setWorkspace(opened);
+      setSanitationIssueOrder([]);
       setBundle(loadedBundle);
       setRoomId(preferredRoom);
       setView('room');
@@ -448,14 +660,17 @@ export function PokeDiscoverEditor() {
   const chooseFolder = async () => {
     setMenu(undefined);
     const picker = (window as typeof window & {
-      showDirectoryPicker?: () => Promise<PokeDiscoverDirectoryHandle>;
+      showDirectoryPicker?: PokeDiscoverDirectoryPicker;
     }).showDirectoryPicker;
     if (!picker) {
       folderInputRef.current?.click();
       return;
     }
     try {
-      const directoryHandle = await picker.call(window);
+      const directoryHandle = await picker.call(window, {
+        id: 'pokediscover-project',
+        mode: 'readwrite',
+      });
       const files = await readPokeDiscoverDirectory(directoryHandle);
       await beginOpen(files, directoryHandle, directoryHandle.name);
     } catch (cause) {
@@ -530,6 +745,24 @@ export function PokeDiscoverEditor() {
     setMessage(description);
   };
 
+  const commitSanitationSnapshot = (
+    update: (current: PokeDiscoverWorkspaceSnapshot) => PokeDiscoverWorkspaceSnapshot,
+    description: string,
+  ) => {
+    commitSnapshot(update, description);
+    setSanitationUndoCount(current => current + 1);
+  };
+
+  const undoLastSanitationChange = () => {
+    if (!sanitationUndoCount) return;
+    setWorkspace(current => current
+      ? { ...current, history: undoPokeDiscoverEditorHistory(current.history) }
+      : current);
+    setSanitationUndoCount(current => Math.max(0, current - 1));
+    setPendingSanitationDeletion(false);
+    setMessage('Último cambio del saneamiento deshecho.');
+  };
+
   const validateCandidate = (
     adventure: AdventureMapV3,
     tilemapsByFileName: PokeDiscoverWorkspaceSnapshot['tilemapsByFileName'],
@@ -598,6 +831,104 @@ export function PokeDiscoverEditor() {
     }), description);
   };
 
+  const movePlacement = (placementId: string, point: PokeDiscoverGeometryPoint) => {
+    if (!snapshot || !selectedTilemap) return;
+    const placement = snapshot.adventure.actorPlacements.find(item => item.placementId === placementId)
+      ?? snapshot.adventure.characterPlacements.find(item => item.placementId === placementId);
+    if (!placement) return;
+    const anchorUsers = [
+      ...snapshot.adventure.actorPlacements,
+      ...snapshot.adventure.characterPlacements,
+    ].filter(candidate => candidate.anchorId === placement.anchorId);
+    if (anchorUsers.length > 1) {
+      setMessage(`No se puede mover porque la posición todavía está compartida por ${anchorUsers.length} entidades.`);
+      return;
+    }
+    const anchor = selectedTilemap.layers.flatMap(layer => Array.isArray(layer.objects) ? layer.objects : [])
+      .find(object => object.name === placement.anchorId);
+    if (!anchor) {
+      setMessage('No se encontró la posición de esta entidad.');
+      return;
+    }
+    if ((placement.collision ?? 'solid') === 'solid') {
+      const collisionLayer = selectedTilemap.layers.find(layer => layer.name === 'Collision');
+      const collisions = (Array.isArray(collisionLayer?.objects) ? collisionLayer.objects : [])
+        .flatMap(object => {
+          const shape = readTiledCollisionShape(object);
+          return shape ? [shape] : [];
+        });
+      if (collisions.some(collision => rectangleOverlapsCollision({
+        x: point.x - 8,
+        y: point.y - 16,
+        width: 16,
+        height: 16,
+      }, collision))) {
+        setMessage('No se puede colocar una entidad sólida sobre una colisión.');
+        return;
+      }
+    }
+    const next = updatePokeDiscoverTiledObject(selectedTilemap, Number(anchor.id), object => ({
+      ...object,
+      x: point.x - Math.max(0, Number(object.width) || 0) / 2,
+      y: point.y - Math.max(0, Number(object.height) || 0) / 2,
+    }));
+    updateTilemap(next, `Mover ${placementId}`);
+  };
+
+  const confirmMovementPath = (draft: PokeDiscoverMovementRouteDraft) => {
+    if (!snapshot || !selectedTilemap || !selectedRegistration) return 'No hay un sector seleccionado.';
+    try {
+      const transaction = createPokeDiscoverMovementRoute(
+        snapshot.adventure,
+        selectedTilemap,
+        selectedRegistration.sectorId,
+        draft,
+      );
+      const nextTilemaps = {
+        ...snapshot.tilemapsByFileName,
+        [selectedRegistration.fileName]: transaction.tilemap,
+      };
+      const currentErrors = validateCandidate(snapshot.adventure, snapshot.tilemapsByFileName);
+      const candidateErrors = validateCandidate(transaction.adventure, nextTilemaps);
+      const introduced = findIntroducedPokeDiscoverValidationErrors(currentErrors, candidateErrors);
+      if (introduced.length) return introduced[0];
+      commitSnapshot(current => ({
+        ...current,
+        adventure: transaction.adventure,
+        tilemapsByFileName: nextTilemaps,
+      }), `Crear ruta para ${draft.placementId}`);
+      setMovementPathDraft(undefined);
+      setMovementTriggerZoneDraft(undefined);
+      setActiveMovementSequenceId(transaction.sequenceId);
+      return undefined;
+    } catch (cause) {
+      return cause instanceof Error ? cause.message : 'No se pudo crear la ruta.';
+    }
+  };
+
+  const movementPathOrigin = (placementId: string) => {
+    if (!snapshot || !selectedTilemap) return undefined;
+    if (activeMovementSequenceId) {
+      const end = lastPokeDiscoverMovementPoint(
+        snapshot.adventure,
+        selectedTilemap,
+        activeMovementSequenceId,
+        placementId,
+      );
+      if (end) return end;
+    }
+    const placement = snapshot.adventure.actorPlacements.find(item => item.placementId === placementId)
+      ?? snapshot.adventure.characterPlacements.find(item => item.placementId === placementId);
+    const anchor = placement
+      ? selectedTilemap.layers.flatMap(layer => Array.isArray(layer.objects) ? layer.objects : [])
+        .find(object => object.name === placement.anchorId)
+      : undefined;
+    return anchor ? {
+      x: Number(anchor.x) + Math.max(0, Number(anchor.width) || 0) / 2,
+      y: Number(anchor.y) + Math.max(0, Number(anchor.height) || 0) / 2,
+    } : undefined;
+  };
+
   const updateWorld = (nextWorld: PokeDiscoverWorkspaceSnapshot['world'], description: string) => {
     commitSnapshot(current => ({ ...current, world: nextWorld }), description);
   };
@@ -613,7 +944,18 @@ export function PokeDiscoverEditor() {
     setView('world');
   };
 
+  const discardMovementDraftForNavigation = () => {
+    if (!movementPathDraft) return true;
+    if (!window.confirm('La ruta todavía no se ha confirmado. ¿Descartarla y continuar?')) {
+      return false;
+    }
+    setMovementPathDraft(undefined);
+    setMovementTriggerZoneDraft(undefined);
+    return true;
+  };
+
   const navigateView = (nextView: MainView) => {
+    if (nextView !== 'room' && !discardMovementDraftForNavigation()) return false;
     if (view === 'organize' && nextView !== 'organize' && organizationDirty
       && !window.confirm('La organización del mundo aún no se ha aplicado. ¿Descartar el borrador?')) {
       return false;
@@ -635,23 +977,96 @@ export function PokeDiscoverEditor() {
     setMenu(undefined);
   };
 
-  async function saveProject(overwriteConflicts = false): Promise<boolean> {
+  async function saveProject(
+    overwriteConflicts = false,
+    exportDirtyOnly = false,
+  ): Promise<boolean> {
     if (!workspace) return false;
     if (workspace.sourceSchemaVersion === 2) {
       setMessage('Confirma o cancela la migración V3 antes de guardar.');
       return false;
     }
     setMenu(undefined);
-    if (!workspace.directoryHandle) {
-      setMessage('La carpeta se abrió sin permiso de escritura. Se exportará una copia.');
-      downloadPokeDiscoverWorkspaceCopy(workspace);
+    let writableWorkspace = workspace;
+    if (!writableWorkspace.directoryHandle) {
+      const picker = (window as typeof window & {
+        showDirectoryPicker?: PokeDiscoverDirectoryPicker;
+      }).showDirectoryPicker;
+      if (picker) {
+        try {
+          setMessage('Selecciona de nuevo la carpeta del mapa para permitir la escritura.');
+          const directoryHandle = await picker.call(window, {
+            id: 'pokediscover-project',
+            mode: 'readwrite',
+          });
+          writableWorkspace = await attachPokeDiscoverWorkspaceDirectory(
+            writableWorkspace,
+            directoryHandle,
+          );
+        } catch (cause) {
+          if (cause instanceof DOMException && cause.name === 'AbortError') {
+            setMessage('No se concedió acceso de escritura.');
+            return false;
+          }
+          setStatus('error');
+          setMessage(cause instanceof Error
+            ? cause.message
+            : 'No se pudo obtener acceso de escritura a la carpeta.');
+          return false;
+        }
+      }
+    }
+    if (!writableWorkspace.directoryHandle) {
+      setMessage(exportDirtyOnly
+        ? 'El navegador no permite escribir en la carpeta. Se descargarán los archivos modificados.'
+        : 'El navegador no permite escribir en carpetas. Se exportará una copia.');
+      downloadPokeDiscoverWorkspaceCopy(writableWorkspace, { dirtyOnly: exportDirtyOnly });
+      const exported = markPokeDiscoverWorkspaceExported(writableWorkspace, {
+        dirtyOnly: exportDirtyOnly,
+      });
+      setWorkspace(exported);
+      setRecentFolder(await rememberPokeDiscoverRecentFolder({
+        files: createPokeDiscoverRecentWorkspaceSources(exported),
+        projectName: exported.projectName,
+      }));
+      setStatus('ready');
+      setMessage(exportDirtyOnly
+        ? 'Guardado como descarga. Este navegador no permite escribir directamente en carpetas.'
+        : 'Guardado como copia. Este navegador no permite guardar directamente en carpetas.');
+      return true;
+    }
+    let grantedPermission: PermissionState;
+    try {
+      grantedPermission = await requestPokeDiscoverDirectoryWritePermission(
+        writableWorkspace.directoryHandle,
+      );
+    } catch {
+      grantedPermission = 'denied';
+    }
+    if (grantedPermission !== 'granted') {
+      setMessage('No se concedió acceso de escritura. Se exportará una copia.');
+      downloadPokeDiscoverWorkspaceCopy(writableWorkspace, { dirtyOnly: exportDirtyOnly });
+      const exported = markPokeDiscoverWorkspaceExported(writableWorkspace, {
+        dirtyOnly: exportDirtyOnly,
+      });
+      setWorkspace(exported);
+      setRecentFolder(await rememberPokeDiscoverRecentFolder({
+        directoryHandle: exported.directoryHandle,
+        files: createPokeDiscoverRecentWorkspaceSources(exported),
+        projectName: exported.projectName,
+      }));
       return true;
     }
     setStatus('loading');
     setMessage('Guardando mapas, distribución y proyecto…');
     try {
-      const saved = await savePokeDiscoverWorkspace(workspace, { overwriteConflicts });
+      const saved = await savePokeDiscoverWorkspace(writableWorkspace, { overwriteConflicts });
       setWorkspace(saved);
+      setRecentFolder(await rememberPokeDiscoverRecentFolder({
+        directoryHandle: saved.directoryHandle,
+        files: createPokeDiscoverRecentWorkspaceSources(saved),
+        projectName: saved.projectName,
+      }));
       setConflicts([]);
       setStatus('ready');
       const diagnosticCount = bundle ? auditPokeDiscoverEditorProject(bundle).length : 0;
@@ -678,8 +1093,11 @@ export function PokeDiscoverEditor() {
     try {
       const migrated = await migratePokeDiscoverWorkspaceToV3(workspace);
       setWorkspace(migrated.workspace);
+      setSanitationUndoCount(0);
       setStatus('ready');
-      setMessage(`Migración V3 preparada. Copia creada: ${migrated.backupFileName}. Completa los repartos antes de guardar.`);
+      setMessage(migrated.backupReused
+        ? `Migración V3 preparada reutilizando la copia reciente ${migrated.backupFileName}. Completa los repartos antes de guardar.`
+        : `Migración V3 preparada. Copia creada: ${migrated.backupFileName}. Completa los repartos antes de guardar.`);
       openUtility('roster');
     } catch (cause) {
       setStatus('error');
@@ -717,6 +1135,9 @@ export function PokeDiscoverEditor() {
       return;
     }
     setWorkspace(undefined);
+    setSanitationIssueOrder([]);
+    setSanitationUndoCount(0);
+    setPendingSanitationDeletion(false);
     setBundle(undefined);
     setRoomId('');
     setView('room');
@@ -1086,6 +1507,54 @@ export function PokeDiscoverEditor() {
     setActivePlacementId('');
   };
 
+  const applySanitationDeletion = (keepComment: boolean) => {
+    if (!currentAuthoringIssue || currentAuthoringIssue.objectId === undefined) return;
+    commitSanitationSnapshot(current => {
+      const removeStaleSpawnReference = currentAuthoringIssue.kind !== 'duplicate-id'
+        && currentAuthoringIssue.layerName === 'Anchors'
+        && Boolean(currentAuthoringIssue.currentName);
+      const adventureWithoutPlacement = currentAuthoringIssue.removablePlacementId
+        ? synchronizeAdventureRequiredAssetIds(removePokeDiscoverPokemonPlacement(
+          current.adventure,
+          currentAuthoringIssue.removablePlacementId,
+        ))
+        : current.adventure;
+      return {
+        ...current,
+        adventure: removeStaleSpawnReference
+          ? {
+            ...adventureWithoutPlacement,
+            sectors: adventureWithoutPlacement.sectors.map(sector => ({
+              ...sector,
+              spawnAnchorIds: sector.sectorId === currentAuthoringIssue.sectorId
+                ? sector.spawnAnchorIds.filter(
+                  anchorId => anchorId !== currentAuthoringIssue.currentName,
+                )
+                : sector.spawnAnchorIds,
+            })),
+          }
+          : adventureWithoutPlacement,
+        tilemapsByFileName: {
+          ...current.tilemapsByFileName,
+          [currentAuthoringIssue.fileName]: keepComment
+            && currentAuthoringIssue.layerName !== 'Comments'
+            ? replacePokeDiscoverTiledObjectWithComment(
+              current.tilemapsByFileName[currentAuthoringIssue.fileName],
+              currentAuthoringIssue.objectId!,
+              sanitationCommentText,
+            ).tilemap
+            : removePokeDiscoverTiledObject(
+              current.tilemapsByFileName[currentAuthoringIssue.fileName],
+              currentAuthoringIssue.objectId!,
+            ),
+        },
+      };
+    }, keepComment && currentAuthoringIssue.layerName !== 'Comments'
+      ? 'Elemento eliminado y comentario guardado'
+      : 'Elemento eliminado sin comentario');
+    setPendingSanitationDeletion(false);
+  };
+
   const selectedWindowRoom = bundle && selectedRoom ? selectedRoom : undefined;
   const inspectedPlacement = snapshot && inspectorPlacementId
     ? snapshot.adventure.actorPlacements.find(item => (
@@ -1100,6 +1569,12 @@ export function PokeDiscoverEditor() {
       ? layer.objects as PokeDiscoverTiledObject[]
       : [])
       .find(object => object.id === inspectorObjectId) as PokeDiscoverTiledObject | undefined;
+  const eventComment = eventCommentObjectId === undefined || !selectedTilemap
+    ? undefined
+    : selectedTilemap.layers.flatMap(layer => Array.isArray(layer.objects)
+      ? layer.objects as PokeDiscoverTiledObject[]
+      : [])
+      .find(object => object.id === eventCommentObjectId) as PokeDiscoverTiledObject | undefined;
   const inspectedTransition = snapshot?.adventure.transitions
     .find(candidate => candidate.transitionId === inspectorSidecarContentId);
   const inspectedInteraction = (snapshot?.adventure.interactions ?? [])
@@ -1276,6 +1751,7 @@ export function PokeDiscoverEditor() {
                     type="button"
                     aria-pressed={sectorId === registration.sectorId && view === 'room'}
                     onClick={() => {
+                      if (registration.sectorId !== sectorId && !discardMovementDraftForNavigation()) return;
                       setRoomId(registration.sectorId);
                       if (!navigateView('room')) return;
                       setMode('design');
@@ -1316,6 +1792,7 @@ export function PokeDiscoverEditor() {
                 onOrganizeRequest={() => navigateView('organize')}
                 onOrganizationDirtyChange={setOrganizationDirty}
                 onOpenRoom={nextRoomId => {
+                  if (nextRoomId !== sectorId && !discardMovementDraftForNavigation()) return;
                   if (!navigateView('room')) return;
                   setRoomId(nextRoomId);
                   setMode('design');
@@ -1343,12 +1820,40 @@ export function PokeDiscoverEditor() {
                     setActivePlacementId(placementId);
                     setInspectorPlacementId(placementId);
                     setInspectorSidecarContentId('');
+                    const linked = snapshot ? linkedPokeDiscoverMovementSequences(
+                      snapshot.adventure,
+                      sectorId,
+                      placementId,
+                    ) : [];
+                    setActiveMovementSequenceId(current => (
+                      linked.some(sequence => sequence.sequenceId === current)
+                        || snapshot?.adventure.ambientSequences.some(sequence => (
+                          sequence.sequenceId === current && sequence.sectorId === sectorId
+                        ))
+                        || snapshot?.adventure.mapSequences?.some(sequence => (
+                          sequence.sequenceId === current && sequence.sectorId === sectorId
+                        ))
+                        ? current
+                        : linked.at(-1)?.sequenceId ?? ''
+                    ));
                   } else {
                     setInspectorPlacementId('');
                     setInspectorSidecarContentId(placementId);
                   }
                   setInspectorObjectId(undefined);
                 }}
+                onMovePlacement={movePlacement}
+                onPathDraft={(placementId, points) => {
+                  setMovementPathDraft({ placementId, points });
+                  setMovementTriggerZoneDraft(undefined);
+                  setActivePlacementId(placementId);
+                  setInspectorPlacementId(placementId);
+                  setInspectorObjectId(undefined);
+                  setInspectorSidecarContentId('');
+                }}
+                pathDraft={movementPathDraft?.points}
+                triggerZoneDraft={movementTriggerZoneDraft}
+                getPathOrigin={movementPathOrigin}
                 onCellCommand={createAtCell}
                 canCreateExit={canCreateCellExit}
                 directAuthoringGesture={directAuthoringGesture}
@@ -1378,6 +1883,28 @@ export function PokeDiscoverEditor() {
                 compact
                 onClose={() => setInspectorPlacementId('')}
                 onAdventureChange={adventure => updateAdventure(adventure, 'Actualizar colocación')}
+              /> : null}
+              {inspectedPlacement ? <MovementAndEventsEditor
+                bundle={bundle}
+                room={selectedWindowRoom}
+                placementId={inspectedPlacement.placementId}
+                pathDraft={movementPathDraft?.placementId === inspectedPlacement.placementId
+                  ? movementPathDraft.points
+                  : undefined}
+                triggerZone={movementTriggerZoneDraft}
+                activeSequenceId={activeMovementSequenceId}
+                onActiveSequenceChange={setActiveMovementSequenceId}
+                onCancelDraft={() => {
+                  setMovementPathDraft(undefined);
+                  setMovementTriggerZoneDraft(undefined);
+                }}
+                onConfirmDraft={confirmMovementPath}
+                onTriggerZoneChange={setMovementTriggerZoneDraft}
+                onMoveRoute={(sequenceId, pathId, delta) => updateAdventure(
+                  movePokeDiscoverMovementPath(snapshot!.adventure, sequenceId, pathId, delta),
+                  'Reordenar rutas',
+                )}
+                onAdventureChange={adventure => updateAdventure(adventure, 'Actualizar evento')}
               /> : null}
               {cellContentDraft ? <CellContentDraftEditor
                 bundle={bundle}
@@ -1417,6 +1944,53 @@ export function PokeDiscoverEditor() {
                 onTilemapChange={updateTilemap}
                 onDelete={deleteGeometry}
                 onClose={() => setInspectorObjectId(undefined)}
+                onCreateEvent={object => setEventCommentObjectId(object.id)}
+              /> : null}
+              {eventComment && isPokeDiscoverEditorComment(eventComment) ? <MapEventFromCommentEditor
+                bundle={bundle}
+                adventure={snapshot!.adventure}
+                sectorId={sectorId}
+                comment={eventComment}
+                onCancel={() => setEventCommentObjectId(undefined)}
+                onConfirm={draft => {
+                  if (!selectedRegistration || !snapshot) return 'No hay un sector seleccionado.';
+                  try {
+                    const transaction = createPokeDiscoverMapEventFromComment(
+                      snapshot.adventure,
+                      selectedTilemap,
+                      sectorId,
+                      eventComment.id,
+                      draft,
+                    );
+                    const nextSnapshot = {
+                      ...snapshot,
+                      adventure: transaction.adventure,
+                      tilemapsByFileName: {
+                        ...snapshot.tilemapsByFileName,
+                        [selectedRegistration.fileName]: transaction.tilemap,
+                      },
+                    };
+                    const currentErrors = validateCandidate(
+                      snapshot.adventure,
+                      snapshot.tilemapsByFileName,
+                    );
+                    const candidateErrors = validateCandidate(
+                      nextSnapshot.adventure,
+                      nextSnapshot.tilemapsByFileName,
+                    );
+                    const introducedErrors = findIntroducedPokeDiscoverValidationErrors(
+                      currentErrors,
+                      candidateErrors,
+                    );
+                    if (introducedErrors.length) return introducedErrors[0];
+                    commitSnapshot(() => nextSnapshot, `Crear evento espacial ${transaction.triggerId}`);
+                    setEventCommentObjectId(undefined);
+                    if (draft.removeComment ?? true) setInspectorObjectId(undefined);
+                    return undefined;
+                  } catch (cause) {
+                    return cause instanceof Error ? cause.message : 'No se pudo crear el evento.';
+                  }
+                }}
               /> : null}
             </aside> : null}
             {workspace && dirtyFiles.length ? <button
@@ -1446,11 +2020,16 @@ export function PokeDiscoverEditor() {
             id={id}
             title={UTILITY_TITLES[id]}
             open={windows[id]}
+            className={id === 'roster' ? 'is-roster' : undefined}
             initialGeometry={{
               x: 300 + (index % 4) * 54,
               y: 92 + (index % 5) * 38,
-              width: id === 'catalog' || id === 'coverage' ? 900 : 760,
-              height: id === 'catalog' || id === 'coverage' ? 620 : 570,
+              width: id === 'roster'
+                ? 980
+                : id === 'catalog' || id === 'coverage' ? 900 : 760,
+              height: id === 'roster'
+                ? 650
+                : id === 'catalog' || id === 'coverage' ? 620 : 570,
             }}
             zIndex={100 + windowOrder.indexOf(id)}
             onFocus={() => focusUtility(id)}
@@ -1546,11 +2125,26 @@ export function PokeDiscoverEditor() {
             <section className="editor-dialog" role="alertdialog" aria-modal="true" aria-labelledby="migration-v3-title">
               <h2 id="migration-v3-title">Migración explícita a Mapas V3</h2>
               <p>Este proyecto usa el contrato V2. La autoría está bloqueada hasta convertir habitaciones en sectores y preparar sus repartos.</p>
-              <p>Antes de modificar el proyecto se creará <code>{workspace.sidecarFileName.replace(/\.adventure\.json$/iu, '.adventure.v2.backup.json')}</code> con el documento V2 original.</p>
+              {workspace.legacyBackup?.recent && workspace.legacyBackup.matchesSource ? (
+                <p>Ya existe la copia reciente <code>{workspace.legacyBackup.fileName}</code>. Se reutilizará sin crear otra.</p>
+              ) : workspace.legacyBackup?.recent ? (
+                <p role="alert">Existe una copia reciente con contenido diferente. No se puede migrar hasta revisar <code>{workspace.legacyBackup.fileName}</code>.</p>
+              ) : (
+                <p>Antes de modificar el proyecto se creará <code>{workspace.sidecarFileName.replace(/\.adventure\.json$/iu, '.adventure.v2.backup.json')}</code> con el documento V2 original.</p>
+              )}
               <div>
                 <button type="button" onClick={() => closeProject()}>Cerrar sin migrar</button>
-                <button type="button" className="is-primary" disabled={status === 'loading'} onClick={() => void migrateLegacyProject()}>
-                  Crear copia y migrar a V3
+                <button
+                  type="button"
+                  className="is-primary"
+                  disabled={status === 'loading' || Boolean(
+                    workspace.legacyBackup?.recent && !workspace.legacyBackup.matchesSource,
+                  )}
+                  onClick={() => void migrateLegacyProject()}
+                >
+                  {workspace.legacyBackup?.recent && workspace.legacyBackup.matchesSource
+                    ? 'Usar copia reciente y migrar a V3'
+                    : 'Crear copia y migrar a V3'}
                 </button>
               </div>
             </section>
@@ -1559,52 +2153,178 @@ export function PokeDiscoverEditor() {
 
         {workspace?.sourceSchemaVersion === 3 && currentAuthoringIssue && snapshot && bundle ? (
           <div className="editor-dialog-backdrop" role="presentation">
-            <section className="editor-dialog" role="alertdialog" aria-modal="true" aria-labelledby="sanitation-title">
-              <h2 id="sanitation-title">Saneamiento obligatorio del mapa</h2>
-              <p>Incidencia 1 de {authoringIssues.length}. La autoría normal seguirá bloqueada hasta resolver toda la cola.</p>
-              <p><strong>{currentAuthoringIssue.fileName}</strong> · <code>{currentAuthoringIssue.currentName || currentAuthoringIssue.sectorId}</code></p>
-              <p>{currentAuthoringIssue.message}</p>
+            <section className="editor-dialog editor-sanitation-dialog" role="alertdialog" aria-modal="true" aria-labelledby="sanitation-title">
+              <header className="editor-sanitation-heading">
+                <h2 id="sanitation-title">
+                  {currentAuthoringIssue.kind === 'roster'
+                    ? sanitationRosterStep === 'pokemon'
+                      ? 'Reparto Pokémon del sector'
+                      : 'Reparto NPC del sector'
+                    : 'Saneamiento obligatorio del mapa'}
+                </h2>
+                <strong aria-label={`Incidencia ${currentSanitationNumber} de ${sanitationTotal}`}>
+                  #{currentSanitationNumber} de {sanitationTotal}
+                </strong>
+              </header>
+              <p className="editor-sanitation-message">
+                {currentAuthoringIssue.kind === 'roster' && sanitationRosterStep === 'npc'
+                  ? 'Revisa los NPC previstos para este sector antes de continuar.'
+                  : currentAuthoringIssue.message}
+              </p>
               {currentAuthoringIssue.references.length ? <>
                 <h3>Dependencias</h3>
                 <ul>{currentAuthoringIssue.references.map(reference => <li key={reference}>{reference}</li>)}</ul>
               </> : null}
-              {currentAuthoringIssue.expectedName ? <p>Construcción esperada: <code>{currentAuthoringIssue.expectedName}</code> · {currentAuthoringIssue.expectedClass}</p> : null}
               {currentAuthoringIssue.kind === 'roster' ? <SectorRosterEditor
                 adventure={snapshot.adventure}
                 bundle={bundle}
                 sectorId={currentAuthoringIssue.sectorId}
-                onChange={adventure => commitSnapshot(
+                showValidationMessages={false}
+                dialogFlow
+                onStepChange={setSanitationRosterStep}
+                onChange={adventure => commitSanitationSnapshot(
                   current => ({ ...current, adventure }),
                   'Guardar progreso de reparación del reparto',
                 )}
               /> : null}
-              <div>
-                <button type="button" disabled={status === 'loading'} onClick={() => void saveProject()}>
+              <SanitationIssueDetails issue={currentAuthoringIssue} onRepair={() => {
+                try {
+                  commitSanitationSnapshot(
+                    current => repairPokeDiscoverAuthoringIssue(current, currentAuthoringIssue),
+                    'Reparar convención del mapa',
+                  );
+                } catch (cause) {
+                  setMessage(cause instanceof Error ? cause.message : 'No se pudo reparar la incidencia.');
+                }
+              }} customRepair={currentAuthoringIssue.kind === 'orphan'
+                && currentAuthoringIssue.currentClass === 'ActorAnchor' ? (
+                <OrphanPokemonAnchorRepairEditor
+                  snapshot={snapshot}
+                  bundle={bundle}
+                  issue={currentAuthoringIssue}
+                  onError={setMessage}
+                  onConfirm={(nextSnapshot, placementId) => {
+                    const currentErrors = validateCandidate(
+                      snapshot.adventure,
+                      snapshot.tilemapsByFileName,
+                    );
+                    const candidateErrors = validateCandidate(
+                      nextSnapshot.adventure,
+                      nextSnapshot.tilemapsByFileName,
+                    );
+                    const introducedErrors = findIntroducedPokeDiscoverValidationErrors(
+                      currentErrors,
+                      candidateErrors,
+                    );
+                    if (introducedErrors.length) {
+                      const message = `No se pudo corregir: ${introducedErrors[0]}`;
+                      setMessage(message);
+                      return message;
+                    }
+                    commitSanitationSnapshot(
+                      () => nextSnapshot,
+                      'Ancla heredada adaptada a una colocación Pokémon',
+                    );
+                    setActivePlacementId(placementId);
+                    setInspectorPlacementId(placementId);
+                    setInspectorObjectId(currentAuthoringIssue.objectId);
+                    return undefined;
+                  }}
+                />
+              ) : undefined} />
+              {currentAuthoringIssue.kind !== 'roster' ? <>
+                {currentAuthoringIssue.canDelete && !currentIssueHasPreferredRepair
+                  ? <SanitationCommentEditor
+                    text={sanitationCommentText}
+                    onChange={setSanitationCommentText}
+                  />
+                  : null}
+              </> : null}
+              <div className="editor-sanitation-actions">
+                {sanitationUndoCount ? <button
+                  type="button"
+                  disabled={status === 'loading'}
+                  onClick={undoLastSanitationChange}
+                >
+                  Volver atrás
+                </button> : null}
+                <button
+                  type="button"
+                  disabled={status === 'loading' || !dirtyFiles.length}
+                  onClick={() => void saveProject(false, true)}
+                >
                   Guardar progreso parcial
                 </button>
-                <button type="button" disabled={!currentAuthoringIssue.canDelete} onClick={() => {
-                  if (currentAuthoringIssue.objectId === undefined) return;
-                  commitSnapshot(current => ({
-                    ...current,
-                    tilemapsByFileName: {
-                      ...current.tilemapsByFileName,
-                      [currentAuthoringIssue.fileName]: removePokeDiscoverTiledObject(
-                        current.tilemapsByFileName[currentAuthoringIssue.fileName],
-                        currentAuthoringIssue.objectId!,
-                      ),
-                    },
-                  }), 'Eliminar elemento huérfano');
-                }}>Eliminar huérfano</button>
-                <button type="button" className="is-primary" disabled={!currentAuthoringIssue.canRepair} onClick={() => {
-                  try {
-                    commitSnapshot(
-                      current => repairPokeDiscoverAuthoringIssue(current, currentAuthoringIssue),
-                      'Reparar convención sidecar',
-                    );
-                  } catch (cause) {
-                    setMessage(cause instanceof Error ? cause.message : 'No se pudo reparar la incidencia.');
-                  }
-                }}>Reclasificar y renombrar</button>
+                {currentAuthoringIssue.canDelete ? <>
+                  {currentIssueHasPreferredRepair ? <button
+                    type="button"
+                    disabled={status === 'loading'}
+                    onClick={() => setPendingSanitationDeletion(true)}
+                  >
+                    Eliminar
+                  </button> : <>
+                    <button
+                      type="button"
+                      className="is-primary"
+                      disabled={status === 'loading' || !sanitationCommentText.trim()}
+                      onClick={() => applySanitationDeletion(true)}
+                    >
+                      Eliminar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={status === 'loading'}
+                      onClick={() => applySanitationDeletion(false)}
+                    >
+                      Eliminar sin comentario
+                    </button>
+                  </>}
+                </> : null}
+              </div>
+              <footer className="editor-sanitation-footer">
+                <span>{currentAuthoringIssue.fileName}</span>
+                <code>{currentAuthoringIssue.sectorId}</code>
+              </footer>
+            </section>
+          </div>
+        ) : null}
+
+        {pendingSanitationDeletion && currentAuthoringIssue?.canDelete ? (
+          <div className="editor-dialog-backdrop is-confirmation" role="presentation">
+            <section
+              className="editor-dialog editor-sanitation-delete-dialog"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="sanitation-delete-title"
+            >
+              <h2 id="sanitation-delete-title">Eliminar elemento</h2>
+              <SanitationCommentEditor
+                text={sanitationCommentText}
+                onChange={setSanitationCommentText}
+              />
+              <div className="editor-sanitation-actions">
+                <button
+                  type="button"
+                  disabled={status === 'loading'}
+                  onClick={() => setPendingSanitationDeletion(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="is-primary"
+                  disabled={status === 'loading' || !sanitationCommentText.trim()}
+                  onClick={() => applySanitationDeletion(true)}
+                >
+                  Eliminar
+                </button>
+                <button
+                  type="button"
+                  disabled={status === 'loading'}
+                  onClick={() => applySanitationDeletion(false)}
+                >
+                  Eliminar sin comentario
+                </button>
               </div>
             </section>
           </div>

@@ -33,6 +33,7 @@ describe('progreso persistente de mapas', () => {
       activeVariantIds: [],
       injectedEncounterIds: [],
       completedBehaviorTriggerIds: [],
+      completedMapEventTriggerIds: [],
       resolvedExpressionTriggers: {},
     });
   });

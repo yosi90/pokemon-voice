@@ -78,7 +78,7 @@ export function addPokeDiscoverFunctionalAnchor(
   },
 ) {
   const name = request.name.trim();
-  if (!/^[a-z0-9]+(?::[a-z0-9][a-z0-9-]*)+$/u.test(name)) {
+  if (!/^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)+$/u.test(name)) {
     throw new Error(`El ID técnico no cumple la convención: ${name || '(vacío)'}.`);
   }
   if (objectNames(tilemap).has(name)) {
@@ -331,6 +331,34 @@ export function findPokeDiscoverGeometryReferences(
         if (action.kind === 'movePath' && action.pathId === objectName) {
           references.push(`Escena ${sequence.sequenceId}`);
         }
+      }
+    }
+  }
+  for (const sequence of adventure.mapSequences ?? []) {
+    for (const beat of sequence.beats) {
+      for (const action of beat.actions) {
+        if (action.kind === 'movePath' && action.pathId === objectName) {
+          references.push(`Evento ${sequence.sequenceId}`);
+        }
+        if (action.kind === 'moveToAnchor' && action.anchorId === objectName) {
+          references.push(`Evento ${sequence.sequenceId}`);
+        }
+      }
+    }
+  }
+  for (const trigger of adventure.mapEventTriggers ?? []) {
+    const target = trigger.activation.kind === 'enterZone'
+      ? { kind: 'zone' as const, zoneId: trigger.activation.zoneId }
+      : trigger.activation.target;
+    if (target.kind === 'zone' && target.zoneId === objectName) {
+      references.push(`Evento ${trigger.triggerId}`);
+    }
+    for (const state of trigger.resultingActorStates) {
+      if (state.position?.kind === 'anchor' && state.position.anchorId === objectName) {
+        references.push(`Estado final ${trigger.triggerId}`);
+      }
+      if (state.position?.kind === 'pathEnd' && state.position.pathId === objectName) {
+        references.push(`Estado final ${trigger.triggerId}`);
       }
     }
   }

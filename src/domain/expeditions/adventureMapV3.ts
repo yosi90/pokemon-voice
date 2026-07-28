@@ -108,6 +108,10 @@ export function migrateAdventureMapV2ToV3(
       ...sequence,
       sectorId: sectorId(roomId),
     })),
+    mapEventTriggers: adventure.mapEventTriggers?.map(({ roomId, ...trigger }) => ({
+      ...trigger,
+      sectorId: sectorId(roomId),
+    })) ?? [],
     expressionTriggers: adventure.expressionTriggers.map(({ roomId, ...trigger }) => ({
       ...trigger,
       ...(roomId ? { sectorId: sectorId(roomId) } : {}),

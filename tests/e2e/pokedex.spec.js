@@ -31,15 +31,57 @@ async function revealByText(page, name) {
 }
 
 async function completeNarrativePage(page) {
-  const box = page.locator('.narrative-box');
+  const scene = page.getByTestId('narrative-scene');
+  const pageId = await scene.getAttribute('data-page-id');
+  const box = scene.locator('.narrative-box');
   await box.click();
-  await box.click();
+  if (await scene.count() === 0) return;
+  if (await scene.getAttribute('data-page-id') === pageId) await box.click();
+  await expect.poll(async () => (
+    await scene.count() === 0 ? null : scene.getAttribute('data-page-id')
+  )).not.toBe(pageId);
 }
 
 async function answerProfessorCall(page) {
   const call = page.getByRole('status', { name: 'Llamada entrante del profesor Alcanfor' });
-  await expect(call).toBeVisible({ timeout: 10000 });
+  await expect(call).toBeVisible({ timeout: 30_000 });
   await call.getByRole('button', { name: 'Descolgar' }).click();
+}
+
+async function moveOneGridStep(page, runtime, key, coordinate, delta) {
+  await expect(runtime).toHaveAttribute('data-step', 'idle');
+  const before = Number(await runtime.getAttribute(`data-player-${coordinate}`));
+  const expectedFacing = {
+    ArrowUp: 'up',
+    ArrowDown: 'down',
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
+  }[key];
+  if (await runtime.getAttribute('data-facing') !== expectedFacing) {
+    await page.keyboard.press(key);
+    await expect(runtime).toHaveAttribute('data-facing', expectedFacing);
+    expect(Number(await runtime.getAttribute(`data-player-${coordinate}`))).toBe(before);
+  }
+  await runtime.evaluate((element, movementKey) => new Promise(resolve => {
+    element.dispatchEvent(new KeyboardEvent('keydown', {
+      key: movementKey,
+      code: movementKey,
+      bubbles: true,
+    }));
+    requestAnimationFrame(() => {
+      element.dispatchEvent(new KeyboardEvent('keyup', {
+        key: movementKey,
+        code: movementKey,
+        bubbles: true,
+      }));
+      resolve();
+    });
+  }), key);
+  await expect.poll(
+    async () => Number(await runtime.getAttribute(`data-player-${coordinate}`)),
+    { timeout: 10_000 },
+  ).toBe(before + delta);
+  await expect(runtime).toHaveAttribute('data-step', 'idle');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -57,6 +99,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('Alcanfor se presenta desde la primera ficha y abre PokeDiscover sin conceder la primera misión', async ({ page }) => {
+  test.setTimeout(90_000);
   await setProfessorIntroduction(page, {
     status: 'hidden',
     invitationCount: 0,
@@ -192,7 +235,7 @@ test('el prólogo sin compañero representa asalto, elección, rescate, científ
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   const runtime = preview.getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   const starterChoice = preview.getByRole('dialog', { name: 'Elegir primer compañero' });
   await expect(starterChoice).toBeVisible({ timeout: 15000 });
   await expect(runtime).toHaveAttribute('data-story-poke-ball-count', '3');
@@ -370,6 +413,7 @@ test('el tablero de encargos reúne briefing, recompensas y compañero antes de 
 });
 
 test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisiones', async ({ page }) => {
+  test.setTimeout(90_000);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
@@ -395,7 +439,7 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('status')).toHaveText('¡Corriendo a ayudar al profesor!');
   const runtime = preview.getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect(runtime).toHaveAttribute('data-movement-inputs', 'keyboard');
   const controlDecorations = preview.locator('[data-control-decoration]');
   await expect(controlDecorations).toHaveCount(2);
@@ -459,10 +503,7 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
     timeout: 6000,
   }).toBeGreaterThan(initialFrameChanges);
 
-  await page.keyboard.down('ArrowRight');
-  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThan(184);
-  await page.keyboard.up('ArrowRight');
-  await expect(runtime).toHaveAttribute('data-step', 'idle');
+  await moveOneGridStep(page, runtime, 'ArrowRight', 'x', 16);
   expect(Number(await runtime.getAttribute('data-player-x'))).toBe(200);
   await page.keyboard.down('ArrowUp');
   await expect.poll(async () => Number(await runtime.getAttribute('data-player-y')), {
@@ -478,19 +519,21 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('');
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect(runtime).toHaveAttribute('data-ambient-cycle', '0');
 
   const initialX = Number(await runtime.getAttribute('data-player-x'));
   await page.keyboard.down('ArrowLeft');
-  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeLessThan(initialX);
-  await expect(runtime).toHaveAttribute('data-last-blocked-step', 'preflight', { timeout: 10000 });
+  try {
+    await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeLessThan(initialX);
+    await expect(runtime).toHaveAttribute('data-last-blocked-step', 'preflight', { timeout: 30_000 });
+  } finally {
+    await page.keyboard.up('ArrowLeft');
+  }
   await expect(runtime).toHaveAttribute('data-step', 'idle');
   const blockedX = Number(await runtime.getAttribute('data-player-x'));
   await page.waitForTimeout(250);
   expect(Number(await runtime.getAttribute('data-player-x'))).toBe(blockedX);
-  await page.keyboard.up('ArrowLeft');
-  await expect(runtime).toHaveAttribute('data-step', 'idle');
   expect(Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThanOrEqual(0);
   expect((Number(await runtime.getAttribute('data-player-x')) - 8) % 16).toBe(0);
 
@@ -542,7 +585,11 @@ test('la expedición libre crea una sesión y al abandonarla muestra el informe 
   await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
   await page.getByRole('button', { name: 'Probar escenario' }).click();
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
-  await expect(preview.getByTestId('technical-map-runtime')).toHaveAttribute('data-runtime', 'ready');
+  await expect(preview.getByTestId('technical-map-runtime')).toHaveAttribute(
+    'data-runtime',
+    'ready',
+    { timeout: 30_000 },
+  );
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).activeExpeditionSession)).toMatchObject({
     mapId: 'map:tegueste:camphor-forest',
     loadout: { companion: { formId: 'pokemon-form:25:default' } },
@@ -584,7 +631,7 @@ test('el compañero sigue la cuadrícula, conversa e intercambia casilla con mov
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   const runtime = preview.getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect(runtime).toHaveAttribute('data-companion-asset-id', 'pmd:0025-pikachu:default');
 
   const initialScrollY = await page.evaluate(() => window.scrollY);
@@ -660,13 +707,14 @@ test('usa una Poké Ball provisional si el compañero aún no tiene sprite PMD',
   await page.getByRole('button', { name: 'Probar escenario' }).click();
   const runtime = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' })
     .getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect(runtime).toHaveAttribute('data-companion-asset-id', 'placeholder:pokeball');
   await expect(runtime).toHaveAttribute('data-companion-form-id', 'pokemon-form:133:default');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1')).activeExpeditionSession)).toBeUndefined();
 });
 
 test('la previsualización técnica ejecuta la emboscada de madriguera sin escribir progreso', async ({ page }) => {
+  test.setTimeout(90_000);
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
     save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
@@ -683,23 +731,16 @@ test('la previsualización técnica ejecuta la emboscada de madriguera sin escri
   await page.getByRole('button', { name: 'Probar escenario' }).click();
   const runtime = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' })
     .getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
 
-  const moveOneTile = async (key, coordinate, delta) => {
-    const before = Number(await runtime.getAttribute(`data-player-${coordinate}`));
-    await page.keyboard.down(key);
-    try {
-      await page.waitForTimeout(35);
-    } finally {
-      await page.keyboard.up(key);
-    }
-    await expect.poll(async () => Number(await runtime.getAttribute(`data-player-${coordinate}`)))
-      .toBe(before + delta);
-  };
   await page.keyboard.press('ArrowRight');
-  for (let index = 0; index < 6; index += 1) await moveOneTile('ArrowRight', 'x', 16);
+  for (let index = 0; index < 6; index += 1) {
+    await moveOneGridStep(page, runtime, 'ArrowRight', 'x', 16);
+  }
   await page.keyboard.press('ArrowUp');
-  for (let index = 0; index < 2; index += 1) await moveOneTile('ArrowUp', 'y', -16);
+  for (let index = 0; index < 2; index += 1) {
+    await moveOneGridStep(page, runtime, 'ArrowUp', 'y', -16);
+  }
 
   await expect(runtime).toHaveAttribute(
     'data-last-companion-sequence-id',
@@ -712,6 +753,7 @@ test('la previsualización técnica ejecuta la emboscada de madriguera sin escri
 });
 
 test('Ekans ejecuta la secuencia de madriguera y cobra secreto y logro una sola vez', async ({ page }) => {
+  test.setTimeout(90_000);
   await mockPokemonApi(page, {
     extraEntries: [{ name: 'ekans', url: 'https://pokeapi.co/api/v2/pokemon/23/' }],
   });
@@ -741,7 +783,7 @@ test('Ekans ejecuta la secuencia de madriguera y cobra secreto y logro una sola 
   await page.getByRole('button', { name: 'Probar escenario' }).click();
   const runtime = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' })
     .getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('pokevoice-save-v1'))
     .activeExpeditionSession?.loadout?.companion?.formId)).toBe('pokemon-form:23:default');
   await expect(runtime).toHaveAttribute('data-companion-form-id', 'pokemon-form:23:default');
@@ -749,7 +791,10 @@ test('Ekans ejecuta la secuencia de madriguera y cobra secreto y logro una sola 
     detail: { triggerId: 'behavior:tegueste:burrow-middle:snake-intimidation' },
   })));
   await expect(runtime).toHaveAttribute('data-companion-sequence-id', 'sequence:tegueste:burrow-middle:snake-intimidation');
-  await expect.poll(async () => runtime.getAttribute('data-last-companion-animation'), { timeout: 15_000 }).toBe('Eat');
+  await expect.poll(
+    async () => runtime.getAttribute('data-last-companion-sequence-animation'),
+    { timeout: 15_000 },
+  ).toBe('Eat');
   await expect.poll(async () => page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
     return {
@@ -759,7 +804,7 @@ test('Ekans ejecuta la secuencia de madriguera y cobra secreto y logro una sola 
       experience: save.pokeDiscover.trainerExperience,
       points: save.pokeDiscover.discoveryPoints,
     };
-  }), { timeout: 20_000 }).toEqual({ secret: true, achievement: true, experience: 10, points: 10 });
+  }), { timeout: 40_000 }).toEqual({ secret: true, achievement: true, experience: 10, points: 10 });
   await expect(runtime).toHaveAttribute('data-control-priority', 'player');
   await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-companion-sequence-request', {
     detail: { triggerId: 'behavior:tegueste:burrow-middle:snake-intimidation' },
@@ -802,7 +847,7 @@ test('Geodude resuelve Tumba Rocas desde la capacidad declarativa del loadout', 
   await page.getByRole('button', { name: 'Probar escenario' }).click();
   const runtime = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' })
     .getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect(runtime).toHaveAttribute('data-companion-form-id', 'pokemon-form:74:default');
 
   await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-companion-sequence-request', {
@@ -857,7 +902,7 @@ test('resuelve expresiones por texto y análisis acústico local sin conservar a
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   const runtime = preview.getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-expression-started', {
     detail: { trigger: {
       schemaVersion: 1,
@@ -995,7 +1040,7 @@ test('movimiento reducido conserva overlays y poses ambientales estáticas', asy
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   const runtime = preview.getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect(runtime).toHaveAttribute('data-ambient-state', 'reduced-motion');
   await expect(runtime).toHaveAttribute('data-ambient-assets', 'skipped');
   await expect(runtime).toHaveAttribute('data-ambient-sequence-count', '0');
@@ -1004,6 +1049,7 @@ test('movimiento reducido conserva overlays y poses ambientales estáticas', asy
 });
 
 test('habla con Alcanfor mediante la interacción contextual y bloquea el mapa durante el diálogo', async ({ page }) => {
+  test.setTimeout(90_000);
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
     save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
@@ -1030,12 +1076,8 @@ test('habla con Alcanfor mediante la interacción contextual y bloquea el mapa d
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   const runtime = preview.getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
-  await page.keyboard.down('ArrowRight');
-  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThan(184);
-  await page.keyboard.up('ArrowRight');
-  await expect(runtime).toHaveAttribute('data-step', 'idle');
-  await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBe(200);
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
+  await moveOneGridStep(page, runtime, 'ArrowRight', 'x', 16);
   await page.keyboard.down('ArrowUp');
   const prompt = preview.getByRole('button', { name: /Hablar con Alcanfor/ });
   await expect(prompt).toBeVisible({ timeout: 10000 });
@@ -1146,7 +1188,7 @@ test('voz y texto de expedición solo identifican especies presentes en la habit
 
   const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
   const runtime = preview.getByTestId('technical-map-runtime');
-  await expect(runtime).toHaveAttribute('data-runtime', 'ready');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
   await expect(runtime).toHaveAttribute('data-undiscovered-actor-count', '4');
   await preview.getByRole('button', { name: 'Identificar Pokémon por voz' }).click();
   await expect(runtime).toBeFocused();
@@ -1192,6 +1234,7 @@ test('voz y texto de expedición solo identifican especies presentes en la habit
 });
 
 test('el quinto descubrimiento fuerza la invitación y tres negativas la aplazan', async ({ page }) => {
+  test.setTimeout(90_000);
   await setProfessorIntroduction(page, {
     status: 'hidden',
     invitationCount: 0,

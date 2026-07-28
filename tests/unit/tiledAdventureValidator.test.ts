@@ -47,8 +47,38 @@ function bundle() {
 }
 
 function teguesteBundle() {
+  const adventure = structuredClone(teguesteAdventure) as any;
+  const sectorId = 'sector:tegueste-forest:02-04';
+  const tiledMapAssetId = 'tiled-map:tegueste-forest:02-04';
+  adventure.sectors = adventure.sectors.filter(
+    (sector: { sectorId: string }) => sector.sectorId === sectorId,
+  );
+  adventure.tiledMapAssets = adventure.tiledMapAssets.filter(
+    (asset: { assetId: string }) => asset.assetId === tiledMapAssetId,
+  );
+  for (const collection of [
+    'actorPlacements',
+    'characterPlacements',
+    'entryPoints',
+    'behaviorTriggers',
+    'mapSequences',
+    'expressionTriggers',
+    'interactions',
+    'ambientSequences',
+    'rareEncounters',
+    'mapEventTriggers',
+  ]) {
+    adventure[collection] = (adventure[collection] ?? []).filter(
+      (item: { sectorId?: string }) => !item.sectorId || item.sectorId === sectorId,
+    );
+  }
+  adventure.transitions = adventure.transitions.filter(
+    (transition: { fromSectorId: string; toSectorId: string }) => (
+      transition.fromSectorId === sectorId && transition.toSectorId === sectorId
+    ),
+  );
   return {
-    adventure: structuredClone(teguesteAdventure),
+    adventure,
     tiledMaps: {
       'tiled-map:tegueste-forest:02-04': structuredClone(teguesteRoom),
     },
@@ -59,8 +89,9 @@ function teguesteBundle() {
 
 describe('validador cruzado Tiled + aventura + PMD', () => {
   it('acepta la primera habitación definitiva del Bosque de Tegueste', () => {
-    expect(validateTiledAdventureBundle(teguesteBundle())).toEqual([]);
-    expect(teguesteAdventure.actorPlacements).toHaveLength(11);
+    const candidate = teguesteBundle();
+    expect(validateTiledAdventureBundle(candidate)).toEqual([]);
+    expect(candidate.adventure.actorPlacements).toHaveLength(19);
     expect(teguesteAdventure.characterPlacements).toHaveLength(5);
     expect(teguesteAdventure.mapSequences).toHaveLength(7);
     expect(teguesteAdventure.interactions).toHaveLength(1);
@@ -93,7 +124,9 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
       trigger.rewardPackageId === 'reward-package:map-secret'
       && trigger.completionEffects?.unlockSecretIds?.length === 1
     ))).toBe(true);
-    expect(teguesteAdventure.actorPlacements.find(placement => placement.placementId === 'actor:cottonee'))
+    expect(teguesteAdventure.actorPlacements.find(
+      placement => placement.placementId === 'placement:pokemon:cottonee:default:01',
+    ))
       .toMatchObject({ collision: 'pass-through' });
     expect(characterManifest.assets.map(asset => asset.renderScale)).toEqual([1, 1, 1, 1, 1]);
   });
@@ -109,15 +142,123 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     ]));
   });
 
+  it('valida eventos espaciales y rechaza políticas, zonas o secuencias desconocidas', () => {
+    const candidate = bundle() as any;
+    const placement = candidate.adventure.actorPlacements[0];
+    const sector = candidate.adventure.rooms.find(
+      (item: any) => item.roomId === placement.roomId,
+    );
+    const tmj = candidate.tiledMaps[sector.tiledMapAssetId];
+    tmj.layers.push({
+      id: 999,
+      name: 'Triggers',
+      type: 'objectgroup',
+      objects: [{
+        id: 999,
+        name: 'trigger:map:99:zone:01',
+        class: 'TriggerZone',
+        x: 16,
+        y: 16,
+        width: 32,
+        height: 32,
+      }],
+    });
+    candidate.adventure.mapSequences = [...(candidate.adventure.mapSequences ?? []), {
+      schemaVersion: 1,
+      sequenceId: 'sequence:map-event:99',
+      roomId: placement.roomId,
+      beats: [{
+        schemaVersion: 1,
+        beatId: 'sequence:map-event:99:beat:01',
+        actions: [{
+          kind: 'playAnimation',
+          actorRef: placement.placementId,
+          animation: placement.animation,
+        }],
+      }],
+    }];
+    candidate.adventure.mapEventTriggers = [{
+      schemaVersion: 1,
+      triggerId: 'trigger:map:99',
+      roomId: placement.roomId,
+      activation: { kind: 'enterZone', zoneId: 'trigger:map:99:zone:01' },
+      requirement: { kind: 'trainerLevel', minimum: 1 },
+      sequenceId: 'sequence:map-event:99',
+      repeatPolicy: 'oncePerVisit',
+      resultingActorStates: [{
+        schemaVersion: 1,
+        placementId: placement.placementId,
+        animation: placement.animation,
+      }],
+    }];
+    expect(validateTiledAdventureBundle(candidate)).toEqual([]);
+
+    const unknown = structuredClone(candidate);
+    unknown.adventure.mapEventTriggers[0].activation.kind = 'telepathy';
+    unknown.adventure.mapSequences.at(-1).beats[0].actions[0].kind = 'warp';
+    expect(validateTiledAdventureBundle(unknown)).toEqual(expect.arrayContaining([
+      'trigger:map:99: activación desconocida telepathy',
+      'sequence:map-event:99:beat:01: acción de secuencia desconocida warp',
+    ]));
+
+    candidate.adventure.mapEventTriggers[0].repeatPolicy = 'cada-rato';
+    candidate.adventure.mapEventTriggers[0].sequenceId = 'sequence:missing';
+    candidate.adventure.mapEventTriggers[0].activation.zoneId = 'zone:missing';
+    expect(validateTiledAdventureBundle(candidate)).toEqual(expect.arrayContaining([
+      'trigger:map:99: política de repetición desconocida cada-rato',
+      'trigger:map:99: secuencia de evento inexistente sequence:missing',
+      'trigger:map:99: zona inexistente zone:missing',
+      'trigger:map:99:zone:01: zona de trigger huérfana',
+    ]));
+  });
+
+  it('acepta comentarios editoriales estrictos y los rechaza fuera de Comments', () => {
+    const candidate = bundle() as any;
+    const tmj = candidate.tiledMaps['tiled-map:technical:clearing'];
+    tmj.layers.push({
+      id: 998,
+      name: 'Comments',
+      type: 'objectgroup',
+      objects: [{
+        id: 998,
+        name: 'comment:01',
+        class: 'EditorComment',
+        x: 16,
+        y: 16,
+        width: 32,
+        height: 32,
+        properties: [{ name: 'text', value: 'Revisar esta zona' }],
+      }],
+    });
+    expect(validateTiledAdventureBundle(candidate)).toEqual([]);
+
+    tmj.layers.find((layer: any) => layer.name === 'Anchors').objects.push({
+      id: 997,
+      name: 'comment:outside',
+      class: 'EditorComment',
+      x: 8,
+      y: 8,
+      width: 16,
+      height: 16,
+    });
+    tmj.layers.find((layer: any) => layer.name === 'Comments').objects[0]
+      .properties.push({ name: 'runtimeTriggerId', value: 'trigger:map:01' });
+    expect(validateTiledAdventureBundle(candidate)).toEqual(expect.arrayContaining([
+      'tiled-map:technical:clearing: comment:outside usa EditorComment fuera de Comments',
+      'tiled-map:technical:clearing: comment:01 contiene la propiedad no editorial runtimeTriggerId',
+    ]));
+  });
+
   it('admite encuentros y secretos sobre sus clases de anclaje específicas', () => {
     const candidate = teguesteBundle() as any;
     const anchors = candidate.tiledMaps['tiled-map:tegueste-forest:02-04'].layers
       .find((layer: TestTiledLayer) => layer.name === 'Anchors').objects;
     anchors.push({ id: 999, name: 'anchor:test:encounter', type: 'EncounterAnchor', x: 100, y: 100, width: 0, height: 0 });
+    anchors.push({ id: 1000, name: 'anchor:tree:hit', type: 'SecretAnchor', x: 116, y: 100, width: 16, height: 16 });
     candidate.adventure.actorPlacements.push({
       schemaVersion: 1,
       placementId: 'actor:test:encounter',
-      roomId: 'room:tegueste-forest:02-04',
+      sectorId: 'sector:tegueste-forest:02-04',
       anchorId: 'anchor:test:encounter',
       assetId: 'pmd:0019-rattata:default',
       animation: 'Idle',
@@ -131,7 +272,7 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     candidate.adventure.interactions.push({
       schemaVersion: 1,
       interactionId: 'interaction:test:secret',
-      roomId: 'room:tegueste-forest:02-04',
+      sectorId: 'sector:tegueste-forest:02-04',
       target: { kind: 'anchor', anchorId: 'anchor:tree:hit' },
       prompt: 'Investigar',
       dialogueId: 'dialogue:test:secret',
@@ -234,9 +375,9 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     sequence.beats[1].actions[0].animation = 'SplashForever';
 
     expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
-      'beat:gyarados:challenge: más de una acción para actor:gyarados:left',
+      'beat:gyarados:challenge: más de una acción para placement:pokemon:gyarados:default:01',
       'beat:gyarados:advance: ruta inexistente path:missing',
-      'beat:gyarados:first-strike: animación inexistente SplashForever para actor:gyarados:left',
+      'beat:gyarados:first-strike: animación inexistente SplashForever para placement:pokemon:gyarados:default:01',
     ]));
   });
 
@@ -249,8 +390,8 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
     object.properties.find((property: { name: string }) => property.name === 'occlusionGroup').value = 'occlusion-group:missing';
 
     expect(validateTiledAdventureBundle(broken)).toEqual(expect.arrayContaining([
-      'tiled-map:tegueste-forest:02-04: occluder:tegueste:water-surface necesita rectángulo o polígono de oclusión',
-      'occluder:tegueste:water-surface: grupo de oclusión sin actores occlusion-group:missing',
+      `tiled-map:tegueste-forest:02-04: ${object.name} necesita rectángulo o polígono de oclusión`,
+      `${object.name}: grupo de oclusión sin actores occlusion-group:missing`,
     ]));
   });
 

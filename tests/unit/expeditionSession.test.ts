@@ -52,6 +52,7 @@ describe('sesión de expedición', () => {
       },
       evaluatedEncounterResults: {},
       completedBehaviorTriggerIds: [],
+      completedMapEventTriggerIds: [],
       meaningfulInteractionIds: [],
       meaningfulInteractionKinds: [],
       entrySnapshot: {

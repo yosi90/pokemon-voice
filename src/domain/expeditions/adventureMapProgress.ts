@@ -68,6 +68,7 @@ export function createAdventureMapProgressV1(mapId: string): AdventureMapProgres
     activeVariantIds: [],
     injectedEncounterIds: [],
     completedBehaviorTriggerIds: [],
+    completedMapEventTriggerIds: [],
     resolvedExpressionTriggers: {},
   };
 }

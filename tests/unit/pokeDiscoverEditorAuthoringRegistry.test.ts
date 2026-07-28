@@ -5,7 +5,9 @@ import characterManifest from '../../public/assets/sprites/characters/manifest.v
 import { validateTiledAdventureBundle } from '../../src/domain/maps/tiledAdventureValidator.js';
 import {
   applyPokeDiscoverImmediateRecipe,
+  deriveCanonicalPokemonPlacementIds,
   nextPokeDiscoverAuthoringId,
+  pokeDiscoverPokemonPlacementPrefix,
   POKEDISCOVER_AUTHORING_RECIPES,
   POKEDISCOVER_RUNTIME_AUTHORING_COVERAGE,
   type PokeDiscoverImmediateRecipeRequest,
@@ -210,12 +212,44 @@ describe('registro de autoría garantizada', () => {
     expect(Object.keys(POKEDISCOVER_RUNTIME_AUTHORING_COVERAGE.meaningfulInteractions)).toHaveLength(10);
   });
 
+  it('distingue especie, forma o apariencia y ejemplar en los IDs Pokémon', () => {
+    expect(pokeDiscoverPokemonPlacementPrefix('pmd:0025-pikachu:default'))
+      .toBe('placement:pokemon:pikachu:default');
+    expect(pokeDiscoverPokemonPlacementPrefix('pmd:0025-pikachu:shiny'))
+      .toBe('placement:pokemon:pikachu:shiny');
+    expect(pokeDiscoverPokemonPlacementPrefix('pmd:0865-sirfetchd:default'))
+      .toBe('placement:pokemon:sirfetchd:default');
+    const source = adventure();
+    source.actorPlacements = [{
+      schemaVersion: 1,
+      placementId: 'actor:pikachu:normal',
+      sectorId: 'sector:test:01',
+      anchorId: 'anchor:pikachu:normal',
+      assetId: 'pmd:0025-pikachu:default',
+      animation: 'Idle',
+    }, {
+      schemaVersion: 1,
+      placementId: 'actor:pikachu:shiny',
+      sectorId: 'sector:test:01',
+      anchorId: 'anchor:pikachu:shiny',
+      assetId: 'pmd:0025-pikachu:shiny',
+      animation: 'Idle',
+    }];
+    expect(deriveCanonicalPokemonPlacementIds(source)).toEqual(new Map([
+      ['actor:pikachu:normal', 'placement:pokemon:pikachu:default:01'],
+      ['actor:pikachu:shiny', 'placement:pokemon:pikachu:shiny:01'],
+    ]));
+  });
+
   it('documenta cada receta y prueba todas las que el wizard puede ofrecer', () => {
     const wizardRecipeIds = POKEDISCOVER_AUTHORING_RECIPES
       .filter(recipe => recipe.creationMode === 'wizard')
       .map(recipe => recipe.recipeId)
       .sort();
-    expect(wizardRecipeIds).toEqual(cases.map(value => value.request.recipeId).sort());
+    expect(wizardRecipeIds).toEqual([
+      ...cases.map(value => value.request.recipeId),
+      'map-event',
+    ].sort());
     for (const recipe of POKEDISCOVER_AUTHORING_RECIPES) {
       expect(recipe.fields.length).toBeGreaterThan(0);
       expect(recipe.outputs.length).toBeGreaterThan(0);

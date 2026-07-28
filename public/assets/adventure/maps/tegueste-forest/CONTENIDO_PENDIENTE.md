@@ -2,12 +2,16 @@
 
 Este documento describe secuencias, encuentros y triggers todavía no implementados. Los IDs definitivos vivirán en el sidecar; aquí se conserva el diseño narrativo y se marca su avance.
 
-## Habitación 01-05
+## Sector 01-05
 
 ### Secuencia del barco
 
-- [ ] Los dos `ActionAnchor` del mar pueden iniciar la secuencia.
-- [ ] Pelipper se asusta del protagonista y se marcha volando.
+- [ ] Sustituir el `ActionAnchor` #67 por un `EditorComment`; la anotación no tendrá efecto durante la partida.
+- [ ] Crear desde esa anotación una `TriggerZone` con activación `enterZone` y política `oncePerVisit`.
+- [ ] Mantener a Pelipper inicialmente en `Sleep`.
+- [ ] Pelipper se despierta, reproduce la sorpresa elegida y se marcha volando mediante `movePath`.
+- [ ] El estado final conserva a Pelipper junto al árbol en `Idle` entre sectores y recargas de la misma expedición.
+- [ ] Una expedición nueva restaura a Pelipper dormido y rearma el evento.
 - [ ] Los NPC del picnic se acercan a comprobar qué ocurre en su barco.
 - [ ] Pidove aprovecha para comerse el picnic.
 - [ ] Los NPC regresan, ahuyentan a Pidove y este queda merodeando la zona.
@@ -18,7 +22,7 @@ Este documento describe secuencias, encuentros y triggers todavía no implementa
 - [ ] Al entrar el jugador en su rango, Froakie lanza un ataque de burbujas.
 - [ ] Si alcanza al jugador, la expedición termina y se regresa con el profesor Alcanfor.
 
-## Habitación 02-05
+## Sector 02-05
 
 ### Prólogo de los Rattata
 
@@ -39,7 +43,7 @@ Este documento describe secuencias, encuentros y triggers todavía no implementa
 - [ ] Mientras los Rattata amenazan a Alcanfor, el jugador puede pedir ayuda a su compañero.
 - [ ] Como alternativa, puede acercarse y ahuyentar personalmente a cada Rattata.
 
-## Habitación 05-05
+## Sector 05-05
 
 ### Klefki del laboratorio
 

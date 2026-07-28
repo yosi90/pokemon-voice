@@ -78,6 +78,7 @@ export function EditorWindow({
   id,
   title,
   open,
+  className,
   initialGeometry,
   zIndex,
   onClose,
@@ -87,6 +88,7 @@ export function EditorWindow({
   id: string;
   title: string;
   open: boolean;
+  className?: string;
   initialGeometry: EditorWindowGeometry;
   zIndex: number;
   onClose: () => void;
@@ -192,7 +194,7 @@ export function EditorWindow({
 
   return (
     <section
-      className={`editor-window${minimized ? ' is-minimized' : ''}${maximized ? ' is-maximized' : ''}`}
+      className={`editor-window${className ? ` ${className}` : ''}${minimized ? ' is-minimized' : ''}${maximized ? ' is-maximized' : ''}`}
       aria-label={title}
       style={{
         left: displayed.x,

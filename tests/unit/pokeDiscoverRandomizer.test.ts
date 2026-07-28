@@ -16,6 +16,7 @@ describe('selector aleatorio de PokeDiscover', () => {
 
   it('combina tipo principal, secundario, generación y tamaño mediante AND', () => {
     const matches = filterPokeDiscoverCandidates({
+      query: '',
       primaryType: 'grass',
       secondaryType: 'poison',
       generation: 1,

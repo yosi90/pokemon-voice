@@ -1,7 +1,9 @@
 import type {
   PokeDiscoverDirectoryHandle,
+  PokeDiscoverWorkspace,
   PokeDiscoverWorkspaceSourceFile,
 } from './pokeDiscoverEditorWorkspace.js';
+import { getPokeDiscoverWorkspaceDocuments } from './pokeDiscoverEditorWorkspace.js';
 
 const DATABASE_NAME = 'pokediscover-editor';
 const STORE_NAME = 'recent-folders';
@@ -42,6 +44,20 @@ export function isPokeDiscoverRecentFolderValid(
   now = Date.now(),
 ) {
   return Number.isFinite(recent.expiresAt) && recent.expiresAt >= now;
+}
+
+export function createPokeDiscoverRecentWorkspaceSources(
+  workspace: PokeDiscoverWorkspace,
+  now = Date.now(),
+): PokeDiscoverWorkspaceSourceFile[] {
+  return Object.entries(getPokeDiscoverWorkspaceDocuments(workspace))
+    .map(([fileName, content]) => ({
+      file: new File([content], fileName, {
+        lastModified: workspace.lastModifiedByFileName[fileName] ?? now,
+        type: 'application/json',
+      }),
+      handle: workspace.handlesByFileName[fileName],
+    }));
 }
 
 function isCachedProjectDocument(file: File) {

@@ -92,7 +92,12 @@ export function CellContentDraftEditor({
   const [prompt, setPrompt] = useState(kind === 'secret' ? 'Investigar el secreto' : 'Interactuar');
   const [text, setText] = useState('Contenido pendiente de configurar.');
   const [label, setLabel] = useState('Entrada principal');
-  const preview = previewPokeDiscoverImmediateRecipeIds(bundle.adventure, tilemap, recipeId);
+  const preview = previewPokeDiscoverImmediateRecipeIds(
+    bundle.adventure,
+    tilemap,
+    recipeId,
+    assetId,
+  );
   const needsAsset = ['pokemon-placement', 'pokemon-encounter', 'npc-placement'].includes(recipeId);
   const validStepTwo = !needsAsset || Boolean(assetId);
 
@@ -101,10 +106,10 @@ export function CellContentDraftEditor({
       <div><span>Borrador fuera del mapa · {x}, {y}</span><strong>Crear construcción funcional</strong></div>
       <button type="button" aria-label="Cancelar creación" onClick={onCancel}>×</button>
     </header>
-    <p>Paso {step} de 3. Nada se añadirá al TMJ ni al sidecar hasta confirmar.</p>
+    <p>Paso {step} de 3. Nada se añadirá al mapa hasta confirmar.</p>
 
     {step === 1 ? <>
-      <label><span>Construcción comprendida por el sidecar</span><select value={recipeId} onChange={event => {
+      <label><span>Qué quieres añadir</span><select value={recipeId} onChange={event => {
         const next = event.target.value as PokeDiscoverImmediateRecipeRequest['recipeId'];
         setRecipeId(next);
         const nextAssets = next === 'pokemon-placement' || next === 'pokemon-encounter'
@@ -162,7 +167,7 @@ export function CellContentDraftEditor({
     </> : null}
 
     {step === 3 ? <dl>
-      <dt>ID sidecar</dt><dd>{preview.primaryId}</dd>
+      <dt>Identificador</dt><dd>{preview.primaryId}</dd>
       <dt>Nombre TMJ</dt><dd>{preview.anchorId}</dd>
       {preview.dialogueId ? <><dt>Diálogo</dt><dd>{preview.dialogueId}</dd></> : null}
       <dt>Clase derivada</dt><dd>{recipeId === 'entry-point'

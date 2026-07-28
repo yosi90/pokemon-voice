@@ -145,6 +145,7 @@ export function beginExpedition(
       loadout,
       evaluatedEncounterResults: {},
       completedBehaviorTriggerIds: [],
+      completedMapEventTriggerIds: [],
       meaningfulInteractionIds: [],
       meaningfulInteractionKinds: [],
       entrySnapshot: createEntrySnapshot(save, request.mapId),

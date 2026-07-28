@@ -4,6 +4,11 @@ import {
   type PokeDiscoverEditableTiledMap,
   type PokeDiscoverTiledObject,
 } from '../../domain/tools/pokeDiscoverEditorProject.js';
+import {
+  isPokeDiscoverEditorComment,
+  readPokeDiscoverEditorCommentText,
+  updatePokeDiscoverEditorCommentText,
+} from '../../domain/tools/pokeDiscoverEditorComments.js';
 
 type NumericField = 'x' | 'y' | 'width' | 'height' | 'rotation';
 
@@ -95,6 +100,7 @@ export function GeometryPropertiesEditor({
   onTilemapChange,
   onDelete,
   onClose,
+  onCreateEvent,
   nested = false,
 }: {
   tilemap: PokeDiscoverEditableTiledMap;
@@ -103,6 +109,7 @@ export function GeometryPropertiesEditor({
   onTilemapChange: (tilemap: PokeDiscoverEditableTiledMap, description: string) => void;
   onDelete?: (object: PokeDiscoverTiledObject) => void;
   onClose?: () => void;
+  onCreateEvent?: (object: PokeDiscoverTiledObject) => void;
   nested?: boolean;
 }) {
   const layer = tilemap.layers.find(candidate => (
@@ -128,6 +135,7 @@ export function GeometryPropertiesEditor({
     ), `Cambiar ${field === 'width' || field === 'height' ? 'tamaño' : 'posición'} de ${object.name || 'objeto'}`);
   };
   const objectClass = String(object.class || object.type || '');
+  const editorComment = isPokeDiscoverEditorComment(object);
   return <section className={`editor-geometry-properties${nested ? ' is-nested' : ''}`} aria-label="Propiedades de geometría">
     <header>
       <div><span>{layer?.name === 'Anchors' ? 'Ancla' : String(layer?.name ?? 'Objeto')}</span><strong>{object.name || 'Objeto sin nombre'}</strong></div>
@@ -140,6 +148,22 @@ export function GeometryPropertiesEditor({
       <NumericDraft label="Alto" value={size.height} onCommit={value => updateNumber('height', Math.max(0, value))} />
       <NumericDraft label="Rotación" value={Number(object.rotation) || 0} onCommit={value => updateNumber('rotation', value)} />
     </div>
+    {editorComment ? <label className="editor-geometry-properties__comment">
+      <span>Comentario</span>
+      <textarea
+        aria-label="Texto del comentario"
+        defaultValue={readPokeDiscoverEditorCommentText(object)}
+        key={`${object.id}:${readPokeDiscoverEditorCommentText(object)}`}
+        onBlur={event => {
+          const text = event.currentTarget.value.trim();
+          if (!text || text === readPokeDiscoverEditorCommentText(object)) return;
+          onTilemapChange(
+            updatePokeDiscoverEditorCommentText(tilemap, object.id, text),
+            'Editar comentario',
+          );
+        }}
+      />
+    </label> : null}
     {dependencies.length > 1 ? <p className="editor-geometry-properties__warning">Posición compartida por {dependencies.length} elementos.</p> : null}
     {object.polygon || object.polyline ? <details className="editor-selection-points">
       <summary>Editar vértices</summary>
@@ -167,6 +191,9 @@ export function GeometryPropertiesEditor({
         </div>
       ))}
     </details> : null}
+    {editorComment && onCreateEvent
+      ? <button type="button" className="is-primary" onClick={() => onCreateEvent(object)}>Crear evento aquí</button>
+      : null}
     {onDelete ? <button type="button" className="is-danger" onClick={() => onDelete(object)}>Eliminar</button> : null}
     <details><summary>Detalles avanzados</summary><code>#{object.id} · {objectClass || 'sin clase'}</code></details>
   </section>;

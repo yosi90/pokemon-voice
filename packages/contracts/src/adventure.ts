@@ -19,6 +19,9 @@ import {
   COMPANION_SEQUENCE_ACTION_KINDS,
   COMPANION_TRIGGER_MODES,
   COMPANION_TRIGGER_REPEAT_POLICIES,
+  MAP_EVENT_ACTIVATION_KINDS,
+  MAP_EVENT_REPEAT_POLICIES,
+  MAP_SEQUENCE_ACTION_KINDS,
   EXPRESSION_INPUT_METHODS,
   EXPRESSION_INTENTS,
   EXPRESSION_MATCHER_KINDS,
@@ -38,6 +41,9 @@ export {
   COMPANION_SEQUENCE_ACTION_KINDS,
   COMPANION_TRIGGER_MODES,
   COMPANION_TRIGGER_REPEAT_POLICIES,
+  MAP_EVENT_ACTIVATION_KINDS,
+  MAP_EVENT_REPEAT_POLICIES,
+  MAP_SEQUENCE_ACTION_KINDS,
   EXPRESSION_INPUT_METHODS,
   EXPRESSION_INTENTS,
   EXPRESSION_MATCHER_KINDS,
@@ -53,6 +59,8 @@ export type TileLayerKind = typeof TILE_LAYER_KINDS[number];
 export type MissionStatus = typeof MISSION_STATUSES[number];
 export type CompanionTriggerMode = typeof COMPANION_TRIGGER_MODES[number];
 export type CompanionTriggerRepeatPolicy = typeof COMPANION_TRIGGER_REPEAT_POLICIES[number];
+export type MapEventActivationKind = typeof MAP_EVENT_ACTIVATION_KINDS[number];
+export type MapEventRepeatPolicy = typeof MAP_EVENT_REPEAT_POLICIES[number];
 export type ExpressionInputMethod = typeof EXPRESSION_INPUT_METHODS[number];
 export type ExpressionIntent = typeof EXPRESSION_INTENTS[number];
 export type AdventureActorCollision = typeof ADVENTURE_ACTOR_COLLISIONS[number];
@@ -60,6 +68,7 @@ export type AmbientMovementStyle = typeof AMBIENT_MOVEMENT_STYLES[number];
 export type AmbientPlaybackMode = typeof AMBIENT_PLAYBACK_MODES[number];
 export type AmbientActorActionKind = typeof AMBIENT_ACTOR_ACTION_KINDS[number];
 export type CompanionSequenceActionKind = typeof COMPANION_SEQUENCE_ACTION_KINDS[number];
+export type MapSequenceActionKind = typeof MAP_SEQUENCE_ACTION_KINDS[number];
 export type ExpressionMatcherKind = typeof EXPRESSION_MATCHER_KINDS[number];
 export type TiledAnchorClass = typeof TILED_ANCHOR_CLASSES[number];
 export type TiledRuntimeObjectClass = typeof TILED_RUNTIME_OBJECT_CLASSES[number];
@@ -318,7 +327,8 @@ export interface AdventureMapV2 {
   behaviorTriggers: CompanionBehaviorTriggerV1[];
   companionSequences?: CompanionSequenceV1[];
   /** Secuencias narrativas del mapa; comparten beats y acciones con las del compañero. */
-  mapSequences?: CompanionSequenceV1[];
+  mapSequences?: MapSequenceV1[];
+  mapEventTriggers?: MapEventTriggerV1[];
   expressionTriggers: ExpeditionExpressionTriggerV1[];
   interactions?: ExpeditionInteractionV1[];
   dialogues?: ExpeditionDialogueV1[];
@@ -385,6 +395,12 @@ export type CompanionBehaviorTriggerV3 =
 export type CompanionSequenceV3 =
   Omit<CompanionSequenceV1, 'roomId'> & { sectorId: StableId };
 
+export type MapSequenceV3 =
+  Omit<MapSequenceV1, 'roomId'> & { sectorId: StableId };
+
+export type MapEventTriggerV3 =
+  Omit<MapEventTriggerV1, 'roomId'> & { sectorId: StableId };
+
 export type ExpeditionExpressionTriggerV3 =
   Omit<ExpeditionExpressionTriggerV1, 'roomId'> & { sectorId?: StableId };
 
@@ -405,7 +421,8 @@ export interface AdventureMapV3 {
   freeExpeditionEntryPointId?: StableId;
   behaviorTriggers: CompanionBehaviorTriggerV3[];
   companionSequences?: CompanionSequenceV3[];
-  mapSequences?: CompanionSequenceV3[];
+  mapSequences?: MapSequenceV3[];
+  mapEventTriggers?: MapEventTriggerV3[];
   expressionTriggers: ExpeditionExpressionTriggerV3[];
   interactions?: ExpeditionInteractionV3[];
   dialogues?: ExpeditionDialogueV1[];
@@ -544,6 +561,68 @@ export interface CompanionSequenceV1 extends VersionedContractV1 {
   sequenceId: StableId;
   roomId: StableId;
   beats: CompanionSequenceBeatV1[];
+}
+
+export type MapSequenceActionV1 =
+  | CompanionSequenceActionV1
+  | {
+    kind: 'movePath';
+    actorRef: StableId;
+    pathId: StableId;
+    movementStyle: AmbientMovementStyle;
+    speedPixelsPerSecond: number;
+    animation?: string;
+    reverse?: boolean;
+  };
+
+export interface MapSequenceBeatV1 extends VersionedContractV1 {
+  beatId: StableId;
+  actions: MapSequenceActionV1[];
+  pauseAfterMs?: number;
+}
+
+export interface MapSequenceV1 extends VersionedContractV1 {
+  sequenceId: StableId;
+  roomId: StableId;
+  beats: MapSequenceBeatV1[];
+}
+
+export type MapEventSpatialTargetV1 =
+  | { kind: 'zone'; zoneId: StableId }
+  | { kind: 'placement'; placementId: StableId };
+
+export type MapEventActivationV1 =
+  | { kind: 'enterZone'; zoneId: StableId }
+  | {
+    kind: 'contextAction';
+    target: MapEventSpatialTargetV1;
+    prompt: string;
+    rangeTiles?: number;
+  }
+  | {
+    kind: 'proximity';
+    target: MapEventSpatialTargetV1;
+    rangeTiles: number;
+  };
+
+export interface MapEventResultingActorStateV1 extends VersionedContractV1 {
+  placementId: StableId;
+  position?:
+    | { kind: 'anchor'; anchorId: StableId }
+    | { kind: 'pathEnd'; pathId: StableId };
+  animation?: string;
+  direction?: 'up' | 'down' | 'left' | 'right';
+  visible?: boolean;
+}
+
+export interface MapEventTriggerV1 extends VersionedContractV1 {
+  triggerId: StableId;
+  roomId: StableId;
+  activation: MapEventActivationV1;
+  requirement: RequirementExpressionV1;
+  sequenceId: StableId;
+  repeatPolicy?: MapEventRepeatPolicy;
+  resultingActorStates: MapEventResultingActorStateV1[];
 }
 
 export type ExpressionMatcherV1 =

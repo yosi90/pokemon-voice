@@ -22,7 +22,7 @@ renombra silenciosamente. La auditoría estricta permanecerá separada de
 - [ ] `tegueste-forest-01-05.tmj` · objeto sin ID ni clase · construcción incomprensible · sin dependencias demostradas · eliminar si está huérfano.
 - [ ] `tegueste-forest-01-05.tmj` · `anchor:pelipper` / `ActorAnchor` · convención antigua · colocación pendiente · receta de colocación Pokémon.
 - [ ] `tegueste-forest-01-05.tmj` · `anchor:pidove` / `ActorAnchor` · convención antigua · colocación pendiente · receta de colocación Pokémon.
-- [ ] `tegueste-forest-01-05.tmj` · `anchor:action:1` / `ActionAnchor` · clase no soportada · acción pendiente de identificar · reclasificar mediante receta o eliminar si huérfano.
+- [ ] `tegueste-forest-01-05.tmj` · objeto Tiled #67, `anchor:action:1` / `ActionAnchor` · clase no traducible · sin referencia funcional · eliminar y sustituir por `comment:<ordinal>` conservando geometría y metadatos; después crear el evento de Pelipper desde el comentario.
 - [ ] `tegueste-forest-01-05.tmj` · `anchor:shellos:right` / `ActorAnchor` · convención antigua · colocación pendiente · receta de colocación Pokémon.
 - [ ] `tegueste-forest-01-05.tmj` · `anchor:shellos:top` / `ActorAnchor` · convención antigua · colocación pendiente · receta de colocación Pokémon.
 - [ ] `tegueste-forest-01-05.tmj` · `anchor:shellos:left` / `ActorAnchor` · convención antigua · colocación pendiente · receta de colocación Pokémon.

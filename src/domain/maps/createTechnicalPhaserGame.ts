@@ -8,6 +8,8 @@ import type {
   ExpeditionDialogueV1,
   ExpeditionExpressionTriggerV3,
   ExpeditionInteractionV3,
+  MapEventTriggerV3,
+  MapSequenceActionV1,
   MillisecondRangeV1,
   PmdSpriteAssetV1,
   PokemonFormV1,
@@ -60,6 +62,10 @@ export const MAP_COMPANION_CONTROL_EVENT = 'pokevoice:map-companion-control';
 export const MAP_COMPANION_BEHAVIOR_COMPLETED_EVENT = 'pokevoice:map-companion-behavior-completed';
 export const MAP_COMPANION_SEQUENCE_REQUEST_EVENT = 'pokevoice:map-companion-sequence-request';
 export const MAP_SEQUENCE_CUE_EVENT = 'pokevoice:map-sequence-cue';
+export const MAP_EVENT_AVAILABLE_EVENT = 'pokevoice:map-event-available';
+export const MAP_EVENT_REQUEST_EVENT = 'pokevoice:map-event-request';
+export const MAP_EVENT_COMPLETED_EVENT = 'pokevoice:map-event-completed';
+export const MAP_SECTOR_ENTERED_EVENT = 'pokevoice:map-sector-entered';
 export const EXPEDITION_MOVEMENT_INPUTS = Object.freeze(['keyboard'] as const);
 
 export interface MapCompanionRuntimeContext {
@@ -180,6 +186,9 @@ export function createTechnicalPhaserGame({
   registeredSpeciesIds,
   expressionsEnabled = false,
   resolvedExpressionTriggerIds = new Set<string>(),
+  completedMapEventTriggerIds: initialCompletedMapEventTriggerIds = new Set<string>(),
+  completedSectorMapEventTriggerIds: initialCompletedSectorMapEventTriggerIds = new Set<string>(),
+  eligibleMapEventTriggerIds,
   companion,
   initialSequenceId,
   fitParent = true,
@@ -194,6 +203,9 @@ export function createTechnicalPhaserGame({
   registeredSpeciesIds: ReadonlySet<number>;
   expressionsEnabled?: boolean;
   resolvedExpressionTriggerIds?: ReadonlySet<string>;
+  completedMapEventTriggerIds?: ReadonlySet<string>;
+  completedSectorMapEventTriggerIds?: ReadonlySet<string>;
+  eligibleMapEventTriggerIds?: ReadonlySet<string>;
   companion?: MapCompanionRuntimeContext;
   initialSequenceId?: string;
   fitParent?: boolean;
@@ -212,6 +224,9 @@ export function createTechnicalPhaserGame({
   const characterAnimationKey = (assetId: string, facing: Facing) => `technical-character-animation:${assetId}:${facing}`;
   const revealedSpeciesIds = new Set(registeredSpeciesIds);
   const completedExpressionTriggerIds = new Set(resolvedExpressionTriggerIds);
+  const completedMapEventTriggerIds = new Set(initialCompletedMapEventTriggerIds);
+  const completedSectorMapEventTriggerIds = new Set(initialCompletedSectorMapEventTriggerIds);
+  let renderedSectorId: string | undefined;
 
   class TechnicalRoomScene extends Phaser.Scene {
     constructor() {
@@ -268,11 +283,29 @@ export function createTechnicalPhaserGame({
           .filter(sequence => sequence.sectorId === roomBundle.sector.sectorId)
           .flatMap(sequence => sequence.beats)
           .flatMap(beat => beat.actions)) {
-          if (action.kind !== 'playAnimation' || action.actorRef === 'dynamic:companion' || action.actorRef === 'dynamic:player') continue;
-          if (!action.animation) continue;
+          if (action.kind !== 'playAnimation' && action.kind !== 'movePath') continue;
+          if (action.actorRef === 'dynamic:companion' || action.actorRef === 'dynamic:player') continue;
+          const actionAnimation = action.animation;
+          if (!actionAnimation) continue;
           const placement = roomPlacements.get(action.actorRef);
           const asset = placement ? roomBundle.actorAssets.get(placement.assetId) : undefined;
-          const animation = asset?.animations.find(candidate => candidate.name === action.animation);
+          const animation = asset?.animations.find(candidate => candidate.name === actionAnimation);
+          if (!asset || !animation) continue;
+          const key = actorSheetKey(asset.assetId, animation.name, animation.copyOf);
+          if (loadedActorSheets.has(key)) continue;
+          loadedActorSheets.add(key);
+          this.load.spritesheet(key, sheetUrl(animation.animationSheetPath), {
+            frameWidth: animation.frameWidth,
+            frameHeight: animation.frameHeight,
+          });
+        }
+        for (const state of (bundle.adventure.mapEventTriggers ?? [])
+          .filter(trigger => trigger.sectorId === roomBundle.sector.sectorId)
+          .flatMap(trigger => trigger.resultingActorStates)) {
+          if (!state.animation) continue;
+          const placement = roomPlacements.get(state.placementId);
+          const asset = placement ? roomBundle.actorAssets.get(placement.assetId) : undefined;
+          const animation = asset?.animations.find(candidate => candidate.name === state.animation);
           if (!asset || !animation) continue;
           const key = actorSheetKey(asset.assetId, animation.name, animation.copyOf);
           if (loadedActorSheets.has(key)) continue;
@@ -389,8 +422,11 @@ export function createTechnicalPhaserGame({
       let availableCompanionBehaviors: CompanionBehaviorTriggerV3[] = [];
       let companionConversationActive = false;
       let activeCompanionSequence = false;
+      let activeMapEvent: MapEventTriggerV3 | undefined;
+      let availableMapContextEvent: MapEventTriggerV3 | undefined;
       const completedRuntimeBehaviorIds = new Set<string>();
       const occupiedProximityZones = new Set<string>();
+      const occupiedMapEventAreas = new Set<string>();
       const completedVisitInteractionIds = new Set<string>();
 
       const publishVisibleSpecies = () => {
@@ -428,12 +464,17 @@ export function createTechnicalPhaserGame({
         availableCompanionBehaviors = [];
         companionConversationActive = false;
         activeCompanionSequence = false;
+        activeMapEvent = undefined;
+        availableMapContextEvent = undefined;
         pressedDirections = [];
         delete parent.dataset.interactionId;
         delete parent.dataset.interactionPrompt;
         delete parent.dataset.expressionTriggerId;
         delete parent.dataset.expressionPrompt;
         delete parent.dataset.dialogueId;
+        delete parent.dataset.mapEventTriggerId;
+        delete parent.dataset.mapEventPrompt;
+        delete parent.dataset.lastCompanionSequenceAnimation;
         parent.dataset.controlPriority = 'player';
         currentMap?.destroy();
         currentMap = undefined;
@@ -495,6 +536,27 @@ export function createTechnicalPhaserGame({
           x: requiredNumber(point, 'x', `${pathId}[${index}]`),
           y: requiredNumber(point, 'y', `${pathId}[${index}]`),
         }));
+      };
+
+      const movementPointsFromActor = (
+        actor: ActiveActorState,
+        points: TiledPoint[],
+        movementStyle: 'grid' | 'continuous',
+      ) => {
+        const first = points[0];
+        if (!first || Math.hypot(actor.sprite.x - first.x, actor.sprite.y - first.y) <= .5) {
+          return points;
+        }
+        if (movementStyle === 'continuous'
+          || actor.sprite.x === first.x
+          || actor.sprite.y === first.y) {
+          return [{ x: actor.sprite.x, y: actor.sprite.y }, ...points];
+        }
+        return [
+          { x: actor.sprite.x, y: actor.sprite.y },
+          { x: first.x, y: actor.sprite.y },
+          ...points,
+        ];
       };
 
       const setActorFacing = (state: ActiveActorState, direction: Facing) => {
@@ -680,11 +742,46 @@ export function createTechnicalPhaserGame({
         else state.sprite.setCrop(0, 0, frameWidth, nextHeight);
       };
 
+      const applyMapEventResultingStates = (trigger: MapEventTriggerV3) => {
+        for (const result of trigger.resultingActorStates) {
+          const actor = activeActorsByPlacement.get(result.placementId);
+          if (!actor) continue;
+          if (result.position?.kind === 'anchor') {
+            const anchor = findTiledObject(currentRoom.tilemap, 'Anchors', result.position.anchorId);
+            if (anchor) {
+              const ground = groundPoint(tiledObjectBounds(anchor, result.position.anchorId));
+              const point = snapGroundPoint(ground.x, ground.y);
+              actor.sprite.setPosition(point.x, point.y).setDepth(point.y);
+            }
+          }
+          if (result.position?.kind === 'pathEnd') {
+            const points = ambientPathPoints(currentRoom, result.position.pathId);
+            const point = points.at(-1);
+            if (point) {
+              const target = snapGroundPoint(point.x, point.y);
+              actor.sprite.setPosition(target.x, target.y).setDepth(target.y);
+            }
+          }
+          if (result.direction) setActorFacing(actor, result.direction);
+          if (result.animation) startActorAnimation(actor, result.animation, actor.direction, -1);
+          if (result.visible !== undefined) actor.sprite.setVisible(result.visible);
+        }
+        publishVisibleSpecies();
+      };
+
       const renderRoom = (sectorId: string, spawnAnchorId?: string, facing?: Facing) => {
         const nextRoom = bundle.sectors.find(candidate => candidate.sector.sectorId === sectorId);
         if (!nextRoom) throw new Error(`Sector no cargada: ${sectorId}.`);
+        if (renderedSectorId && renderedSectorId !== sectorId) {
+          completedSectorMapEventTriggerIds.clear();
+        }
+        renderedSectorId = sectorId;
         clearRoom();
+        occupiedMapEventAreas.clear();
         currentRoom = nextRoom;
+        parent.dispatchEvent(new CustomEvent(MAP_SECTOR_ENTERED_EVENT, {
+          detail: { sectorId },
+        }));
         currentMap = this.make.tilemap({ key: mapKey(sectorId) });
         const phaserTilesets = nextRoom.tilesets.map(tileset => {
           const value = currentMap?.addTilesetImage(tileset.name, tilesetKey(tileset.name));
@@ -793,6 +890,15 @@ export function createTechnicalPhaserGame({
           applyActorOcclusion(nextRoom, actorState, placement.occlusionGroupIds ?? []);
           updateActorCropOcclusion(actorState);
           if (actorState.collision === 'solid') solidActorCount += 1;
+        }
+
+        for (const trigger of bundle.adventure.mapEventTriggers ?? []) {
+          if (trigger.sectorId === sectorId && (
+            completedMapEventTriggerIds.has(trigger.triggerId)
+            || completedSectorMapEventTriggerIds.has(trigger.triggerId)
+          )) {
+            applyMapEventResultingStates(trigger);
+          }
         }
 
         const resolvedSpawnId = spawnAnchorId ?? nextRoom.sector.spawnAnchorIds[0];
@@ -1043,10 +1149,7 @@ export function createTechnicalPhaserGame({
             ? [{ x: actor.sprite.x, y: actor.sprite.y }, { x: actor.sprite.x + action.deltaXTiles * 16, y: actor.sprite.y + action.deltaYTiles * 16 }]
             : ambientPathPoints(currentRoom, action.pathId);
           const orderedPoints = action.kind === 'movePath' && action.reverse ? [...rawPoints].reverse() : rawPoints;
-          const first = orderedPoints[0];
-          const points = first && Math.hypot(actor.sprite.x - first.x, actor.sprite.y - first.y) > .5
-            ? [{ x: actor.sprite.x, y: actor.sprite.y }, ...orderedPoints]
-            : orderedPoints;
+          const points = movementPointsFromActor(actor, orderedPoints, action.movementStyle);
           const next = points[1] ?? points[0];
           const direction = next
             ? facingForDelta(next.x - actor.sprite.x, next.y - actor.sprite.y, actor.direction)
@@ -1502,7 +1605,7 @@ export function createTechnicalPhaserGame({
       );
 
       const executeCompanionSequenceAction = async (
-        action: CompanionSequenceV3['beats'][number]['actions'][number],
+        action: MapSequenceActionV1,
       ) => {
         const actor = action.actorRef === 'dynamic:player' ? undefined : actorForSequenceRef(action.actorRef);
         if (action.kind === 'setVisible') {
@@ -1523,6 +1626,9 @@ export function createTechnicalPhaserGame({
             ?? action.animation;
           if (!animation) return;
           const duration = startActorAnimation(actor, animation, actor.direction, action.repetitions ?? 1);
+          if (actor.placementId === 'dynamic:companion' && duration > 0) {
+            parent.dataset.lastCompanionSequenceAnimation = animation;
+          }
           await waitForMilliseconds(duration);
           return;
         }
@@ -1572,6 +1678,18 @@ export function createTechnicalPhaserGame({
           const ground = groundPoint(tiledObjectBounds(anchor, action.anchorId));
           const target = snapGroundPoint(ground.x, ground.y);
           await tweenActorTo(actor, target, action.speedPixelsPerSecond);
+          return;
+        }
+        if (action.kind === 'movePath') {
+          if (!actor) return;
+          const points = ambientPathPoints(currentRoom, action.pathId);
+          const ordered = action.reverse ? [...points].reverse() : points;
+          if (action.animation && actor.asset) {
+            startActorAnimation(actor, action.animation, actor.direction, -1);
+          }
+          for (const point of movementPointsFromActor(actor, ordered, action.movementStyle)) {
+            await tweenActorTo(actor, point, action.speedPixelsPerSecond);
+          }
           return;
         }
         if (action.kind === 'returnToTrainer') {
@@ -1651,6 +1769,159 @@ export function createTechnicalPhaserGame({
           delete parent.dataset.companionSequenceId;
           parent.dataset.controlPriority = 'player';
           if (!document.hidden && !ambientSuppressed && !reducedMotion) setAmbientAnimationsPaused(false);
+        }
+      };
+
+      const mapEventZone = (zoneId: string) => (
+        layerObjects(currentRoom, 'Triggers').find(object => object.name === zoneId)
+      );
+
+      const mapEventTargetPoint = (trigger: MapEventTriggerV3) => {
+        const target = trigger.activation.kind === 'enterZone'
+          ? { kind: 'zone' as const, zoneId: trigger.activation.zoneId }
+          : trigger.activation.target;
+        if (target.kind === 'placement') {
+          const actor = activeActorsByPlacement.get(target.placementId);
+          return actor ? { x: actor.sprite.x, y: actor.sprite.y } : undefined;
+        }
+        const zone = mapEventZone(target.zoneId);
+        if (!zone) return undefined;
+        const bounds = tiledObjectBounds(zone, target.zoneId);
+        return { x: bounds.centerX, y: bounds.centerY };
+      };
+
+      const playerInsideMapEventZone = (zoneId: string) => {
+        const zone = mapEventZone(zoneId);
+        const shape = zone ? readTiledCollisionShape(zone) : undefined;
+        return shape ? rectangleOverlapsCollision(actorFootprint(player.x, player.y), shape) : false;
+      };
+
+      const mapEventIsEligible = (trigger: MapEventTriggerV3) => (
+        trigger.sectorId === currentRoom.sector.sectorId
+        && !completedMapEventTriggerIds.has(trigger.triggerId)
+        && !completedSectorMapEventTriggerIds.has(trigger.triggerId)
+        && (!eligibleMapEventTriggerIds || eligibleMapEventTriggerIds.has(trigger.triggerId))
+      );
+
+      const restoreMapEventActors = (snapshot: Array<{
+        actor: ActiveActorState;
+        x: number;
+        y: number;
+        direction: Facing;
+        animation?: string;
+        visible: boolean;
+      }>) => {
+        for (const state of snapshot) {
+          state.actor.sprite.setPosition(state.x, state.y).setDepth(state.y).setVisible(state.visible);
+          state.actor.direction = state.direction;
+          if (state.animation) startActorAnimation(state.actor, state.animation, state.direction, -1);
+          else setActorFacing(state.actor, state.direction);
+        }
+        publishVisibleSpecies();
+      };
+
+      const runMapEvent = async (trigger: MapEventTriggerV3) => {
+        const sequence = (bundle.adventure.mapSequences ?? []).find(item => (
+          item.sequenceId === trigger.sequenceId && item.sectorId === currentRoom.sector.sectorId
+        ));
+        if (!sequence || activeCompanionSequence || activeMapEvent) return;
+        const actorSnapshot = [...activeActorsByPlacement.values()].map(actor => ({
+          actor,
+          x: actor.sprite.x,
+          y: actor.sprite.y,
+          direction: actor.direction,
+          animation: actor.currentAnimation,
+          visible: actor.sprite.visible,
+        }));
+        activeMapEvent = trigger;
+        activeCompanionSequence = true;
+        availableMapContextEvent = undefined;
+        delete parent.dataset.mapEventTriggerId;
+        delete parent.dataset.mapEventPrompt;
+        setPlayerIdle();
+        setAmbientAnimationsPaused(true);
+        parent.dataset.controlPriority = 'mapEvent';
+        parent.dataset.activeMapEventTriggerId = trigger.triggerId;
+        try {
+          if (!reducedMotion) {
+            for (const beat of sequence.beats) {
+              await Promise.all(beat.actions.map(executeCompanionSequenceAction));
+              await waitForMilliseconds(beat.pauseAfterMs ?? 0);
+            }
+          }
+          applyMapEventResultingStates(trigger);
+          if (trigger.repeatPolicy === 'oncePerSectorVisit') {
+            completedSectorMapEventTriggerIds.add(trigger.triggerId);
+          } else if ((trigger.repeatPolicy ?? 'oncePerVisit') !== 'repeatable') {
+            completedMapEventTriggerIds.add(trigger.triggerId);
+          }
+          parent.dispatchEvent(new CustomEvent(MAP_EVENT_COMPLETED_EVENT, {
+            detail: { trigger },
+          }));
+        } catch (cause) {
+          restoreMapEventActors(actorSnapshot);
+          throw cause;
+        } finally {
+          activeMapEvent = undefined;
+          activeCompanionSequence = false;
+          delete parent.dataset.activeMapEventTriggerId;
+          parent.dataset.controlPriority = 'player';
+          if (!document.hidden && !ambientSuppressed && !reducedMotion) setAmbientAnimationsPaused(false);
+        }
+      };
+
+      const refreshAvailableMapContextEvent = () => {
+        if (activeInteraction || activeExpression || companionConversationActive
+          || activeCompanionSequence || activeMapEvent || transitioning || stepTarget) {
+          availableMapContextEvent = undefined;
+          delete parent.dataset.mapEventTriggerId;
+          delete parent.dataset.mapEventPrompt;
+          return undefined;
+        }
+        const next = (bundle.adventure.mapEventTriggers ?? []).find(trigger => {
+          if (!mapEventIsEligible(trigger) || trigger.activation.kind !== 'contextAction') return false;
+          const target = mapEventTargetPoint(trigger);
+          if (!target) return false;
+          const range = (trigger.activation.rangeTiles ?? 1) * 16;
+          return Math.hypot(player.x - target.x, player.y - target.y) <= range;
+        });
+        if (availableMapContextEvent?.triggerId === next?.triggerId) return next;
+        availableMapContextEvent = next;
+        if (next?.activation.kind === 'contextAction') {
+          parent.dataset.mapEventTriggerId = next.triggerId;
+          parent.dataset.mapEventPrompt = next.activation.prompt;
+        } else {
+          delete parent.dataset.mapEventTriggerId;
+          delete parent.dataset.mapEventPrompt;
+        }
+        parent.dispatchEvent(new CustomEvent(MAP_EVENT_AVAILABLE_EVENT, {
+          detail: next ? { trigger: next } : undefined,
+        }));
+        return next;
+      };
+
+      const evaluateAutomaticMapEvents = () => {
+        if (stepTarget || transitioning || activeInteraction || activeExpression
+          || companionConversationActive || activeCompanionSequence || activeMapEvent) return;
+        for (const trigger of bundle.adventure.mapEventTriggers ?? []) {
+          if (trigger.sectorId !== currentRoom.sector.sectorId
+            || trigger.activation.kind === 'contextAction') continue;
+          const eligible = mapEventIsEligible(trigger);
+          const inside = trigger.activation.kind === 'enterZone'
+            ? playerInsideMapEventZone(trigger.activation.zoneId)
+            : (() => {
+              const target = mapEventTargetPoint(trigger);
+              return Boolean(target && Math.hypot(player.x - target.x, player.y - target.y)
+                <= trigger.activation.rangeTiles * 16);
+            })();
+          if (!inside) {
+            occupiedMapEventAreas.delete(trigger.triggerId);
+            continue;
+          }
+          if (!eligible || occupiedMapEventAreas.has(trigger.triggerId)) continue;
+          occupiedMapEventAreas.add(trigger.triggerId);
+          void runMapEvent(trigger);
+          return;
         }
       };
 
@@ -1745,6 +2016,11 @@ export function createTechnicalPhaserGame({
       };
 
       const requestContextActionFromKeyboard = () => {
+        const mapEvent = refreshAvailableMapContextEvent();
+        if (mapEvent) {
+          void runMapEvent(mapEvent);
+          return;
+        }
         const contextual = refreshAvailableInteraction();
         if (!contextual) {
           if (isFacingCompanion()) beginCompanionConversation();
@@ -1752,6 +2028,11 @@ export function createTechnicalPhaserGame({
         }
         if ('interactionId' in contextual) beginInteraction(contextual);
         else beginExpression(contextual);
+      };
+      const requestMapEvent = (event: Event) => {
+        const triggerId = (event as CustomEvent<{ triggerId?: string }>).detail?.triggerId;
+        const trigger = refreshAvailableMapContextEvent();
+        if (trigger && (!triggerId || trigger.triggerId === triggerId)) void runMapEvent(trigger);
       };
 
       const beginTransition = (transition: LoadedAdventureMapBundle['adventure']['transitions'][number]) => {
@@ -1832,6 +2113,7 @@ export function createTechnicalPhaserGame({
       parent.addEventListener(MAP_COMPANION_REQUEST_EVENT, requestCompanionConversation);
       parent.addEventListener(MAP_COMPANION_CONTROL_EVENT, controlCompanionConversation);
       parent.addEventListener(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, requestCompanionSequence);
+      parent.addEventListener(MAP_EVENT_REQUEST_EVENT, requestMapEvent);
       this.input.keyboard?.on('keydown-E', requestContextActionFromKeyboard);
       this.input.keyboard?.on('keydown-SPACE', requestContextActionFromKeyboard);
       document.addEventListener('visibilitychange', syncVisibilityState);
@@ -1845,6 +2127,7 @@ export function createTechnicalPhaserGame({
         parent.removeEventListener(MAP_COMPANION_REQUEST_EVENT, requestCompanionConversation);
         parent.removeEventListener(MAP_COMPANION_CONTROL_EVENT, controlCompanionConversation);
         parent.removeEventListener(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, requestCompanionSequence);
+        parent.removeEventListener(MAP_EVENT_REQUEST_EVENT, requestMapEvent);
         this.input.keyboard?.off('keydown-E', requestContextActionFromKeyboard);
         this.input.keyboard?.off('keydown-SPACE', requestContextActionFromKeyboard);
         this.input.keyboard?.off('keydown', directionKeyDown);
@@ -1861,6 +2144,7 @@ export function createTechnicalPhaserGame({
 
       this.events.on('update', (_time: number, delta: number) => {
         if (!playerBody || transitioning) return;
+        evaluateAutomaticMapEvents();
         evaluateAutomaticCompanionBehaviors();
         if (!document.hidden && !ambientSuppressed && !activeInteraction && !activeExpression && !companionConversationActive && !reducedMotion) {
           ambientAccumulatorMs = Math.min(100, ambientAccumulatorMs + delta);
@@ -1873,6 +2157,7 @@ export function createTechnicalPhaserGame({
         else if (ambientSuppressed) parent.dataset.ambientState = 'suppressed';
 
         refreshAvailableInteraction();
+        refreshAvailableMapContextEvent();
         if (activeInteraction || activeExpression || companionConversationActive || activeCompanionSequence) {
           setPlayerIdle();
           parent.dataset.step = 'idle';

@@ -4,12 +4,12 @@
   "infinite": false,
   "layers": [
     {"data":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"height":8,"id":1,"name":"Ground","opacity":1,"type":"tilelayer","visible":true,"width":10,"x":0,"y":0},
-    {"draworder":"topdown","id":2,"name":"Collision","objects":[],"opacity":1,"type":"objectgroup","visible":false,"x":0,"y":0},
+    {"draworder":"topdown","id":2,"name":"Collision","objects":[{"id":60,"name":"","x":32,"y":48,"width":16,"height":16,"rotation":0,"visible":true}],"opacity":1,"type":"objectgroup","visible":false,"x":0,"y":0},
     {"data":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"height":8,"id":3,"name":"Above","opacity":1,"type":"tilelayer","visible":true,"width":10,"x":0,"y":0},
     {"draworder":"topdown","id":4,"name":"Anchors","objects":[],"opacity":1,"type":"objectgroup","visible":true,"x":0,"y":0}
   ],
   "nextlayerid": 5,
-  "nextobjectid": 1,
+  "nextobjectid": 61,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.11.2",

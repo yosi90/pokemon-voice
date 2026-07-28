@@ -6,6 +6,7 @@ import {
   addPokeDiscoverCollisionRectangle,
   type PokeDiscoverGeometryPoint,
 } from '../../domain/tools/pokeDiscoverEditorGeometry.js';
+import { addPokeDiscoverEditorComment } from '../../domain/tools/pokeDiscoverEditorComments.js';
 import {
   updatePokeDiscoverTiledObject,
   type PokeDiscoverEditableTiledMap,
@@ -21,12 +22,21 @@ import {
 } from '../../domain/tools/pokeDiscoverEditorCamera.js';
 import { RuntimePreview } from './RuntimePreview.js';
 import { transformTiledObjectPoint } from '../../domain/maps/tiledObjectTransform.js';
+import {
+  connectPokeDiscoverOrthogonalPath,
+  extendPokeDiscoverOrthogonalPath,
+  simplifyPokeDiscoverOrthogonalPath,
+} from '../../domain/tools/pokeDiscoverPathGesture.js';
 
 export type PokeDiscoverCanvasTool =
   | 'select'
   | 'pan'
   | 'collision-rectangle'
   | 'collision-polygon'
+  | 'comment-rectangle'
+  | 'comment-polygon'
+  | 'event-path'
+  | 'event-zone'
   | 'connection';
 
 export type PokeDiscoverCellCommand =
@@ -55,6 +65,8 @@ export const POKEDISCOVER_CANVAS_TOOLS: Array<{ tool: PokeDiscoverCanvasTool; la
   { tool: 'pan', label: 'Desplazar lienzo', short: 'Mano' },
   { tool: 'collision-rectangle', label: 'Dibujar colisión rectangular', short: 'Colisión ▭' },
   { tool: 'collision-polygon', label: 'Dibujar colisión poligonal', short: 'Colisión ⬠' },
+  { tool: 'comment-rectangle', label: 'Dibujar comentario rectangular', short: 'Comentario ▭' },
+  { tool: 'comment-polygon', label: 'Dibujar comentario poligonal', short: 'Comentario ⬠' },
   { tool: 'connection', label: 'Conectar con la sector contigua', short: 'Salida' },
 ];
 
@@ -70,7 +82,7 @@ function objectClass(object: PokeDiscoverTiledObject) {
 
 function mapGeometry(tilemap: PokeDiscoverEditableTiledMap) {
   return tilemap.layers.flatMap(layer => {
-    if (!['Collision', 'Anchors', 'Paths', 'Occlusion'].includes(String(layer.name))) return [];
+    if (!['Collision', 'Anchors', 'Triggers', 'Paths', 'Occlusion', 'Comments'].includes(String(layer.name))) return [];
     const layerName = layer.name as PokeDiscoverObjectLayerName;
     return (Array.isArray(layer.objects) ? layer.objects : [])
       .filter(object => Number.isFinite(Number(object.id)))
@@ -125,6 +137,11 @@ export function MapAuthoringCanvas({
   selectedObjectId,
   onOpenObject,
   onOpenPlacement,
+  onMovePlacement,
+  onPathDraft,
+  pathDraft,
+  triggerZoneDraft,
+  getPathOrigin,
   onCellCommand,
   canCreateExit,
   directAuthoringGesture,
@@ -141,6 +158,11 @@ export function MapAuthoringCanvas({
   selectedObjectId?: number;
   onOpenObject: (objectId?: number) => void;
   onOpenPlacement: (placementId: string, kind: 'encounter' | 'npc' | 'portal' | 'secret' | 'trigger') => void;
+  onMovePlacement: (placementId: string, point: PokeDiscoverGeometryPoint) => void;
+  onPathDraft: (placementId: string, points: PokeDiscoverGeometryPoint[]) => void;
+  pathDraft?: PokeDiscoverGeometryPoint[];
+  triggerZoneDraft?: { x: number; y: number; width: number; height: number };
+  getPathOrigin?: (placementId: string) => PokeDiscoverGeometryPoint | undefined;
   onCellCommand: (command: PokeDiscoverCellCommand, cell: PokeDiscoverCellSelection) => void;
   canCreateExit: (cell: PokeDiscoverCellSelection) => boolean;
   directAuthoringGesture: 'direct' | 'shift';
@@ -161,6 +183,16 @@ export function MapAuthoringCanvas({
   const [draftCurrent, setDraftCurrent] = useState<PokeDiscoverGeometryPoint>();
   const [draftPoints, setDraftPoints] = useState<PokeDiscoverGeometryPoint[]>([]);
   const [movePreview, setMovePreview] = useState<{ objectId: number; x: number; y: number }>();
+  const [placementMovePreview, setPlacementMovePreview] = useState<{
+    placementId: string;
+    x: number;
+    y: number;
+  }>();
+  const [placementPathPreview, setPlacementPathPreview] = useState<{
+    placementId: string;
+    points: PokeDiscoverGeometryPoint[];
+  }>();
+  const displayedPlacementPath = placementPathPreview?.points ?? pathDraft;
   const [visibleLayers, setVisibleLayers] = useState<Set<PokeDiscoverObjectLayerName>>(
     () => new Set(['Anchors', 'Paths']),
   );
@@ -181,6 +213,16 @@ export function MapAuthoringCanvas({
     objectX: number;
     objectY: number;
   } | undefined>(undefined);
+  const placementGestureRef = useRef<{
+    pointerId: number;
+    placementId: string;
+    clientX: number;
+    clientY: number;
+    origin: PokeDiscoverGeometryPoint;
+    shift: boolean;
+    dragging: boolean;
+    points: PokeDiscoverGeometryPoint[];
+  } | undefined>(undefined);
   const cellGestureRef = useRef<{
     pointerId: number;
     clientX: number;
@@ -197,6 +239,48 @@ export function MapAuthoringCanvas({
     : undefined;
   const room = bundle.sectors.find(candidate => candidate.sector.sectorId === sectorId);
   const markers = room ? getPokeDiscoverEditorContentMarkers(bundle, room) : [];
+  const pathObjects = new Map(tilemap.layers.flatMap(layer => (
+    layer.name === 'Paths' && Array.isArray(layer.objects)
+      ? layer.objects.map(object => [String(object.name ?? ''), object] as const)
+      : []
+  )));
+  const placementPathConnections = visibleLayers.has('Paths')
+    ? markers.flatMap(marker => {
+      if (marker.kind !== 'encounter' && marker.kind !== 'npc') return [];
+      const firstPathIds = [
+        ...bundle.adventure.ambientSequences
+          .filter(sequence => sequence.sectorId === sectorId)
+          .flatMap(sequence => sequence.beats.flatMap(beat => beat.actions.flatMap(action => (
+            action.kind === 'movePath' && action.placementId === marker.contentId
+              ? [action.pathId]
+              : []
+          ))).slice(0, 1)),
+        ...(bundle.adventure.mapSequences ?? [])
+          .filter(sequence => sequence.sectorId === sectorId)
+          .flatMap(sequence => sequence.beats.flatMap(beat => beat.actions.flatMap(action => (
+            action.kind === 'movePath' && action.actorRef === marker.contentId && !action.reverse
+              ? [action.pathId]
+              : []
+          ))).slice(0, 1)),
+      ];
+      return [...new Set(firstPathIds)].flatMap(pathId => {
+        const path = pathObjects.get(pathId);
+        const first = path?.polyline?.[0];
+        if (!path || !first) return [];
+        const target = {
+          x: Number(path.x) + Number(first.x),
+          y: Number(path.y) + Number(first.y),
+        };
+        const points = connectPokeDiscoverOrthogonalPath(
+          { x: marker.x, y: marker.y },
+          [target],
+        );
+        return points.length > 1
+          ? [{ placementId: marker.contentId, pathId, points }]
+          : [];
+      });
+    })
+    : [];
   const validSpawnIds = new Set(objects
     .filter(candidate => candidate.layerName === 'Anchors'
       && ['PlayerSpawn', 'TransitionAnchor'].includes(objectClass(candidate.object)))
@@ -316,7 +400,11 @@ export function MapAuthoringCanvas({
   useEffect(() => {
     const selectTool = (event: Event) => {
       const requested = (event as CustomEvent<{ tool?: PokeDiscoverCanvasTool }>).detail?.tool;
-      if (!requested || !POKEDISCOVER_CANVAS_TOOLS.some(option => option.tool === requested)) return;
+      if (!requested || (
+        requested !== 'event-path'
+        && requested !== 'event-zone'
+        && !POKEDISCOVER_CANVAS_TOOLS.some(option => option.tool === requested)
+      )) return;
       chooseTool(requested);
     };
     window.addEventListener('pokediscover:select-map-tool', selectTool);
@@ -330,6 +418,25 @@ export function MapAuthoringCanvas({
       y: Math.min(mapHeight, Math.max(0, snap((event.clientY - bounds.top) * mapHeight / bounds.height, event.altKey))),
     };
   };
+
+  const rawPointFromEvent = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.min(mapWidth, Math.max(0, (event.clientX - bounds.left) * mapWidth / bounds.width)),
+      y: Math.min(mapHeight, Math.max(0, (event.clientY - bounds.top) * mapHeight / bounds.height)),
+    };
+  };
+
+  const placementCellCenter = (point: PokeDiscoverGeometryPoint) => ({
+    x: Math.min(mapWidth - tilemap.tilewidth / 2, Math.max(
+      tilemap.tilewidth / 2,
+      Math.floor(point.x / tilemap.tilewidth) * tilemap.tilewidth + tilemap.tilewidth / 2,
+    )),
+    y: Math.min(mapHeight - tilemap.tileheight / 2, Math.max(
+      tilemap.tileheight / 2,
+      Math.floor(point.y / tilemap.tileheight) * tilemap.tileheight + tilemap.tileheight / 2,
+    )),
+  });
 
   const cellFromEvent = (event: ReactPointerEvent<SVGSVGElement>): PokeDiscoverCellSelection => {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -361,6 +468,24 @@ export function MapAuthoringCanvas({
       if (tool === 'collision-polygon') {
         const result = addPokeDiscoverCollisionPolygon(tilemap, points);
         onTilemapChange(result.tilemap, 'Crear colisión poligonal');
+      } else if (tool === 'comment-polygon' && points.length >= 3) {
+        const origin = points[0];
+        const result = addPokeDiscoverEditorComment(tilemap, {
+          text: 'Comentario editorial',
+          x: origin.x,
+          y: origin.y,
+          width: 0,
+          height: 0,
+          polygon: points.map(point => ({ x: point.x - origin.x, y: point.y - origin.y })),
+        });
+        onTilemapChange(result.tilemap, 'Crear comentario poligonal');
+        onOpenObject(result.object.id);
+      } else if (tool === 'event-path' && points.length >= 2) {
+        window.dispatchEvent(new CustomEvent(
+          'pokediscover:event-path-complete',
+          { detail: { points } },
+        ));
+        chooseTool('select');
       }
       setDraftPoints([]);
       setDraftCurrent(undefined);
@@ -377,6 +502,9 @@ export function MapAuthoringCanvas({
         setDraftStart(undefined);
         setDraftCurrent(undefined);
         setCellMenu(undefined);
+        placementGestureRef.current = undefined;
+        setPlacementMovePreview(undefined);
+        setPlacementPathPreview(undefined);
       }
       if ((event.key === 'Delete' || event.key === 'Backspace') && selected
         && !(event.target instanceof HTMLElement && event.target.closest('input, textarea, select'))) {
@@ -411,7 +539,7 @@ export function MapAuthoringCanvas({
       event.currentTarget.setPointerCapture(event.pointerId);
       return;
     }
-    if (tool === 'collision-polygon') {
+    if (tool === 'collision-polygon' || tool === 'comment-polygon' || tool === 'event-path') {
       setDraftPoints(current => [...current, point]);
       setDraftCurrent(point);
       return;
@@ -428,6 +556,16 @@ export function MapAuthoringCanvas({
       if (tool === 'collision-rectangle') {
         const result = addPokeDiscoverCollisionRectangle(tilemap, draftStart, end);
         onTilemapChange(result.tilemap, 'Crear colisión rectangular');
+      } else if (tool === 'comment-rectangle') {
+        const result = addPokeDiscoverEditorComment(tilemap, {
+          text: 'Comentario editorial',
+          x: Math.min(draftStart.x, end.x),
+          y: Math.min(draftStart.y, end.y),
+          width: Math.max(1, Math.abs(end.x - draftStart.x)),
+          height: Math.max(1, Math.abs(end.y - draftStart.y)),
+        });
+        onTilemapChange(result.tilemap, 'Crear comentario rectangular');
+        onOpenObject(result.object.id);
       } else if (tool === 'connection') {
         const center = {
           x: (draftStart.x + end.x) / 2,
@@ -446,6 +584,15 @@ export function MapAuthoringCanvas({
           ? Math.abs(end.x - draftStart.x)
           : Math.abs(end.y - draftStart.y));
         onConnectEdge(edge, start, length);
+      } else if (tool === 'event-zone') {
+        const x = Math.min(draftStart.x, end.x);
+        const y = Math.min(draftStart.y, end.y);
+        const width = Math.max(tilemap.tilewidth, Math.abs(end.x - draftStart.x));
+        const height = Math.max(tilemap.tileheight, Math.abs(end.y - draftStart.y));
+        window.dispatchEvent(new CustomEvent('pokediscover:event-zone-complete', {
+          detail: { x, y, width, height },
+        }));
+        chooseTool('select');
       }
     } finally {
       setDraftStart(undefined);
@@ -487,8 +634,10 @@ export function MapAuthoringCanvas({
             {([
               ['Anchors', 'Anclas'],
               ['Collision', 'Colisiones'],
+              ['Triggers', 'Zonas de evento'],
               ['Paths', 'Rutas'],
               ['Occlusion', 'Oclusiones'],
+              ['Comments', 'Comentarios'],
             ] as const).map(([layerName, layerLabel]) => (
               <button
                 key={layerName}
@@ -505,7 +654,11 @@ export function MapAuthoringCanvas({
           </div>
           {draftPoints.length ? (
             <button type="button" className="is-primary" onClick={() => finishLineTool()}>
-              Terminar ({draftPoints.length} puntos)
+              {tool === 'event-path'
+                ? 'Usar ruta'
+                : tool === 'comment-polygon'
+                  ? 'Crear comentario'
+                  : 'Terminar'} ({draftPoints.length} puntos)
             </button>
           ) : null}
         </div>
@@ -630,6 +783,35 @@ export function MapAuthoringCanvas({
               onPointerDown={startSurfaceAction}
               onPointerMove={event => {
                 setDraftCurrent(pointFromEvent(event));
+                const placementGesture = placementGestureRef.current;
+                if (placementGesture) {
+                  const distance = Math.hypot(
+                    event.clientX - placementGesture.clientX,
+                    event.clientY - placementGesture.clientY,
+                  );
+                  if (distance >= 4) placementGesture.dragging = true;
+                  if (!placementGesture.dragging) return;
+                  const rawPoint = rawPointFromEvent(event);
+                  if (placementGesture.shift) {
+                    placementGesture.points = extendPokeDiscoverOrthogonalPath(
+                      placementGesture.points,
+                      rawPoint,
+                      placementGesture.origin,
+                      tilemap.tilewidth,
+                    );
+                    setPlacementPathPreview({
+                      placementId: placementGesture.placementId,
+                      points: [...placementGesture.points],
+                    });
+                  } else {
+                    const center = placementCellCenter(rawPoint);
+                    setPlacementMovePreview({
+                      placementId: placementGesture.placementId,
+                      ...center,
+                    });
+                  }
+                  return;
+                }
                 const gesture = cellGestureRef.current;
                 if (gesture) {
                   const distance = Math.hypot(event.clientX - gesture.clientX, event.clientY - gesture.clientY);
@@ -658,6 +840,27 @@ export function MapAuthoringCanvas({
                 });
               }}
               onPointerUp={event => {
+                const placementGesture = placementGestureRef.current;
+                if (placementGesture) {
+                  placementGestureRef.current = undefined;
+                  if (placementGesture.dragging && placementGesture.shift) {
+                    const points = simplifyPokeDiscoverOrthogonalPath(placementGesture.points);
+                    if (points.length >= 2) onPathDraft(placementGesture.placementId, points);
+                  } else if (placementGesture.dragging && placementMovePreview) {
+                    onMovePlacement(placementGesture.placementId, {
+                      x: placementMovePreview.x,
+                      y: placementMovePreview.y,
+                    });
+                  }
+                  setPlacementMovePreview(undefined);
+                  setPlacementPathPreview(undefined);
+                  try {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                  } catch {
+                    // El navegador puede liberar la captura antes del pointerup.
+                  }
+                  return;
+                }
                 const gesture = cellGestureRef.current;
                 if (gesture) {
                   cellGestureRef.current = undefined;
@@ -690,6 +893,9 @@ export function MapAuthoringCanvas({
                 cellGestureRef.current = undefined;
                 moveRef.current = undefined;
                 setMovePreview(undefined);
+                placementGestureRef.current = undefined;
+                setPlacementMovePreview(undefined);
+                setPlacementPathPreview(undefined);
                 setDraftPoints([]);
               }}
             >
@@ -771,6 +977,36 @@ export function MapAuthoringCanvas({
                   points={[...draftPoints, ...(draftCurrent ? [draftCurrent] : [])].map(point => `${point.x},${point.y}`).join(' ')}
                 />
               ) : null}
+              {placementPathConnections.map(connection => (
+                <polyline
+                  key={`${connection.placementId}:${connection.pathId}`}
+                  className="editor-placement-path-connector"
+                  pointerEvents="none"
+                  points={connection.points.map(point => `${point.x},${point.y}`).join(' ')}
+                />
+              ))}
+              {triggerZoneDraft ? (
+                <rect
+                  className="editor-trigger-zone-draft"
+                  pointerEvents="none"
+                  x={triggerZoneDraft.x}
+                  y={triggerZoneDraft.y}
+                  width={triggerZoneDraft.width}
+                  height={triggerZoneDraft.height}
+                />
+              ) : null}
+              {displayedPlacementPath?.length ? (
+                <g className="editor-placement-path-draft" pointerEvents="none">
+                  <polyline
+                    points={displayedPlacementPath.map(point => `${point.x},${point.y}`).join(' ')}
+                  />
+                  <circle
+                    cx={displayedPlacementPath.at(-1)!.x}
+                    cy={displayedPlacementPath.at(-1)!.y}
+                    r={7}
+                  />
+                </g>
+              ) : null}
               {markers.map(marker => (
                 <g
                   key={`${marker.kind}:${marker.contentId}`}
@@ -778,9 +1014,33 @@ export function MapAuthoringCanvas({
                   role="button"
                   tabIndex={0}
                   aria-label={`Editar colocación ${marker.contentId}`}
+                  transform={placementMovePreview?.placementId === marker.contentId
+                    ? `translate(${placementMovePreview.x - marker.x} ${placementMovePreview.y - marker.y})`
+                    : undefined}
                   onPointerDown={event => {
                     event.stopPropagation();
                     onOpenPlacement(marker.contentId, marker.kind);
+                    if (tool !== 'select' || event.button !== 0
+                      || (marker.kind !== 'encounter' && marker.kind !== 'npc')) return;
+                    const svg = event.currentTarget.ownerSVGElement;
+                    if (!svg) return;
+                    const origin = event.shiftKey
+                      ? getPathOrigin?.(marker.contentId) ?? { x: marker.x, y: marker.y }
+                      : { x: marker.x, y: marker.y };
+                    placementGestureRef.current = {
+                      pointerId: event.pointerId,
+                      placementId: marker.contentId,
+                      clientX: event.clientX,
+                      clientY: event.clientY,
+                      origin,
+                      shift: event.shiftKey,
+                      dragging: false,
+                      points: [origin],
+                    };
+                    if (event.shiftKey) {
+                      setPlacementPathPreview({ placementId: marker.contentId, points: [origin] });
+                    }
+                    svg.setPointerCapture(event.pointerId);
                   }}
                   onKeyDown={event => {
                     if (event.key === 'Enter' || event.key === ' ') onOpenPlacement(marker.contentId, marker.kind);

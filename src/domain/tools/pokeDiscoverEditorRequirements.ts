@@ -9,6 +9,7 @@ export type AdventureRequirementTarget =
   | { source: 'rareEncounter'; definitionId: string; label: string; expression: RequirementExpressionV1 }
   | { source: 'behaviorTrigger'; definitionId: string; label: string; expression: RequirementExpressionV1 }
   | { source: 'expressionTrigger'; definitionId: string; label: string; expression: RequirementExpressionV1 }
+  | { source: 'mapEventTrigger'; definitionId: string; label: string; expression: RequirementExpressionV1 }
   | { source: 'worldEvent'; definitionId: string; label: string; expression: RequirementExpressionV1 }
   | { source: 'transition'; definitionId: string; label: string; expression: RequirementExpressionV1 };
 
@@ -22,6 +23,7 @@ export function listAdventureRequirementTargets(adventure: AdventureMapV3): Adve
     ...adventure.rareEncounters.map(definition => ({ source: 'rareEncounter' as const, definitionId: definition.encounterId, label: `Encuentro raro · ${definition.encounterId}`, expression: definition.requirement })),
     ...adventure.behaviorTriggers.map(definition => ({ source: 'behaviorTrigger' as const, definitionId: definition.triggerId, label: `Comportamiento · ${definition.triggerId}`, expression: definition.requirement })),
     ...adventure.expressionTriggers.map(definition => ({ source: 'expressionTrigger' as const, definitionId: definition.triggerId, label: `Trigger expresivo · ${definition.triggerId}`, expression: definition.activationRequirement })),
+    ...(adventure.mapEventTriggers ?? []).map(definition => ({ source: 'mapEventTrigger' as const, definitionId: definition.triggerId, label: `Evento de mapa · ${definition.triggerId}`, expression: definition.requirement })),
     ...(adventure.worldEvents ?? []).map(definition => ({ source: 'worldEvent' as const, definitionId: definition.eventId, label: `Evento global · ${definition.eventId}`, expression: definition.activation })),
     ...adventure.transitions.flatMap(definition => definition.requirement ? [{ source: 'transition' as const, definitionId: definition.transitionId, label: `Transición · ${definition.transitionId}`, expression: definition.requirement }] : []),
   ];
@@ -36,6 +38,7 @@ export function updateAdventureRequirement(
   if (target.source === 'rareEncounter') return { ...adventure, rareEncounters: adventure.rareEncounters.map(item => item.encounterId === target.definitionId ? { ...item, requirement: expression } : item) };
   if (target.source === 'behaviorTrigger') return { ...adventure, behaviorTriggers: adventure.behaviorTriggers.map(item => item.triggerId === target.definitionId ? { ...item, requirement: expression } : item) };
   if (target.source === 'expressionTrigger') return { ...adventure, expressionTriggers: adventure.expressionTriggers.map(item => item.triggerId === target.definitionId ? { ...item, activationRequirement: expression } : item) };
+  if (target.source === 'mapEventTrigger') return { ...adventure, mapEventTriggers: (adventure.mapEventTriggers ?? []).map(item => item.triggerId === target.definitionId ? { ...item, requirement: expression } : item) };
   if (target.source === 'worldEvent') return { ...adventure, worldEvents: (adventure.worldEvents ?? []).map(item => item.eventId === target.definitionId ? { ...item, activation: expression } : item) };
   return { ...adventure, transitions: adventure.transitions.map(item => item.transitionId === target.definitionId ? { ...item, requirement: expression } : item) };
 }

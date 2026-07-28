@@ -24,7 +24,9 @@ Se pueden añadir capas visuales auxiliares con el prefijo `Detail:`. No se usar
 Capas opcionales con semántica de runtime:
 
 - `Occlusion`: object layer con rectángulos o polígonos `ActorOccluder`. Cada objeto necesita un nombre estable y la propiedad `occlusionGroup`; puede declarar `includePlacementIds` y `excludePlacementIds` como IDs separados por comas.
-- `Paths`: object layer con polilíneas `AmbientPath` nombradas mediante IDs estables. Las rutas `grid` deben ser ortogonales y ajustar todos sus puntos a 16 px; las rutas `continuous` pueden usar cualquier geometría.
+- `Paths`: object layer con polilíneas `AmbientPath` nombradas mediante IDs estables. Las rutas `grid` deben ser ortogonales y ajustar todos sus puntos a una rejilla de 16 px relativa al primer punto; las rutas `continuous` antiguas pueden usar cualquier geometría.
+- `Triggers`: object layer con rectángulos o polígonos `TriggerZone`. Cada zona debe pertenecer a un único `mapEventTrigger`.
+- `Comments`: object layer editorial con rectángulos o polígonos `EditorComment`. Puede ocultarse y no se carga en el runtime.
 
 ## Objetos y anclas
 
@@ -47,6 +49,8 @@ Clases admitidas en capas opcionales:
 
 - `ActorOccluder`: área que recorta únicamente los sprites asociados al mismo grupo. Sirve para agua, tejados, cuevas o cualquier intersección parcial y no sustituye a `Collision`.
 - `AmbientPath`: polilínea recorrida por una coreografía ambiental. Su geometría pertenece a Tiled; su velocidad, dirección, animación y orden pertenecen al sidecar.
+- `TriggerZone`: área usada por un evento de entrada, acción contextual o proximidad. No es un ancla.
+- `EditorComment`: anotación libre con propiedad `text`; puede conservar ID, nombre y clase de un objeto retirado como metadatos editoriales.
 
 Los IDs técnicos son obligatorios, de solo lectura, minúsculos, segmentados con `:` y con ordinales `01`, `02`, etc. El nombre del ancla coincide con el ID sidecar que la utiliza: `placementId`, `entryPointId`, `interactionId`, `transitionId:<from|to>` o el ID derivado de una acción de secuencia. Las colisiones usan `collision:<ordinal>`.
 
@@ -77,6 +81,7 @@ El archivo `<mapa>.adventure.json` contiene `AdventureMapV3` y:
 - Incluye en `requiredAssetIds` todos los sprites usados por actores.
 - Declara `occlusionGroupIds` en las colocaciones que deban aceptar máscaras parciales.
 - Declara `ambientSequences` como beats ordenados. Dentro de un beat cada actor admite una sola acción y todos esperan a que terminen las demás antes de avanzar.
+- Declara `mapEventTriggers` y `mapSequences` para eventos espaciales. Las políticas `oncePerSectorVisit`, `oncePerVisit`, `repeatable` y `persistent` determinan dónde se conserva su finalización; `resultingActorStates` reconstruye posición, animación, dirección y visibilidad.
 - Declara `interactions` apuntando a un `placementId` o a un `InteractionAnchor`, y conserva las páginas reutilizables en `dialogues`. Los textos y prompts no se escriben en Phaser ni en el `.tmj`.
 - Una interacción con `meaningfulKind: secret` puede apuntar a un `SecretAnchor`; los demás objetivos espaciales sin actor continúan usando `InteractionAnchor`.
 - Los hechos de investigación obtenibles en el mapa viven en `researchFacts` del sidecar, apuntan a un `interactionId` del mismo mapa y usan su `factId` como origen idempotente de recompensa.
@@ -96,3 +101,13 @@ Un cambio de coordenadas en Tiled no obliga a editar el sidecar mientras el nomb
 9. Ejecutar `npm run maps:validate` antes de probar el mapa en el juego.
 
 La plantilla técnica vive en `public/assets/adventure/maps/_technical/`. No es arte definitivo y puede reemplazarse sin migrar progreso.
+
+## Autoría gestual de movimientos
+
+- Arrastrar un Pokémon o NPC mueve solamente su ancla a la celda de destino. No desplaza ni reescribe rutas existentes.
+- `Shift + arrastre` dibuja una ruta ortogonal sobre tiles de 16 px. Si una secuencia está activa, comienza al final de su último recorrido; en otro caso comienza en la colocación.
+- La línea roja discontinua es un borrador editorial en memoria. Cancelar, pulsar Escape o cambiar de contexto tras aceptar el descarte no deja objetos en `Paths`, cambios pendientes ni entradas de historial.
+- Una ruta sólo pasa a `Paths` al confirmar desde `Movimientos y eventos`. La misma transacción crea o actualiza la acción propietaria, la secuencia y, para un evento, su trigger, zona y estados resultantes.
+- El movimiento automático usa `ambientSequences`; los eventos activados usan `mapSequences` y `mapEventTriggers`. No existen rutas pendientes dentro del TMJ.
+- Los actores sólidos no pueden confirmar recorridos que atraviesen `Collision`. Los actores atravesables sí pueden hacerlo; una obstrucción dinámica pausa el movimiento en runtime.
+- Volver exactamente a la celda anterior durante el trazado elimina el último tramo. Los cruces con otros tramos son válidos y no alteran lo ya dibujado.

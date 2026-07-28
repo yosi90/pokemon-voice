@@ -1,6 +1,9 @@
 import {
   AMBIENT_ACTOR_ACTION_KINDS,
   COMPANION_SEQUENCE_ACTION_KINDS,
+  MAP_EVENT_ACTIVATION_KINDS,
+  MAP_EVENT_REPEAT_POLICIES,
+  MAP_SEQUENCE_ACTION_KINDS,
   MEANINGFUL_EXPEDITION_INTERACTION_KINDS,
   SECTOR_TRANSITION_KINDS,
   TILED_ANCHOR_CLASSES,
@@ -8,6 +11,9 @@ import {
   type AmbientActorActionKind,
   type CompanionSequenceActionKind,
   type MeaningfulExpeditionInteractionKind,
+  type MapEventActivationKind,
+  type MapEventRepeatPolicy,
+  type MapSequenceActionKind,
   type SectorTransitionKind,
   type TiledAnchorClass,
 } from '../../../packages/contracts/src/index.js';
@@ -17,6 +23,7 @@ import {
 } from '../expeditions/adventureMapV3.js';
 import { addPokeDiscoverFunctionalAnchor } from './pokeDiscoverEditorGeometry.js';
 import type { PokeDiscoverEditableTiledMap } from './pokeDiscoverEditorProject.js';
+import { parsePokeDiscoverPokemonAssetIdentity } from './pokeDiscoverPokemonTechnicalIds.js';
 
 export type PokeDiscoverAuthoringRecipeId =
   | 'pokemon-placement'
@@ -29,7 +36,9 @@ export type PokeDiscoverAuthoringRecipeId =
   | 'ambient-path'
   | 'sequence-destination'
   | 'occluder'
-  | 'collision';
+  | 'collision'
+  | 'editor-comment'
+  | 'map-event';
 
 export type PokeDiscoverAuthoringInspector =
   | 'placement'
@@ -37,6 +46,7 @@ export type PokeDiscoverAuthoringInspector =
   | 'transition'
   | 'interaction'
   | 'sequence'
+  | 'event'
   | 'geometry';
 
 export interface PokeDiscoverAuthoringRecipe {
@@ -44,7 +54,7 @@ export interface PokeDiscoverAuthoringRecipe {
   label: string;
   description: string;
   fields: readonly string[];
-  tiledClass: TiledAnchorClass | 'AmbientPath' | 'ActorOccluder' | 'Collision';
+  tiledClass: TiledAnchorClass | 'AmbientPath' | 'ActorOccluder' | 'Collision' | 'EditorComment' | 'TriggerZone';
   inspector: PokeDiscoverAuthoringInspector;
   prerequisite: string;
   creationMode: 'wizard' | 'connection-command' | 'geometry-command' | 'referenced-command';
@@ -96,7 +106,7 @@ export const POKEDISCOVER_AUTHORING_RECIPES = Object.freeze([
   {
     recipeId: 'entry-point',
     label: 'Entrada',
-    description: 'Crea una entrada sidecar y su PlayerSpawn.',
+    description: 'Crea un punto de entrada para el jugador.',
     fields: ['label'],
     tiledClass: 'PlayerSpawn',
     inspector: 'entry',
@@ -109,7 +119,7 @@ export const POKEDISCOVER_AUTHORING_RECIPES = Object.freeze([
   {
     recipeId: 'transition',
     label: 'Transición',
-    description: 'Crea ambos extremos TMJ y las transiciones sidecar.',
+    description: 'Conecta dos sectores por sus extremos.',
     fields: ['targetSectorId', 'kind'],
     tiledClass: 'TransitionAnchor',
     inspector: 'transition',
@@ -126,7 +136,7 @@ export const POKEDISCOVER_AUTHORING_RECIPES = Object.freeze([
     fields: ['meaningfulKind', 'prompt', 'text'],
     tiledClass: 'InteractionAnchor',
     inspector: 'interaction',
-    prerequisite: 'La acción debe ser un meaningfulKind del runtime.',
+    prerequisite: 'La acción elegida debe estar disponible para esta interacción.',
     creationMode: 'wizard',
     outputs: ['sidecar', 'tmj'],
     defaults: { repeatPolicy: 'oncePerVisit' },
@@ -197,6 +207,32 @@ export const POKEDISCOVER_AUTHORING_RECIPES = Object.freeze([
     defaults: { class: 'Collision' },
     validator: 'maps:validate',
   },
+  {
+    recipeId: 'editor-comment',
+    label: 'Comentario',
+    description: 'Crea una anotación visible sólo durante la edición.',
+    fields: ['geometry', 'text'],
+    tiledClass: 'EditorComment',
+    inspector: 'geometry',
+    prerequisite: 'Necesita texto y una geometría rectangular o poligonal.',
+    creationMode: 'geometry-command',
+    outputs: ['tmj'],
+    defaults: { text: 'Comentario editorial' },
+    validator: 'maps:validate',
+  },
+  {
+    recipeId: 'map-event',
+    label: 'Evento espacial',
+    description: 'Crea activación, zona opcional, secuencia, ruta y estado final.',
+    fields: ['activation', 'target', 'repeatPolicy', 'actors', 'beats', 'resultingActorStates'],
+    tiledClass: 'TriggerZone',
+    inspector: 'event',
+    prerequisite: 'Necesita un actor, una activación compatible y una secuencia completa.',
+    creationMode: 'wizard',
+    outputs: ['sidecar', 'tmj'],
+    defaults: { repeatPolicy: 'oncePerVisit', activation: 'enterZone' },
+    validator: 'maps:validate',
+  },
 ] as const satisfies readonly PokeDiscoverAuthoringRecipe[]);
 
 const anchorAuthoringDecisions = {
@@ -232,6 +268,22 @@ export const POKEDISCOVER_RUNTIME_AUTHORING_COVERAGE = Object.freeze({
     CompanionSequenceActionKind,
     'sequence-destination' | 'properties-only'
   >,
+  mapEventActivations: Object.fromEntries(MAP_EVENT_ACTIVATION_KINDS.map(kind => [
+    kind,
+    'map-event',
+  ])) as Record<MapEventActivationKind, 'map-event'>,
+  mapEventRepeatPolicies: Object.fromEntries(MAP_EVENT_REPEAT_POLICIES.map(policy => [
+    policy,
+    'map-event',
+  ])) as Record<MapEventRepeatPolicy, 'map-event'>,
+  mapSequenceActions: Object.fromEntries(MAP_SEQUENCE_ACTION_KINDS.map(kind => [
+    kind,
+    kind === 'movePath'
+      ? 'map-event'
+      : kind === 'moveToAnchor'
+        ? 'sequence-destination'
+        : 'properties-only',
+  ])) as Record<MapSequenceActionKind, 'map-event' | 'sequence-destination' | 'properties-only'>,
 });
 
 function allTechnicalIds(adventure: AdventureMapV3, tilemap: PokeDiscoverEditableTiledMap) {
@@ -251,14 +303,21 @@ export function previewPokeDiscoverImmediateRecipeIds(
   adventure: AdventureMapV3,
   tilemap: PokeDiscoverEditableTiledMap,
   recipeId: PokeDiscoverImmediateRecipeRequest['recipeId'],
+  assetId?: string,
 ) {
   const usedIds = allTechnicalIds(adventure, tilemap);
   if (recipeId === 'pokemon-placement') {
-    const primaryId = nextPokeDiscoverAuthoringId('placement:pokemon', usedIds);
+    const primaryId = nextPokeDiscoverAuthoringId(
+      pokeDiscoverPokemonPlacementPrefix(assetId ?? ''),
+      usedIds,
+    );
     return { primaryId, anchorId: primaryId };
   }
   if (recipeId === 'pokemon-encounter') {
-    const primaryId = nextPokeDiscoverAuthoringId('placement:encounter', usedIds);
+    const primaryId = nextPokeDiscoverAuthoringId(
+      pokeDiscoverPokemonPlacementPrefix(assetId ?? '', 'encounter'),
+      usedIds,
+    );
     return { primaryId, anchorId: primaryId };
   }
   if (recipeId === 'npc-placement') {
@@ -285,7 +344,7 @@ export function nextPokeDiscoverAuthoringId(
   prefix: string,
   usedIds: ReadonlySet<string>,
 ) {
-  if (!/^[a-z0-9]+(?::[a-z0-9][a-z0-9-]*)*$/u.test(prefix)) {
+  if (!/^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)*$/u.test(prefix)) {
     throw new Error(`Prefijo de ID no válido: ${prefix}.`);
   }
   for (let ordinal = 1; ordinal <= 9999; ordinal += 1) {
@@ -293,6 +352,43 @@ export function nextPokeDiscoverAuthoringId(
     if (!usedIds.has(candidate)) return candidate;
   }
   throw new Error(`No quedan ordinales disponibles para ${prefix}.`);
+}
+
+export function pokeDiscoverPokemonPlacementPrefix(
+  assetId: string,
+  kind: 'pokemon' | 'encounter' = 'pokemon',
+) {
+  const identity = parsePokeDiscoverPokemonAssetIdentity(assetId);
+  return `placement:${kind}:${identity.speciesOrForm}:${identity.appearance}`;
+}
+
+export function deriveCanonicalPokemonPlacementIds(adventure: AdventureMapV3) {
+  const result = new Map<string, string>();
+  const usedIds = new Set(adventure.characterPlacements.map(placement => placement.placementId));
+  for (const placement of adventure.actorPlacements) {
+    let prefix: string;
+    try {
+      prefix = pokeDiscoverPokemonPlacementPrefix(placement.assetId);
+    } catch {
+      result.set(placement.placementId, placement.placementId);
+      usedIds.add(placement.placementId);
+      continue;
+    }
+    if (new RegExp(`^${prefix}:\\d{2,}$`, 'u').test(placement.placementId)) {
+      result.set(placement.placementId, placement.placementId);
+      usedIds.add(placement.placementId);
+    }
+  }
+  for (const placement of adventure.actorPlacements) {
+    if (result.has(placement.placementId)) continue;
+    const placementId = nextPokeDiscoverAuthoringId(
+      pokeDiscoverPokemonPlacementPrefix(placement.assetId),
+      usedIds,
+    );
+    result.set(placement.placementId, placementId);
+    usedIds.add(placementId);
+  }
+  return result;
 }
 
 export type PokeDiscoverImmediateRecipeRequest =
@@ -369,7 +465,10 @@ export function applyPokeDiscoverImmediateRecipe({
       throw new Error(`${request.assetId} no pertenece al reparto Pokémon de ${sectorId}.`);
     }
     const placementId = nextPokeDiscoverAuthoringId(
-      request.recipeId === 'pokemon-encounter' ? 'placement:encounter' : 'placement:pokemon',
+      pokeDiscoverPokemonPlacementPrefix(
+        request.assetId,
+        request.recipeId === 'pokemon-encounter' ? 'encounter' : 'pokemon',
+      ),
       usedIds,
     );
     const anchor = addPokeDiscoverFunctionalAnchor(tilemap, {
@@ -460,7 +559,7 @@ export function applyPokeDiscoverImmediateRecipe({
   const isSecret = request.recipeId === 'secret';
   const meaningfulKind = isSecret ? 'secret' : request.meaningfulKind;
   if (!MEANINGFUL_EXPEDITION_INTERACTION_KINDS.includes(meaningfulKind)) {
-    throw new Error(`El sidecar no comprende la interacción ${meaningfulKind}.`);
+    throw new Error(`La interacción ${meaningfulKind} no está disponible.`);
   }
   const interactionId = nextPokeDiscoverAuthoringId(
     isSecret ? 'interaction:secret' : 'interaction',

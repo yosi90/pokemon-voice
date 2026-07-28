@@ -1,0 +1,553 @@
+{
+  "schemaVersion": 2,
+  "mapId": "map:tegueste:camphor-forest",
+  "title": "Bosque de Tegueste",
+  "tiledMapAssets": [{
+    "schemaVersion": 1,
+    "assetId": "tiled-map:tegueste-forest:02-04",
+    "path": "assets/adventure/maps/tegueste-forest/tegueste-forest-02-05.tmj"
+  }],
+  "rooms": [{
+    "schemaVersion": 1,
+    "roomId": "room:tegueste-forest:02-04",
+    "tiledMapAssetId": "tiled-map:tegueste-forest:02-04",
+    "staticCamera": true,
+    "spawnAnchorIds": [
+      "anchor:player:entrance-south",
+      "anchor:transition:east",
+      "anchor:transition:north",
+      "anchor:transition:south"
+    ]
+  }],
+  "actorPlacements": [
+    { "schemaVersion": 1, "placementId": "actor:rattata:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:left", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "right", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:rattata:middle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:middle", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "up", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:rattata:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:rattata:right", "assetId": "pmd:0019-rattata:default", "animation": "Idle", "direction": "left", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:gyarados:left", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:left", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "right", "occlusionGroupIds": ["occlusion-group:water-actors"] },
+    { "schemaVersion": 1, "placementId": "actor:gyarados:right", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:gyarados:right", "assetId": "pmd:0130-gyarados:default", "animation": "Idle", "direction": "left", "occlusionGroupIds": ["occlusion-group:water-actors"] },
+    { "schemaVersion": 1, "placementId": "actor:cramorant", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cramorant", "assetId": "pmd:0845-cramorant:default", "animation": "Idle", "direction": "down" },
+    { "schemaVersion": 1, "placementId": "actor:cottonee", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:cottonee", "assetId": "pmd:0546-cottonee:default", "animation": "Idle", "direction": "down", "collision": "pass-through" },
+    { "schemaVersion": 1, "placementId": "actor:starter:bulbasaur", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "pmd:0001-bulbasaur:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:starter:charmander", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "pmd:0004-charmander:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:starter:squirtle", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "pmd:0007-squirtle:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "actor:pineco:prologue", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:pineco:1", "assetId": "pmd:0204-pineco:default", "animation": "Idle", "direction": "down", "collision": "pass-through", "initiallyHidden": true }
+  ],
+  "characterPlacements": [
+    { "schemaVersion": 1, "placementId": "character:player", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:player:entrance-south", "assetId": "character:trainer:achaman", "direction": "up", "controllable": true },
+    { "schemaVersion": 1, "placementId": "character:professor-alcanfor", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor", "assetId": "character:npc:professor-alcanfor", "direction": "down" },
+    { "schemaVersion": 1, "placementId": "character:professor-alcanfor-fallen", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:professor:fall", "assetId": "character:npc:professor-alcanfor-fallen", "direction": "down", "collision": "pass-through", "initiallyHidden": true },
+    { "schemaVersion": 1, "placementId": "character:scientist:one", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:scientific:init1", "assetId": "character:npc:scientist", "direction": "left", "collision": "pass-through" },
+    { "schemaVersion": 1, "placementId": "character:scientist:two", "roomId": "room:tegueste-forest:02-04", "anchorId": "anchor:scientific:init2", "assetId": "character:npc:scientist", "direction": "left", "collision": "pass-through" }
+  ],
+  "transitions": [],
+  "variants": [],
+  "missionIds": ["mission:tegueste:help-professor-camphor"],
+  "entryPoints": [{
+    "schemaVersion": 1,
+    "entryPointId": "entry-point:tegueste-forest:camphor-rescue",
+    "label": "Llegada para ayudar al profesor",
+    "roomId": "room:tegueste-forest:02-04",
+    "anchorId": "anchor:player:entrance-south"
+  }],
+  "missionEntryPoints": [{
+    "schemaVersion": 1,
+    "missionId": "mission:tegueste:help-professor-camphor",
+    "entryPointId": "entry-point:tegueste-forest:camphor-rescue"
+  }],
+  "freeExpeditionEntryPointId": "entry-point:tegueste-forest:camphor-rescue",
+  "behaviorTriggers": [
+    {
+      "schemaVersion": 1,
+      "triggerId": "behavior:tegueste:burrow-left:snake-intimidation",
+      "mode": "automatic",
+      "actionLabel": "Investigar los ruidos de la madriguera",
+      "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
+      "requirement": { "any": [
+        { "kind": "companionSpecies", "speciesId": 23 },
+        { "kind": "companionSpecies", "speciesId": 24 },
+        { "kind": "companionSpecies", "speciesId": 336 }
+      ] },
+      "sequenceId": "sequence:tegueste:burrow-left:snake-intimidation",
+      "proximity": {
+        "roomId": "room:tegueste-forest:02-04",
+        "target": { "kind": "placement", "placementId": "actor:rattata:left" },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-left:rattata-ambush"
+      },
+      "repeatPolicy": "persistent",
+      "rewardOriginId": "reward:tegueste:burrow-intimidation",
+      "rewardPackageId": "reward-package:companion-secret",
+      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+    },
+    {
+      "schemaVersion": 1,
+      "triggerId": "behavior:tegueste:burrow-left:rock-tomb",
+      "mode": "automatic",
+      "actionLabel": "Sellar la madriguera con Tumba Rocas",
+      "loreHint": "Las piedras sueltas podrían cerrar el paso sin dañar la madriguera.",
+      "requirement": { "kind": "fieldCapability", "capabilityId": "rock-tomb", "minimumStrength": 1 },
+      "sequenceId": "sequence:tegueste:burrow-left:rock-tomb",
+      "proximity": {
+        "roomId": "room:tegueste-forest:02-04",
+        "target": { "kind": "placement", "placementId": "actor:rattata:left" },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-left:rattata-ambush"
+      },
+      "repeatPolicy": "persistent",
+      "rewardOriginId": "reward:tegueste:burrow-intimidation",
+      "rewardPackageId": "reward-package:companion-secret",
+      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+    },
+    {
+      "schemaVersion": 1,
+      "triggerId": "behavior:tegueste:burrow-middle:snake-intimidation",
+      "mode": "automatic",
+      "actionLabel": "Investigar los ruidos de la madriguera",
+      "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
+      "requirement": { "any": [
+        { "kind": "companionSpecies", "speciesId": 23 },
+        { "kind": "companionSpecies", "speciesId": 24 },
+        { "kind": "companionSpecies", "speciesId": 336 }
+      ] },
+      "sequenceId": "sequence:tegueste:burrow-middle:snake-intimidation",
+      "proximity": {
+        "roomId": "room:tegueste-forest:02-04",
+        "target": { "kind": "placement", "placementId": "actor:rattata:middle" },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-middle:rattata-ambush"
+      },
+      "repeatPolicy": "persistent",
+      "rewardOriginId": "reward:tegueste:burrow-intimidation",
+      "rewardPackageId": "reward-package:companion-secret",
+      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+    },
+    {
+      "schemaVersion": 1,
+      "triggerId": "behavior:tegueste:burrow-right:snake-intimidation",
+      "mode": "automatic",
+      "actionLabel": "Investigar los ruidos de la madriguera",
+      "loreHint": "Tu compañero percibe algo escondido entre las raíces.",
+      "requirement": { "any": [
+        { "kind": "companionSpecies", "speciesId": 23 },
+        { "kind": "companionSpecies", "speciesId": 24 },
+        { "kind": "companionSpecies", "speciesId": 336 }
+      ] },
+      "sequenceId": "sequence:tegueste:burrow-right:snake-intimidation",
+      "proximity": {
+        "roomId": "room:tegueste-forest:02-04",
+        "target": { "kind": "placement", "placementId": "actor:rattata:right" },
+        "rangeTiles": 2,
+        "failureSequenceId": "sequence:tegueste:burrow-right:rattata-ambush"
+      },
+      "repeatPolicy": "persistent",
+      "rewardOriginId": "reward:tegueste:burrow-intimidation",
+      "rewardPackageId": "reward-package:companion-secret",
+      "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:burrow-intimidation"] }
+    }
+  ],
+  "companionSequences": [
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-left:rattata-ambush",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true }] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:left", "animation": "TailWhip" }], "pauseAfterMs": 100 },
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:attack", "actions": [
+          { "kind": "playAnimation", "actorRef": "actor:rattata:left", "animation": "Attack" },
+          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "right", "tiles": 2 }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-left:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-middle:rattata-ambush",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true }] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:middle", "animation": "TailWhip" }], "pauseAfterMs": 100 },
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:attack", "actions": [
+          { "kind": "playAnimation", "actorRef": "actor:rattata:middle", "animation": "Attack" },
+          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "up", "tiles": 2 }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-middle:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-right:rattata-ambush",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:emerge", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true }] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:warning", "actions": [{ "kind": "playAnimation", "actorRef": "actor:rattata:right", "animation": "TailWhip" }], "pauseAfterMs": 100 },
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:attack", "actions": [
+          { "kind": "playAnimation", "actorRef": "actor:rattata:right", "animation": "Attack" },
+          { "kind": "moveByTiles", "actorRef": "dynamic:player", "direction": "down", "tiles": 2 }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:burrow-right:hide", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-left:snake-intimidation",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:snake-left:approach", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
+          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:left" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-left:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-middle:snake-intimidation",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:approach", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true },
+          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:middle" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-middle:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-right:snake-intimidation",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:snake-right:approach", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true },
+          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:right" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:charge", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Charge" }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:threat", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animationByCompanionSpecies": { "23": "Eat", "24": "Shoot", "336": "Bite" } }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:retreat", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }] },
+        { "schemaVersion": 1, "beatId": "beat:snake-right:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:tegueste:burrow-left:rock-tomb",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:approach", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
+          { "kind": "moveToAnchor", "actorRef": "dynamic:companion", "anchorId": "anchor:companion:rattata:left" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:move", "actions": [{ "kind": "playAnimation", "actorRef": "dynamic:companion", "animation": "Attack" }] },
+        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:sealed", "actions": [{ "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false }] },
+        { "schemaVersion": 1, "beatId": "beat:rock-tomb-left:return", "actions": [{ "kind": "returnToTrainer", "actorRef": "dynamic:companion" }] }
+      ]
+    }
+  ],
+  "mapSequences": [
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:camphor-prologue:assault-with-choice",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:prologue:choice:rattata-emerge", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true },
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:choice:scientists-flee", "actions": [
+          { "kind": "moveToAnchor", "actorRef": "character:scientist:one", "anchorId": "anchor:scientific:scared1", "speedPixelsPerSecond": 88 },
+          { "kind": "moveToAnchor", "actorRef": "character:scientist:two", "anchorId": "anchor:scientific:scared2", "speedPixelsPerSecond": 88 }
+        ], "pauseAfterMs": 120 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:choice:professor-falls", "actions": [
+          { "kind": "setVisible", "actorRef": "character:professor-alcanfor", "visible": false },
+          { "kind": "setVisible", "actorRef": "character:professor-alcanfor-fallen", "visible": true }
+        ], "pauseAfterMs": 220 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:choice:balls-fall", "actions": [
+          { "kind": "dropPokeBalls", "actorRef": "character:professor-alcanfor-fallen", "count": 3, "spreadTiles": 2, "fallTiles": 2 }
+        ], "pauseAfterMs": 160 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:choice:request", "actions": [
+          { "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:starter-choice" }
+        ] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:camphor-prologue:assault-with-companion",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:prologue:companion:rattata-emerge", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": true },
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": true },
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": true }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:companion:scientists-flee", "actions": [
+          { "kind": "moveToAnchor", "actorRef": "character:scientist:one", "anchorId": "anchor:scientific:scared1", "speedPixelsPerSecond": 88 },
+          { "kind": "moveToAnchor", "actorRef": "character:scientist:two", "anchorId": "anchor:scientific:scared2", "speedPixelsPerSecond": 88 }
+        ], "pauseAfterMs": 120 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:companion:professor-falls", "actions": [
+          { "kind": "setVisible", "actorRef": "character:professor-alcanfor", "visible": false },
+          { "kind": "setVisible", "actorRef": "character:professor-alcanfor-fallen", "visible": true }
+        ], "pauseAfterMs": 220 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:companion:rescue-request", "actions": [
+          { "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescue" }
+        ] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:camphor-prologue:starter-bulbasaur-rescue",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:appears", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:starter:bulbasaur", "visible": true }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:attacks", "actions": [
+          { "kind": "playAnimation", "actorRef": "actor:starter:bulbasaur", "animation": "Attack" }
+        ] },
+        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:rescues", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:bulbasaur:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:camphor-prologue:starter-charmander-rescue",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:appears", "actions": [{ "kind": "setVisible", "actorRef": "actor:starter:charmander", "visible": true }], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:attacks", "actions": [{ "kind": "playAnimation", "actorRef": "actor:starter:charmander", "animation": "Attack" }] },
+        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:rescues", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:charmander:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:camphor-prologue:starter-squirtle-rescue",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:appears", "actions": [{ "kind": "setVisible", "actorRef": "actor:starter:squirtle", "visible": true }], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:attacks", "actions": [{ "kind": "playAnimation", "actorRef": "actor:starter:squirtle", "animation": "Attack" }] },
+        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:rescues", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:squirtle:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:camphor-prologue:companion-rescue",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:prologue:companion:steps-in", "actions": [{ "kind": "face", "actorRef": "dynamic:companion", "direction": "up" }], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:companion:rescues", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:rattata:left", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:middle", "visible": false },
+          { "kind": "setVisible", "actorRef": "actor:rattata:right", "visible": false }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:companion:resolved", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:rescued" }] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "sequenceId": "sequence:camphor-prologue:aftermath",
+      "roomId": "room:tegueste-forest:02-04",
+      "beats": [
+        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:professor-rises", "actions": [
+          { "kind": "setVisible", "actorRef": "character:professor-alcanfor-fallen", "visible": false },
+          { "kind": "setVisible", "actorRef": "character:professor-alcanfor", "visible": true }
+        ], "pauseAfterMs": 220 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:scientists-depart", "actions": [
+          { "kind": "moveByTiles", "actorRef": "character:scientist:one", "direction": "right", "tiles": 7, "speedPixelsPerSecond": 104 },
+          { "kind": "moveByTiles", "actorRef": "character:scientist:two", "direction": "right", "tiles": 8, "speedPixelsPerSecond": 104 }
+        ], "pauseAfterMs": 100 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:scientists-exit", "actions": [
+          { "kind": "setVisible", "actorRef": "character:scientist:one", "visible": false },
+          { "kind": "setVisible", "actorRef": "character:scientist:two", "visible": false }
+        ], "pauseAfterMs": 180 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:pineco-falls", "actions": [
+          { "kind": "setVisible", "actorRef": "actor:pineco:prologue", "visible": true }
+        ], "pauseAfterMs": 120 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:pineco-lands", "actions": [
+          { "kind": "moveByTiles", "actorRef": "actor:pineco:prologue", "direction": "down", "tiles": 4, "speedPixelsPerSecond": 112 }
+        ], "pauseAfterMs": 220 },
+        { "schemaVersion": 1, "beatId": "beat:prologue:aftermath:complete", "actions": [{ "kind": "emitCue", "actorRef": "dynamic:player", "cueId": "cue:camphor-prologue:complete" }] }
+      ]
+    }
+  ],
+  "expressionTriggers": [{
+    "schemaVersion": 1,
+    "triggerId": "expression:tegueste:compliment-cottonee",
+    "roomId": "room:tegueste-forest:02-04",
+    "target": { "kind": "placement", "placementId": "actor:cottonee" },
+    "prompt": "Hablarle a Cottonee",
+    "rangeTiles": 1,
+    "activationRequirement": { "kind": "trainerLevel", "minimum": 1 },
+    "inputMethods": ["voice", "text", "contextAction"],
+    "matchAny": [{
+      "kind": "phrase",
+      "phrases": ["qué suave eres", "eres muy suave"],
+      "aliases": ["algodoncito bonito"]
+    }, {
+      "kind": "intent",
+      "intent": "compliment",
+      "examples": ["eres precioso", "qué bonito eres", "eres adorable"]
+    }],
+    "knownHintIds": [],
+    "successSequenceId": "sequence:tegueste:cottonee-happy",
+    "fallbackActionId": "action:tegueste:smile-at-cottonee",
+    "fallbackLabel": "Sonreír y saludar",
+    "successText": "Cottonee gira feliz: parece que le ha gustado.",
+    "retryText": "Cottonee ladea la cabeza. Quizá esperaba algo más amable.",
+    "rewardOriginId": "reward:tegueste:compliment-cottonee",
+    "rewardPackageId": "reward-package:map-secret",
+    "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:compliment-cottonee"] }
+  }, {
+    "schemaVersion": 1,
+    "triggerId": "expression:tegueste:scare-cramorant",
+    "roomId": "room:tegueste-forest:02-04",
+    "target": { "kind": "placement", "placementId": "actor:cramorant" },
+    "prompt": "Espantar a Cramorant",
+    "rangeTiles": 1,
+    "activationRequirement": { "kind": "trainerLevel", "minimum": 1 },
+    "inputMethods": ["voice", "contextAction"],
+    "matchAny": [{
+      "kind": "acoustic",
+      "feature": "loudness",
+      "minimumLevel": 0.62,
+      "minimumDurationMs": 500
+    }],
+    "knownHintIds": ["hint:tegueste:cramorant-startle"],
+    "successSequenceId": "sequence:tegueste:cramorant-startled",
+    "fallbackActionId": "action:tegueste:wave-arms-at-cramorant",
+    "fallbackLabel": "Agitar los brazos",
+    "successText": "Cramorant da un respingo y se aparta, muy ofendido.",
+    "retryText": "Cramorant ni se inmuta. Tendrás que hacerlo con más decisión.",
+    "rewardOriginId": "reward:tegueste:scare-cramorant",
+    "rewardPackageId": "reward-package:map-secret",
+    "completionEffects": { "unlockSecretIds": ["secret:tegueste-forest:scare-cramorant"] }
+  }],
+  "interactions": [{
+    "schemaVersion": 1,
+    "interactionId": "interaction:tegueste:talk-professor-camphor",
+    "roomId": "room:tegueste-forest:02-04",
+    "target": { "kind": "placement", "placementId": "character:professor-alcanfor" },
+    "prompt": "Hablar con Alcanfor",
+    "dialogueId": "dialogue:tegueste:professor-warning",
+    "meaningfulKind": "npcConversation",
+    "repeatPolicy": "repeatable",
+    "completionEffects": {
+      "npcId": "npc:tegueste:professor-alcanfor",
+      "conversationId": "conversation:tegueste:professor-warning",
+      "hintIds": [
+        "hint:tegueste:rattata-follow-food",
+        "hint:tegueste:cramorant-startle"
+      ]
+    }
+  }],
+  "dialogues": [{
+    "schemaVersion": 1,
+    "dialogueId": "dialogue:tegueste:professor-warning",
+    "initialPageId": "dialogue-page:tegueste:professor-warning:1",
+    "pages": [{
+      "schemaVersion": 1,
+      "pageId": "dialogue-page:tegueste:professor-warning:1",
+      "speakerName": "Profesor Alcanfor",
+      "text": "¡Menos mal que has venido! Esos Rattata llevan un rato siguiendo mi mochila.",
+      "nextPageId": "dialogue-page:tegueste:professor-warning:2"
+    }, {
+      "schemaVersion": 1,
+      "pageId": "dialogue-page:tegueste:professor-warning:2",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Acércate a ellos y pulsa Espacio o E para ahuyentarlos. Tu compañero también podrá ayudarte.",
+      "nextPageId": "dialogue-page:tegueste:professor-warning:3"
+    }, {
+      "schemaVersion": 1,
+      "pageId": "dialogue-page:tegueste:professor-warning:3",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Cramorant se queda embobado junto al agua. Si necesitas que se aparte, un ruido decidido o un gesto amplio debería sobresaltarlo."
+    }]
+  }],
+  "fieldNotebookHints": [{
+    "schemaVersion": 1,
+    "hintId": "hint:tegueste:rattata-follow-food",
+    "mapId": "map:tegueste:camphor-forest",
+    "title": "Tras la mochila de Alcanfor",
+    "text": "Los Rattata siguen el olor de la comida. Un compañero atento puede hacerles frente sin dañarlos.",
+    "sourceNpcId": "npc:tegueste:professor-alcanfor"
+  }, {
+    "schemaVersion": 1,
+    "hintId": "hint:tegueste:cramorant-startle",
+    "mapId": "map:tegueste:camphor-forest",
+    "title": "La distracción de Cramorant",
+    "text": "Un ruido decidido o un gesto amplio puede sacar a Cramorant de su ensimismamiento.",
+    "sourceNpcId": "npc:tegueste:professor-alcanfor",
+    "relatedTriggerId": "expression:tegueste:scare-cramorant"
+  }],
+  "ambientSequences": [{
+    "schemaVersion": 1,
+    "sequenceId": "ambient:tegueste:gyarados-duel",
+    "roomId": "room:tegueste-forest:02-04",
+    "loop": true,
+    "blockedPolicy": "pauseSequence",
+    "loopPauseMs": { "min": 700, "max": 1400 },
+    "beats": [
+      { "schemaVersion": 1, "beatId": "beat:gyarados:challenge", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "RearUp", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Rumble", "direction": "left" }
+      ], "pauseAfterMs": { "min": 250, "max": 500 } },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:first-strike", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Attack", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Strike", "direction": "left" }
+      ], "pauseAfterMs": 180 },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:advance", "actions": [
+        { "kind": "movePath", "placementId": "actor:gyarados:left", "pathId": "path:gyarados:left-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Charge" },
+        { "kind": "movePath", "placementId": "actor:gyarados:right", "pathId": "path:gyarados:right-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Charge" }
+      ], "pauseAfterMs": { "min": 160, "max": 320 } },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:answer", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Rumble", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "RearUp", "direction": "left" }
+      ], "pauseAfterMs": 220 },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:retreat", "actions": [
+        { "kind": "movePath", "placementId": "actor:gyarados:left", "pathId": "path:gyarados:left-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Walk", "reverse": true },
+        { "kind": "movePath", "placementId": "actor:gyarados:right", "pathId": "path:gyarados:right-lunge", "movementStyle": "continuous", "speedPixelsPerSecond": 32, "animation": "Walk", "reverse": true }
+      ] },
+      { "schemaVersion": 1, "beatId": "beat:gyarados:counter", "actions": [
+        { "kind": "playAnimation", "placementId": "actor:gyarados:left", "animation": "Strike", "direction": "right" },
+        { "kind": "playAnimation", "placementId": "actor:gyarados:right", "animation": "Attack", "direction": "left" }
+      ], "pauseAfterMs": { "min": 350, "max": 700 } }
+    ]
+  }],
+  "rareEncounters": [],
+  "requiredAssetIds": [
+    "pmd:0019-rattata:default",
+    "pmd:0130-gyarados:default",
+    "pmd:0546-cottonee:default",
+    "pmd:0845-cramorant:default",
+    "pmd:0204-pineco:default",
+    "pmd:0001-bulbasaur:default",
+    "pmd:0004-charmander:default",
+    "pmd:0007-squirtle:default",
+    "pmd:0023-ekans:default",
+    "pmd:0024-arbok:default",
+    "pmd:0025-pikachu:default",
+    "pmd:0336-seviper:default",
+    "character:trainer:achaman",
+    "character:npc:professor-alcanfor",
+    "character:npc:professor-alcanfor-fallen",
+    "character:npc:scientist"
+  ]
+}

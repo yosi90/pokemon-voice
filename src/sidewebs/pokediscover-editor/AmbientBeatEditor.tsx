@@ -368,17 +368,6 @@ export function AmbientBeatEditor({
           {beat && action ? (
             <div className="editor-beats__form">
               <details><summary>Detalles avanzados</summary><code>{sequence.sequenceId} · {beat.beatId}</code></details>
-              <fieldset className="editor-beats__pause">
-                <legend>Final de la secuencia</legend>
-                <label><span>Comportamiento</span><select value={sequence.playbackMode ?? (sequence.loop ? 'loop' : 'once')} onChange={event => {
-                  const playbackMode = event.target.value as 'loop' | 'pingPong' | 'once';
-                  commitSequence({ ...sequence, playbackMode, loop: playbackMode !== 'once' });
-                }}>
-                  <option value="loop">Reiniciar desde el principio</option>
-                  <option value="pingPong">Volver sobre sí misma</option>
-                  <option value="once">Terminar y conservar posición</option>
-                </select></label>
-              </fieldset>
               <div className="editor-beats__actions">
                 <label>
                   <span>Acción del paso</span>
@@ -403,7 +392,7 @@ export function AmbientBeatEditor({
                 </select></label>
 
                 {action.kind === 'playAnimation' ? <>
-                  <label><span>Animación</span><select value={action.animation} onChange={event => commitAction({ ...action, animation: event.target.value })}>
+                  <label><span>Animación</span><select aria-label="Animación de la acción" value={action.animation} onChange={event => commitAction({ ...action, animation: event.target.value })}>
                     {animations.map(animation => <option key={animation.name}>{animation.name}</option>)}
                   </select></label>
                   <label><span>Dirección</span><select value={action.direction ?? ''} onChange={event => commitAction({ ...action, direction: event.target.value ? event.target.value as typeof DIRECTIONS[number] : undefined })}>
@@ -425,7 +414,7 @@ export function AmbientBeatEditor({
                     <option value="continuous">Continuo</option><option value="grid">Cuadrícula</option>
                   </select></label>
                   <label><span>Velocidad (px/s)</span><input type="number" min="1" value={action.speedPixelsPerSecond} onChange={event => commitAction({ ...action, speedPixelsPerSecond: Math.max(1, Number(event.target.value) || 1) })} /></label>
-                  <label><span>Animación</span><select value={action.animation ?? ''} onChange={event => commitAction({ ...action, animation: event.target.value || undefined })}>
+                  <label><span>Animación</span><select aria-label="Animación de movimiento" value={action.animation ?? ''} onChange={event => commitAction({ ...action, animation: event.target.value || undefined })}>
                     <option value="">Sin animación</option>{animations.map(animation => <option key={animation.name}>{animation.name}</option>)}
                   </select></label>
                   <label className="editor-beats__check"><input type="checkbox" checked={action.reverse ?? false} onChange={event => commitAction({ ...action, reverse: event.target.checked || undefined })} /><span>Recorrer al revés</span></label>
@@ -436,7 +425,7 @@ export function AmbientBeatEditor({
                   <label><span>Vertical (tiles)</span><input type="number" step="1" value={action.deltaYTiles} onChange={event => commitAction({ ...action, deltaYTiles: Math.trunc(Number(event.target.value) || 0) })} /></label>
                   <label><span>Movimiento</span><select value={action.movementStyle} onChange={event => commitAction({ ...action, movementStyle: event.target.value as 'grid' | 'continuous' })}><option value="continuous">Continuo</option><option value="grid">Cuadrícula</option></select></label>
                   <label><span>Velocidad (px/s)</span><input type="number" min="1" value={action.speedPixelsPerSecond} onChange={event => commitAction({ ...action, speedPixelsPerSecond: Math.max(1, Number(event.target.value) || 1) })} /></label>
-                  <label><span>Animación</span><select value={action.animation ?? ''} onChange={event => commitAction({ ...action, animation: event.target.value || undefined })}><option value="">Sin animación</option>{animations.map(animation => <option key={animation.name}>{animation.name}</option>)}</select></label>
+                  <label><span>Animación</span><select aria-label="Animación de movimiento" value={action.animation ?? ''} onChange={event => commitAction({ ...action, animation: event.target.value || undefined })}><option value="">Sin animación</option>{animations.map(animation => <option key={animation.name}>{animation.name}</option>)}</select></label>
                 </> : null}
               </div>
 
@@ -449,6 +438,17 @@ export function AmbientBeatEditor({
                   <label><span>Mínimo (ms)</span><input type="number" min="0" value={beat.pauseAfterMs.min} onChange={event => commitBeat({ ...beat, pauseAfterMs: { ...beat.pauseAfterMs as { min: number; max: number }, min: Math.max(0, Number(event.target.value) || 0) } })} /></label>
                   <label><span>Máximo (ms)</span><input type="number" min="0" value={beat.pauseAfterMs.max} onChange={event => commitBeat({ ...beat, pauseAfterMs: { ...beat.pauseAfterMs as { min: number; max: number }, max: Math.max(0, Number(event.target.value) || 0) } })} /></label>
                 </> : <label><span>Duración (ms)</span><input type="number" min="0" value={beat.pauseAfterMs ?? 0} onChange={event => commitBeat({ ...beat, pauseAfterMs: Math.max(0, Number(event.target.value) || 0) })} /></label>}
+              </fieldset>
+              <fieldset className="editor-beats__pause">
+                <legend>Final de la secuencia</legend>
+                <label><span>Comportamiento</span><select value={sequence.playbackMode ?? (sequence.loop ? 'loop' : 'once')} onChange={event => {
+                  const playbackMode = event.target.value as 'loop' | 'pingPong' | 'once';
+                  commitSequence({ ...sequence, playbackMode, loop: playbackMode !== 'once' });
+                }}>
+                  <option value="loop">Reiniciar desde el principio</option>
+                  <option value="pingPong">Volver sobre sí misma</option>
+                  <option value="once">Terminar y conservar posición</option>
+                </select></label>
               </fieldset>
             </div>
           ) : null}

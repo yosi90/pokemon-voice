@@ -30,6 +30,7 @@ export interface PokeDiscoverRandomCandidate {
 }
 
 export interface PokeDiscoverRandomFilters {
+  query: string;
   primaryType: PokemonTypeId | 'all';
   secondaryType: PokemonTypeId | 'all' | 'none';
   generation: number | 'all';
@@ -37,6 +38,7 @@ export interface PokeDiscoverRandomFilters {
 }
 
 export const DEFAULT_POKEDISCOVER_RANDOM_FILTERS: Readonly<PokeDiscoverRandomFilters> = Object.freeze({
+  query: '',
   primaryType: 'all',
   secondaryType: 'all',
   generation: 'all',
@@ -79,7 +81,15 @@ export function filterPokeDiscoverCandidates(
   filters: PokeDiscoverRandomFilters,
   candidates: readonly PokeDiscoverRandomCandidate[] = POKEDISCOVER_RANDOM_CANDIDATES,
 ) {
+  const query = filters.query.trim().toLocaleLowerCase('es');
   return candidates.filter(candidate => {
+    if (query && ![
+      candidate.displayName,
+      candidate.speciesName,
+      candidate.assetId,
+      String(candidate.speciesId),
+      `#${String(candidate.speciesId).padStart(4, '0')}`,
+    ].some(value => value.toLocaleLowerCase('es').includes(query))) return false;
     if (filters.primaryType !== 'all' && candidate.primaryType !== filters.primaryType) return false;
     if (filters.secondaryType === 'none' && candidate.secondaryType !== null) return false;
     if (filters.secondaryType !== 'all' && filters.secondaryType !== 'none'
