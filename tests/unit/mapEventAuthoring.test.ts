@@ -249,4 +249,40 @@ describe('comentarios editoriales y eventos de mapa', () => {
     const elsewhere = enterMapEventSector(completed, 'map:test', 'sector:test:02');
     expect(isMapEventTriggerCompleted(elsewhere, 'map:test', trigger)).toBe(false);
   });
+
+  it('aplica recompensas y secretos de un evento una sola vez', () => {
+    const initial = createPokeVoiceSaveV1({ runId: 'run:test', now: 1 });
+    const started = beginExpedition({
+      ...initial,
+      pokedexRun: {
+        ...initial.pokedexRun,
+        selectedCompanion: { schemaVersion: 1, formId: 'pokemon-form:25:default' },
+      },
+    }, {
+      mapId: 'map:test',
+      enteredAt: '2026-07-28T10:00:00.000Z',
+    });
+    const trigger: MapEventTriggerV3 = {
+      schemaVersion: 1,
+      triggerId: 'trigger:map:reward',
+      sectorId: 'sector:test:01',
+      activation: { kind: 'interval', intervalMs: 1_000 },
+      requirement: { kind: 'trainerLevel', minimum: 1 },
+      sequenceId: 'sequence:map-event:01',
+      resultingActorStates: [],
+      rewardOriginId: 'reward:map:test',
+      rewards: [{ kind: 'discoveryPoints', amount: 10 }],
+      completionEffects: { unlockSecretIds: ['secret:test'] },
+    };
+    const completed = completeMapEventTrigger(started, 'map:test', trigger, {
+      completedAt: '2026-07-28T10:01:00.000Z',
+    }).save;
+
+    expect(completed.pokeDiscover.discoveryPoints).toBe(10);
+    expect(completed.pokeDiscover.mapProgress['map:test'].unlockedSecretIds)
+      .toContain('secret:test');
+    expect(completeMapEventTrigger(completed, 'map:test', trigger, {
+      completedAt: '2026-07-28T10:02:00.000Z',
+    }).save).toBe(completed);
+  });
 });

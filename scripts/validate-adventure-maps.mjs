@@ -8,6 +8,7 @@ const publicRoot = join(root, 'public');
 const mapsRoot = join(publicRoot, 'assets', 'adventure', 'maps');
 const manifestPath = join(publicRoot, 'assets', 'sprites', 'pokemon', 'pmd', 'manifest.v1.json');
 const characterManifestPath = join(publicRoot, 'assets', 'sprites', 'characters', 'manifest.v1.json');
+const mediaManifestPath = join(publicRoot, 'assets', 'adventure', 'media', 'manifest.v1.json');
 
 function json(path) {
   try {
@@ -44,6 +45,7 @@ if (!existsSync(manifestPath)) throw new Error('Falta el manifiesto PMD. Ejecuta
 const pmdManifest = json(manifestPath);
 if (!existsSync(characterManifestPath)) throw new Error('Falta el manifiesto de personajes.');
 const characterManifest = json(characterManifestPath);
+const mediaManifest = json(mediaManifestPath);
 const errors = [];
 for (const asset of pmdManifest.assets ?? []) {
   for (const animation of asset.animations ?? []) {
@@ -96,6 +98,8 @@ if (!sidecarPaths.length) throw new Error('No se encontraron sidecars .adventure
 
 for (const sidecarPath of sidecarPaths) {
   const adventure = json(sidecarPath);
+  const missionPath = sidecarPath.replace(/\.adventure\.json$/iu, '.missions.json');
+  const missionDocument = existsSync(missionPath) ? json(missionPath) : undefined;
   const tiledMaps = {};
   for (const asset of adventure.tiledMapAssets ?? []) {
     const tmjPath = join(publicRoot, ...String(asset.path).split('/'));
@@ -119,7 +123,14 @@ for (const sidecarPath of sidecarPaths) {
       }
     }
   }
-  errors.push(...validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest, characterManifest }));
+  errors.push(...validateTiledAdventureBundle({
+    adventure,
+    tiledMaps,
+    pmdManifest,
+    characterManifest,
+    mediaManifest,
+    missionDocument,
+  }));
 }
 
 if (errors.length) {

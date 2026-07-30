@@ -128,7 +128,12 @@ describe('validador cruzado Tiled + aventura + PMD', () => {
       placement => placement.placementId === 'placement:pokemon:cottonee:default:01',
     ))
       .toMatchObject({ collision: 'pass-through' });
-    expect(characterManifest.assets.map(asset => asset.renderScale)).toEqual([1, 1, 1, 1, 1]);
+    expect(characterManifest.assets.every(asset => asset.renderScale === 1)).toBe(true);
+    expect(characterManifest.assets).toEqual(expect.arrayContaining([
+      expect.objectContaining({ assetId: 'character:trainer:achaman:swim', role: 'player' }),
+      expect.objectContaining({ assetId: 'character:trainer:guayota:swim', role: 'player' }),
+      expect.objectContaining({ assetId: 'character:mount:lapras-surf', role: 'mount' }),
+    ]));
   });
 
   it('rechaza interacciones con objetivos o páginas de diálogo rotas', () => {

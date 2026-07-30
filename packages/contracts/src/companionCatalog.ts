@@ -8,7 +8,10 @@ import type {
   PokemonTypeId,
   EvolutionStage,
 } from './catalog.js';
-import type { CompanionRequirementVisibility } from './adventure.js';
+import type {
+  CompanionRequirementVisibility,
+  CompanionWaterTraversalV1,
+} from './adventure.js';
 import type { RequirementExpressionV1 } from './requirements.js';
 import type { CompanionResearchFactV1 } from './research.js';
 
@@ -41,6 +44,7 @@ export interface CompanionAppearanceProfileV1 extends VersionedContractV1 {
   narrativeTags: string[];
   additionalFieldCapabilities: FieldCapabilityV1[];
   companionOverride?: Partial<CompanionGameplayProfileV1>;
+  waterTraversal?: CompanionWaterTraversalV1;
 }
 
 export interface CompanionFormProfileV1 extends VersionedContractV1 {
@@ -57,6 +61,8 @@ export interface CompanionFormProfileV1 extends VersionedContractV1 {
   narrativeTags: string[];
   fieldCapabilities: FieldCapabilityV1[];
   companion: CompanionGameplayProfileV1;
+  /** Las entradas antiguas se normalizan como `recall`. */
+  waterTraversal?: CompanionWaterTraversalV1;
   appearances: CompanionAppearanceProfileV1[];
 }
 

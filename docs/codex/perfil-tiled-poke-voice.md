@@ -18,6 +18,9 @@ Los nombres distinguen mayúsculas y deben aparecer una sola vez:
 2. `Collision`: object layer invisible con rectángulos o polígonos de clase `Collision`.
 3. `Above`: tile layer para copas, hierba, arcos y elementos que pueden ocultar actores.
 4. `Anchors`: object layer visible durante la edición y ocultable al exportar.
+5. `Terrain`: object layer funcional con rectángulos `TerrainArea`. Debe cubrir
+   toda la cuadrícula sin huecos ni solapamientos.
+6. `Locations`: object layer funcional con `LocationPoint` y `LocationArea`.
 
 Se pueden añadir capas visuales auxiliares con el prefijo `Detail:`. No se usarán para lógica ni colisión.
 
@@ -52,6 +55,19 @@ Clases admitidas en capas opcionales:
 - `TriggerZone`: área usada por un evento de entrada, acción contextual o proximidad. No es un ancla.
 - `EditorComment`: anotación libre con propiedad `text`; puede conservar ID, nombre y clase de un objeto retirado como metadatos editoriales.
 
+Clases funcionales de terreno y lugares:
+
+- `TerrainArea`: rectángulo alineado a la cuadrícula con `surfaceType` igual a
+  `ground`, `water`, `void`, `fall`, `ice` o `slow`. `slow` añade
+  `slowMultiplier >= 1`.
+- `LocationPoint` y `LocationArea`: punto o rectángulo con `locationId`,
+  `label`, `kind` (`area`, `entrance`, `rest` o `recovery`), `tags`
+  normalizadas y `transitionId` opcional.
+
+`TerrainArea` no usa GID y no sustituye al dibujo de `Ground`. Un TMJ antiguo
+sin `Terrain` se interpreta temporalmente como tierra, pero el configurador debe
+ofrecer una migración explícita y deshacible antes de autorizar contenido nuevo.
+
 Los IDs técnicos son obligatorios, de solo lectura, minúsculos, segmentados con `:` y con ordinales `01`, `02`, etc. El nombre del ancla coincide con el ID sidecar que la utiliza: `placementId`, `entryPointId`, `interactionId`, `transitionId:<from|to>` o el ID derivado de una acción de secuencia. Las colisiones usan `collision:<ordinal>`.
 
 Todos los objetos deben tener un nombre único dentro del sector. Las coordenadas pertenecen exclusivamente a Tiled; el sidecar solo conserva el identificador estable.
@@ -82,6 +98,19 @@ El archivo `<mapa>.adventure.json` contiene `AdventureMapV3` y:
 - Declara `occlusionGroupIds` en las colocaciones que deban aceptar máscaras parciales.
 - Declara `ambientSequences` como beats ordenados. Dentro de un beat cada actor admite una sola acción y todos esperan a que terminen las demás antes de avanzar.
 - Declara `mapEventTriggers` y `mapSequences` para eventos espaciales. Las políticas `oncePerSectorVisit`, `oncePerVisit`, `repeatable` y `persistent` determinan dónde se conserva su finalización; `resultingActorStates` reconstruye posición, animación, dirección y visibilidad.
+- Las activaciones de mapa admiten zona, proximidad, acción contextual,
+  intervalo, cruce de ruta, contacto con actor y entrada en superficie. Los
+  proyectiles, cargas, audio, empujones, apariencias, lugares, narrativas y
+  consecuencias se declaran como acciones de `mapSequences`.
+- Efectos y audio deben existir en
+  `public/assets/adventure/media/manifest.v1.json`. Las apariencias de
+  protagonista agrupan `walk` y `swim` en el manifiesto global de personajes.
+- Las monturas acuáticas usan también el manifiesto de personajes, con
+  `role: mount`, cuatro filas direccionales y pivote inferior. La política
+  acuática del compañero las referencia mediante `mountAssetId`.
+- La identidad del protagonista procede del perfil. `PlayerSpawn` sólo decide
+  posición y orientación; una colocación `controllable` es compatibilidad
+  legada y no debe repetirse en cada sector.
 - Declara `interactions` apuntando a un `placementId` o a un `InteractionAnchor`, y conserva las páginas reutilizables en `dialogues`. Los textos y prompts no se escriben en Phaser ni en el `.tmj`.
 - Una interacción con `meaningfulKind: secret` puede apuntar a un `SecretAnchor`; los demás objetivos espaciales sin actor continúan usando `InteractionAnchor`.
 - Los hechos de investigación obtenibles en el mapa viven en `researchFacts` del sidecar, apuntan a un `interactionId` del mismo mapa y usan su `factId` como origen idempotente de recompensa.
@@ -93,12 +122,14 @@ Un cambio de coordenadas en Tiled no obliga a editar el sidecar mientras el nomb
 1. Copiar la carpeta de plantilla técnica y renombrar `.tmj`, `.tsj` y `.adventure.json` con un slug en minúsculas y guiones.
 2. Abrir el `.tmj` en Tiled y sustituir el tileset técnico por el tileset definitivo.
 3. Dibujar `Ground`, colisiones y `Above` manteniendo sus nombres. Los tiles de `Above` deben proceder de PNG transparentes: nunca deben incluir el cuadrado de suelo del tileset original.
-4. Declarar el reparto del sector en el configurador.
-5. Crear construcciones funcionales mediante el wizard; no crear ni nombrar anclas manualmente.
-6. Crear `ActorOccluder`, `AmbientPath` y destinos únicamente desde la colocación o acción sidecar que los utilizará.
-7. Registrar sectores, actores, transiciones y secuencias en el sidecar.
-8. Ejecutar `npm run assets:pmd:manifest` después de añadir sprites PMD.
-9. Ejecutar `npm run maps:validate` antes de probar el mapa en el juego.
+4. Pintar la cobertura funcional de `Terrain` en el configurador y declarar los
+   lugares reutilizables de `Locations`.
+5. Declarar el reparto del sector en el configurador.
+6. Crear construcciones funcionales mediante el wizard; no crear ni nombrar anclas manualmente.
+7. Crear `ActorOccluder`, `AmbientPath` y destinos únicamente desde la colocación o acción sidecar que los utilizará.
+8. Registrar sectores, actores, transiciones y secuencias en el sidecar.
+9. Ejecutar `npm run assets:pmd:manifest` después de añadir sprites PMD.
+10. Ejecutar `npm run maps:validate` antes de probar el mapa en el juego.
 
 La plantilla técnica vive en `public/assets/adventure/maps/_technical/`. No es arte definitivo y puede reemplazarse sin migrar progreso.
 

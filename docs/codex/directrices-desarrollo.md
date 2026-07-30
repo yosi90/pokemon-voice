@@ -114,6 +114,54 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - Deben reutilizar los catálogos y contratos locales del juego; no mantener copias paralelas ni depender de PokeAPI durante la ejecución para decidir resultados.
 - No deben añadir navegación ni peso al bundle inicial de Poke-Voice salvo que exista una necesidad explícita dentro del juego.
 - El configurador PokeDiscover es la herramienta principal de autoría salvo para pintar tiles. Abre una carpeta de aventura, detecta o crea su `.adventure.json`, registra todos los `.tmj` y permite editar tanto los sectores ya declarados como los recién descubiertos.
+- El configurador abre la raíz de `pokemon voice` y descubre las aventuras bajo
+  `public/assets/adventure/maps`. Misiones, medios y personajes son catálogos
+  globales; cambiar de aventura con cambios pendientes siempre exige confirmar.
+- Cada aventura conserva sus misiones en `<mapa>.missions.json`. Las
+  conversaciones visuales son recursos globales independientes bajo
+  `public/assets/adventure/narratives`, se descubren mediante su manifiesto y
+  conservan IDs estables aunque se reutilicen desde varios mapas. El contenido
+  TypeScript y las secuencias inline V1 son sólo fallbacks de transición.
+- La sideweb `/tools/visual-novel-editor/` es la autora exclusiva de
+  conversaciones visuales. El configurador de mapas y misiones únicamente las
+  referencia y combina con expediciones, requisitos y terminales mediante un
+  flujo de bloques tipados.
+- Una conversación avanza por cues de diálogo. El estado de escenario persiste
+  entre cues y sólo cambia mediante acciones declarativas de fondo, actor, pose,
+  movimiento o audio. No se admiten scripts ni keyframes arbitrarios.
+- Una misión tiene un mapa propietario, pero sus bloques de expedición pueden
+  abrir otros mapas. Los eventos jugables se comunican con el flujo mediante
+  resultados estables; nunca importan ni conocen la conversación siguiente.
+- El runtime descubre mapas mediante
+  `public/assets/adventure/maps/manifest.v1.json`. Toda expedición cruzada
+  conserva la sesión de misión, actualiza su mapa activo y puede resolver un
+  sector y un `LocationPoint` de entrada sin rutas TypeScript específicas.
+- Las acciones narrativas persistentes llevan un `actionId` estable y se
+  registran en el checkpoint antes de poder repetirse. Los tokens editoriales
+  usan `item:<id>`, `counter:<id>` y `flag:<id>` además del perfil y compañero.
+- Las sidewebs permanecen ocultas desde Poke-Voice, pero comparten un conmutador
+  interno entre configurador, editor de novela visual y randomizador. Abandonar
+  un editor con cambios pendientes reutiliza la confirmación de guardado.
+- `Terrain` y `Locations` son object layers funcionales propiedad del
+  configurador. `Ground` continúa siendo puramente visual. Nunca se deduce agua,
+  suelo o locomoción desde un GID, un tileset, una especie o un tipo Pokémon.
+- Los actores declaran `terrainRules.allowedSurfaceTypes`; el valor heredado es
+  exclusivamente `ground`. El protagonista necesita `surf` y un asset `swim`
+  de su apariencia para entrar en `water`.
+- Una capacidad Surf aportada por compañero debe declararse en
+  `fieldCapabilities`; nunca se infiere por el tipo Agua. Si el compañero sirve
+  de montura, `waterTraversal.kind` es `swim` y `mountAssetId` referencia un
+  personaje global con `role: mount`. El runtime oculta temporalmente al
+  seguidor, coloca la montura bajo el protagonista y restaura al compañero al
+  volver a tierra.
+- Los eventos activos usan temporizadores declarativos y acciones tipadas. No
+  se admiten bucles arbitrarios en guiones: repetición, cooldown y vida útil
+  pertenecen a sus contratos.
+- Todo peligro comparte `HazardConsequenceV1`: `recover`, `resetSector` o
+  `failMission`, combinado con `preserveGains` o `restoreSnapshot`. Perfil y
+  preferencias nunca forman parte del rollback.
+- La preview del configurador puede simular Surf, impacto, reinicio y fracaso,
+  pero no importa el store del juego ni escribe `localStorage`.
 - Tiled conserva la autoría exclusiva de `Ground`, `Above`, `Detail:*` y los tilesets. El configurador puede crear y editar `Anchors`, `Collision`, `Paths` y `Occlusion`, manteniendo `nextlayerid`, `nextobjectid` y todos los campos desconocidos del TMJ.
 - La distribución global vive en un archivo `.world` nativo de Tiled. Tiled y el configurador pueden reorganizarlo; el README solo documenta intención y avance.
 - Un `.world` puede reservar un sector cuyo TMJ todavía no exista. El configurador debe mostrarlo como sector pendiente y contarlo al calcular la nomenclatura, los límites y el centrado del mundo.

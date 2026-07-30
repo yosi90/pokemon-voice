@@ -1,6 +1,7 @@
 import type {
   AdventureMapDocument,
   AdventureMapV3,
+  AdventureMissionDocumentV1,
 } from '../../../packages/contracts/src/index.js';
 import { normalizeAdventureMapV3 } from '../expeditions/adventureMapV3.js';
 import type { LoadedTiledMap } from '../maps/loadAdventureBundle.js';
@@ -42,6 +43,10 @@ export interface PokeDiscoverDirectoryHandle {
     name: string,
     options?: { create?: boolean },
   ): Promise<PokeDiscoverWritableFileHandle>;
+  getDirectoryHandle?(
+    name: string,
+    options?: { create?: boolean },
+  ): Promise<PokeDiscoverDirectoryHandle>;
   removeEntry?(name: string): Promise<void>;
 }
 
@@ -52,6 +57,7 @@ export interface PokeDiscoverWorkspaceSourceFile {
 
 export interface PokeDiscoverWorkspaceSnapshot {
   adventure: AdventureMapV3;
+  missionDocument?: AdventureMissionDocumentV1;
   tilemapsByFileName: Record<string, PokeDiscoverEditableTiledMap>;
   world: PokeDiscoverWorldFile;
   registrations: PokeDiscoverRoomRegistration[];
@@ -61,6 +67,7 @@ export interface PokeDiscoverWorkspaceSnapshot {
 export interface PokeDiscoverWorkspace {
   projectName: string;
   sidecarFileName: string;
+  missionFileName: string;
   worldFileName: string;
   /** @deprecated Use history.present.registrations so undo/redo remains atomic. */
   registrations: PokeDiscoverRoomRegistration[];
@@ -89,6 +96,7 @@ export interface PokeDiscoverProjectMetadata {
 
 export interface PokeDiscoverWorkspaceInspection {
   sidecars: PokeDiscoverWorkspaceSourceFile[];
+  missionDocuments: PokeDiscoverWorkspaceSourceFile[];
   tiledMaps: PokeDiscoverWorkspaceSourceFile[];
   worlds: PokeDiscoverWorkspaceSourceFile[];
   archivedTiledMaps: PokeDiscoverWorkspaceSourceFile[];
@@ -156,10 +164,17 @@ function sidecarDirectory(adventure: AdventureMapV3) {
 function snapshotDocuments(
   snapshot: PokeDiscoverWorkspaceSnapshot,
   sidecarFileName: string,
+  missionFileName: string,
   worldFileName: string,
 ) {
   const documents: Record<string, string> = {
     [sidecarFileName]: serializePokeDiscoverProjectJson(snapshot.adventure),
+    [missionFileName]: serializePokeDiscoverProjectJson(snapshot.missionDocument ?? {
+      schemaVersion: 1,
+      mapId: snapshot.adventure.mapId,
+      missions: [],
+      narrativeSequences: [],
+    }),
     [worldFileName]: serializePokeDiscoverProjectJson(snapshot.world),
   };
   for (const [fileName, tilemap] of Object.entries(snapshot.tilemapsByFileName)) {
@@ -184,6 +199,7 @@ export function inspectPokeDiscoverWorkspaceFiles(
   uniqueFiles(files);
   return {
     sidecars: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.adventure.json')),
+    missionDocuments: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.missions.json')),
     tiledMaps: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.tmj')),
     worlds: files.filter(source => source.file.name.toLocaleLowerCase().endsWith('.world')),
     archivedTiledMaps: files.filter(source => /\.tmj(?:\.\d+)?\.old$/iu.test(source.file.name)),
@@ -284,6 +300,9 @@ export async function openPokeDiscoverWorkspace({
   if (inspection.sidecars.length > 1) {
     throw new Error('La carpeta contiene varios proyectos .adventure.json. Conserva sólo uno antes de abrirla.');
   }
+  if (inspection.missionDocuments.length > 1) {
+    throw new Error('La carpeta contiene varios documentos .missions.json.');
+  }
   if (!inspection.tiledMaps.length) {
     throw new Error('La carpeta no contiene ningún mapa .tmj.');
   }
@@ -297,6 +316,7 @@ export async function openPokeDiscoverWorkspace({
   const handlesByFileName: Record<string, PokeDiscoverWritableFileHandle | undefined> = {};
   const documentSources = [
     ...inspection.sidecars,
+    ...inspection.missionDocuments,
     ...inspection.tiledMaps,
     ...inspection.archivedTiledMaps,
     ...inspection.worlds,
@@ -320,6 +340,22 @@ export async function openPokeDiscoverWorkspace({
   const effectiveName = projectName || directoryHandle?.name || metadata?.title || adventure.title;
   const slug = slugifyEditorLabel(adventure.mapId.split(':').at(-1) || effectiveName);
   const sidecarFileName = existingSidecar?.file.name ?? `${slug}.adventure.json`;
+  const existingMissions = inspection.missionDocuments[0];
+  const missionFileName = existingMissions?.file.name ?? `${slug}.missions.json`;
+  const missionDocument: AdventureMissionDocumentV1 = existingMissions
+    ? parseJson(rawByFileName[existingMissions.file.name], existingMissions.file.name) as AdventureMissionDocumentV1
+    : {
+      schemaVersion: 1 as const,
+      mapId: adventure.mapId,
+      missions: [],
+      narrativeSequences: [],
+    };
+  if (missionDocument.schemaVersion !== 1
+    || missionDocument.mapId !== adventure.mapId
+    || !Array.isArray(missionDocument.missions)
+    || !Array.isArray(missionDocument.narrativeSequences)) {
+    throw new Error(`${missionFileName} no corresponde al mapa ${adventure.mapId}.`);
+  }
   const backupFileName = legacyBackupFileName(sidecarFileName);
   const legacyBackupSource = inspection.legacyBackups.find(
     source => source.file.name === backupFileName,
@@ -332,6 +368,10 @@ export async function openPokeDiscoverWorkspace({
   if (existingSidecar) {
     baselineByFileName[sidecarFileName] = serializePokeDiscoverProjectJson(adventure);
   }
+  // Un sidecar legado puede abrirse sin crear un archivo nuevo de inmediato.
+  // En cuanto el autor edite misiones, la diferencia hará que el guardado
+  // materialice `<mapa>.missions.json`.
+  baselineByFileName[missionFileName] = serializePokeDiscoverProjectJson(missionDocument);
   const tiledSources = [...inspection.tiledMaps, ...inspection.archivedTiledMaps];
   const sources: PokeDiscoverTiledSource[] = tiledSources.map(source => {
     const raw = requireTiledMap(
@@ -362,6 +402,7 @@ export async function openPokeDiscoverWorkspace({
   }));
   const snapshot: PokeDiscoverWorkspaceSnapshot = {
     adventure: registered.adventure,
+    missionDocument,
     tilemapsByFileName: Object.fromEntries(sources.map(source => [source.fileName, source.tilemap])),
     world,
     registrations,
@@ -371,6 +412,7 @@ export async function openPokeDiscoverWorkspace({
   return {
     projectName: effectiveName,
     sidecarFileName,
+    missionFileName,
     worldFileName,
     registrations,
     history: createPokeDiscoverEditorHistory(snapshot),
@@ -400,6 +442,7 @@ export function getPokeDiscoverWorkspaceDocuments(workspace: PokeDiscoverWorkspa
   return snapshotDocuments(
     workspace.history.present,
     workspace.sidecarFileName,
+    workspace.missionFileName,
     workspace.worldFileName,
   );
 }
@@ -476,30 +519,73 @@ export async function savePokeDiscoverWorkspace(
     ...Object.keys(workspace.history.present.tilemapsByFileName)
       .filter(fileName => dirtyFiles.has(fileName)),
     ...(dirtyFiles.has(workspace.worldFileName) ? [workspace.worldFileName] : []),
+    ...(dirtyFiles.has(workspace.missionFileName) ? [workspace.missionFileName] : []),
     ...(dirtyFiles.has(workspace.sidecarFileName) ? [workspace.sidecarFileName] : []),
   ];
   const handlesByFileName = { ...workspace.handlesByFileName };
   const baselineByFileName = { ...workspace.baselineByFileName };
   const diskContentByFileName = { ...workspace.diskContentByFileName };
   const lastModifiedByFileName = { ...workspace.lastModifiedByFileName };
-  for (const fileName of orderedNames) {
-    const handle = await writableHandle({ ...workspace, handlesByFileName }, fileName);
-    if (!handle) throw new Error(`No se puede escribir ${fileName}.`);
-    const writable = await handle.createWritable();
-    await writable.write(documents[fileName]);
-    await writable.close();
-    const saved = await handle.getFile();
-    handlesByFileName[fileName] = handle;
-    baselineByFileName[fileName] = documents[fileName];
-    diskContentByFileName[fileName] = documents[fileName];
-    lastModifiedByFileName[fileName] = saved.lastModified;
-  }
-  for (const sourceName of renamedSources) {
-    await workspace.directoryHandle.removeEntry?.(sourceName);
-    delete handlesByFileName[sourceName];
-    delete baselineByFileName[sourceName];
-    delete diskContentByFileName[sourceName];
-    delete lastModifiedByFileName[sourceName];
+  const writtenNames: string[] = [];
+  const deletedSources: string[] = [];
+  try {
+    for (const fileName of orderedNames) {
+      const handle = await writableHandle({ ...workspace, handlesByFileName }, fileName);
+      if (!handle) throw new Error(`No se puede escribir ${fileName}.`);
+      const writable = await handle.createWritable();
+      await writable.write(documents[fileName]);
+      await writable.close();
+      writtenNames.push(fileName);
+      const saved = await handle.getFile();
+      handlesByFileName[fileName] = handle;
+      baselineByFileName[fileName] = documents[fileName];
+      diskContentByFileName[fileName] = documents[fileName];
+      lastModifiedByFileName[fileName] = saved.lastModified;
+    }
+    for (const sourceName of renamedSources) {
+      await workspace.directoryHandle.removeEntry?.(sourceName);
+      deletedSources.push(sourceName);
+      delete handlesByFileName[sourceName];
+      delete baselineByFileName[sourceName];
+      delete diskContentByFileName[sourceName];
+      delete lastModifiedByFileName[sourceName];
+    }
+  } catch (cause) {
+    const rollbackFailures: string[] = [];
+    for (const fileName of writtenNames.reverse()) {
+      try {
+        const previous = workspace.diskContentByFileName[fileName];
+        if (previous === undefined) {
+          await workspace.directoryHandle.removeEntry?.(fileName);
+          continue;
+        }
+        const handle = workspace.handlesByFileName[fileName]
+          ?? await workspace.directoryHandle.getFileHandle(fileName, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(previous);
+        await writable.close();
+      } catch {
+        rollbackFailures.push(fileName);
+      }
+    }
+    for (const sourceName of deletedSources) {
+      try {
+        const previous = workspace.diskContentByFileName[sourceName];
+        if (previous === undefined) continue;
+        const handle = await workspace.directoryHandle.getFileHandle(sourceName, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(previous);
+        await writable.close();
+      } catch {
+        rollbackFailures.push(sourceName);
+      }
+    }
+    if (rollbackFailures.length) {
+      const error = new Error('ATOMIC_SAVE_ROLLBACK_FAILED');
+      Object.assign(error, { cause, rollbackFailures });
+      throw error;
+    }
+    throw cause;
   }
   const sourceFileNameByFileName = Object.fromEntries(
     Object.keys(workspace.history.present.tilemapsByFileName).map(fileName => [fileName, fileName]),

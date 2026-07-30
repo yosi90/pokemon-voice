@@ -79,12 +79,14 @@ export function AmbientBeatEditor({
   room,
   onAdventureChange,
   initialPlacementId,
+  initialSequenceId,
   embedded = false,
 }: {
   bundle: LoadedAdventureMapBundle;
   room: LoadedAdventureSectorBundle;
   onAdventureChange: (adventure: AdventureMapV3) => void;
   initialPlacementId?: string;
+  initialSequenceId?: string;
   embedded?: boolean;
 }) {
   const roomSequences = bundle.adventure.ambientSequences.filter(sequence => sequence.sectorId === room.sector.sectorId);
@@ -97,6 +99,7 @@ export function AmbientBeatEditor({
   const [beatId, setBeatId] = useState('');
   const [actionIndex, setActionIndex] = useState(0);
   const sequence = visibleSequences.find(candidate => candidate.sequenceId === sequenceId)
+    ?? visibleSequences.find(candidate => candidate.sequenceId === initialSequenceId)
     ?? visibleSequences[0];
   const beat = sequence?.beats.find(candidate => candidate.beatId === beatId) ?? sequence?.beats[0];
   const selectedActionIndex = beat?.actions[actionIndex] ? actionIndex : 0;
@@ -110,6 +113,14 @@ export function AmbientBeatEditor({
   const animations = selectedPlacement
     ? room.actorAssets.get(selectedPlacement.assetId)?.animations ?? []
     : [];
+
+  useEffect(() => {
+    if (!initialSequenceId) return;
+    const nextSequence = visibleSequences.find(candidate => candidate.sequenceId === initialSequenceId);
+    setSequenceId(nextSequence?.sequenceId ?? '');
+    setBeatId(nextSequence?.beats[0]?.beatId ?? '');
+    setActionIndex(0);
+  }, [initialSequenceId, room.sector.sectorId]);
 
   useEffect(() => {
     if (!initialPlacementId) return;

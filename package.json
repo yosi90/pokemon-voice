@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "assets:camphor:normalize": "node scripts/normalize-camphor-raw.mjs",
+    "assets:locomotion:normalize": "node scripts/normalize-expedition-locomotion.mjs",
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5173",
@@ -18,7 +19,13 @@
     "catalog:import": "node scripts/import-companion-catalog.mjs",
     "catalog:validate": "node scripts/validate-companion-catalog.mjs",
     "assets:pmd:manifest": "node scripts/generate-pmd-manifest.mjs",
-    "maps:validate": "npm run assets:pmd:manifest && node scripts/validate-adventure-maps.mjs"
+    "maps:manifest": "node scripts/generate-adventure-map-manifest.mjs",
+    "missions:manifest": "node scripts/generate-adventure-mission-manifest.mjs",
+    "narratives:manifest": "node scripts/generate-narrative-manifest.mjs",
+    "narratives:media": "node scripts/register-existing-narrative-media.mjs",
+    "narratives:seed": "node scripts/seed-professor-conversations.mjs",
+    "media:validate": "node scripts/validate-adventure-media-manifest.mjs",
+    "maps:validate": "npm run assets:pmd:manifest && npm run catalog:validate && npm run maps:manifest && npm run narratives:manifest && npm run missions:manifest && npm run media:validate && node scripts/validate-adventure-maps.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

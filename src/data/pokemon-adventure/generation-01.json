@@ -7249,12 +7249,26 @@
           "heightMeters": 2.5,
           "sizeClass": "large",
           "narrativeTags": [],
-          "fieldCapabilities": [],
+          "fieldCapabilities": [
+            {
+              "id": "surf",
+              "source": "biology",
+              "strength": 1,
+              "tags": [
+                "water-crossing",
+                "mount"
+              ]
+            }
+          ],
           "companion": {
             "minimumTrainerLevel": 3,
             "balanceStatus": "provisional",
             "visibility": "public",
             "rejectionText": "Este Pokémon todavía no quiere abandonar la seguridad de la Pokédex."
+          },
+          "waterTraversal": {
+            "kind": "swim",
+            "mountAssetId": "character:mount:lapras-surf"
           },
           "appearances": []
         },

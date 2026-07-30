@@ -13,6 +13,7 @@ import {
   type PokeDiscoverRandomCandidate,
   type PokeDiscoverRandomFilters,
 } from '../../domain/tools/pokeDiscoverRandomizer.js';
+import { ToolNavigation } from '../shared/ToolNavigation.js';
 
 const GENERATIONS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
@@ -146,6 +147,9 @@ export function PokeDiscoverRandomizer() {
             </p>
           )}
         </div>
+        <footer className="randomizer-footer">
+          <ToolNavigation current="randomizer" />
+        </footer>
       </section>
     </main>
   );

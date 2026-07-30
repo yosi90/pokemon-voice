@@ -3,9 +3,13 @@ import type {
   PokemonFormV1,
   PokemonSpeciesV1,
   PokeVoiceSaveV1,
+  RewardDefinitionV1,
 } from '../../../packages/contracts/src/index.js';
+import { claimPokeDiscoverRewards } from '../progress/rewardLedger.js';
+import { createExpeditionRollbackSnapshot } from './expeditionSession.js';
 import { evaluateRequirement } from '../requirements/evaluateRequirement.js';
 import { createAdventureMapProgressV1 } from './adventureMapProgress.js';
+import { recordMapDiscovery } from './adventureMapProgress.js';
 
 export interface MapEventRequirementContext {
   companionForm?: PokemonFormV1;
@@ -76,6 +80,10 @@ export function completeMapEventTrigger(
   save: PokeVoiceSaveV1,
   mapId: string,
   trigger: MapEventTriggerV3,
+  options: {
+    completedAt?: string;
+    rewards?: readonly RewardDefinitionV1[];
+  } = {},
 ) {
   const session = save.activeExpeditionSession;
   if (!session || session.mapId !== mapId) {
@@ -85,7 +93,33 @@ export function completeMapEventTrigger(
     return { status: 'alreadyCompleted' as const, save };
   }
   const policy = trigger.repeatPolicy ?? 'oncePerVisit';
-  if (policy === 'repeatable') return { status: 'completed' as const, save };
+  const applyCompletion = (candidate: PokeVoiceSaveV1) => {
+    let next = candidate;
+    for (const secretId of trigger.completionEffects?.unlockSecretIds ?? []) {
+      const discovery = recordMapDiscovery(next.pokeDiscover, mapId, 'secret', secretId);
+      next = { ...next, pokeDiscover: discovery.state };
+    }
+    const rewards = options.rewards ?? trigger.rewards;
+    if (!rewards?.length) return next;
+    if (!trigger.rewardOriginId) {
+      throw new Error('Un evento de mapa con recompensas debe declarar rewardOriginId.');
+    }
+    if (!options.completedAt || Number.isNaN(Date.parse(options.completedAt))) {
+      throw new Error('completedAt debe ser una fecha ISO válida al conceder recompensas.');
+    }
+    const reward = claimPokeDiscoverRewards(next.pokeDiscover, {
+      originId: trigger.rewardOriginId,
+      rewards: [...rewards],
+      claimedAt: options.completedAt,
+      runId: next.pokedexRun.runId,
+      mapId,
+      ...(session.missionId ? { missionId: session.missionId } : {}),
+    });
+    return { ...next, pokeDiscover: reward.state };
+  };
+  if (policy === 'repeatable') {
+    return { status: 'completed' as const, save: applyCompletion(save) };
+  }
   if (policy === 'oncePerSectorVisit') {
     const visit = session.activeSectorVisit;
     if (!visit || visit.sectorId !== trigger.sectorId) {
@@ -93,7 +127,7 @@ export function completeMapEventTrigger(
     }
     return {
       status: 'completed' as const,
-      save: {
+      save: applyCompletion({
         ...save,
         activeExpeditionSession: {
           ...session,
@@ -105,7 +139,7 @@ export function completeMapEventTrigger(
             ]),
           },
         },
-      },
+      }),
     };
   }
   if (policy === 'persistent') {
@@ -113,7 +147,7 @@ export function completeMapEventTrigger(
       ?? createAdventureMapProgressV1(mapId);
     return {
       status: 'completed' as const,
-      save: {
+      save: applyCompletion({
         ...save,
         pokeDiscover: {
           ...save.pokeDiscover,
@@ -128,12 +162,12 @@ export function completeMapEventTrigger(
             },
           },
         },
-      },
+      }),
     };
   }
   return {
     status: 'completed' as const,
-    save: {
+    save: applyCompletion({
       ...save,
       activeExpeditionSession: {
         ...session,
@@ -142,7 +176,7 @@ export function completeMapEventTrigger(
           trigger.triggerId,
         ]),
       },
-    },
+    }),
   };
 }
 
@@ -162,6 +196,7 @@ export function enterMapEventSector(
         schemaVersion: 1 as const,
         sectorId,
         completedMapEventTriggerIds: [],
+        rollbackSnapshot: createExpeditionRollbackSnapshot(save),
       },
     },
   };

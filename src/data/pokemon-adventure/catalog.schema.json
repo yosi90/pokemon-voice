@@ -65,6 +65,16 @@
       },
       "additionalProperties": false
     },
+    "waterTraversal": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["swim", "fly", "alternateAsset", "recall"] },
+        "alternateAssetId": { "type": "string", "minLength": 1 },
+        "mountAssetId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "companionResearch": {
       "type": "object",
       "required": ["schemaVersion", "factId", "speciesId", "field", "text", "contentStatus", "rewards"],
@@ -103,7 +113,8 @@
         "selectableCompanion": { "type": "boolean" },
         "narrativeTags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "additionalFieldCapabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } },
-        "companionOverride": { "$ref": "#/$defs/companionOverride" }
+        "companionOverride": { "$ref": "#/$defs/companionOverride" },
+        "waterTraversal": { "$ref": "#/$defs/waterTraversal" }
       },
       "additionalProperties": false
     },
@@ -125,6 +136,7 @@
         "narrativeTags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "fieldCapabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } },
         "companion": { "$ref": "#/$defs/companion" },
+        "waterTraversal": { "$ref": "#/$defs/waterTraversal" },
         "appearances": { "type": "array", "items": { "$ref": "#/$defs/appearance" } }
       },
       "additionalProperties": false

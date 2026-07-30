@@ -2,6 +2,7 @@ import type {
   CompanionResearchFactV1,
   CompanionSelectionV1,
   ExpeditionEntrySnapshotV1,
+  ExpeditionRollbackSnapshotV1,
   ExpeditionLoadoutV1,
   PokeVoiceSaveV1,
   MeaningfulExpeditionInteractionKind,
@@ -82,6 +83,36 @@ function createEntrySnapshot(save: PokeVoiceSaveV1, mapId: string): ExpeditionEn
   };
 }
 
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+export function createExpeditionRollbackSnapshot(
+  save: PokeVoiceSaveV1,
+): ExpeditionRollbackSnapshotV1 {
+  const { trainerProfile: _trainerProfile, ...pokeDiscover } = save.pokeDiscover;
+  return {
+    schemaVersion: 1,
+    pokedexRun: cloneJson(save.pokedexRun),
+    pokeDiscover: cloneJson(pokeDiscover),
+  };
+}
+
+export function restoreExpeditionRollbackSnapshot(
+  save: PokeVoiceSaveV1,
+  snapshot: ExpeditionRollbackSnapshotV1,
+): PokeVoiceSaveV1 {
+  const trainerProfile = save.pokeDiscover.trainerProfile;
+  return {
+    ...save,
+    pokedexRun: cloneJson(snapshot.pokedexRun),
+    pokeDiscover: {
+      ...cloneJson(snapshot.pokeDiscover),
+      ...(trainerProfile ? { trainerProfile } : {}),
+    },
+  };
+}
+
 export function beginExpedition(
   save: PokeVoiceSaveV1,
   request: BeginExpeditionRequest,
@@ -149,6 +180,7 @@ export function beginExpedition(
       meaningfulInteractionIds: [],
       meaningfulInteractionKinds: [],
       entrySnapshot: createEntrySnapshot(save, request.mapId),
+      entryRollbackSnapshot: createExpeditionRollbackSnapshot(save),
     },
   };
 }

@@ -1,10 +1,35 @@
 {
   "schemaVersion": 1,
+  "appearances": [
+    {
+      "schemaVersion": 1,
+      "appearanceId": "appearance:trainer:achaman:default",
+      "avatarId": "achaman",
+      "label": "Achamán",
+      "modes": {
+        "walk": "character:trainer:achaman",
+        "swim": "character:trainer:achaman:swim"
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "appearanceId": "appearance:trainer:guayota:default",
+      "avatarId": "guayota",
+      "label": "Guayota",
+      "modes": {
+        "walk": "character:trainer:guayota",
+        "swim": "character:trainer:guayota:swim"
+      }
+    }
+  ],
   "assets": [
     {
       "schemaVersion": 1,
       "assetId": "character:trainer:achaman",
       "role": "player",
+      "appearanceId": "appearance:trainer:achaman:default",
+      "avatarId": "achaman",
+      "locomotionMode": "walk",
       "path": "assets/sprites/characters/achaman/achaman-walk.png",
       "frameWidth": 16,
       "frameHeight": 24,
@@ -19,8 +44,30 @@
     },
     {
       "schemaVersion": 1,
+      "assetId": "character:trainer:achaman:swim",
+      "role": "player",
+      "appearanceId": "appearance:trainer:achaman:default",
+      "avatarId": "achaman",
+      "locomotionMode": "swim",
+      "path": "assets/sprites/characters/achaman/achaman-swim.png",
+      "frameWidth": 16,
+      "frameHeight": 24,
+      "columns": 4,
+      "rows": 4,
+      "directionRows": { "down": 0, "left": 1, "right": 2, "up": 3 },
+      "idleFrame": 0,
+      "walkFrames": [0, 1, 2, 3],
+      "frameDurationMs": 180,
+      "renderScale": 1,
+      "source": "Playable Characters · Brendan surf, normalizado a 16×24"
+    },
+    {
+      "schemaVersion": 1,
       "assetId": "character:trainer:guayota",
       "role": "player",
+      "appearanceId": "appearance:trainer:guayota:default",
+      "avatarId": "guayota",
+      "locomotionMode": "walk",
       "path": "assets/sprites/characters/guayota/guayota-walk.png",
       "frameWidth": 16,
       "frameHeight": 24,
@@ -32,6 +79,42 @@
       "frameDurationMs": 140,
       "renderScale": 1,
       "source": "pack estructurado proporcionado por el usuario"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "character:trainer:guayota:swim",
+      "role": "player",
+      "appearanceId": "appearance:trainer:guayota:default",
+      "avatarId": "guayota",
+      "locomotionMode": "swim",
+      "path": "assets/sprites/characters/guayota/guayota-swim.png",
+      "frameWidth": 16,
+      "frameHeight": 24,
+      "columns": 4,
+      "rows": 4,
+      "directionRows": { "down": 0, "left": 1, "right": 2, "up": 3 },
+      "idleFrame": 0,
+      "walkFrames": [0, 1, 2, 3],
+      "frameDurationMs": 180,
+      "renderScale": 1,
+      "source": "Playable Characters · May surf, normalizado a 16×24"
+    },
+    {
+      "schemaVersion": 1,
+      "assetId": "character:mount:lapras-surf",
+      "role": "mount",
+      "locomotionMode": "swim",
+      "path": "assets/sprites/characters/mounts/lapras-surf.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 2,
+      "rows": 4,
+      "directionRows": { "down": 0, "left": 1, "right": 2, "up": 3 },
+      "idleFrame": 0,
+      "walkFrames": [0, 1],
+      "frameDurationMs": 220,
+      "renderScale": 1,
+      "source": "Lapras Surf proporcionado por el usuario; fondo violeta eliminado y direcciones normalizadas"
     },
     {
       "schemaVersion": 1,

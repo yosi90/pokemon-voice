@@ -10,6 +10,7 @@ import type { RewardDefinitionV1 } from './economy.js';
 import type { RequirementExpressionV1 } from './requirements.js';
 import type { ResearchFieldKey } from './research.js';
 import type { MeaningfulExpeditionInteractionKind } from './progress.js';
+import type { NarrativeSequenceV1 } from './narrative.js';
 import {
   ADVENTURE_ACTOR_COLLISIONS,
   ADVENTURE_ENTRY_REPEAT_POLICIES,
@@ -31,6 +32,11 @@ import {
   TILE_LAYER_KINDS,
   TILED_ANCHOR_CLASSES,
   TILED_RUNTIME_OBJECT_CLASSES,
+  TERRAIN_SURFACE_TYPES,
+  ADVENTURE_LOCATION_KINDS,
+  COMPANION_WATER_TRAVERSAL_KINDS,
+  HAZARD_OUTCOMES,
+  HAZARD_ROLLBACK_POLICIES,
 } from './adventureVocabulary.js';
 export {
   ADVENTURE_ACTOR_COLLISIONS,
@@ -53,6 +59,11 @@ export {
   TILE_LAYER_KINDS,
   TILED_ANCHOR_CLASSES,
   TILED_RUNTIME_OBJECT_CLASSES,
+  TERRAIN_SURFACE_TYPES,
+  ADVENTURE_LOCATION_KINDS,
+  COMPANION_WATER_TRAVERSAL_KINDS,
+  HAZARD_OUTCOMES,
+  HAZARD_ROLLBACK_POLICIES,
 };
 
 export type TileLayerKind = typeof TILE_LAYER_KINDS[number];
@@ -72,6 +83,37 @@ export type MapSequenceActionKind = typeof MAP_SEQUENCE_ACTION_KINDS[number];
 export type ExpressionMatcherKind = typeof EXPRESSION_MATCHER_KINDS[number];
 export type TiledAnchorClass = typeof TILED_ANCHOR_CLASSES[number];
 export type TiledRuntimeObjectClass = typeof TILED_RUNTIME_OBJECT_CLASSES[number];
+export type TerrainSurfaceType = typeof TERRAIN_SURFACE_TYPES[number];
+export type AdventureLocationKind = typeof ADVENTURE_LOCATION_KINDS[number];
+export type CompanionWaterTraversalKind = typeof COMPANION_WATER_TRAVERSAL_KINDS[number];
+export type HazardOutcome = typeof HAZARD_OUTCOMES[number];
+export type HazardRollbackPolicy = typeof HAZARD_ROLLBACK_POLICIES[number];
+
+export interface AdventureTerrainRulesV1 {
+  allowedSurfaceTypes: TerrainSurfaceType[];
+  animationBySurface?: Partial<Record<TerrainSurfaceType, string>>;
+}
+
+export interface CompanionWaterTraversalV1 {
+  kind: CompanionWaterTraversalKind;
+  alternateAssetId?: StableId;
+  /** Sprite de montura colocado bajo el protagonista mientras el compañero permite Surf. */
+  mountAssetId?: StableId;
+}
+
+export interface TerrainAreaV1 extends VersionedContractV1 {
+  terrainAreaId: StableId;
+  surfaceType: TerrainSurfaceType;
+  slowMultiplier?: number;
+}
+
+export interface AdventureLocationV1 extends VersionedContractV1 {
+  locationId: StableId;
+  label: string;
+  kind: AdventureLocationKind;
+  tags: string[];
+  transitionId?: StableId;
+}
 
 export interface MillisecondRangeV1 {
   min: number;
@@ -165,6 +207,7 @@ export interface AdventureActorPlacementV1 extends VersionedContractV1 {
   initiallyHidden?: boolean;
   /** Multiplicador visual relativo al renderScale curado del asset. 1 equivale al 100 %. */
   renderScaleMultiplier?: number;
+  terrainRules?: AdventureTerrainRulesV1;
 }
 
 export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
@@ -181,6 +224,7 @@ export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
   initiallyHidden?: boolean;
   /** Multiplicador visual relativo al renderScale curado del asset. 1 equivale al 100 %. */
   renderScaleMultiplier?: number;
+  terrainRules?: AdventureTerrainRulesV1;
 }
 
 export interface AmbientPlayAnimationActionV1 {
@@ -466,6 +510,80 @@ export interface MissionDefinitionV1 extends VersionedContractV1 {
   unlocksFreeExpedition: boolean;
   /** Reservado al primer encargo real de campo presentado por Alcanfor. */
   grantsFirstMissionAchievement?: true;
+  /** Apariencia aplicada al jugador durante toda la misión. */
+  playerAppearanceId?: StableId;
+  narratives?: {
+    offerSequenceId?: StableId;
+    briefingSequenceId?: StableId;
+    successSequenceId?: StableId;
+    failureSequenceId?: StableId;
+  };
+  /** Flujo componible. Ausente en documentos V1 todavía no migrados. */
+  flow?: MissionFlowV1;
+}
+
+export interface AdventureMissionDocumentV1 extends VersionedContractV1 {
+  mapId: StableId;
+  missions: MissionDefinitionV1[];
+  /** Secuencias inline legadas; las conversaciones nuevas son globales. */
+  narrativeSequences: NarrativeSequenceV1[];
+  conversationIds?: StableId[];
+}
+
+export type MissionFlowNodeV1 =
+  | {
+    kind: 'conversation';
+    nodeId: StableId;
+    conversationId: StableId;
+    outcomes: Record<StableId, StableId>;
+    defaultNextNodeId?: StableId;
+  }
+  | {
+    kind: 'expedition';
+    nodeId: StableId;
+    mapId: StableId;
+    entrySectorId?: StableId;
+    entryLocationId?: StableId;
+    mapVariantIds: StableId[];
+    outcomes: Record<StableId, StableId>;
+  }
+  | {
+    kind: 'condition';
+    nodeId: StableId;
+    requirement: RequirementExpressionV1;
+    whenTrueNodeId: StableId;
+    whenFalseNodeId: StableId;
+  }
+  | {
+    kind: 'terminal';
+    nodeId: StableId;
+    result: 'success' | 'failure';
+  };
+
+export interface MissionFlowV1 extends VersionedContractV1 {
+  initialNodeId: StableId;
+  nodes: MissionFlowNodeV1[];
+}
+
+export interface AdventureMissionManifestEntryV1 extends VersionedContractV1 {
+  missionId: StableId;
+  mapId: StableId;
+  documentPath: string;
+}
+
+export interface AdventureMissionManifestV1 extends VersionedContractV1 {
+  missions: AdventureMissionManifestEntryV1[];
+}
+
+export interface AdventureMapManifestEntryV1 extends VersionedContractV1 {
+  mapId: StableId;
+  title: string;
+  documentPath: string;
+  sectors: Array<{ sectorId: StableId; label: string }>;
+}
+
+export interface AdventureMapManifestV1 extends VersionedContractV1 {
+  maps: AdventureMapManifestEntryV1[];
 }
 
 export type ResearchContributionKind = 'observation' | 'fieldCompletion' | 'additionalNote';
@@ -573,7 +691,65 @@ export type MapSequenceActionV1 =
     speedPixelsPerSecond: number;
     animation?: string;
     reverse?: boolean;
-  };
+  }
+  | {
+    kind: 'spawnProjectile';
+    actorRef: CompanionSequenceActorRef;
+    effectAssetId: StableId;
+    direction: 'actorFacing' | 'towardsPlayer' | 'up' | 'down' | 'left' | 'right';
+    speedPixelsPerSecond: number;
+    lifetimeMs: number;
+    collisionMask?: Array<'terrain' | 'player' | 'actors'>;
+    hitSequenceId?: StableId;
+    missSequenceId?: StableId;
+    consequence?: HazardConsequenceV1;
+  }
+  | {
+    kind: 'charge';
+    actorRef: CompanionSequenceActorRef;
+    targetRef: CompanionSequenceActorRef;
+    speedPixelsPerSecond: number;
+    maximumTiles?: number;
+    cooldownMs?: number;
+    hitSequenceId?: StableId;
+    missSequenceId?: StableId;
+    consequence?: HazardConsequenceV1;
+  }
+  | {
+    kind: 'push';
+    /** Actor que recibe el empujón. */
+    actorRef: CompanionSequenceActorRef;
+    /** Origen usado al calcular `sourceToTarget`. */
+    sourceRef?: CompanionSequenceActorRef;
+    direction: 'sourceToTarget' | 'up' | 'down' | 'left' | 'right';
+    tiles: number;
+  }
+  | {
+    kind: 'playAudio';
+    audioAssetId: StableId;
+    channel?: 'effect' | 'music';
+    volume?: number;
+    loop?: boolean;
+    fadeInMs?: number;
+  }
+  | {
+    kind: 'stopAudio';
+    channel?: 'effect' | 'music' | 'all';
+    audioAssetId?: StableId;
+    fadeOutMs?: number;
+  }
+  | { kind: 'setPlayerAppearance'; appearanceId: StableId }
+  | { kind: 'restorePlayerAppearance' }
+  | {
+    kind: 'moveToLocation';
+    actorRef: CompanionSequenceActorRef;
+    locationId: StableId;
+    sectorId?: StableId;
+    fadeMs?: number;
+  }
+  | { kind: 'applyHazardConsequence'; consequence: HazardConsequenceV1 }
+  | { kind: 'openNarrative'; sequenceId: StableId }
+  | { kind: 'emitMissionOutcome'; outcomeId: StableId };
 
 export interface MapSequenceBeatV1 extends VersionedContractV1 {
   beatId: StableId;
@@ -603,7 +779,42 @@ export type MapEventActivationV1 =
     kind: 'proximity';
     target: MapEventSpatialTargetV1;
     rangeTiles: number;
+  }
+  | {
+    kind: 'interval';
+    initialDelayMs?: number;
+    intervalMs: number;
+    activeZoneId?: StableId;
+  }
+  | {
+    kind: 'pathCrossing';
+    pathId: StableId;
+    corridorTiles?: number;
+  }
+  | {
+    kind: 'actorContact';
+    placementId: StableId;
+  }
+  | {
+    kind: 'enterSurface';
+    surfaceType: TerrainSurfaceType;
+    terrainAreaId?: StableId;
   };
+
+export type HazardDestinationV1 =
+  | { kind: 'nearestSafeSurface'; surfaceTypes?: TerrainSurfaceType[] }
+  | { kind: 'location'; locationId: StableId; sectorId?: StableId }
+  | { kind: 'sectorEntry'; sectorId?: StableId };
+
+export interface HazardConsequenceV1 extends VersionedContractV1 {
+  outcome: HazardOutcome;
+  rollbackPolicy: HazardRollbackPolicy;
+  destination: HazardDestinationV1;
+  fadeOutMs?: number;
+  fadeInMs?: number;
+  invulnerabilityMs?: number;
+  failureNarrativeSequenceId?: StableId;
+}
 
 export interface MapEventResultingActorStateV1 extends VersionedContractV1 {
   placementId: StableId;
@@ -621,8 +832,15 @@ export interface MapEventTriggerV1 extends VersionedContractV1 {
   activation: MapEventActivationV1;
   requirement: RequirementExpressionV1;
   sequenceId: StableId;
+  failureSequenceId?: StableId;
   repeatPolicy?: MapEventRepeatPolicy;
   resultingActorStates: MapEventResultingActorStateV1[];
+  rewardOriginId?: StableId;
+  rewardPackageId?: StableId;
+  rewards?: RewardDefinitionV1[];
+  completionEffects?: {
+    unlockSecretIds?: StableId[];
+  };
 }
 
 export type ExpressionMatcherV1 =

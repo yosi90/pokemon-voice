@@ -40,7 +40,7 @@ describe('sesión de expedición', () => {
       enteredAt: ENTERED_AT,
     });
 
-    expect(started.activeExpeditionSession).toEqual({
+    expect(started.activeExpeditionSession).toEqual(expect.objectContaining({
       schemaVersion: 1,
       mapId: 'map:kanto:test-meadow',
       missionId: 'mission:first-professor-expedition',
@@ -67,7 +67,8 @@ describe('sesión de expedición', () => {
         trainerExperience: 0,
         discoveryPoints: 0,
       },
-    });
+      entryRollbackSnapshot: expect.any(Object),
+    }));
     expect(initial.activeExpeditionSession).toBeUndefined();
     expect(isExpeditionLoadoutLocked(started)).toBe(true);
   });

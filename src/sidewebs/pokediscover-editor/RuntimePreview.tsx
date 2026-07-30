@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createTechnicalPhaserGame } from '../../domain/maps/createTechnicalPhaserGame.js';
+import {
+  createTechnicalPhaserGame,
+  MAP_EVENT_REQUEST_EVENT,
+  MAP_HAZARD_PREVIEW_EVENT,
+} from '../../domain/maps/createTechnicalPhaserGame.js';
+import type {
+  HazardConsequenceV1,
+  TrainerAvatarId,
+} from '../../../packages/contracts/src/index.js';
 import type { LoadedAdventureMapBundle } from '../../domain/maps/loadAdventureBundle.js';
 
 function withDesignSpawn(bundle: LoadedAdventureMapBundle, sectorId: string) {
@@ -82,6 +90,11 @@ export function RuntimePreview({
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [simulateSurf, setSimulateSurf] = useState(false);
+  const [previewNonce, setPreviewNonce] = useState(0);
+  const [previewAvatarId, setPreviewAvatarId] = useState<TrainerAvatarId>('achaman');
+  const [previewAppearanceId, setPreviewAppearanceId] = useState<string>();
+  const [telemetry, setTelemetry] = useState<Record<string, string>>({});
   const previewBundle = useMemo(
     () => designMode ? withDesignSpawn(bundle, sectorId) : bundle,
     [bundle, designMode, sectorId],
@@ -103,6 +116,9 @@ export function RuntimePreview({
         initialSectorId: sectorId,
         reducedMotion: designMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         registeredSpeciesIds: new Set(previewBundle.pmdManifest.assets.map(asset => asset.speciesId)),
+        expeditionCapabilityIds: simulateSurf ? new Set(['surf']) : new Set(),
+        playerAvatarId: previewAvatarId,
+        playerAppearanceId: previewAppearanceId,
         fitParent: false,
         onReady: () => {
           if (cancelled) return;
@@ -122,7 +138,63 @@ export function RuntimePreview({
       game?.destroy(true);
       host.replaceChildren();
     };
-  }, [designMode, previewBundle, sectorId]);
+  }, [designMode, previewAppearanceId, previewAvatarId, previewBundle, previewNonce, sectorId, simulateSurf]);
+
+  useEffect(() => {
+    const control = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        command?: 'surf' | 'runEvent' | 'reset' | 'hazard' | 'player';
+        triggerId?: string;
+        consequence?: HazardConsequenceV1;
+        avatarId?: TrainerAvatarId;
+        appearanceId?: string;
+      }>).detail;
+      if (detail?.command === 'surf') {
+        setSimulateSurf(current => !current);
+        return;
+      }
+      if (detail?.command === 'reset') {
+        setPreviewNonce(current => current + 1);
+        return;
+      }
+      if (detail?.command === 'player') {
+        if (detail.avatarId) setPreviewAvatarId(detail.avatarId);
+        setPreviewAppearanceId(detail.appearanceId);
+        return;
+      }
+      if (detail?.command === 'runEvent' && detail.triggerId) {
+        hostRef.current?.dispatchEvent(new CustomEvent(MAP_EVENT_REQUEST_EVENT, {
+          detail: { triggerId: detail.triggerId },
+        }));
+      }
+      if (detail?.command === 'hazard' && detail.consequence) {
+        hostRef.current?.dispatchEvent(new CustomEvent(MAP_HAZARD_PREVIEW_EVENT, {
+          detail: { consequence: detail.consequence },
+        }));
+      }
+    };
+    window.addEventListener('pokediscover:preview-control', control);
+    return () => window.removeEventListener('pokediscover:preview-control', control);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const dataset = hostRef.current?.dataset;
+      if (!dataset) return;
+      setTelemetry(Object.fromEntries([
+        'surface',
+        'playerLocomotion',
+        'projectileCount',
+        'lastImpact',
+        'hazardOutcome',
+        'hazardRollbackPolicy',
+        'hazardDestination',
+        'hazardDestinationFallback',
+        'activeMapEventTriggerId',
+      ].map(key => [key, dataset[key] ?? '—'])));
+    }, 160);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <div className="editor-runtime-stack">
@@ -140,6 +212,10 @@ export function RuntimePreview({
       {status === 'error' ? 'No se pudo dibujar este sector.' : 'Preparando mapa…'}
         </div>
       ) : null}
+      {!designMode ? <details className="editor-runtime-telemetry">
+        <summary>Telemetría editorial {simulateSurf ? '· Surf simulado' : ''}</summary>
+        <dl>{Object.entries(telemetry).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
+      </details> : null}
     </div>
   );
 }

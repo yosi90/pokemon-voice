@@ -535,4 +535,61 @@ test.describe('Mapas V3 y autoría garantizada', () => {
     await expect(queue).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Asistente de creación' })).toHaveCount(0);
   });
+
+  test('abre y filtra las tres familias desde la biblioteca común de eventos', async ({ page }) => {
+    await page.goto('/tools/pokediscover-editor/');
+    await page.getByTestId('adventure-folder')
+      .setInputFiles('public/assets/adventure/maps/tegueste-forest');
+    await expect(page.locator('.editor-statusbar')).toContainText('4 sectores abiertos', {
+      timeout: 20_000,
+    });
+    await page.getByRole('button', { name: 'Contenido' }).click();
+    await page.getByRole('button', { name: 'Eventos y peligros' }).click();
+
+    const events = page.getByRole('region', { name: 'Eventos y peligros', exact: true });
+    await expect(events).toBeVisible();
+    await expect(events.getByText(/Buscar en todos los eventos del sector/u)).toBeVisible();
+    await events.getByRole('searchbox', { name: 'Actor, lugar o texto' }).fill('rattata');
+    await expect(events.locator('.editor-unified-events__library li')).not.toHaveCount(0);
+    await events.getByLabel('Familia de guion').selectOption('ambient');
+    await expect(events.getByText('Guion automático')).toBeVisible();
+    await events.getByLabel('Familia de guion').selectOption('companion');
+    await expect(events.getByLabel('Secuencia de compañero')).toBeVisible();
+  });
+
+  test('abre la raíz y navega entre aventuras sin elegir sus carpetas por separado', async ({ page }) => {
+    const temporaryRoot = await mkdtemp(path.join(tmpdir(), 'pokediscover-root-'));
+    const mapsRoot = path.join(
+      temporaryRoot,
+      'public',
+      'assets',
+      'adventure',
+      'maps',
+    );
+    try {
+      await cp('tests/fixtures/editor-v3', path.join(mapsRoot, 'alpha'), {
+        recursive: true,
+      });
+      await cp('tests/fixtures/editor-v3', path.join(mapsRoot, 'beta'), {
+        recursive: true,
+      });
+      const betaPath = path.join(mapsRoot, 'beta', 'editor-v3.adventure.json');
+      const beta = JSON.parse(await readFile(betaPath, 'utf8'));
+      beta.mapId = 'map:editor-e2e-beta';
+      beta.title = 'Mapa Beta E2E';
+      await writeFile(betaPath, `${JSON.stringify(beta, null, 2)}\n`, 'utf8');
+
+      await page.goto('/tools/pokediscover-editor/');
+      await page.getByTestId('adventure-folder').setInputFiles(temporaryRoot);
+      const explorer = page.getByRole('complementary', { name: 'Explorador de sectores' });
+      await expect(explorer.getByText('Aventuras')).toBeVisible({ timeout: 20_000 });
+      await expect(explorer.locator('.editor-project-explorer__maps > button')).toHaveCount(2);
+      await explorer.getByRole('button', { name: /Mapa Beta E2E/u }).click();
+      await expect(page.locator('.editor-statusbar')).toContainText('1 sectores abiertos');
+      await expect(page.getByRole('button', { name: 'Mapa Beta E2E', exact: true }))
+        .toBeVisible();
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
 });

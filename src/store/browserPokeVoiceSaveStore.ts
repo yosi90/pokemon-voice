@@ -79,6 +79,12 @@ import {
   completeMapEventTrigger,
   enterMapEventSector,
 } from '../domain/expeditions/mapEventTriggers.js';
+import { applyHazardConsequenceToSave } from '../domain/expeditions/hazardConsequences.js';
+import {
+  advanceMissionFlow,
+  resolveMissionFlowNode,
+} from '../domain/expeditions/missionFlow.js';
+import { getPokeDiscoverMission } from '../data/adventure/missionCatalog.js';
 import {
   createCompanionCatalogSpecies,
   type CompanionCandidate,
@@ -140,6 +146,132 @@ function persistWithPokeDiscoverAchievements(
 
 export function getBrowserPokeVoiceSave() {
   return readCurrentSave();
+}
+
+export function getBrowserMissionFlowState() {
+  const save = readCurrentSave();
+  const session = save.activeExpeditionSession;
+  const mission = session?.missionId ? getPokeDiscoverMission(session.missionId) : undefined;
+  if (!session || !mission?.flow) return undefined;
+  const nodeId = session.missionRuntime?.flowNodeId ?? mission.flow.initialNodeId;
+  const node = resolveMissionFlowNode(mission.flow, nodeId);
+  if (!node) throw new Error(`Checkpoint de misión inexistente: ${nodeId}.`);
+  return { save, mission, node };
+}
+
+export function advanceBrowserMissionFlow(outcomeId?: string) {
+  const state = getBrowserMissionFlowState();
+  if (!state) return undefined;
+  const { save: current, mission, node: currentNode } = state;
+  const session = current.activeExpeditionSession!;
+  const currentNodeId = currentNode.nodeId;
+  const flow = mission.flow!;
+  const nextNodeId = currentNode.kind === 'condition'
+    ? advanceMissionFlow(flow, currentNodeId, {
+      evaluateRequirement: requirement => {
+        if ('kind' in requirement && requirement.kind === 'missionFlag') {
+          const actual = session.missionRuntime?.flags[requirement.flagId];
+          return actual === (requirement.expected ?? true);
+        }
+        return false;
+      },
+    })
+    : advanceMissionFlow(flow, currentNodeId, { outcomeId });
+  const nextNode = resolveMissionFlowNode(flow, nextNodeId);
+  if (!nextNode) throw new Error(`Destino de misión inexistente: ${nextNodeId}.`);
+  const missionRuntime = session.missionRuntime ?? {
+    schemaVersion: 1 as const,
+    missionId: mission.missionId,
+    checkpointId: flow.initialNodeId,
+    flags: {},
+    counters: {},
+    resolvedActorIds: [],
+  };
+  const next = {
+    ...current,
+    activeExpeditionSession: {
+      ...session,
+      missionRuntime: {
+        ...missionRuntime,
+        checkpointId: nextNodeId,
+        flowNodeId: nextNodeId,
+      },
+    },
+  };
+  persist(next);
+  return { save: next, mission, node: nextNode };
+}
+
+export function enterBrowserMissionFlowExpedition(mapId: string) {
+  const current = readCurrentSave();
+  const session = current.activeExpeditionSession;
+  if (!session?.missionId) return current;
+  const next: PokeVoiceSaveV1 = {
+    ...current,
+    activeExpeditionSession: {
+      ...session,
+      mapId,
+      activeSectorVisit: undefined,
+    },
+  };
+  persist(next);
+  return next;
+}
+
+export function checkpointBrowserMissionConversation(checkpoint: {
+  conversationId: string;
+    cueId: string;
+    historyCueIds: string[];
+    selectedChoices: Record<string, string>;
+    variables: Record<string, string | number | boolean>;
+    executedEffectIds: string[];
+  }) {
+    const current = readCurrentSave();
+    const session = current.activeExpeditionSession;
+    if (!session) return current;
+    const mission = session.missionId ? getPokeDiscoverMission(session.missionId) : undefined;
+    if (!mission) return current;
+    const missionRuntime = session.missionRuntime ?? {
+      schemaVersion: 1 as const,
+      missionId: mission.missionId,
+      checkpointId: mission.flow?.initialNodeId ?? `${mission.missionId}:start`,
+      flowNodeId: mission.flow?.initialNodeId,
+      flags: {},
+      counters: {},
+      resolvedActorIds: [],
+    };
+  const readCueIds = [...new Set([
+    ...(current.pokeDiscover.narrativeProgress.readCueIds ?? []),
+    ...checkpoint.historyCueIds,
+    checkpoint.cueId,
+  ])];
+  const next: PokeVoiceSaveV1 = {
+    ...current,
+    pokeDiscover: {
+      ...current.pokeDiscover,
+      narrativeProgress: {
+        ...current.pokeDiscover.narrativeProgress,
+        readCueIds,
+      },
+    },
+    activeExpeditionSession: {
+        ...session,
+        missionRuntime: {
+          ...missionRuntime,
+        conversationCheckpoint: {
+          schemaVersion: 1,
+          conversationId: checkpoint.conversationId,
+          cueId: checkpoint.cueId,
+          historyCueIds: checkpoint.historyCueIds,
+            executedEffectIds: checkpoint.executedEffectIds,
+            variables: checkpoint.variables,
+          selectedChoices: checkpoint.selectedChoices,
+        },
+      },
+    },
+  };
+  persist(next);
+  return next;
 }
 
 export function prepareBrowserCamphorPrologue(
@@ -509,9 +641,13 @@ export function completeBrowserExpeditionInteraction(
 export function completeBrowserMapEventTrigger(
   mapId: string,
   trigger: import('../../packages/contracts/src/index.js').MapEventTriggerV3,
+  options?: {
+    completedAt?: string;
+    rewards?: readonly import('../../packages/contracts/src/index.js').RewardDefinitionV1[];
+  },
 ) {
   const current = readCurrentSave();
-  const result = completeMapEventTrigger(current, mapId, trigger);
+  const result = completeMapEventTrigger(current, mapId, trigger, options);
   if (result.save !== current) persist(result.save);
   return result;
 }
@@ -521,6 +657,14 @@ export function enterBrowserMapEventSector(mapId: string, sectorId: string) {
   const next = enterMapEventSector(current, mapId, sectorId);
   if (next !== current) persist(next);
   return next.activeExpeditionSession;
+}
+
+export function applyBrowserHazardConsequence(
+  consequence: import('../../packages/contracts/src/index.js').HazardConsequenceV1,
+) {
+  const result = applyHazardConsequenceToSave(readCurrentSave(), consequence);
+  persist(result.save);
+  return result;
 }
 
 export function identifyBrowserVisibleExpeditionSpecies(request: IdentifyVisibleSpeciesRequest) {

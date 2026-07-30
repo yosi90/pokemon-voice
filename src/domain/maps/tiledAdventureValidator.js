@@ -6,6 +6,10 @@ import {
   MAP_SEQUENCE_ACTION_KINDS,
   MEANINGFUL_EXPEDITION_INTERACTION_KINDS,
   TILED_ANCHOR_CLASSES,
+  TERRAIN_SURFACE_TYPES,
+  ADVENTURE_LOCATION_KINDS,
+  HAZARD_OUTCOMES,
+  HAZARD_ROLLBACK_POLICIES,
 } from '../../../packages/contracts/src/adventureVocabulary.js';
 
 export const TILED_REQUIRED_LAYERS = Object.freeze({
@@ -28,6 +32,10 @@ const meaningfulInteractionKinds = new Set(MEANINGFUL_EXPEDITION_INTERACTION_KIN
 const mapEventActivationKinds = new Set(MAP_EVENT_ACTIVATION_KINDS);
 const mapEventRepeatPolicies = new Set(MAP_EVENT_REPEAT_POLICIES);
 const mapSequenceActionKinds = new Set(MAP_SEQUENCE_ACTION_KINDS);
+const terrainSurfaceTypes = new Set(TERRAIN_SURFACE_TYPES);
+const locationKinds = new Set(ADVENTURE_LOCATION_KINDS);
+const hazardOutcomes = new Set(HAZARD_OUTCOMES);
+const hazardRollbackPolicies = new Set(HAZARD_ROLLBACK_POLICIES);
 const editorCommentPropertyNames = new Set([
   'text',
   'migrationSourceObjectId',
@@ -156,6 +164,10 @@ function validateTiledRoom(assetId, tiled) {
     const layer = layersByName.get(name);
     if (layer && layer.type !== 'objectgroup') errors.push(`${assetId}: ${name} debe ser objectgroup`);
   }
+  for (const name of ['Terrain', 'Locations']) {
+    const layer = layersByName.get(name);
+    if (layer && layer.type !== 'objectgroup') errors.push(`${assetId}: ${name} debe ser objectgroup`);
+  }
 
   const objects = layers
     .filter(layer => layer.type === 'objectgroup')
@@ -165,6 +177,9 @@ function validateTiledRoom(assetId, tiled) {
   const paths = new Map();
   const triggerZones = new Map();
   const occluders = [];
+  const terrainCoverage = new Set();
+  const terrainAreas = new Map();
+  const locations = new Map();
   for (const object of objects) {
     const klass = objectClass(object);
     if (klass === 'EditorComment' && object.layerName !== 'Comments') {
@@ -193,6 +208,65 @@ function validateTiledRoom(assetId, tiled) {
           errors.push(`${assetId}: ${object.name} debe ser un rectángulo de transición`);
         }
         anchors.set(object.name, { ...object, class: klass });
+      }
+    }
+    if (object.layerName === 'Terrain') {
+      const properties = objectProperties(object);
+      const surfaceType = String(properties.get('surfaceType') ?? '');
+      if (klass !== 'TerrainArea') {
+        errors.push(`${assetId}: ${object.name || `#${object.id ?? '?'}`} debe usar TerrainArea`);
+        continue;
+      }
+      if (!terrainSurfaceTypes.has(surfaceType)) {
+        errors.push(`${assetId}: ${object.name} usa una superficie desconocida ${surfaceType || '(vacía)'}`);
+      }
+      if (object.name?.trim()) {
+        if (terrainAreas.has(object.name)) errors.push(`${assetId}: TerrainArea duplicada ${object.name}`);
+        else terrainAreas.set(object.name, { ...object, surfaceType });
+      }
+      const gridX = Number(object.x) / tiled.tilewidth;
+      const gridY = Number(object.y) / tiled.tileheight;
+      const gridWidth = Number(object.width) / tiled.tilewidth;
+      const gridHeight = Number(object.height) / tiled.tileheight;
+      if (![gridX, gridY, gridWidth, gridHeight].every(Number.isInteger)
+        || gridWidth <= 0 || gridHeight <= 0
+        || gridX < 0 || gridY < 0
+        || gridX + gridWidth > tiled.width || gridY + gridHeight > tiled.height) {
+        errors.push(`${assetId}: ${object.name} debe ser un rectángulo de tiles dentro del sector`);
+        continue;
+      }
+      for (let y = gridY; y < gridY + gridHeight; y += 1) {
+        for (let x = gridX; x < gridX + gridWidth; x += 1) {
+          const key = `${x}:${y}`;
+          if (terrainCoverage.has(key)) errors.push(`${assetId}: Terrain se solapa en ${key}`);
+          terrainCoverage.add(key);
+        }
+      }
+      if (surfaceType === 'slow') {
+        const multiplier = Number(properties.get('slowMultiplier') ?? 1.5);
+        if (!Number.isFinite(multiplier) || multiplier < 1) {
+          errors.push(`${assetId}: ${object.name} necesita slowMultiplier >= 1`);
+        }
+      }
+    }
+    if (object.layerName === 'Locations') {
+      const properties = objectProperties(object);
+      const locationKind = String(properties.get('locationKind') ?? '');
+      if (!['LocationPoint', 'LocationArea'].includes(klass)) {
+        errors.push(`${assetId}: ${object.name || `#${object.id ?? '?'}`} debe usar LocationPoint o LocationArea`);
+        continue;
+      }
+      if (!object.name?.trim()) errors.push(`${assetId}: lugar sin ID estable`);
+      else if (locations.has(object.name)) errors.push(`${assetId}: lugar duplicado ${object.name}`);
+      else locations.set(object.name, object);
+      if (!locationKinds.has(locationKind)) {
+        errors.push(`${assetId}: ${object.name} usa locationKind desconocido ${locationKind || '(vacío)'}`);
+      }
+      if (klass === 'LocationArea' && !(object.width > 0 && object.height > 0)) {
+        errors.push(`${assetId}: ${object.name} necesita geometría de área`);
+      }
+      if (klass === 'LocationPoint' && !object.point && (object.width || object.height)) {
+        errors.push(`${assetId}: ${object.name} debe ser un punto`);
       }
     }
     if (Object.hasOwn(optionalObjectLayers, object.layerName)) {
@@ -254,10 +328,30 @@ function validateTiledRoom(assetId, tiled) {
       }
     }
   }
-  return { errors, anchors, paths, triggerZones, occluders };
+  if (layersByName.has('Terrain') && terrainCoverage.size !== tiled.width * tiled.height) {
+    errors.push(`${assetId}: Terrain no cubre todo el sector`);
+  }
+  return { errors, anchors, paths, triggerZones, occluders, locations, terrainAreas };
 }
 
-export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest, characterManifest }) {
+/**
+ * @param {{
+ *   adventure: any;
+ *   tiledMaps: Record<string, any>;
+ *   pmdManifest?: { assets?: any[] };
+ *   characterManifest?: { assets?: any[]; appearances?: any[] };
+ *   mediaManifest?: { assets?: any[] };
+ *   missionDocument?: { narrativeSequences?: any[] };
+ * }} input
+ */
+export function validateTiledAdventureBundle({
+  adventure,
+  tiledMaps,
+  pmdManifest,
+  characterManifest,
+  mediaManifest = { assets: [] },
+  missionDocument = { narrativeSequences: [] },
+}) {
   const strictSectorRosters = adventure?.schemaVersion === 3;
   adventure = normalizeAdventureForValidation(adventure);
   const errors = [];
@@ -271,6 +365,8 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
   const roomPaths = new Map();
   const roomTriggerZones = new Map();
   const roomOccluders = new Map();
+  const roomLocations = new Map();
+  const roomTerrainAreas = new Map();
   for (const room of adventure.sectors ?? []) {
     const asset = tiledAssets.get(room.tiledMapAssetId);
     if (!asset) {
@@ -287,6 +383,8 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     roomPaths.set(room.sectorId, validation.paths);
     roomTriggerZones.set(room.sectorId, validation.triggerZones);
     roomOccluders.set(room.sectorId, validation.occluders);
+    roomLocations.set(room.sectorId, validation.locations);
+    roomTerrainAreas.set(room.sectorId, validation.terrainAreas);
     for (const anchorId of room.spawnAnchorIds ?? []) {
       const anchor = validation.anchors.get(anchorId);
       if (!anchor) errors.push(`${room.sectorId}: spawnAnchorId inexistente ${anchorId}`);
@@ -298,6 +396,29 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
 
   const pmdAssets = new Map((pmdManifest?.assets ?? []).map(asset => [asset.assetId, asset]));
   const characterAssets = new Map((characterManifest?.assets ?? []).map(asset => [asset.assetId, asset]));
+  const appearances = new Map((characterManifest?.appearances ?? []).map(item => [item.appearanceId, item]));
+  const mediaAssets = new Map((mediaManifest?.assets ?? []).map(asset => [asset.assetId, asset]));
+  const narrativeSequenceIds = new Set((missionDocument?.narrativeSequences ?? [])
+    .map(sequence => sequence.sequenceId));
+  const hasWater = [...roomTerrainAreas.values()].some(areas => (
+    [...areas.values()].some(area => area.surfaceType === 'water')
+  ));
+  if (hasWater) {
+    const requiredAppearanceIds = new Set([
+      ...(characterManifest?.appearances ?? [])
+        .filter(appearance => appearance.avatarId)
+        .map(appearance => appearance.appearanceId),
+      ...(missionDocument?.missions ?? [])
+        .map(mission => mission.playerAppearanceId)
+        .filter(Boolean),
+    ]);
+    for (const appearanceId of requiredAppearanceIds) {
+      const appearance = appearances.get(appearanceId);
+      if (!appearance?.modes?.swim || !characterAssets.has(appearance.modes.swim)) {
+        errors.push(`${appearanceId}: el mapa contiene water pero falta un asset swim válido`);
+      }
+    }
+  }
   if (strictSectorRosters) {
     const requiredAssets = new Set(adventure.requiredAssetIds ?? []);
     for (const sector of adventure.sectors ?? []) {
@@ -335,6 +456,10 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     if (!validPlacementScale(placement.renderScaleMultiplier)) {
       errors.push(`${placement.placementId}: renderScaleMultiplier debe estar entre 0.1 y 5`);
     }
+    const actorSurfaces = placement.terrainRules?.allowedSurfaceTypes ?? ['ground'];
+    if (!actorSurfaces.length || actorSurfaces.some(surface => !terrainSurfaceTypes.has(surface))) {
+      errors.push(`${placement.placementId}: reglas de terreno inválidas`);
+    }
     if (!rooms.has(placement.sectorId)) {
       errors.push(`${placement.placementId}: sector inexistente`);
       continue;
@@ -368,6 +493,10 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
     }
     if (!validPlacementScale(placement.renderScaleMultiplier)) {
       errors.push(`${placement.placementId}: renderScaleMultiplier debe estar entre 0.1 y 5`);
+    }
+    const characterSurfaces = placement.terrainRules?.allowedSurfaceTypes ?? ['ground'];
+    if (!characterSurfaces.length || characterSurfaces.some(surface => !terrainSurfaceTypes.has(surface))) {
+      errors.push(`${placement.placementId}: reglas de terreno inválidas`);
     }
     if (!rooms.has(placement.sectorId)) {
       errors.push(`${placement.placementId}: sector inexistente`);
@@ -730,11 +859,12 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
         if (action.kind === 'movePath' && !authoredMapSequence) {
           errors.push(`${beat.beatId}: movePath solo se admite en secuencias de evento de mapa`);
         }
-        if (actorRefs.has(action.actorRef)) errors.push(`${beat.beatId}: más de una acción para ${action.actorRef}`);
-        actorRefs.add(action.actorRef);
-        const dynamic = ['dynamic:companion', 'dynamic:player'].includes(action.actorRef);
-        const placement = dynamic ? undefined : allPlacements.get(action.actorRef);
-        if (!dynamic && (!placement || placement.sectorId !== sequence.sectorId)) {
+        const hasActorRef = typeof action.actorRef === 'string';
+        if (hasActorRef && actorRefs.has(action.actorRef)) errors.push(`${beat.beatId}: más de una acción para ${action.actorRef}`);
+        if (hasActorRef) actorRefs.add(action.actorRef);
+        const dynamic = hasActorRef && ['dynamic:companion', 'dynamic:player'].includes(action.actorRef);
+        const placement = hasActorRef && !dynamic ? allPlacements.get(action.actorRef) : undefined;
+        if (hasActorRef && !dynamic && (!placement || placement.sectorId !== sequence.sectorId)) {
           errors.push(`${beat.beatId}: actorRef inexistente ${action.actorRef}`);
           continue;
         }
@@ -804,6 +934,85 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
         if (action.kind === 'returnToTrainer' && action.actorRef !== 'dynamic:companion') {
           errors.push(`${beat.beatId}: returnToTrainer solo admite dynamic:companion`);
         }
+        if (action.kind === 'spawnProjectile') {
+          if (!action.effectAssetId?.trim()) errors.push(`${beat.beatId}: el proyectil necesita effectAssetId`);
+          const effect = mediaAssets.get(action.effectAssetId);
+          if (!effect || effect.kind !== 'effect') {
+            errors.push(`${beat.beatId}: efecto inexistente ${action.effectAssetId}`);
+          }
+          if (!(action.speedPixelsPerSecond > 0) || !(action.lifetimeMs > 0)) {
+            errors.push(`${beat.beatId}: proyectil con velocidad o vida útil inválida`);
+          }
+        }
+        if (action.kind === 'charge') {
+          const targetDynamic = ['dynamic:companion', 'dynamic:player'].includes(action.targetRef);
+          const target = targetDynamic ? undefined : allPlacements.get(action.targetRef);
+          if (!targetDynamic && (!target || target.sectorId !== sequence.sectorId)) {
+            errors.push(`${beat.beatId}: targetRef inexistente ${action.targetRef}`);
+          }
+          if (!(action.speedPixelsPerSecond > 0)) errors.push(`${beat.beatId}: carga sin velocidad positiva`);
+        }
+        if (action.kind === 'push') {
+          const sourceDynamic = action.sourceRef
+            ? ['dynamic:companion', 'dynamic:player'].includes(action.sourceRef)
+            : false;
+          const source = action.sourceRef && !sourceDynamic
+            ? allPlacements.get(action.sourceRef)
+            : undefined;
+          if (action.sourceRef && !sourceDynamic
+            && (!source || source.sectorId !== sequence.sectorId)) {
+            errors.push(`${beat.beatId}: sourceRef inexistente ${action.sourceRef}`);
+          }
+          if (!Number.isInteger(action.tiles) || action.tiles < 1) {
+            errors.push(`${beat.beatId}: empujón con tiles inválido`);
+          }
+        }
+        if (action.kind === 'playAudio') {
+          if (!action.audioAssetId?.trim()) errors.push(`${beat.beatId}: playAudio necesita audioAssetId`);
+          const audio = mediaAssets.get(action.audioAssetId);
+          if (!audio || audio.kind !== 'audio') {
+            errors.push(`${beat.beatId}: audio inexistente ${action.audioAssetId}`);
+          }
+        }
+        if (action.kind === 'setPlayerAppearance' && !appearances.has(action.appearanceId)) {
+          errors.push(`${beat.beatId}: apariencia inexistente ${action.appearanceId}`);
+        }
+        if (action.kind === 'openNarrative' && !narrativeSequenceIds.has(action.sequenceId)) {
+          errors.push(`${beat.beatId}: secuencia narrativa inexistente ${action.sequenceId}`);
+        }
+        if (action.kind === 'moveToLocation') {
+          const location = roomLocations.get(action.sectorId ?? sequence.sectorId)?.get(action.locationId);
+          if (!location) errors.push(`${beat.beatId}: lugar inexistente ${action.locationId}`);
+        }
+        if (action.kind === 'applyHazardConsequence'
+          || ['spawnProjectile', 'charge'].includes(action.kind) && action.consequence) {
+          const consequence = action.kind === 'applyHazardConsequence'
+            ? action.consequence
+            : action.consequence;
+          if (consequence) {
+            if (!hazardOutcomes.has(consequence.outcome)) {
+              errors.push(`${beat.beatId}: consecuencia desconocida ${consequence.outcome}`);
+            }
+            if (!hazardRollbackPolicies.has(consequence.rollbackPolicy)) {
+              errors.push(`${beat.beatId}: rollback desconocido ${consequence.rollbackPolicy}`);
+            }
+            if (consequence.destination?.kind === 'location') {
+              const location = roomLocations
+                .get(consequence.destination.sectorId ?? sequence.sectorId)
+                ?.get(consequence.destination.locationId);
+              if (!location) errors.push(`${beat.beatId}: destino inexistente ${consequence.destination.locationId}`);
+            }
+            if (consequence.failureNarrativeSequenceId
+              && !narrativeSequenceIds.has(consequence.failureNarrativeSequenceId)) {
+              errors.push(`${beat.beatId}: narrativa de fracaso inexistente ${consequence.failureNarrativeSequenceId}`);
+            }
+            if (consequence.outcome === 'failMission'
+              && adventure.freeExpeditionEntryPointId
+              && !consequence.failureNarrativeSequenceId) {
+              errors.push(`${beat.beatId}: failMission disponible en expedición libre necesita diálogo de mapa`);
+            }
+          }
+        }
       }
     }
   }
@@ -844,7 +1053,9 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
 
     const spatialTarget = trigger.activation?.kind === 'enterZone'
       ? { kind: 'zone', zoneId: trigger.activation.zoneId }
-      : trigger.activation?.target;
+      : ['contextAction', 'proximity'].includes(trigger.activation?.kind)
+        ? trigger.activation?.target
+        : undefined;
     if (spatialTarget?.kind === 'zone') {
       const zone = roomTriggerZones.get(trigger.sectorId)?.get(spatialTarget.zoneId);
       if (!zone) errors.push(`${trigger.triggerId}: zona inexistente ${spatialTarget.zoneId}`);
@@ -860,7 +1071,7 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
       if (trigger.activation?.kind === 'enterZone') {
         errors.push(`${trigger.triggerId}: enterZone requiere una zona`);
       }
-    } else if (mapEventActivationKinds.has(trigger.activation?.kind)) {
+    } else if (['enterZone', 'contextAction', 'proximity'].includes(trigger.activation?.kind)) {
       errors.push(`${trigger.triggerId}: objetivo espacial desconocido`);
     }
     if (trigger.activation?.kind === 'contextAction') {
@@ -874,8 +1085,50 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
       && (!Number.isFinite(trigger.activation.rangeTiles) || trigger.activation.rangeTiles <= 0)) {
       errors.push(`${trigger.triggerId}: proximity necesita un radio positivo`);
     }
+    if (trigger.activation?.kind === 'interval') {
+      if (!Number.isFinite(trigger.activation.intervalMs) || trigger.activation.intervalMs <= 0) {
+        errors.push(`${trigger.triggerId}: interval necesita intervalMs positivo`);
+      }
+      if (trigger.activation.initialDelayMs !== undefined
+        && (!Number.isFinite(trigger.activation.initialDelayMs) || trigger.activation.initialDelayMs < 0)) {
+        errors.push(`${trigger.triggerId}: initialDelayMs no puede ser negativo`);
+      }
+      if (trigger.activation.activeZoneId
+        && !roomTriggerZones.get(trigger.sectorId)?.has(trigger.activation.activeZoneId)) {
+        errors.push(`${trigger.triggerId}: zona activa inexistente ${trigger.activation.activeZoneId}`);
+      }
+    }
+    if (trigger.activation?.kind === 'pathCrossing') {
+      if (!roomPaths.get(trigger.sectorId)?.has(trigger.activation.pathId)) {
+        errors.push(`${trigger.triggerId}: ruta inexistente ${trigger.activation.pathId}`);
+      }
+      if (trigger.activation.corridorTiles !== undefined
+        && (!(trigger.activation.corridorTiles > 0))) {
+        errors.push(`${trigger.triggerId}: corridorTiles debe ser positivo`);
+      }
+    }
+    if (trigger.activation?.kind === 'actorContact') {
+      const placement = allPlacements.get(trigger.activation.placementId);
+      if (!placement || placement.sectorId !== trigger.sectorId) {
+        errors.push(`${trigger.triggerId}: actor de contacto inexistente ${trigger.activation.placementId}`);
+      }
+    }
+    if (trigger.activation?.kind === 'enterSurface'
+      && !terrainSurfaceTypes.has(trigger.activation.surfaceType)) {
+      errors.push(`${trigger.triggerId}: superficie desconocida ${trigger.activation.surfaceType}`);
+    }
+    if (trigger.activation?.kind === 'enterSurface' && trigger.activation.terrainAreaId) {
+      const area = roomTerrainAreas.get(trigger.sectorId)?.get(trigger.activation.terrainAreaId);
+      if (!area) errors.push(`${trigger.triggerId}: TerrainArea inexistente ${trigger.activation.terrainAreaId}`);
+      else if (area.surfaceType !== trigger.activation.surfaceType) {
+        errors.push(`${trigger.triggerId}: ${trigger.activation.terrainAreaId} no es ${trigger.activation.surfaceType}`);
+      }
+    }
     if (!Array.isArray(trigger.resultingActorStates)) {
       errors.push(`${trigger.triggerId}: resultingActorStates debe ser una lista`);
+    }
+    if ((trigger.rewards?.length || trigger.rewardPackageId) && !trigger.rewardOriginId) {
+      errors.push(`${trigger.triggerId}: una recompensa necesita rewardOriginId`);
     }
     const resultingPlacements = new Set();
     for (const state of trigger.resultingActorStates ?? []) {
@@ -919,6 +1172,21 @@ export function validateTiledAdventureBundle({ adventure, tiledMaps, pmdManifest
         if (movesActor || changesAnimation || changesDirection || changesVisibility) {
           errors.push(`${trigger.triggerId}: el estado final repetible no coincide con el estado inicial de ${state.placementId}`);
         }
+      }
+    }
+  }
+  for (const [sectorId, terrainAreas] of roomTerrainAreas) {
+    const fallTriggers = (adventure.mapEventTriggers ?? []).filter(trigger => (
+      trigger.sectorId === sectorId
+      && trigger.activation?.kind === 'enterSurface'
+      && trigger.activation.surfaceType === 'fall'
+    ));
+    for (const [terrainAreaId, area] of terrainAreas) {
+      if (area.surfaceType !== 'fall') continue;
+      if (!fallTriggers.some(trigger => (
+        !trigger.activation.terrainAreaId || trigger.activation.terrainAreaId === terrainAreaId
+      ))) {
+        errors.push(`${terrainAreaId}: superficie fall sin regla de caída`);
       }
     }
   }

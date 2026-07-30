@@ -258,10 +258,17 @@ export function createPokeDiscoverMovementRoute(
         rangeTiles: Math.max(1, draft.rangeTiles ?? 1),
       }
       : {
-        kind: 'proximity',
-        target,
-        rangeTiles: Math.max(1, draft.rangeTiles ?? 1),
-      };
+        kind: activationKind,
+        ...(activationKind === 'proximity'
+          ? { target, rangeTiles: Math.max(1, draft.rangeTiles ?? 1) }
+          : activationKind === 'interval'
+            ? { intervalMs: 2_000 }
+            : activationKind === 'pathCrossing'
+              ? { pathId, corridorTiles: Math.max(1, draft.rangeTiles ?? 1) }
+              : activationKind === 'actorContact'
+                ? { placementId: draft.targetPlacementId ?? draft.placementId }
+                : { surfaceType: 'ground' as const }),
+      } as MapEventTriggerV3['activation'];
   const beats: MapSequenceBeatV1[] = [{
     schemaVersion: 1,
     beatId,
@@ -577,7 +584,9 @@ export function linkedPokeDiscoverMovementSequences(
   )).map(sequence => ({ sequenceId: sequence.sequenceId, kind: 'ambient' as const }));
   const events = (adventure.mapSequences ?? []).filter(sequence => (
     sequence.sectorId === sectorId
-    && sequence.beats.some(beat => beat.actions.some(action => action.actorRef === placementId))
+    && sequence.beats.some(beat => beat.actions.some(
+      action => 'actorRef' in action && action.actorRef === placementId,
+    ))
   )).map(sequence => ({ sequenceId: sequence.sequenceId, kind: 'event' as const }));
   return [...ambient, ...events];
 }

@@ -97,7 +97,11 @@ export function analyzePokeDiscoverEditorEconomy(
     ...(adventure.researchFacts ?? []).map(fact => ({ sourceId: fact.factId, requirement: fact.requirement, rewards: fact.rewards })),
     ...adventure.behaviorTriggers.map(trigger => ({ sourceId: trigger.triggerId, requirement: trigger.requirement, rewards: trigger.rewards ?? getPokeDiscoverRewardPackage(trigger.rewardPackageId) ?? [] })),
     ...adventure.expressionTriggers.map(trigger => ({ sourceId: trigger.triggerId, requirement: trigger.activationRequirement, rewards: getPokeDiscoverRewardPackage(trigger.rewardPackageId) ?? [] })),
-    ...(adventure.mapEventTriggers ?? []).map(trigger => ({ sourceId: trigger.triggerId, requirement: trigger.requirement, rewards: [] })),
+    ...(adventure.mapEventTriggers ?? []).map(trigger => ({
+      sourceId: trigger.triggerId,
+      requirement: trigger.requirement,
+      rewards: trigger.rewards ?? getPokeDiscoverRewardPackage(trigger.rewardPackageId) ?? [],
+    })),
   ];
   const trainerExperience = rewardSources.reduce((total, source) => total + rewardAmount(source.rewards, 'trainerExperience'), 0);
   const discoveryPoints = rewardSources.reduce((total, source) => total + rewardAmount(source.rewards, 'discoveryPoints'), 0);

@@ -220,7 +220,14 @@ export function auditPokeDiscoverEditorLogic(adventure: AdventureMapV3): PokeDis
 
 export function auditPokeDiscoverEditorProject(bundle: LoadedAdventureMapBundle): PokeDiscoverEditorDiagnostic[] {
   const tiledMaps = Object.fromEntries(bundle.sectors.map(room => [room.sector.tiledMapAssetId, room.tilemap]));
-  const validationErrors = validateTiledAdventureBundle({ adventure: bundle.adventure, tiledMaps, pmdManifest: bundle.pmdManifest, characterManifest: bundle.characterManifest }) as string[];
+  const validationErrors = validateTiledAdventureBundle({
+    adventure: bundle.adventure,
+    tiledMaps,
+    pmdManifest: bundle.pmdManifest,
+    characterManifest: bundle.characterManifest,
+    mediaManifest: bundle.mediaManifest,
+    missionDocument: bundle.missionDocument,
+  }) as string[];
   const diagnostics = [...auditPokeDiscoverEditorLogic(bundle.adventure)];
   for (const message of validationErrors) {
     if (/duplicad[oa]s?/i.test(message)) continue;

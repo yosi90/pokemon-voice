@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "conversationId": "narrative:professor-camphor:return",
+  "title": "Regreso de Alcanfor",
+  "tags": [
+    "alcanfor",
+    "migrated"
+  ],
+  "initialCueId": "return",
+  "once": false,
+  "cues": [
+    {
+      "cueId": "return",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "¡Otra captura para esa Pokédex! Sabía que volveríamos a encontrarnos. ¿Te unes ahora a PokeDiscover?",
+      "actions": [
+        {
+          "actionId": "return:action:background",
+          "kind": "setBackground",
+          "backgroundAssetId": "narrative:background:laboratorio-de-alcanfor",
+          "transition": "fade",
+          "phase": "beforeText",
+          "durationMs": 250,
+          "blocking": true
+        },
+        {
+          "actionId": "return:action:enter:professor-camphor",
+          "kind": "enterActor",
+          "actorId": "professor-camphor",
+          "source": {
+            "kind": "illustration",
+            "assetId": "narrative:character:professor-camphor:alegre"
+          },
+          "poseAssetId": "narrative:character:professor-camphor:alegre",
+          "transform": {
+            "slot": "right"
+          },
+          "motion": "fade",
+          "phase": "beforeText",
+          "durationMs": 200
+        },
+        {
+          "actionId": "return:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:parlanchin",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "choices": [
+        {
+          "choiceId": "accept-return",
+          "label": "Sí, acepto",
+          "nextCueId": "trainer-choice"
+        },
+        {
+          "choiceId": "decline-return",
+          "label": "Todavía no",
+          "nextCueId": "postponed",
+          "legacyAction": {
+            "kind": "declinePokeDiscover"
+          }
+        }
+      ]
+    },
+    {
+      "cueId": "trainer-choice",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Entonces terminemos tu inscripción. ¿Eres un chico o una chica?",
+      "actions": [
+        {
+          "actionId": "trainer-choice:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:alegre",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "choices": [
+        {
+          "choiceId": "choose-achaman-return",
+          "label": "Soy un chico",
+          "nextCueId": "trainer-name",
+          "legacyAction": {
+            "kind": "selectTrainerAvatar",
+            "avatarId": "achaman"
+          }
+        },
+        {
+          "choiceId": "choose-guayota-return",
+          "label": "Soy una chica",
+          "nextCueId": "trainer-name",
+          "legacyAction": {
+            "kind": "selectTrainerAvatar",
+            "avatarId": "guayota"
+          }
+        }
+      ]
+    },
+    {
+      "cueId": "trainer-name",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Este es el nombre que pondré en tu ficha. Puedes cambiarlo ahora si quieres.",
+      "actions": [
+        {
+          "actionId": "trainer-name:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:parlanchin",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "textInput": {
+        "inputId": "trainer-display-name-return",
+        "label": "Nombre del entrenador",
+        "variableId": "player.name",
+        "maxLength": 18,
+        "submitLabel": "Confirmar nombre",
+        "nextCueId": "accepted",
+        "legacyAction": "saveTrainerNameAndAccept"
+      }
+    },
+    {
+      "cueId": "postponed",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "De acuerdo. Seguiré atento a tus descubrimientos.",
+      "actions": [
+        {
+          "actionId": "postponed:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:alegre",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "legacyAction": {
+        "kind": "postponePokeDiscover"
+      },
+      "outcomeId": "postponed"
+    },
+    {
+      "cueId": "accepted",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "¡Sabía que acabarías aceptando! Busca mi hoja de alcanfor cuando quieras consultar tus encargos.",
+      "actions": [
+        {
+          "actionId": "accepted:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:explicando",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "legacyAction": {
+        "kind": "completeSequence"
+      },
+      "outcomeId": "accepted"
+    }
+  ]
+}

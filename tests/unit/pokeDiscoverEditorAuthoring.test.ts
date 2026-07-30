@@ -583,6 +583,38 @@ describe('apertura y guardado multiarchivo', () => {
     expect(getPokeDiscoverWorkspaceDirtyFiles(saved)).toEqual([]);
   });
 
+  it('revierte todos los archivos si falla una escritura del guardado atómico', async () => {
+    const memory = memoryProject();
+    const originalMap = memory.handles.get('room-01.tmj')!.content;
+    const originalSidecar = memory.handles.get('test.adventure.json')!.content;
+    const workspace = await openPokeDiscoverWorkspace({
+      files: [...memory.handles.values()].map(handle => ({
+        file: new File([handle.content], handle.name, { lastModified: handle.lastModified }),
+        handle,
+      })),
+      directoryHandle: memory.directory,
+    });
+    const changed = {
+      ...workspace,
+      history: {
+        ...workspace.history,
+        present: {
+          ...workspace.history.present,
+          adventure: { ...workspace.history.present.adventure, title: 'Falla intermedia' },
+        },
+      },
+    };
+    memory.handles.get('test.adventure.json')!.createWritable = async () => ({
+      write: async () => { throw new Error('disk full'); },
+      close: async () => undefined,
+    });
+
+    await expect(savePokeDiscoverWorkspace(changed)).rejects.toThrow('disk full');
+    expect(memory.handles.get('room-01.tmj')?.content).toBe(originalMap);
+    expect(memory.handles.get('test.adventure.json')?.content).toBe(originalSidecar);
+    expect(memory.handles.has('test.world')).toBe(false);
+  });
+
   it('limpia los cambios pendientes después de exportar sin permiso de escritura', async () => {
     const memory = memoryProject();
     const sources = [...memory.handles.values()].map(handle => ({

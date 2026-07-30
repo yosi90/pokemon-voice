@@ -70,6 +70,13 @@ import {
   type PokeDiscoverWorkspaceSourceFile,
 } from '../../domain/tools/pokeDiscoverEditorWorkspace.js';
 import {
+  discoverPokeDiscoverProjectFiles,
+  discoverPokeDiscoverProjectRoot,
+  withPokeDiscoverMissionManifestTransaction,
+  type PokeDiscoverProjectRoot,
+  type PokeDiscoverRootProject,
+} from '../../domain/tools/pokeDiscoverEditorProjectRoot.js';
+import {
   createPokeDiscoverMovementRoute,
   lastPokeDiscoverMovementPoint,
   linkedPokeDiscoverMovementSequences,
@@ -103,10 +110,15 @@ import {
 import { MapEventFromCommentEditor } from './MapEventFromCommentEditor.js';
 import { MovementAndEventsEditor } from './MovementAndEventsEditor.js';
 import { NarrativeConfigurationEditor } from './NarrativeConfigurationEditor.js';
+import { MissionNarrativeEditor } from './MissionNarrativeEditor.js';
+import { TerrainAndLocationsEditor } from './TerrainAndLocationsEditor.js';
+import { MediaImportEditor } from './MediaImportEditor.js';
+import { UnifiedEventEditor } from './UnifiedEventEditor.js';
 import { OrphanPokemonAnchorRepairEditor } from './OrphanPokemonAnchorRepairEditor.js';
 import { ProgressSimulationEditor } from './ProgressSimulationEditor.js';
 import { ProjectDiagnosticsPanel } from './ProjectDiagnosticsPanel.js';
 import { RequirementEditor } from './RequirementEditor.js';
+import { ToolNavigation } from '../shared/ToolNavigation.js';
 import { ResearchCoverageMatrix } from './ResearchCoverageMatrix.js';
 import { TiledReferenceExplorer } from './TiledReferenceExplorer.js';
 import { SidecarContentPropertiesEditor } from './SidecarContentPropertiesEditor.js';
@@ -137,6 +149,10 @@ type UtilityId =
   | 'entries'
   | 'rules'
   | 'narrative'
+  | 'missions'
+  | 'terrain'
+  | 'events'
+  | 'media'
   | 'catalog'
   | 'simulation'
   | 'coverage'
@@ -151,6 +167,10 @@ const UTILITY_TITLES: Record<UtilityId, string> = {
   entries: 'Entradas del jugador',
   rules: 'Reglas',
   narrative: 'Investigación y narrativa',
+  missions: 'Misiones y diálogos',
+  terrain: 'Terreno y lugares',
+  events: 'Eventos y peligros',
+  media: 'Importar recursos',
   catalog: 'Catálogo',
   simulation: 'Simulación',
   coverage: 'Cobertura de investigación',
@@ -166,6 +186,10 @@ const INITIAL_WINDOWS: Record<UtilityId, boolean> = {
   entries: false,
   rules: false,
   narrative: false,
+  missions: false,
+  terrain: false,
+  events: false,
+  media: false,
   catalog: false,
   simulation: false,
   coverage: false,
@@ -188,6 +212,7 @@ function snapshotBundle(
   const withAdventure = applyEditorAdventure(current, snapshot.adventure);
   return {
     ...withAdventure,
+    missionDocument: snapshot.missionDocument,
     sectors: withAdventure.sectors.map(sectorBundle => {
       const registration = registrationsByRoom.get(sectorBundle.sector.sectorId);
       const source = registration ? snapshot.tilemapsByFileName[registration.fileName] : undefined;
@@ -388,6 +413,7 @@ export function PokeDiscoverEditor() {
   } | undefined>(undefined);
   const titleClosingRef = useRef(false);
   const [workspace, setWorkspace] = useState<PokeDiscoverWorkspace>();
+  const [projectRoot, setProjectRoot] = useState<PokeDiscoverProjectRoot>();
   const [bundle, setBundle] = useState<LoadedAdventureMapBundle>();
   const [sectorId, setRoomId] = useState('');
   const [view, setView] = useState<MainView>('room');
@@ -577,6 +603,7 @@ export function PokeDiscoverEditor() {
       adventure: snapshot.adventure,
       baseUrl: projectPublicBaseUrl(),
       tiledMapsByAssetId,
+      missionDocument: snapshot.missionDocument,
     });
   };
 
@@ -671,13 +698,32 @@ export function PokeDiscoverEditor() {
         id: 'pokediscover-project',
         mode: 'readwrite',
       });
-      const files = await readPokeDiscoverDirectory(directoryHandle);
-      await beginOpen(files, directoryHandle, directoryHandle.name);
+      setStatus('loading');
+      setMessage('Descubriendo aventuras, sectores y misiones…');
+      const root = await discoverPokeDiscoverProjectRoot(directoryHandle);
+      setProjectRoot(root);
+      const preferred = root.projects.find(project => (
+        project.mapId === workspace?.history.present.adventure.mapId
+      )) ?? root.projects[0];
+      await beginOpen(
+        preferred.files,
+        preferred.directoryHandle,
+        preferred.projectName,
+      );
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === 'AbortError') return;
       setStatus('error');
       setMessage(cause instanceof Error ? cause.message : 'No se pudo acceder a la carpeta.');
     }
+  };
+
+  const openRootProject = (project: PokeDiscoverRootProject) => {
+    if (project.mapId === snapshot?.adventure.mapId) return;
+    void beginOpen(
+      project.files,
+      project.directoryHandle,
+      project.projectName,
+    );
   };
 
   const reopenRecentFolder = async (
@@ -776,6 +822,8 @@ export function PokeDiscoverEditor() {
       ])),
       pmdManifest: bundle.pmdManifest,
       characterManifest: bundle.characterManifest,
+      mediaManifest: bundle.mediaManifest,
+      missionDocument: snapshot.missionDocument,
     });
   };
 
@@ -788,6 +836,20 @@ export function PokeDiscoverEditor() {
       }
     }
     commitSnapshot(current => ({ ...current, adventure }), description);
+  };
+
+  const updateMissionDocument = (
+    missionDocument: NonNullable<PokeDiscoverWorkspaceSnapshot['missionDocument']>,
+    description = 'Actualizar misiones',
+  ) => {
+    commitSnapshot(current => ({
+      ...current,
+      missionDocument,
+      adventure: {
+        ...current.adventure,
+        missionIds: missionDocument.missions.map(mission => mission.missionId),
+      },
+    }), description);
   };
 
   const beginTitleEdit = () => {
@@ -1060,7 +1122,18 @@ export function PokeDiscoverEditor() {
     setStatus('loading');
     setMessage('Guardando mapas, distribución y proyecto…');
     try {
-      const saved = await savePokeDiscoverWorkspace(writableWorkspace, { overwriteConflicts });
+      const saveWorkspace = () => savePokeDiscoverWorkspace(
+        writableWorkspace,
+        { overwriteConflicts },
+      );
+      const saved = projectRoot
+        ? await withPokeDiscoverMissionManifestTransaction(
+          projectRoot,
+          writableWorkspace.history.present.missionDocument,
+          writableWorkspace.missionFileName,
+          saveWorkspace,
+        )
+        : await saveWorkspace();
       setWorkspace(saved);
       setRecentFolder(await rememberPokeDiscoverRecentFolder({
         directoryHandle: saved.directoryHandle,
@@ -1324,6 +1397,8 @@ export function PokeDiscoverEditor() {
       ])),
       pmdManifest: bundle?.pmdManifest,
       characterManifest: bundle?.characterManifest,
+      mediaManifest: bundle?.mediaManifest,
+      missionDocument: snapshot.missionDocument,
     });
     if (validationErrors.length) {
       setMessage(`La transición no supera la validación: ${validationErrors[0]}`);
@@ -1424,6 +1499,8 @@ export function PokeDiscoverEditor() {
         tiledMaps,
         pmdManifest: bundle?.pmdManifest,
         characterManifest: bundle?.characterManifest,
+        mediaManifest: bundle?.mediaManifest,
+        missionDocument: snapshot.missionDocument,
       });
       if (errors.length) throw new Error(errors[0]);
       commitSnapshot(current => ({
@@ -1659,11 +1736,15 @@ export function PokeDiscoverEditor() {
               <hr />
               <MenuAction disabled={!workspace} onClick={() => openUtility('placements')}>Colocaciones</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('encounters')}>Encuentros</MenuAction>
+              <MenuAction disabled={!workspace || !selectedRegistration} onClick={() => openUtility('terrain')}>Terreno y lugares</MenuAction>
+              <MenuAction disabled={!workspace || !selectedRegistration} onClick={() => openUtility('events')}>Eventos y peligros</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('scenes')}>Escenas</MenuAction>
+              <MenuAction disabled={!workspace} onClick={() => openUtility('missions')}>Misiones y diálogos</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('narrative')}>Investigación</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('rules')}>Reglas</MenuAction>
             </DesktopMenu>
             <DesktopMenu label="Herramientas" open={activeMenu === 'tools'} onOpen={() => setMenu('tools')}>
+              <MenuAction disabled={!workspace} onClick={() => openUtility('media')}>Importar recursos</MenuAction>
               <MenuAction onClick={() => openUtility('catalog')}>Catálogo</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('simulation')}>Simulación</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('coverage')}>Cobertura</MenuAction>
@@ -1726,13 +1807,58 @@ export function PokeDiscoverEditor() {
           {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
           onChange={event => {
             const files = Array.from(event.target.files ?? []).map(file => ({ file }));
-            if (files.length) void beginOpen(files, undefined, files[0].file.webkitRelativePath.split('/')[0]);
+            if (files.length) {
+              const sidecarPaths = files
+                .filter(source => source.file.name.toLocaleLowerCase().endsWith('.adventure.json'))
+                .map(source => source.file.webkitRelativePath.replaceAll('\\', '/'));
+              const looksLikeProjectRoot = sidecarPaths.length > 1
+                || sidecarPaths.some(path => path.split('/').length > 3);
+              if (looksLikeProjectRoot) {
+                void discoverPokeDiscoverProjectFiles(files).then(root => {
+                  setProjectRoot(root);
+                  const preferred = root.projects[0];
+                  return beginOpen(
+                    preferred.files,
+                    preferred.directoryHandle,
+                    preferred.projectName,
+                  );
+                }).catch(cause => {
+                  setStatus('error');
+                  setMessage(cause instanceof Error
+                    ? cause.message
+                    : 'No se pudo descubrir la raíz del proyecto.');
+                });
+              } else {
+                void beginOpen(
+                  files,
+                  undefined,
+                  files[0].file.webkitRelativePath.split('/')[0],
+                );
+              }
+            }
             event.currentTarget.value = '';
           }}
         />
 
         <div className="editor-app-workspace">
           <aside className="editor-room-explorer" aria-label="Explorador de sectores">
+            {projectRoot ? <>
+              <header><strong>Aventuras</strong><span>{projectRoot.projects.length}</span></header>
+              <div className="editor-room-explorer__list editor-project-explorer__maps">
+                {projectRoot.projects.map(project => (
+                  <button
+                    key={project.mapId}
+                    type="button"
+                    aria-pressed={project.mapId === snapshot?.adventure.mapId}
+                    onClick={() => openRootProject(project)}
+                  >
+                    <span className="is-ready" aria-hidden="true" />
+                    <strong>{project.title}</strong>
+                    <small>{project.sectors.length} sectores · {project.missions.length} misiones</small>
+                  </button>
+                ))}
+              </div>
+            </> : null}
             <header
               role={workspace ? 'button' : undefined}
               tabIndex={workspace ? 0 : undefined}
@@ -1765,6 +1891,22 @@ export function PokeDiscoverEditor() {
                 );
               })}
             </div>
+            {snapshot?.missionDocument?.missions.length ? <>
+              <header><strong>Misiones</strong><span>{snapshot.missionDocument.missions.length}</span></header>
+              <div className="editor-room-explorer__list editor-project-explorer__missions">
+                {snapshot.missionDocument.missions.map(mission => (
+                  <button
+                    key={mission.missionId}
+                    type="button"
+                    onClick={() => openUtility('missions')}
+                  >
+                    <span className="is-ready" aria-hidden="true" />
+                    <strong>{mission.title}</strong>
+                    <small>{mission.objectives.length} objetivos</small>
+                  </button>
+                ))}
+              </div>
+            </> : null}
             <footer>
               <div className="editor-view-modes" role="group" aria-label="Modo de visualización">
                 <button type="button" disabled={!workspace} aria-pressed={view === 'room' && mode === 'design'} onClick={() => { if (navigateView('room')) setMode('design'); }}>Diseñar</button>
@@ -2012,6 +2154,17 @@ export function PokeDiscoverEditor() {
           <span>{message}</span>
           <span>{selectedRegistration ? `Sector ${displayPokeDiscoverRoomLabel(selectedRegistration.fileName)}` : ''}</span>
           <span>{dirtyFiles.length ? `${dirtyFiles.length} archivo${dirtyFiles.length === 1 ? '' : 's'} pendiente${dirtyFiles.length === 1 ? '' : 's'}` : workspace ? 'Guardado' : ''}</span>
+          <ToolNavigation current="editor" onNavigate={url => {
+            const leave = () => window.location.assign(url);
+            if (dirtyFiles.length || organizationDirty) {
+              setPendingNavigation({
+                message: 'Abrir otra herramienta descartará los cambios que no se hayan guardado.',
+                action: leave,
+              });
+              return false;
+            }
+            return true;
+          }} />
         </footer>
 
         {workspace && bundle && snapshot ? (Object.keys(UTILITY_TITLES) as UtilityId[]).map((id, index) => (
@@ -2077,6 +2230,46 @@ export function PokeDiscoverEditor() {
             ) : null}
             {id === 'rules' ? (
               <RequirementEditor adventure={snapshot.adventure} onAdventureChange={adventure => updateAdventure(adventure, 'Actualizar reglas')} />
+            ) : null}
+            {id === 'terrain' && selectedTilemap ? (
+              <TerrainAndLocationsEditor
+                tilemap={selectedTilemap}
+                onChange={updateTilemap}
+                onConfigureFall={() => openUtility('events')}
+              />
+            ) : null}
+            {id === 'events' && selectedTilemap && selectedWindowRoom ? (
+              <UnifiedEventEditor
+                bundle={bundle}
+                room={selectedWindowRoom}
+                tilemap={selectedTilemap}
+                onAdventureChange={adventure => updateAdventure(adventure, 'Actualizar evento o peligro')}
+              />
+            ) : null}
+            {id === 'missions' ? (
+              <MissionNarrativeEditor
+                document={snapshot.missionDocument ?? {
+                  schemaVersion: 1,
+                  mapId: snapshot.adventure.mapId,
+                  missions: [],
+                  narrativeSequences: [],
+                }}
+                characterManifest={bundle.characterManifest}
+                availableMaps={projectRoot?.projects.map(project => ({
+                  mapId: project.mapId,
+                  title: project.title,
+                  sectors: project.sectors,
+                })) ?? []}
+                onChange={updateMissionDocument}
+              />
+            ) : null}
+            {id === 'media' ? (
+              <MediaImportEditor
+                rootHandle={projectRoot?.directoryHandle}
+                mediaManifest={bundle.mediaManifest ?? { schemaVersion: 1, assets: [] }}
+                characterManifest={bundle.characterManifest}
+                onImported={() => setMessage('Recurso global importado. Recarga el proyecto para usarlo en selectores.')}
+              />
             ) : null}
             {id === 'narrative' ? (
               <NarrativeConfigurationEditor adventure={snapshot.adventure} onAdventureChange={adventure => updateAdventure(adventure, 'Actualizar investigación')} />

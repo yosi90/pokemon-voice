@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "conversations": [
+    {
+      "schemaVersion": 1,
+      "conversationId": "narrative:professor-camphor:forest-emergency",
+      "title": "Emergencia en el bosque",
+      "tags": [
+        "alcanfor",
+        "migrated"
+      ],
+      "documentPath": "assets/adventure/narratives/forest-emergency.conversation.json"
+    },
+    {
+      "schemaVersion": 1,
+      "conversationId": "narrative:professor-camphor:introduction",
+      "title": "Presentación de PokeDiscover",
+      "tags": [
+        "alcanfor",
+        "migrated"
+      ],
+      "documentPath": "assets/adventure/narratives/introduction.conversation.json"
+    },
+    {
+      "schemaVersion": 1,
+      "conversationId": "narrative:professor-camphor:return",
+      "title": "Regreso de Alcanfor",
+      "tags": [
+        "alcanfor",
+        "migrated"
+      ],
+      "documentPath": "assets/adventure/narratives/return.conversation.json"
+    },
+    {
+      "schemaVersion": 1,
+      "conversationId": "narrative:professor-camphor:trainer-profile",
+      "title": "Ficha de entrenador",
+      "tags": [
+        "alcanfor",
+        "migrated"
+      ],
+      "documentPath": "assets/adventure/narratives/trainer-profile.conversation.json"
+    }
+  ]
+}

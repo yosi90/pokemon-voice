@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
   createTechnicalPhaserGame,
+  MAP_AMBIENT_CONTROL_EVENT,
   MAP_EXPRESSION_AVAILABLE_EVENT,
   MAP_EXPRESSION_CONTROL_EVENT,
   MAP_EXPRESSION_REQUEST_EVENT,
@@ -19,6 +20,9 @@ import {
   MAP_EVENT_AVAILABLE_EVENT,
   MAP_EVENT_COMPLETED_EVENT,
   MAP_EVENT_REQUEST_EVENT,
+  MAP_HAZARD_CONSEQUENCE_EVENT,
+  MAP_NARRATIVE_REQUEST_EVENT,
+  MAP_MISSION_OUTCOME_EVENT,
   MAP_SECTOR_ENTERED_EVENT,
   MAP_SPECIES_IDENTIFIED_EVENT,
   MAP_SEQUENCE_CUE_EVENT,
@@ -29,9 +33,14 @@ import {
 import { loadAdventureMapBundle } from '../domain/maps/loadAdventureBundle.js';
 import {
   beginBrowserCamphorPrologue,
+  applyBrowserHazardConsequence,
+  advanceBrowserMissionFlow,
+  checkpointBrowserMissionConversation,
   chooseBrowserCamphorStarter,
   completeBrowserCamphorPrologueScene,
+  enterBrowserMissionFlowExpedition,
   getBrowserPokeVoiceSave,
+  getBrowserMissionFlowState,
   executeBrowserCompanionBehavior,
   completeBrowserExpeditionInteraction,
   completeBrowserMapEventTrigger,
@@ -45,8 +54,19 @@ import type { AcousticExpressionFeatures } from '../domain/expeditions/expressio
 import type {
   ExpeditionExpressionTriggerV3,
   ExpeditionInteractionV3,
+  HazardConsequenceV1,
   MapEventTriggerV3,
+  NarrativeSequenceV1,
+  NarrativeConversationV1,
 } from '../../packages/contracts/src/index.js';
+import {
+  stopContinuedNarrativeAudio,
+  VisualNovelPlayer,
+} from './VisualNovelPlayer.js';
+import { getNarrativeConversation } from '../data/narrative/narrativeCatalog.js';
+import { getAdventureMapEntry } from '../data/adventure/adventureMapCatalog.js';
+import { buildNarrativeTokenValues } from '../domain/narrative/visualNovel.js';
+import { completeBrowserMissionDefinition } from '../store/browserPokeVoiceSaveStore.js';
 import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
 import {
   createCompanionCatalogSpecies,
@@ -60,6 +80,7 @@ import { getPokeDiscoverRewardPackage } from '../data/adventure/rewardBalance.js
 import { POKE_DISCOVER_FIELD_TOOLS } from '../data/adventure/pokeDiscoverShop.js';
 import { resolveExpeditionCapabilities } from '../domain/expeditions/expeditionCapabilities.js';
 import { listRequirementEligibleMapEventTriggers } from '../domain/expeditions/mapEventTriggers.js';
+import { getPokeDiscoverMission } from '../data/adventure/missionCatalog.js';
 
 export interface MapExpressionFeedback {
   status: 'resolved' | 'alreadyResolved' | 'ineligible' | 'methodUnavailable' | 'notMatched';
@@ -75,6 +96,8 @@ export const TEGUESTE_FOREST_PREVIEW_SECTOR_ID = 'sector:tegueste-forest:02-04';
 
 export function MapConceptPreview({
   open,
+  adventurePath = PREVIEW_ADVENTURE_PATH,
+  routeSectorId,
   listening,
   speechSupported,
   onMic,
@@ -89,8 +112,11 @@ export function MapConceptPreview({
   loadingText,
   catalog,
   onClose,
+  onMissionFailed,
 }: {
   open: boolean;
+  adventurePath?: string;
+  routeSectorId?: string;
   listening: boolean;
   speechSupported: boolean;
   onMic: () => void;
@@ -105,6 +131,7 @@ export function MapConceptPreview({
   loadingText: string;
   catalog: readonly PokemonCatalogRecord[];
   onClose: () => void;
+  onMissionFailed: (failureNarrativeSequenceId?: string) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const bundleRef = useRef<Awaited<ReturnType<typeof loadAdventureMapBundle>> | undefined>(undefined);
@@ -123,6 +150,50 @@ export function MapConceptPreview({
   const [companionAvailable, setCompanionAvailable] = useState(false);
   const [companionPresentation, setCompanionPresentation] = useState<MapCompanionPresentation>();
   const [storyCueId, setStoryCueId] = useState<string>();
+  const [hazardFailure, setHazardFailure] = useState<{
+    sequence: NarrativeSequenceV1;
+    pageId: string;
+  }>();
+  const [mapNarrative, setMapNarrative] = useState<{
+    sequence: NarrativeSequenceV1;
+    pageId: string;
+  }>();
+  const [flowConversation, setFlowConversation] = useState<NarrativeConversationV1>();
+  const [hazardConversation, setHazardConversation] = useState<NarrativeConversationV1>();
+  const hazardConversationIdRef = useRef<string | undefined>(undefined);
+  const flowCheckpoint = flowConversation
+    ? getBrowserPokeVoiceSave().activeExpeditionSession?.missionRuntime?.conversationCheckpoint
+    : undefined;
+  const matchingFlowCheckpoint = flowCheckpoint?.conversationId === flowConversation?.conversationId
+    ? flowCheckpoint
+    : undefined;
+
+  const advanceFlow = useCallback(async (outcomeId?: string) => {
+    let result = advanceBrowserMissionFlow(outcomeId);
+    while (result?.node.kind === 'condition') {
+      result = advanceBrowserMissionFlow();
+    }
+    if (!result) return;
+    if (result.node.kind === 'conversation') {
+      const conversation = await getNarrativeConversation(result.node.conversationId);
+      if (conversation) setFlowConversation(conversation);
+      return;
+    }
+    setFlowConversation(undefined);
+    if (result.node.kind === 'terminal') {
+      stopContinuedNarrativeAudio();
+      if (result.node.result === 'failure') onMissionFailed();
+      else completeBrowserMissionDefinition(result.mission, new Date().toISOString());
+      return;
+    }
+    if (result.node.kind === 'expedition') {
+      enterBrowserMissionFlowExpedition(result.node.mapId);
+      const sectorId = result.node.entrySectorId
+        ?? getAdventureMapEntry(result.node.mapId)?.sectors[0]?.sectorId
+        ?? '';
+      window.location.hash = `#/expeditions/${encodeURIComponent(result.node.mapId)}/${encodeURIComponent(sectorId)}`;
+    }
+  }, [onMissionFailed]);
 
   const requestMapSequence = useCallback((sequenceId: string) => {
     window.setTimeout(() => hostRef.current?.dispatchEvent(new CustomEvent(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, {
@@ -368,7 +439,10 @@ export function MapConceptPreview({
       const trigger = (event as CustomEvent<{ trigger?: MapEventTriggerV3 }>).detail?.trigger;
       const mapId = bundleRef.current?.adventure.mapId;
       if (!trigger || !mapId || !getBrowserPokeVoiceSave().activeExpeditionSession) return;
-      completeBrowserMapEventTrigger(mapId, trigger);
+      completeBrowserMapEventTrigger(mapId, trigger, {
+        completedAt: new Date().toISOString(),
+        rewards: getPokeDiscoverRewardPackage(trigger.rewardPackageId),
+      });
       setAvailableMapEvent(undefined);
     };
     const sectorEntered = (event: Event) => {
@@ -376,6 +450,52 @@ export function MapConceptPreview({
       const mapId = bundleRef.current?.adventure.mapId;
       if (!sectorId || !mapId || !getBrowserPokeVoiceSave().activeExpeditionSession) return;
       enterBrowserMapEventSector(mapId, sectorId);
+    };
+    const hazardConsequence = (event: Event) => {
+      const consequence = (event as CustomEvent<{
+        consequence?: HazardConsequenceV1;
+      }>).detail?.consequence;
+      if (!consequence) return;
+      const activeMissionId = getBrowserPokeVoiceSave().activeExpeditionSession?.missionId;
+      const missionFailureSequenceId = activeMissionId
+        ? bundleRef.current?.missionDocument?.missions
+          .find(mission => mission.missionId === activeMissionId)?.narratives?.failureSequenceId
+        : undefined;
+      const failureSequenceId = consequence.failureNarrativeSequenceId ?? missionFailureSequenceId;
+      const result = applyBrowserHazardConsequence(consequence);
+      if (result.returnToMissionBoard) {
+        stopContinuedNarrativeAudio();
+        setFlowConversation(undefined);
+        const sequence = bundleRef.current?.missionDocument?.narrativeSequences
+          .find(candidate => candidate.sequenceId === failureSequenceId);
+        if (sequence) {
+          setHazardFailure({ sequence, pageId: sequence.initialPageId });
+        } else {
+          void (failureSequenceId
+            ? getNarrativeConversation(failureSequenceId)
+            : Promise.resolve(undefined)
+          ).then(conversation => {
+            if (conversation) {
+              hazardConversationIdRef.current = conversation.conversationId;
+              setHazardConversation(conversation);
+            } else onMissionFailed(failureSequenceId);
+          });
+        }
+      }
+    };
+    const narrativeRequested = (event: Event) => {
+      const sequenceId = (event as CustomEvent<{ sequenceId?: string }>).detail?.sequenceId;
+      const sequence = bundleRef.current?.missionDocument?.narrativeSequences
+        .find(candidate => candidate.sequenceId === sequenceId);
+      if (!sequence) return;
+      setMapNarrative({ sequence, pageId: sequence.initialPageId });
+      host.dispatchEvent(new CustomEvent(MAP_AMBIENT_CONTROL_EVENT, {
+        detail: { command: 'pause' },
+      }));
+    };
+    const missionOutcome = (event: Event) => {
+      const outcomeId = (event as CustomEvent<{ outcomeId?: string }>).detail?.outcomeId;
+      if (outcomeId) void advanceFlow(outcomeId);
     };
     host.addEventListener(MAP_INTERACTION_AVAILABLE_EVENT, interactionAvailable);
     host.addEventListener(MAP_INTERACTION_STARTED_EVENT, interactionStarted);
@@ -390,6 +510,9 @@ export function MapConceptPreview({
     host.addEventListener(MAP_EVENT_AVAILABLE_EVENT, mapEventAvailable);
     host.addEventListener(MAP_EVENT_COMPLETED_EVENT, mapEventCompleted);
     host.addEventListener(MAP_SECTOR_ENTERED_EVENT, sectorEntered);
+    host.addEventListener(MAP_HAZARD_CONSEQUENCE_EVENT, hazardConsequence);
+    host.addEventListener(MAP_NARRATIVE_REQUEST_EVENT, narrativeRequested);
+    host.addEventListener(MAP_MISSION_OUTCOME_EVENT, missionOutcome);
     setStatus('loading');
     host.dataset.runtime = 'loading';
     host.focus({ preventScroll: true });
@@ -397,13 +520,25 @@ export function MapConceptPreview({
     Promise.all([
       import('phaser'),
       loadAdventureMapBundle({
-        adventurePath: PREVIEW_ADVENTURE_PATH,
+        adventurePath,
         baseUrl: import.meta.env.BASE_URL,
       }),
     ]).then(([Phaser, bundle]) => {
       if (cancelled) return;
       const save = getBrowserPokeVoiceSave();
       bundleRef.current = bundle;
+      let initialFlowState = getBrowserMissionFlowState();
+      while (initialFlowState?.node.kind === 'condition') {
+        initialFlowState = advanceBrowserMissionFlow();
+      }
+      if (initialFlowState?.node.kind === 'conversation') {
+        void getNarrativeConversation(initialFlowState.node.conversationId).then(conversation => {
+          if (!cancelled && conversation) setFlowConversation(conversation);
+        });
+      }
+      const flowEntryLocationId = initialFlowState?.node.kind === 'expedition'
+        ? initialFlowState.node.entryLocationId
+        : undefined;
       const mapProgress = save.pokeDiscover.mapProgress[bundle.adventure.mapId];
       const activeSession = save.activeExpeditionSession?.mapId === bundle.adventure.mapId
         ? save.activeExpeditionSession
@@ -415,7 +550,10 @@ export function MapConceptPreview({
         : bundle.adventure.freeExpeditionEntryPointId;
       const initialEntryPoint = bundle.adventure.entryPoints
         ?.find(entry => entry.entryPointId === entryPointId);
-      const initialSectorId = initialEntryPoint?.sectorId ?? TEGUESTE_FOREST_PREVIEW_SECTOR_ID;
+      const initialSectorId = routeSectorId
+        ?? initialEntryPoint?.sectorId
+        ?? bundle.sectors[0]?.sector.sectorId
+        ?? TEGUESTE_FOREST_PREVIEW_SECTOR_ID;
       const room = bundle.sectors.find(candidate => candidate.sector.sectorId === initialSectorId);
       const visibleSpeciesIds = [...new Set(bundle.adventure.actorPlacements
         .filter(placement => placement.sectorId === initialSectorId && placement.initiallyHidden !== true)
@@ -448,6 +586,13 @@ export function MapConceptPreview({
       const companionAsset = companionCandidate
         ? bundle.pmdManifest.assets.find(asset => asset.formId === companionCandidate.form.formId)
         : undefined;
+      const runtimeCapabilities = activeSession && companionCandidate
+        ? resolveExpeditionCapabilities(save, {
+          companionForm: companionCandidate.form,
+          tools: POKE_DISCOVER_FIELD_TOOLS,
+          companionAdditionalCapabilities: companionCandidate.appearance?.additionalFieldCapabilities,
+        })
+        : [];
       const behaviorContext = companionCandidate ? {
         companionForm: companionCandidate.form,
         species: catalog.map(createCompanionCatalogSpecies),
@@ -503,6 +648,7 @@ export function MapConceptPreview({
         bundle,
         initialSectorId,
         initialSpawnAnchorId: initialEntryPoint?.anchorId,
+        initialLocationId: flowEntryLocationId,
         reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         registeredSpeciesIds: new Set(save.pokedexRun.registeredSpeciesIds),
         expressionsEnabled: Boolean(activeSession),
@@ -510,6 +656,11 @@ export function MapConceptPreview({
         completedMapEventTriggerIds,
         completedSectorMapEventTriggerIds,
         eligibleMapEventTriggerIds: new Set(eligibleMapEvents.map(trigger => trigger.triggerId)),
+        playerAvatarId: save.pokeDiscover.trainerProfile?.avatarId ?? 'achaman',
+        playerAppearanceId: launchMissionId
+          ? getPokeDiscoverMission(launchMissionId)?.playerAppearanceId
+          : undefined,
+        expeditionCapabilityIds: new Set(runtimeCapabilities.map(capability => capability.id)),
         companion: companionCandidate ? {
           displayName: companionCandidate.displayName,
           form: companionCandidate.form,
@@ -517,6 +668,9 @@ export function MapConceptPreview({
           eligibleBehaviorTriggerIds: new Set(eligibleBehaviors.map(trigger => trigger.triggerId)),
           resolvedSecretIds: new Set(mapProgress?.unlockedSecretIds ?? []),
           freeRoam: !activeSession?.missionId,
+          waterTraversal: companionCandidate.appearance?.waterTraversal
+            ?? companionCandidate.formProfile.waterTraversal
+            ?? { kind: 'recall' },
         } : undefined,
         initialSequenceId,
         onReady: () => {
@@ -551,6 +705,9 @@ export function MapConceptPreview({
       host.removeEventListener(MAP_EVENT_AVAILABLE_EVENT, mapEventAvailable);
       host.removeEventListener(MAP_EVENT_COMPLETED_EVENT, mapEventCompleted);
       host.removeEventListener(MAP_SECTOR_ENTERED_EVENT, sectorEntered);
+      host.removeEventListener(MAP_HAZARD_CONSEQUENCE_EVENT, hazardConsequence);
+      host.removeEventListener(MAP_NARRATIVE_REQUEST_EVENT, narrativeRequested);
+      host.removeEventListener(MAP_MISSION_OUTCOME_EVENT, missionOutcome);
       host.replaceChildren();
       onVisibleSpeciesIdsChange([]);
       setAvailableInteraction(undefined);
@@ -562,9 +719,14 @@ export function MapConceptPreview({
       setCompanionAvailable(false);
       setCompanionPresentation(undefined);
       setStoryCueId(undefined);
+      setHazardFailure(undefined);
+      setMapNarrative(undefined);
+      setFlowConversation(undefined);
+      setHazardConversation(undefined);
+      hazardConversationIdRef.current = undefined;
       bundleRef.current = undefined;
     };
-  }, [catalog, onExpressionStart, onInteractionStart, onVisibleSpeciesIdsChange, open, requestMapSequence]);
+  }, [adventurePath, catalog, onExpressionStart, onInteractionStart, onMissionFailed, onVisibleSpeciesIdsChange, open, requestMapSequence, routeSectorId]);
 
   useEffect(() => {
     if (!open || !hostRef.current) return undefined;
@@ -584,6 +746,10 @@ export function MapConceptPreview({
   if (!open) return null;
   const dialoguePage = interactionPresentation?.dialogue.pages
     .find(candidate => candidate.pageId === dialoguePageId);
+  const hazardFailurePage = hazardFailure?.sequence.pages
+    .find(page => page.pageId === hazardFailure.pageId);
+  const mapNarrativePage = mapNarrative?.sequence.pages
+    .find(page => page.pageId === mapNarrative.pageId);
   const activeAcousticMatchers = activeExpression?.matchAny.filter(matcher => matcher.kind === 'acoustic') ?? [];
   const acceptsAcoustic = activeAcousticMatchers.length > 0 && activeExpression?.inputMethods.includes('voice');
   const acceptsWrittenText = activeExpression?.inputMethods.includes('text') ?? false;
@@ -616,6 +782,77 @@ export function MapConceptPreview({
                 {status === 'error' ? 'No se pudo cargar el Bosque de Tegueste.' : loadingText}
               </div>
             )}
+            {hazardFailure && hazardFailurePage ? (
+              <section className="map-concept-preview__dialogue" role="dialog" aria-label="La expedición ha fracasado">
+                <strong>{hazardFailurePage.speakerName}</strong>
+                <p>{hazardFailurePage.text}</p>
+                <button type="button" autoFocus onClick={() => {
+                  if (hazardFailurePage.nextPageId) {
+                    setHazardFailure({
+                      sequence: hazardFailure.sequence,
+                      pageId: hazardFailurePage.nextPageId,
+                    });
+                  } else {
+                    const sequenceId = hazardFailure.sequence.sequenceId;
+                    setHazardFailure(undefined);
+                    onMissionFailed(sequenceId);
+                  }
+                }}>{hazardFailurePage.nextPageId ? 'Siguiente' : 'Volver a PokeDiscover'}</button>
+              </section>
+            ) : null}
+            {mapNarrative && mapNarrativePage ? (
+              <section className="map-concept-preview__dialogue" role="dialog" aria-label={`Conversación con ${mapNarrativePage.speakerName}`}>
+                <strong>{mapNarrativePage.speakerName}</strong>
+                <p>{mapNarrativePage.text}</p>
+                <button type="button" autoFocus onClick={() => {
+                  if (mapNarrativePage.nextPageId) {
+                    setMapNarrative({
+                      sequence: mapNarrative.sequence,
+                      pageId: mapNarrativePage.nextPageId,
+                    });
+                  } else {
+                    setMapNarrative(undefined);
+                    hostRef.current?.dispatchEvent(new CustomEvent(MAP_AMBIENT_CONTROL_EVENT, {
+                      detail: { command: 'resume' },
+                    }));
+                  }
+                }}>{mapNarrativePage.nextPageId ? 'Siguiente' : 'Terminar'}</button>
+              </section>
+            ) : null}
+            {flowConversation && bundleRef.current?.mediaManifest ? (
+              <div className="map-concept-preview__visual-novel">
+                <VisualNovelPlayer
+                  conversation={flowConversation}
+                  mediaManifest={bundleRef.current.mediaManifest}
+                  pmdManifest={bundleRef.current.pmdManifest}
+                  initialCueId={matchingFlowCheckpoint?.cueId}
+                  initialHistoryCueIds={matchingFlowCheckpoint?.historyCueIds}
+                  initialSelectedChoices={matchingFlowCheckpoint?.selectedChoices}
+                  initialVariables={matchingFlowCheckpoint?.variables}
+                  initialExecutedEffectIds={matchingFlowCheckpoint?.executedEffectIds}
+                  initiallyReadCueIds={getBrowserPokeVoiceSave().pokeDiscover.narrativeProgress.readCueIds}
+                  tokenValues={buildNarrativeTokenValues(getBrowserPokeVoiceSave())}
+                  onCheckpoint={checkpointBrowserMissionConversation}
+                  onComplete={outcome => void advanceFlow(outcome)}
+                />
+              </div>
+            ) : null}
+            {hazardConversation && bundleRef.current?.mediaManifest ? (
+              <div className="map-concept-preview__visual-novel">
+                <VisualNovelPlayer
+                  conversation={hazardConversation}
+                  mediaManifest={bundleRef.current.mediaManifest}
+                  pmdManifest={bundleRef.current.pmdManifest}
+                  tokenValues={buildNarrativeTokenValues(getBrowserPokeVoiceSave())}
+                  onComplete={() => {
+                    const conversationId = hazardConversationIdRef.current;
+                    setHazardConversation(undefined);
+                    hazardConversationIdRef.current = undefined;
+                    onMissionFailed(conversationId);
+                  }}
+                />
+              </div>
+            ) : null}
             {storyCueId === 'cue:camphor-prologue:starter-choice' && (
               <section className="map-concept-preview__story-choice" role="dialog" aria-label="Elegir primer compañero">
                 <strong>¡Las Poké Balls de Alcanfor han caído!</strong>

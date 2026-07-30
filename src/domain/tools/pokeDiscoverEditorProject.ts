@@ -7,7 +7,9 @@ export type PokeDiscoverObjectLayerName =
   | 'Triggers'
   | 'Paths'
   | 'Occlusion'
-  | 'Comments';
+  | 'Comments'
+  | 'Terrain'
+  | 'Locations';
 export type PokeDiscoverEditableLayerName = 'Above' | PokeDiscoverObjectLayerName;
 
 export interface PokeDiscoverTiledObject extends Record<string, unknown> {
@@ -190,6 +192,8 @@ function canonicalLayerInsertionIndex(
     'Anchors',
     'Triggers',
     'Paths',
+    'Terrain',
+    'Locations',
     'Occlusion',
     'Comments',
   ];

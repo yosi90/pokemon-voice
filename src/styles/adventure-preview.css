@@ -118,6 +118,20 @@
   box-shadow: inset 0 0 0 2px #08090a, 0 1px rgba(255, 255, 255, .18);
 }
 
+.map-concept-preview__visual-novel {
+  position: absolute;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #081b16e8;
+}
+
+.map-concept-preview__visual-novel .visual-novel {
+  width: 100%;
+  max-height: 100%;
+}
+
 .map-concept-preview__runtime {
   width: 100%;
   height: 100%;

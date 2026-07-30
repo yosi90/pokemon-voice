@@ -729,7 +729,8 @@ export function auditPokeDiscoverAuthoringSnapshot(
       .filter(candidate => candidate.sectorId === sector.sectorId)) {
       const zoneId = trigger.activation.kind === 'enterZone'
         ? trigger.activation.zoneId
-        : trigger.activation.target.kind === 'zone'
+        : (trigger.activation.kind === 'contextAction' || trigger.activation.kind === 'proximity')
+          && trigger.activation.target.kind === 'zone'
           ? trigger.activation.target.zoneId
           : undefined;
       if (!zoneId) continue;
@@ -942,7 +943,8 @@ function renameAdventureReference(
             ? expectedName
             : trigger.activation.zoneId,
         }
-        : trigger.activation.target.kind === 'zone'
+        : (trigger.activation.kind === 'contextAction' || trigger.activation.kind === 'proximity')
+          && trigger.activation.target.kind === 'zone'
           ? {
             ...trigger.activation,
             target: {

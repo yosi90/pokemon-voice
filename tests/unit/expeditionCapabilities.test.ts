@@ -64,6 +64,40 @@ function createActiveSave(toolId = 'tool:boat') {
 }
 
 describe('capacidades combinadas de expedición', () => {
+  it('Lapras concede Surf como compañero y declara su montura acuática', () => {
+    const profile = getCompanionFormProfile('pokemon-form:131:default');
+    expect(profile).toBeDefined();
+    const lapras = toCompanionForm(profile!.form);
+    const initial = createPokeVoiceSaveV1({ runId: 'run:lapras-surf', now: 1 });
+    const save = beginExpedition({
+      ...initial,
+      pokedexRun: {
+        ...initial.pokedexRun,
+        registeredSpeciesIds: [131],
+        selectedCompanion: { schemaVersion: 1, formId: lapras.formId },
+      },
+    }, {
+      mapId: 'map:test:surf',
+      enteredAt: '2026-07-30T10:00:00.000Z',
+    });
+    const capabilities = resolveExpeditionCapabilities(save, {
+      companionForm: lapras,
+      tools: [],
+    });
+
+    expect(capabilities).toContainEqual(expect.objectContaining({
+      id: 'surf',
+      contributions: [expect.objectContaining({
+        kind: 'companion',
+        sourceId: 'pokemon-form:131:default',
+      })],
+    }));
+    expect(profile!.form.waterTraversal).toEqual({
+      kind: 'swim',
+      mountAssetId: 'character:mount:lapras-surf',
+    });
+  });
+
   it('publica Tumba Rocas como capacidad narrativa curada de Geodude', () => {
     const profile = getCompanionFormProfile('pokemon-form:74:default');
     expect(profile).toBeDefined();

@@ -11,6 +11,10 @@ const ACTIVATION_LABELS = {
   enterZone: 'Al entrar en la zona',
   contextAction: 'Al pulsar E',
   proximity: 'Por proximidad',
+  interval: 'Cada cierto tiempo',
+  pathCrossing: 'Al cruzar una ruta',
+  actorContact: 'Al tocar un actor',
+  enterSurface: 'Al entrar en una superficie',
 } as const;
 const REPEAT_LABELS = {
   oncePerSectorVisit: 'Una vez por estancia en el sector',

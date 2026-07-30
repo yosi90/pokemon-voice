@@ -87,6 +87,24 @@ function RequirementNode({
   </div>;
 }
 
+export function RequirementExpressionEditor({
+  value,
+  onChange,
+}: {
+  value: RequirementExpressionV1;
+  onChange: (value: RequirementExpressionV1) => void;
+}) {
+  return <RequirementNode
+    root
+    expression={value}
+    path={[]}
+    onReplace={(path, replacement) => onChange(
+      replaceRequirementNode(value, path, replacement),
+    )}
+    onRemove={path => onChange(removeRequirementNode(value, path))}
+  />;
+}
+
 export function RequirementEditor({ adventure, onAdventureChange }: { adventure: AdventureMapV3; onAdventureChange: (adventure: AdventureMapV3) => void }) {
   const targets = listAdventureRequirementTargets(adventure);
   const [targetKey, setTargetKey] = useState('');
@@ -96,13 +114,7 @@ export function RequirementEditor({ adventure, onAdventureChange }: { adventure:
     <header><div><span className="editor-eyebrow">Contrato compartido</span><h2 id="editor-requirements-title">Requisitos visuales</h2></div><span>{targets.length} definiciones</span></header>
     {target ? <>
       <label className="editor-requirements__target"><span>Definición condicionada</span><select value={requirementTargetKey(target)} onChange={event => setTargetKey(event.target.value)}>{targets.map(candidate => <option key={requirementTargetKey(candidate)} value={requirementTargetKey(candidate)}>{candidate.label}</option>)}</select></label>
-      <RequirementNode
-        root
-        expression={target.expression}
-        path={[]}
-        onReplace={(path, replacement) => update(replaceRequirementNode(target.expression, path, replacement))}
-        onRemove={path => update(removeRequirementNode(target.expression, path))}
-      />
+      <RequirementExpressionEditor value={target.expression} onChange={update} />
     </> : <p className="editor-catalog__empty-field">Este proyecto todavía no contiene definiciones con requisitos.</p>}
   </section>;
 }

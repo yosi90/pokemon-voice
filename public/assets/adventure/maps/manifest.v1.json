@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "maps": [
+    {
+      "schemaVersion": 1,
+      "mapId": "map:technical:pmd-clearing",
+      "title": "Claro técnico PMD",
+      "documentPath": "assets/adventure/maps/_technical/technical-test.adventure.json",
+      "sectors": [
+        {
+          "sectorId": "sector:technical:clearing",
+          "label": "clearing"
+        },
+        {
+          "sectorId": "sector:technical:path",
+          "label": "path"
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "mapId": "map:tegueste:camphor-forest",
+      "title": "Bosque de Tegueste",
+      "documentPath": "assets/adventure/maps/tegueste-forest/tegueste-forest.adventure.json",
+      "sectors": [
+        {
+          "sectorId": "sector:tegueste-forest:02-04",
+          "label": "02-04"
+        },
+        {
+          "sectorId": "sector:tegueste-forest:01-05",
+          "label": "01-05"
+        },
+        {
+          "sectorId": "sector:tegueste-forest:04-05",
+          "label": "04-05"
+        },
+        {
+          "sectorId": "sector:tegueste-forest:05-05",
+          "label": "05-05"
+        }
+      ]
+    }
+  ]
+}

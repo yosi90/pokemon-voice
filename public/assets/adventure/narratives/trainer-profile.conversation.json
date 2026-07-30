@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "conversationId": "narrative:professor-camphor:trainer-profile",
+  "title": "Ficha de entrenador",
+  "tags": [
+    "alcanfor",
+    "migrated"
+  ],
+  "initialCueId": "trainer-choice",
+  "once": true,
+  "cues": [
+    {
+      "cueId": "trainer-choice",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Antes de enseñarte los encargos, terminemos tu ficha. ¿Eres un chico o una chica?",
+      "actions": [
+        {
+          "actionId": "trainer-choice:action:background",
+          "kind": "setBackground",
+          "backgroundAssetId": "narrative:background:laboratorio-de-alcanfor",
+          "transition": "fade",
+          "phase": "beforeText",
+          "durationMs": 250,
+          "blocking": true
+        },
+        {
+          "actionId": "trainer-choice:action:enter:professor-camphor",
+          "kind": "enterActor",
+          "actorId": "professor-camphor",
+          "source": {
+            "kind": "illustration",
+            "assetId": "narrative:character:professor-camphor:alegre"
+          },
+          "poseAssetId": "narrative:character:professor-camphor:alegre",
+          "transform": {
+            "slot": "right"
+          },
+          "motion": "fade",
+          "phase": "beforeText",
+          "durationMs": 200
+        },
+        {
+          "actionId": "trainer-choice:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:alegre",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "choices": [
+        {
+          "choiceId": "choose-achaman-profile",
+          "label": "Soy un chico",
+          "nextCueId": "trainer-name",
+          "legacyAction": {
+            "kind": "selectTrainerAvatar",
+            "avatarId": "achaman"
+          }
+        },
+        {
+          "choiceId": "choose-guayota-profile",
+          "label": "Soy una chica",
+          "nextCueId": "trainer-name",
+          "legacyAction": {
+            "kind": "selectTrainerAvatar",
+            "avatarId": "guayota"
+          }
+        }
+      ]
+    },
+    {
+      "cueId": "trainer-name",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Este es el nombre que pondré en tu ficha. Puedes cambiarlo ahora si quieres.",
+      "actions": [
+        {
+          "actionId": "trainer-name:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:parlanchin",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "textInput": {
+        "inputId": "trainer-display-name-profile",
+        "label": "Nombre del entrenador",
+        "variableId": "player.name",
+        "maxLength": 18,
+        "submitLabel": "Confirmar nombre",
+        "nextCueId": "completed",
+        "legacyAction": "saveTrainerNameAndAccept"
+      }
+    },
+    {
+      "cueId": "completed",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "¡Perfecto! Ya puedo dirigirme a ti como es debido.",
+      "actions": [
+        {
+          "actionId": "completed:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:explicando",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "legacyAction": {
+        "kind": "completeSequence"
+      },
+      "outcomeId": "completed"
+    }
+  ]
+}

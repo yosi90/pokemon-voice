@@ -349,7 +349,10 @@ export function findPokeDiscoverGeometryReferences(
   for (const trigger of adventure.mapEventTriggers ?? []) {
     const target = trigger.activation.kind === 'enterZone'
       ? { kind: 'zone' as const, zoneId: trigger.activation.zoneId }
-      : trigger.activation.target;
+      : trigger.activation.kind === 'contextAction' || trigger.activation.kind === 'proximity'
+        ? trigger.activation.target
+        : undefined;
+    if (!target) continue;
     if (target.kind === 'zone' && target.zoneId === objectName) {
       references.push(`Evento ${trigger.triggerId}`);
     }

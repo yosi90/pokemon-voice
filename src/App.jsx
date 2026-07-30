@@ -55,7 +55,14 @@ import { toLegacyPokemonList } from './domain/catalog/pokemonCatalogModel.ts';
 import { CAMPHOR_PROLOGUE_MISSION } from './data/adventure/camphorPrologue.ts';
 import { toSectorId } from './domain/expeditions/adventureMapV3.ts';
 import { getPokeDiscoverRewardPackage } from './data/adventure/rewardBalance.ts';
-import { getKnownPokeDiscoverMissionIds } from './data/adventure/missionCatalog.ts';
+import {
+  getKnownPokeDiscoverMissionIds,
+  loadPokeDiscoverMissionCatalog,
+} from './data/adventure/missionCatalog.ts';
+import {
+  getAdventureMapEntry,
+  loadAdventureMapCatalog,
+} from './data/adventure/adventureMapCatalog.ts';
 import { getCompanionCandidates } from './domain/companions/companionCandidates.ts';
 import { PROFESSOR_CAMPHOR_EMERGENCY_SEQUENCE_ID } from './domain/narrative/professorIntroduction.ts';
 import {
@@ -76,6 +83,8 @@ function formatTimer(left) {
 }
 
 export default function App() {
+  const [, setMissionCatalogRevision] = useState(0);
+  const [, setAdventureCatalogRevision] = useState(0);
   const [modesOpen, setModesOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState(null);
@@ -83,11 +92,36 @@ export default function App() {
   const [voiceSupportModalOpen, setVoiceSupportModalOpen] = useState(true);
   const [professorMissionsOpen, setProfessorMissionsOpen] = useState(false);
   const [mapConceptPreviewOpen, setMapConceptPreviewOpen] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void loadPokeDiscoverMissionCatalog(import.meta.env.BASE_URL)
+      .then(() => {
+        if (active) setMissionCatalogRevision(value => value + 1);
+      })
+      .catch(() => {
+        // Compatibilidad: el catálogo TypeScript sigue disponible como fallback.
+      });
+    void loadAdventureMapCatalog(import.meta.env.BASE_URL)
+      .then(() => {
+        if (active) setAdventureCatalogRevision(value => value + 1);
+      })
+      .catch(() => {
+        // Compatibilidad: Tegueste permanece como entrada conocida.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const [mapVisibleSpeciesIds, setMapVisibleSpeciesIds] = useState([]);
   const [mapExpression, setMapExpression] = useState(null);
   const [mapExpressionFeedback, setMapExpressionFeedback] = useState(null);
   const [expeditionReport, setExpeditionReport] = useState();
   const [adventureRoute, setAdventureRoute] = useState(() => parseAdventureHashRoute(window.location.hash));
+  const activeAdventureEntry = adventureRoute.kind === 'expedition'
+    ? getAdventureMapEntry(adventureRoute.mapId)
+    : undefined;
+  const activeAdventureMapId = activeAdventureEntry?.mapId
+    ?? TEGUESTE_FOREST_PREVIEW_MAP_ID;
   const game = usePokemonGame();
 
   useEffect(() => {
@@ -122,7 +156,7 @@ export default function App() {
   const submitMapInput = useCallback(async (raw, { fromSpeech = false } = {}) => {
     if (!mapExpression) return identifyMapPokemon(raw, { fromSpeech });
     const result = resolveBrowserExpressionTrigger({
-      mapId: TEGUESTE_FOREST_PREVIEW_MAP_ID,
+      mapId: activeAdventureMapId,
       trigger: mapExpression,
       attempt: { method: fromSpeech ? 'voice' : 'text', transcript: raw },
       resolvedAt: new Date().toISOString(),
@@ -140,11 +174,11 @@ export default function App() {
       nonce: Date.now(),
     });
     return true;
-  }, [identifyMapPokemon, mapExpression]);
+  }, [activeAdventureMapId, identifyMapPokemon, mapExpression]);
   const useMapExpressionFallback = useCallback(() => {
     if (!mapExpression?.fallbackActionId) return;
     const result = resolveBrowserExpressionTrigger({
-      mapId: TEGUESTE_FOREST_PREVIEW_MAP_ID,
+      mapId: activeAdventureMapId,
       trigger: mapExpression,
       attempt: { method: 'contextAction', contextActionId: mapExpression.fallbackActionId },
       resolvedAt: new Date().toISOString(),
@@ -158,11 +192,11 @@ export default function App() {
         : 'Ahora mismo no puedes resolver esta interacción de esa forma.',
       nonce: Date.now(),
     });
-  }, [mapExpression]);
+  }, [activeAdventureMapId, mapExpression]);
   const submitMapAcousticExpression = useCallback(features => {
     if (!mapExpression) return;
     const result = resolveBrowserExpressionTrigger({
-      mapId: TEGUESTE_FOREST_PREVIEW_MAP_ID,
+      mapId: activeAdventureMapId,
       trigger: mapExpression,
       attempt: { method: 'voice', acoustic: features },
       resolvedAt: new Date().toISOString(),
@@ -179,7 +213,7 @@ export default function App() {
       acoustic: features,
       nonce: Date.now(),
     });
-  }, [mapExpression]);
+  }, [activeAdventureMapId, mapExpression]);
   const whosThatPokemon = useWhosThatPokemonMode({
     resolveGuess: game.tryGuessTranscript,
     discoverPokemon: game.discoverPokemon,
@@ -271,18 +305,14 @@ export default function App() {
       setProfessorMissionsOpen(true);
       return;
     }
-    if (
-      adventureRoute.kind === 'expedition'
-      && adventureRoute.mapId === TEGUESTE_FOREST_PREVIEW_MAP_ID
-      && toSectorId(adventureRoute.sectorId) === TEGUESTE_FOREST_PREVIEW_SECTOR_ID
-    ) {
+    if (adventureRoute.kind === 'expedition' && activeAdventureEntry) {
       setProfessorMissionsOpen(false);
       setMapConceptPreviewOpen(true);
       return;
     }
     setProfessorMissionsOpen(false);
     setMapConceptPreviewOpen(false);
-  }, [adventureRoute, professor.active]);
+  }, [activeAdventureEntry, adventureRoute, professor.active]);
   useEffect(() => {
     if (professor.incomingCall || professor.active) speech.stopListening();
   }, [professor.active, professor.incomingCall, speech.stopListening]);
@@ -354,18 +384,32 @@ export default function App() {
     }
   }, [game.showToast, navigateAdventure]);
 
-  const leaveTeguesteForest = useCallback(() => {
+  const leaveAdventureMap = useCallback(() => {
     speech.stopListening();
     setMapVisibleSpeciesIds([]);
     setMapExpression(null);
     setMapExpressionFeedback(null);
     const save = getBrowserPokeVoiceSave();
-    if (save.activeExpeditionSession?.mapId === TEGUESTE_FOREST_PREVIEW_MAP_ID) {
+    if (save.activeExpeditionSession?.mapId === activeAdventureMapId) {
       const result = endBrowserExpeditionWithReport({ exitedAt: new Date().toISOString() });
       setExpeditionReport(result.report);
     }
     closeAdventureRoute();
-  }, [closeAdventureRoute, speech.stopListening]);
+  }, [activeAdventureMapId, closeAdventureRoute, speech.stopListening]);
+
+  const failTeguesteMission = useCallback(failureNarrativeSequenceId => {
+    speech.stopListening();
+    setMapVisibleSpeciesIds([]);
+    setMapExpression(null);
+    setMapExpressionFeedback(null);
+    game.showToast(
+      failureNarrativeSequenceId
+        ? 'La expedición ha terminado. Alcanfor te espera en el tablón.'
+        : 'La expedición ha terminado.',
+      'bad',
+    );
+    navigateAdventure(buildPokeDiscoverHash());
+  }, [game, navigateAdventure, speech.stopListening]);
 
   const openPokemonDetails = pokemon => {
     if (game.guessed.has(pokemon.id)) professor.requestFromDetail(game.globalScore);
@@ -582,6 +626,10 @@ export default function App() {
       />
       <MapConceptPreview
         open={mapConceptPreviewOpen && !professor.active}
+        adventurePath={activeAdventureEntry?.documentPath}
+        routeSectorId={adventureRoute.kind === 'expedition'
+          ? toSectorId(adventureRoute.sectorId)
+          : undefined}
         listening={speech.listening}
         speechSupported={speech.speechSupported}
         onMic={toggleMic}
@@ -595,7 +643,8 @@ export default function App() {
         expressionFeedback={mapExpressionFeedback}
         loadingText={CAMPHOR_PROLOGUE_MISSION.loadingText}
         catalog={game.pokemonCatalog}
-        onClose={leaveTeguesteForest}
+        onClose={leaveAdventureMap}
+        onMissionFailed={failTeguesteMission}
       />
       <ExpeditionReportModal report={expeditionReport} onClose={() => setExpeditionReport(undefined)} />
       <NarrativeScene

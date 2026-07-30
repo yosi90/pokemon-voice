@@ -21,6 +21,10 @@ const ACTIVATION_LABELS: Record<MapEventActivationKind, string> = {
   enterZone: 'Entrar en un área',
   contextAction: 'Pulsar E',
   proximity: 'Acercarse',
+  interval: 'Cada cierto tiempo',
+  pathCrossing: 'Cruzar una ruta',
+  actorContact: 'Tocar un actor',
+  enterSurface: 'Entrar en una superficie',
 };
 
 const REPEAT_LABELS: Record<MapEventRepeatPolicy, string> = {
@@ -142,7 +146,9 @@ export function MovementAndEventsEditor({
   const addAdvancedAction = () => {
     if (!activeMapSequence || !selectedAdvancedActor) return;
     const last = activeMapSequence.beats.at(-1);
-    const sharesActor = last?.actions.some(action => action.actorRef === selectedAdvancedActor.placementId);
+    const sharesActor = last?.actions.some(
+      action => 'actorRef' in action && action.actorRef === selectedAdvancedActor.placementId,
+    );
     const action = advancedKind === 'face'
       ? { kind: 'face' as const, actorRef: selectedAdvancedActor.placementId, direction }
       : advancedKind === 'setVisible'

@@ -200,6 +200,9 @@ export interface MissionRuntimeStateV1 extends VersionedContractV1 {
   flags: Record<StableId, JsonValue>;
   counters: Record<StableId, number>;
   resolvedActorIds: StableId[];
+  flowNodeId?: StableId;
+  conversationCheckpoint?: import('./narrative.js').ActiveNarrativeConversationV1;
+  executedFlowEffectIds?: StableId[];
 }
 
 export type PendingMissionLaunchCheckpoint =
@@ -226,10 +229,21 @@ export interface ExpeditionEntrySnapshotV1 extends VersionedContractV1 {
   discoveryPoints: number;
 }
 
+/**
+ * Estado jugable reversible. El perfil del entrenador y las preferencias se
+ * excluyen deliberadamente: una consecuencia nunca cambia identidad ni ajustes.
+ */
+export interface ExpeditionRollbackSnapshotV1 extends VersionedContractV1 {
+  pokedexRun: PokedexRunStateV1;
+  pokeDiscover: Omit<PokeDiscoverStateV1, 'trainerProfile'>;
+}
+
 export interface ActiveExpeditionSectorVisitV1 extends VersionedContractV1 {
   sectorId: StableId;
   /** Eventos que sólo deben repetirse después de abandonar este sector. */
   completedMapEventTriggerIds: StableId[];
+  /** Estado estable capturado después de inicializar el sector. */
+  rollbackSnapshot?: ExpeditionRollbackSnapshotV1;
 }
 
 export interface ActiveExpeditionSessionV1 extends VersionedContractV1 {
@@ -256,6 +270,8 @@ export interface ActiveExpeditionSessionV1 extends VersionedContractV1 {
   missionRuntime?: MissionRuntimeStateV1;
   /** Base mínima para construir el informe de regreso sin guardar eventos duplicados. */
   entrySnapshot?: ExpeditionEntrySnapshotV1;
+  /** Estado jugable completo al comenzar el intento de misión. */
+  entryRollbackSnapshot?: ExpeditionRollbackSnapshotV1;
 }
 
 /** Raíz transaccional del guardado local. Las cachés de catálogo y audio no forman parte de ella. */

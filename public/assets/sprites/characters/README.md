@@ -8,13 +8,26 @@ sin asignar viven en `asset-library/unassigned-sprites/`.
 | Personaje | Archivo activo | Frame | Distribución |
 | --- | --- | --- | --- |
 | Achaman | `achaman/achaman-walk.png` | 16×24 px | 4 filas: abajo, izquierda, derecha y arriba |
+| Achaman nadando | `achaman/achaman-swim.png` | 16×24 px | 4 filas: abajo, izquierda, derecha y arriba |
 | Guayota | `guayota/guayota-walk.png` | 16×24 px | 4 filas: abajo, izquierda, derecha y arriba |
+| Guayota nadando | `guayota/guayota-swim.png` | 16×24 px | 4 filas: abajo, izquierda, derecha y arriba |
+| Montura Lapras | `mounts/lapras-surf.png` | 32×32 px | 4 filas: abajo, izquierda, derecha y arriba |
 | Profesor Alcanfor | `alcanfor/professor-alcanfor-walk.png` | 16×24 px | 4 filas: abajo, izquierda, derecha y arriba |
 
 Las tres hojas activas usan frames nativos de 16×24 y escala 1. Las columnas son
 frames consecutivos. La transparencia debe ser alfa real, sin
 tablero ni color de fondo. Los pies deben quedar alineados al borde inferior de
 cada frame y todos los cambios de tamaño se declaran en `manifest.v1.json`.
+
+Las hojas acuáticas se regeneran desde el pack fuente con
+`npm run assets:locomotion:normalize`. La fuente de Lapras conserva un fondo
+violeta y una disposición 6×2 no apta para runtime: el normalizador elimina el
+fondo, selecciona las direcciones de Surf y produce una hoja 2×4 transparente.
+El original permanece en `asset-library/unassigned-sprites/`.
+
+Los packs de Brendan y May también contienen carrera, bicicleta y pesca. Se
+conservan como fuentes disponibles, pero no pasan a `public/` hasta que sus
+mecánicas tengan un estado y una activación declarativa en runtime.
 
 ## Caída de Alcanfor
 

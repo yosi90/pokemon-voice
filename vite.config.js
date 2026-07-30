@@ -11,6 +11,7 @@ export default defineConfig({
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         'pokediscover-randomizer': fileURLToPath(new URL('./tools/pokediscover-randomizer/index.html', import.meta.url)),
         'pokediscover-editor': fileURLToPath(new URL('./tools/pokediscover-editor/index.html', import.meta.url)),
+        'visual-novel-editor': fileURLToPath(new URL('./tools/visual-novel-editor/index.html', import.meta.url)),
       },
     },
   },

@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:altar-dragon",
+      "path": "assets/images/fondos/altar-dragon.png",
+      "label": "altar dragon",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:bosque",
+      "path": "assets/images/fondos/bosque.png",
+      "label": "bosque",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:bosque-invernal",
+      "path": "assets/images/fondos/bosque-invernal.png",
+      "label": "bosque invernal",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:casa-protagonista",
+      "path": "assets/images/fondos/casa-protagonista.png",
+      "label": "casa protagonista",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:cementerio-sospechoso",
+      "path": "assets/images/fondos/cementerio-sospechoso.png",
+      "label": "cementerio sospechoso",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:central-electrica",
+      "path": "assets/images/fondos/central-electrica.png",
+      "label": "central electrica",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:centro-pokemon",
+      "path": "assets/images/fondos/centro-pokemon.png",
+      "label": "centro pokemon",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:ciudad-camino-principal",
+      "path": "assets/images/fondos/ciudad-camino-principal.png",
+      "label": "ciudad camino principal",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:costa-de-dioses",
+      "path": "assets/images/fondos/costa-de-dioses.png",
+      "label": "costa de dioses",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:costa-verdeante",
+      "path": "assets/images/fondos/costa-verdeante.png",
+      "label": "costa verdeante",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:criadero-pokemon",
+      "path": "assets/images/fondos/criadero-pokemon.png",
+      "label": "criadero pokemon",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:cueva-cristalina",
+      "path": "assets/images/fondos/cueva-cristalina.png",
+      "label": "cueva cristalina",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:cueva-volcanica",
+      "path": "assets/images/fondos/cueva-volcanica.png",
+      "label": "cueva volcanica",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:desierto",
+      "path": "assets/images/fondos/desierto.png",
+      "label": "desierto",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:estacion-tren",
+      "path": "assets/images/fondos/estacion-tren.png",
+      "label": "estacion tren",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:festival-de-verano",
+      "path": "assets/images/fondos/festival-de-verano.png",
+      "label": "festival de verano",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:gimnasio",
+      "path": "assets/images/fondos/gimnasio.png",
+      "label": "gimnasio",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:hall-fama",
+      "path": "assets/images/fondos/hall-fama.png",
+      "label": "hall fama",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:laboratorio-de-alcanfor",
+      "path": "assets/images/fondos/Laboratorio-de-alcanfor.png",
+      "label": "Laboratorio de alcanfor",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:laboratorio-destruido",
+      "path": "assets/images/fondos/laboratorio-destruido.png",
+      "label": "laboratorio destruido",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:lago-natural",
+      "path": "assets/images/fondos/lago-natural.png",
+      "label": "lago natural",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:libreria-pokemon",
+      "path": "assets/images/fondos/libreria-pokemon.png",
+      "label": "libreria pokemon",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:liga-pokemon",
+      "path": "assets/images/fondos/liga-pokemon.png",
+      "label": "liga pokemon",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:mercado",
+      "path": "assets/images/fondos/mercado.png",
+      "label": "mercado",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:museo-arqueologico",
+      "path": "assets/images/fondos/museo-arqueologico.png",
+      "label": "museo arqueologico",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:observatorio-de-dioses",
+      "path": "assets/images/fondos/observatorio-de-dioses.png",
+      "label": "observatorio de dioses",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:pantano-lugubre",
+      "path": "assets/images/fondos/pantano-lugubre.png",
+      "label": "pantano lugubre",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:pastizales",
+      "path": "assets/images/fondos/pastizales.png",
+      "label": "pastizales",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:playa",
+      "path": "assets/images/fondos/playa.png",
+      "label": "playa",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:pueblo-fantasma",
+      "path": "assets/images/fondos/pueblo-fantasma.png",
+      "label": "pueblo fantasma",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:puerto-pesquero",
+      "path": "assets/images/fondos/puerto-pesquero.png",
+      "label": "puerto pesquero",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:ruinas-antiguas",
+      "path": "assets/images/fondos/ruinas-antiguas.png",
+      "label": "ruinas antiguas",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:sala-de-comunicaciones",
+      "path": "assets/images/fondos/sala-de-comunicaciones.png",
+      "label": "sala de comunicaciones",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:tienda",
+      "path": "assets/images/fondos/tienda.png",
+      "label": "tienda",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:tienda-de-ropa",
+      "path": "assets/images/fondos/tienda-de-ropa.png",
+      "label": "tienda de ropa",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeBackground",
+      "assetId": "narrative:background:vias-subterraneas-abandonadas",
+      "path": "assets/images/fondos/vias-subterraneas-abandonadas.png",
+      "label": "vias subterraneas abandonadas",
+      "width": 1672,
+      "height": 941,
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeCharacter",
+      "assetId": "narrative:character:achaman:saludando",
+      "characterId": "achaman",
+      "characterName": "Achaman",
+      "poseId": "saludando",
+      "poseLabel": "saludando",
+      "path": "assets/images/achaman/achaman-saludando.png",
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeCharacter",
+      "assetId": "narrative:character:guayota:saludando",
+      "characterId": "guayota",
+      "characterName": "Guayota",
+      "poseId": "saludando",
+      "poseLabel": "saludando",
+      "path": "assets/images/guayota/guayota-y-horquilla-saludando.png",
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeCharacter",
+      "assetId": "narrative:character:professor-camphor:alegre",
+      "characterId": "professor-camphor",
+      "characterName": "Profesor Alcanfor",
+      "poseId": "alegre",
+      "poseLabel": "alegre",
+      "path": "assets/images/profesor-alcanfor/alcanfor-alegre.png",
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeCharacter",
+      "assetId": "narrative:character:professor-camphor:explicando",
+      "characterId": "professor-camphor",
+      "characterName": "Profesor Alcanfor",
+      "poseId": "explicando",
+      "poseLabel": "explicando",
+      "path": "assets/images/profesor-alcanfor/alcanfor-explicando.png",
+      "source": "Poke-Voice"
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "narrativeCharacter",
+      "assetId": "narrative:character:professor-camphor:parlanchin",
+      "characterId": "professor-camphor",
+      "characterName": "Profesor Alcanfor",
+      "poseId": "parlanchin",
+      "poseLabel": "parlanchin",
+      "path": "assets/images/profesor-alcanfor/alcanfor-parlanchin.png",
+      "source": "Poke-Voice"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "mapId": "map:tegueste:camphor-forest",
+  "missions": [
+    {
+      "schemaVersion": 1,
+      "missionId": "mission:tegueste:help-professor-camphor",
+      "mapId": "map:tegueste:camphor-forest",
+      "title": "¡Ayuda al profesor Alcanfor!",
+      "loadingText": "¡Corriendo a ayudar al profesor!",
+      "briefing": "Tres Pokémon han asaltado al profesor Alcanfor para robarle la comida. Ahuyéntalos.",
+      "availability": {
+        "kind": "worldFlag",
+        "flagId": "story:camphor-prologue-offered"
+      },
+      "objectives": [
+        {
+          "objectiveId": "objective:camphor-prologue:drive-away-rattata",
+          "description": "Ahuyenta a los tres Pokémon que rodean al profesor.",
+          "requirement": {
+            "kind": "missionCounter",
+            "counterId": "mission-counter:camphor:rattata-driven-away",
+            "comparison": "gte",
+            "value": 3
+          }
+        }
+      ],
+      "mapVariantIds": [
+        "variant:camphor-forest:scientists-blocking-exit"
+      ],
+      "rewards": [
+        {
+          "kind": "trainerExperience",
+          "amount": 25
+        },
+        {
+          "kind": "discoveryPoints",
+          "amount": 25
+        }
+      ],
+      "unlocksFreeExpedition": true,
+      "grantsFirstMissionAchievement": true,
+      "flow": {
+        "schemaVersion": 1,
+        "initialNodeId": "mission:tegueste:help-professor-camphor:flow:expedition",
+        "nodes": [
+          {
+            "kind": "expedition",
+            "nodeId": "mission:tegueste:help-professor-camphor:flow:expedition",
+            "mapId": "map:tegueste:camphor-forest",
+            "entrySectorId": "sector:tegueste-forest:02-04",
+            "mapVariantIds": [
+              "variant:camphor-forest:scientists-blocking-exit"
+            ],
+            "outcomes": {
+              "success": "mission:tegueste:help-professor-camphor:flow:success",
+              "failure": "mission:tegueste:help-professor-camphor:flow:failure"
+            }
+          },
+          {
+            "kind": "terminal",
+            "nodeId": "mission:tegueste:help-professor-camphor:flow:success",
+            "result": "success"
+          },
+          {
+            "kind": "terminal",
+            "nodeId": "mission:tegueste:help-professor-camphor:flow:failure",
+            "result": "failure"
+          }
+        ]
+      }
+    }
+  ],
+  "narrativeSequences": []
+}

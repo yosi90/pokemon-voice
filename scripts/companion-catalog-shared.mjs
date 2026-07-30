@@ -6,6 +6,7 @@ export const CAPABILITY_IDS = new Set([
   'cut', 'surf', 'fly', 'dig', 'archaeology', 'rock-smash', 'rock-tomb', 'light', 'climb', 'carry',
   'ride-ground', 'ride-water', 'ride-air',
 ]);
+export const WATER_TRAVERSAL_KINDS = new Set(['swim', 'fly', 'alternateAsset', 'recall']);
 export const GENERATION_RANGES = [[1, 151], [152, 251], [252, 386], [387, 493], [494, 649], [650, 721], [722, 809], [810, 898], [899, 1025]];
 
 export function generationForSpecies(id) {
@@ -67,10 +68,24 @@ export function validateCatalogs(catalogs) {
         if (!String(form.companion?.rejectionText ?? '').trim()) errors.push(`${form.formId}: falta texto de rechazo`);
         primaryCategory(species, form);
         for (const capability of form.fieldCapabilities ?? []) if (!CAPABILITY_IDS.has(capability.id)) errors.push(`${form.formId}: capacidad desconocida ${capability.id}`);
+        if (form.waterTraversal) {
+          if (!WATER_TRAVERSAL_KINDS.has(form.waterTraversal.kind)) {
+            errors.push(`${form.formId}: política acuática desconocida ${form.waterTraversal.kind}`);
+          }
+          if (form.waterTraversal.kind === 'alternateAsset' && !form.waterTraversal.alternateAssetId) {
+            errors.push(`${form.formId}: alternateAsset necesita alternateAssetId`);
+          }
+          if (form.waterTraversal.mountAssetId && form.waterTraversal.kind !== 'swim') {
+            errors.push(`${form.formId}: una montura acuática necesita kind swim`);
+          }
+        }
         for (const appearance of form.appearances ?? []) {
           if (appearanceIds.has(appearance.appearanceId)) errors.push(`${appearance.appearanceId}: apariencia duplicada`);
           appearanceIds.add(appearance.appearanceId);
           for (const capability of appearance.additionalFieldCapabilities ?? []) if (!CAPABILITY_IDS.has(capability.id)) errors.push(`${appearance.appearanceId}: capacidad desconocida ${capability.id}`);
+          if (appearance.waterTraversal && !WATER_TRAVERSAL_KINDS.has(appearance.waterTraversal.kind)) {
+            errors.push(`${appearance.appearanceId}: política acuática desconocida ${appearance.waterTraversal.kind}`);
+          }
         }
       }
     }

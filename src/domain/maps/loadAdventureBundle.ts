@@ -1,5 +1,7 @@
 import type {
   AdventureMapDocument,
+  AdventureMissionDocumentV1,
+  AdventureMediaManifestV1,
   AdventureMapV3,
   CharacterSpriteAssetV1,
   CharacterSpriteManifestV1,
@@ -43,6 +45,8 @@ export interface LoadedAdventureMapBundle {
   sectors: LoadedAdventureSectorBundle[];
   pmdManifest: PmdAnimationManifestV1;
   characterManifest: CharacterSpriteManifestV1;
+  mediaManifest?: AdventureMediaManifestV1;
+  missionDocument?: AdventureMissionDocumentV1;
 }
 
 function assetUrl(path: string, baseUrl: string) {
@@ -148,8 +152,13 @@ export async function loadAdventureMapBundle({
   adventurePath: string;
   baseUrl: string;
 }): Promise<LoadedAdventureMapBundle> {
-  const adventure = await fetchJson<AdventureMapDocument>(assetUrl(adventurePath, baseUrl));
-  return loadAdventureMapBundleFromData({ adventure, baseUrl });
+  const adventureUrl = assetUrl(adventurePath, baseUrl);
+  const adventure = await fetchJson<AdventureMapDocument>(adventureUrl);
+  const missionPath = adventurePath.replace(/\.adventure\.json$/iu, '.missions.json');
+  const missionDocument = missionPath === adventurePath
+    ? undefined
+    : await fetchJson<AdventureMissionDocumentV1>(assetUrl(missionPath, baseUrl)).catch(() => undefined);
+  return loadAdventureMapBundleFromData({ adventure, baseUrl, missionDocument });
 }
 
 /**
@@ -160,15 +169,20 @@ export async function loadAdventureMapBundleFromData({
   adventure,
   baseUrl,
   tiledMapsByAssetId = new Map(),
+  missionDocument,
 }: {
   adventure: AdventureMapDocument;
   baseUrl: string;
   tiledMapsByAssetId?: ReadonlyMap<string, LoadedTiledMap>;
+  missionDocument?: AdventureMissionDocumentV1;
 }): Promise<LoadedAdventureMapBundle> {
   const normalizedAdventure = normalizeAdventureMapV3(adventure);
-  const [pmdManifest, characterManifest] = await Promise.all([
+  const [pmdManifest, characterManifest, mediaManifest] = await Promise.all([
     fetchJson<PmdAnimationManifestV1>(assetUrl('assets/sprites/pokemon/pmd/manifest.v1.json', baseUrl)),
     fetchJson<CharacterSpriteManifestV1>(assetUrl('assets/sprites/characters/manifest.v1.json', baseUrl)),
+    fetchJson<AdventureMediaManifestV1>(
+      assetUrl('assets/adventure/media/manifest.v1.json', baseUrl),
+    ).catch(() => ({ schemaVersion: 1 as const, assets: [] })),
   ]);
   const pmdById = new Map(pmdManifest.assets.map(asset => [asset.assetId, asset]));
   const charactersById = new Map(characterManifest.assets.map(asset => [asset.assetId, asset]));
@@ -212,6 +226,8 @@ export async function loadAdventureMapBundleFromData({
     sectors,
     pmdManifest,
     characterManifest,
+    mediaManifest,
+    ...(missionDocument ? { missionDocument } : {}),
   };
 }
 

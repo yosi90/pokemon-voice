@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "conversationId": "narrative:professor-camphor:forest-emergency",
+  "title": "Emergencia en el bosque",
+  "tags": [
+    "alcanfor",
+    "migrated"
+  ],
+  "initialCueId": "emergency-call",
+  "once": true,
+  "cues": [
+    {
+      "cueId": "emergency-call",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "¡Tenemos una emergencia en el Bosque de Tegueste! Tres Pokémon me han rodeado y están intentando llevarse las provisiones.",
+      "actions": [
+        {
+          "actionId": "emergency-call:action:background",
+          "kind": "setBackground",
+          "backgroundAssetId": "narrative:background:laboratorio-de-alcanfor",
+          "transition": "fade",
+          "phase": "beforeText",
+          "durationMs": 250,
+          "blocking": true
+        },
+        {
+          "actionId": "emergency-call:action:enter:professor-camphor",
+          "kind": "enterActor",
+          "actorId": "professor-camphor",
+          "source": {
+            "kind": "illustration",
+            "assetId": "narrative:character:professor-camphor:alegre"
+          },
+          "poseAssetId": "narrative:character:professor-camphor:alegre",
+          "transform": {
+            "slot": "right"
+          },
+          "motion": "fade",
+          "phase": "beforeText",
+          "durationMs": 200
+        },
+        {
+          "actionId": "emergency-call:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:parlanchin",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "nextCueId": "choose-companion"
+    },
+    {
+      "cueId": "choose-companion",
+      "kind": "dialogue",
+      "speakerActorId": "professor-camphor",
+      "speakerName": "Profesor Alcanfor",
+      "text": "Necesito que vengas enseguida. Elige un compañero de campo y confirma la salida; mantendré abierta la comunicación.",
+      "actions": [
+        {
+          "actionId": "choose-companion:action:pose:professor-camphor",
+          "kind": "setActorPose",
+          "actorId": "professor-camphor",
+          "poseAssetId": "narrative:character:professor-camphor:explicando",
+          "phase": "withText",
+          "durationMs": 160
+        }
+      ],
+      "legacyAction": {
+        "kind": "completeSequence"
+      },
+      "outcomeId": "completed"
+    }
+  ]
+}
