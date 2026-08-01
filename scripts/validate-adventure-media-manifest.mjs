@@ -87,6 +87,15 @@ for (const asset of characters.assets) {
   if (!transparentPixel) {
     throw new Error(`${asset.assetId}: la hoja no contiene transparencia alfa real.`);
   }
+  for (const frame of [asset.idleFrame, ...(asset.walkFrames ?? []), ...(asset.runFrames ?? [])]) {
+    if (!Number.isInteger(frame) || frame < 0 || frame >= asset.columns) {
+      throw new Error(`${asset.assetId}: frame ${frame} fuera de la hoja.`);
+    }
+  }
+  if (asset.runFrameDurationMs !== undefined
+    && (!Number.isFinite(asset.runFrameDurationMs) || asset.runFrameDurationMs <= 0)) {
+    throw new Error(`${asset.assetId}: runFrameDurationMs debe ser positivo.`);
+  }
 }
 for (const appearance of characters.appearances ?? []) {
   if (!characterIds.has(appearance.modes.walk)) {

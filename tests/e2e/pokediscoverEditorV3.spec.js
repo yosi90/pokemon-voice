@@ -127,6 +127,94 @@ test.describe('Mapas V3 y autoría garantizada', () => {
     await expect(overlay.locator('.editor-geometry-object.is-anchors')).toHaveCount(0);
   });
 
+  test('dibuja áreas de roaming rectangulares y poligonales que pueden solaparse', async ({ page }) => {
+    await page.goto('/tools/pokediscover-editor/');
+    await page.getByTestId('adventure-folder').setInputFiles('tests/fixtures/editor-v3');
+    await expect(page.locator('.editor-statusbar')).toContainText('1 sectores abiertos', { timeout: 20_000 });
+    const overlay = page.locator('.editor-geometry-overlay');
+    await page.getByRole('button', { name: 'Vagar ▭' }).click();
+    await overlay.dragTo(overlay, {
+      sourcePosition: { x: 32, y: 32 },
+      targetPosition: { x: 144, y: 112 },
+    });
+    await expect(overlay.locator('.editor-geometry-object.is-roaming')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Vagar ⬠' }).click();
+    await overlay.click({ position: { x: 80, y: 48 } });
+    await overlay.click({ position: { x: 176, y: 48 } });
+    await overlay.click({ position: { x: 176, y: 128 } });
+    await page.getByRole('button', { name: /Terminar \(3 puntos\)/u }).click();
+    await expect(overlay.locator('.editor-geometry-object.is-roaming')).toHaveCount(2);
+  });
+
+  test('previsualiza un Pokémon con roaming sin escribir progreso', async ({ page }) => {
+    const temporaryRoot = await mkdtemp(path.join(tmpdir(), 'pokediscover-roaming-'));
+    const mapDirectory = path.join(temporaryRoot, 'map');
+    try {
+      await cp('tests/fixtures/editor-v3', mapDirectory, { recursive: true });
+      const sidecarPath = path.join(mapDirectory, 'editor-v3.adventure.json');
+      const tmjPath = path.join(mapDirectory, 'editor-v3.tmj');
+      const sidecar = JSON.parse(await readFile(sidecarPath, 'utf8'));
+      sidecar.sectors[0].spawnAnchorIds = ['entry:roaming:test'];
+      sidecar.entryPoints = [{
+        schemaVersion: 1,
+        entryPointId: 'entry:roaming:test',
+        label: 'Entrada de prueba',
+        sectorId: sidecar.sectors[0].sectorId,
+        anchorId: 'entry:roaming:test',
+      }];
+      sidecar.freeExpeditionEntryPointId = 'entry:roaming:test';
+      sidecar.actorPlacements.push({
+        schemaVersion: 1,
+        placementId: 'placement:pokemon:bulbasaur:default:01',
+        sectorId: sidecar.sectors[0].sectorId,
+        anchorId: 'placement:pokemon:bulbasaur:default:01',
+        assetId: 'pmd:0001-bulbasaur:default',
+        animation: 'Idle',
+        collision: 'solid',
+        roaming: {
+          schemaVersion: 1,
+          areaId: 'roam-area:editor-e2e-01:01',
+          distanceTiles: { min: 2, max: 6 },
+          speedPixelsPerSecond: 64,
+          waitAfterArrivalMs: { min: 0, max: 0 },
+        },
+      });
+      const tilemap = JSON.parse(await readFile(tmjPath, 'utf8'));
+      tilemap.layers.find(layer => layer.name === 'Anchors').objects.push(
+        { id: 1, name: 'entry:roaming:test', class: 'PlayerSpawn', point: true, x: 136, y: 112, width: 0, height: 0, rotation: 0, visible: true },
+        { id: 2, name: 'placement:pokemon:bulbasaur:default:01', class: 'ActorAnchor', point: true, x: 24, y: 32, width: 0, height: 0, rotation: 0, visible: true },
+      );
+      tilemap.layers.push({
+        id: 5,
+        name: 'Roaming',
+        type: 'objectgroup',
+        opacity: 1,
+        visible: true,
+        objects: [{ id: 3, name: 'roam-area:editor-e2e-01:01', class: 'RoamArea', x: 0, y: 0, width: 160, height: 128, rotation: 0, visible: true }],
+      });
+      tilemap.nextobjectid = 4;
+      tilemap.nextlayerid = 6;
+      await writeFile(sidecarPath, JSON.stringify(sidecar), 'utf8');
+      await writeFile(tmjPath, JSON.stringify(tilemap), 'utf8');
+
+      await page.goto('/tools/pokediscover-editor/');
+      await page.getByTestId('adventure-folder').setInputFiles(mapDirectory);
+      await expect(page.locator('.editor-statusbar')).toContainText('1 sectores abiertos', { timeout: 20_000 });
+      const progressBefore = await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)
+        .filter(([key]) => !key.startsWith('pokediscover-editor'))));
+      await page.getByRole('button', { name: 'Probar', exact: true }).first().click();
+      const runtime = page.getByTestId('pokediscover-editor-runtime');
+      await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 20_000 });
+      await expect(runtime).toHaveAttribute('data-roaming-actor-count', '1');
+      const initial = await runtime.getAttribute('data-roaming-actors');
+      await expect.poll(() => runtime.getAttribute('data-roaming-actors'), { timeout: 5_000 }).not.toBe(initial);
+      expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)
+        .filter(([key]) => !key.startsWith('pokediscover-editor'))))).toEqual(progressBefore);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   test('mueve una entidad y dibuja, cancela y confirma una ruta gestual como una transacción', async ({ page }) => {
     await page.goto('/tools/pokediscover-editor/');
     await page.getByTestId('adventure-folder')

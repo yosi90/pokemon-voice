@@ -53,7 +53,7 @@ export interface PokeDiscoverAuthoringIssue {
     height: number;
   };
   expectedName?: string;
-  expectedClass?: TiledAnchorClass | 'AmbientPath' | 'ActorOccluder' | 'Collision' | 'TriggerZone' | 'EditorComment';
+  expectedClass?: TiledAnchorClass | 'AmbientPath' | 'RoamArea' | 'ActorOccluder' | 'Collision' | 'TriggerZone' | 'EditorComment';
   constructionId?: string;
   removablePlacementId?: string;
   references: string[];
@@ -664,6 +664,36 @@ export function auditPokeDiscoverAuthoringSnapshot(
       ...snapshot.adventure.actorPlacements,
       ...snapshot.adventure.characterPlacements,
     ].filter(value => value.sectorId === sector.sectorId);
+    const referencedRoamAreas = new Map<string, string[]>(sectorPlacements
+      .filter(placement => placement.roaming)
+      .map(placement => [placement.roaming!.areaId, []]));
+    for (const placement of sectorPlacements) {
+      if (!placement.roaming) continue;
+      referencedRoamAreas.set(placement.roaming.areaId, [
+        ...(referencedRoamAreas.get(placement.roaming.areaId) ?? []),
+        placement.placementId,
+      ]);
+    }
+    for (const object of (tilemap.layers.find(layer => layer.name === 'Roaming')?.objects ?? []) as PokeDiscoverTiledObject[]) {
+      const name = String(object.name ?? '').trim();
+      const references = referencedRoamAreas.get(name) ?? [];
+      if (objectClass(object) !== 'RoamArea' || !/^roam-area:[a-z0-9-]+:\d{2,}$/u.test(name)) issues.push({
+        issueId: `roaming:${registration.fileName}:${object.id}`,
+        kind: objectClass(object) !== 'RoamArea' ? 'unsupported-class' : 'invalid-id',
+        sectorId: sector.sectorId,
+        fileName: registration.fileName,
+        objectId: object.id,
+        currentName: name,
+        currentClass: objectClass(object),
+        layerName: 'Roaming',
+        position: { x: Number(object.x ?? 0), y: Number(object.y ?? 0), width: Number(object.width ?? 0), height: Number(object.height ?? 0) },
+        expectedClass: 'RoamArea',
+        message: `${name || `#${object.id}`} debe ser un RoamArea con ID roam-area:<sector>:NN.`,
+        references,
+        canDelete: references.length === 0,
+        canRepair: false,
+      });
+    }
     const sectorPlacementIds = new Set(sectorPlacements.map(value => value.placementId));
     const canonicalPokemonIds = deriveCanonicalPokemonPlacementIds(snapshot.adventure);
     for (const object of (tilemap.layers.find(layer => layer.name === 'Occlusion')?.objects ?? []) as PokeDiscoverTiledObject[]) {

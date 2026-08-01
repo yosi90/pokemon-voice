@@ -4,6 +4,8 @@ import { getPokeDiscoverEditorContentMarkers } from '../../domain/tools/pokeDisc
 import {
   addPokeDiscoverCollisionPolygon,
   addPokeDiscoverCollisionRectangle,
+  addPokeDiscoverRoamAreaPolygon,
+  addPokeDiscoverRoamAreaRectangle,
   type PokeDiscoverGeometryPoint,
 } from '../../domain/tools/pokeDiscoverEditorGeometry.js';
 import { addPokeDiscoverEditorComment } from '../../domain/tools/pokeDiscoverEditorComments.js';
@@ -33,6 +35,8 @@ export type PokeDiscoverCanvasTool =
   | 'pan'
   | 'collision-rectangle'
   | 'collision-polygon'
+  | 'roam-rectangle'
+  | 'roam-polygon'
   | 'comment-rectangle'
   | 'comment-polygon'
   | 'event-path'
@@ -65,6 +69,8 @@ export const POKEDISCOVER_CANVAS_TOOLS: Array<{ tool: PokeDiscoverCanvasTool; la
   { tool: 'pan', label: 'Desplazar lienzo', short: 'Mano' },
   { tool: 'collision-rectangle', label: 'Dibujar colisión rectangular', short: 'Colisión ▭' },
   { tool: 'collision-polygon', label: 'Dibujar colisión poligonal', short: 'Colisión ⬠' },
+  { tool: 'roam-rectangle', label: 'Dibujar área de movimiento libre', short: 'Vagar ▭' },
+  { tool: 'roam-polygon', label: 'Dibujar área poligonal de movimiento libre', short: 'Vagar ⬠' },
   { tool: 'comment-rectangle', label: 'Dibujar comentario rectangular', short: 'Comentario ▭' },
   { tool: 'comment-polygon', label: 'Dibujar comentario poligonal', short: 'Comentario ⬠' },
   { tool: 'connection', label: 'Conectar con la sector contigua', short: 'Salida' },
@@ -82,7 +88,7 @@ function objectClass(object: PokeDiscoverTiledObject) {
 
 function mapGeometry(tilemap: PokeDiscoverEditableTiledMap) {
   return tilemap.layers.flatMap(layer => {
-    if (!['Collision', 'Anchors', 'Triggers', 'Paths', 'Occlusion', 'Comments'].includes(String(layer.name))) return [];
+    if (!['Collision', 'Anchors', 'Triggers', 'Paths', 'Roaming', 'Occlusion', 'Comments'].includes(String(layer.name))) return [];
     const layerName = layer.name as PokeDiscoverObjectLayerName;
     return (Array.isArray(layer.objects) ? layer.objects : [])
       .filter(object => Number.isFinite(Number(object.id)))
@@ -373,6 +379,8 @@ export function MapAuthoringCanvas({
     setCellMenu(undefined);
     const layer: PokeDiscoverObjectLayerName | undefined = nextTool.startsWith('collision')
       ? 'Collision'
+      : nextTool.startsWith('roam')
+        ? 'Roaming'
       : nextTool === 'connection'
         ? 'Anchors'
         : undefined;
@@ -468,6 +476,10 @@ export function MapAuthoringCanvas({
       if (tool === 'collision-polygon') {
         const result = addPokeDiscoverCollisionPolygon(tilemap, points);
         onTilemapChange(result.tilemap, 'Crear colisión poligonal');
+      } else if (tool === 'roam-polygon') {
+        const result = addPokeDiscoverRoamAreaPolygon(tilemap, sectorId, points);
+        onTilemapChange(result.tilemap, 'Crear área de roaming poligonal');
+        onOpenObject(result.object.id);
       } else if (tool === 'comment-polygon' && points.length >= 3) {
         const origin = points[0];
         const result = addPokeDiscoverEditorComment(tilemap, {
@@ -539,7 +551,7 @@ export function MapAuthoringCanvas({
       event.currentTarget.setPointerCapture(event.pointerId);
       return;
     }
-    if (tool === 'collision-polygon' || tool === 'comment-polygon' || tool === 'event-path') {
+    if (tool === 'collision-polygon' || tool === 'roam-polygon' || tool === 'comment-polygon' || tool === 'event-path') {
       setDraftPoints(current => [...current, point]);
       setDraftCurrent(point);
       return;
@@ -556,6 +568,10 @@ export function MapAuthoringCanvas({
       if (tool === 'collision-rectangle') {
         const result = addPokeDiscoverCollisionRectangle(tilemap, draftStart, end);
         onTilemapChange(result.tilemap, 'Crear colisión rectangular');
+      } else if (tool === 'roam-rectangle') {
+        const result = addPokeDiscoverRoamAreaRectangle(tilemap, sectorId, draftStart, end);
+        onTilemapChange(result.tilemap, 'Crear área de roaming rectangular');
+        onOpenObject(result.object.id);
       } else if (tool === 'comment-rectangle') {
         const result = addPokeDiscoverEditorComment(tilemap, {
           text: 'Comentario editorial',
@@ -636,6 +652,7 @@ export function MapAuthoringCanvas({
               ['Collision', 'Colisiones'],
               ['Triggers', 'Zonas de evento'],
               ['Paths', 'Rutas'],
+              ['Roaming', 'Áreas de roaming'],
               ['Occlusion', 'Oclusiones'],
               ['Comments', 'Comentarios'],
             ] as const).map(([layerName, layerLabel]) => (

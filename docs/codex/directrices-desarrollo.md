@@ -82,6 +82,9 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - Las máscaras parciales se dibujan en la capa opcional `Occlusion` mediante `ActorOccluder` y se relacionan con actores por `occlusionGroup`, nunca por coordenadas hardcodeadas en Phaser.
 - Los `ActorOccluder` rectangulares que cubren la base completa del actor deben resolverse mediante recorte de sprite. No usar filtros WebGL dinámicos para agua, hierba o franjas horizontales comunes.
 - Las rutas ambientales se dibujan como `AmbientPath` en `Paths`; las secuencias y animaciones viven en `ambientSequences` del sidecar. Una misión o interacción contextual siempre puede suspenderlas mediante el controlador compartido.
+- El movimiento libre usa `RoamArea` en la capa `Roaming` y una configuración `roaming` en la colocación. NPC y Pokémon comparten la cuadrícula navegable, pero conservan destinos, esperas y reservas independientes. Las áreas pueden solaparse sin crear pathfindings paralelos.
+- El jugador tiene prioridad absoluta sobre actores con roaming. Los actores reservan casillas, evitan el corredor inmediato del protagonista y ofrecen `Pedir paso`; si no existe ruta para apartarse se reubican en una celda segura, nunca se vuelven atravesables.
+- Roaming y `ambientSequences` son conductas base mutuamente exclusivas. Diálogos, eventos y cinemáticas suspenden el roaming y devuelven después el control; este estado es efímero y nunca se persiste.
 - Las coreografías ambientales reinician al entrar en el sector, se pausan completas ante un bloqueo y no escriben progreso. Con movimiento reducido permanecen en la pose base.
 - Los pivotes PMD se calculan al generar el manifiesto; el runtime no debe recorrer hojas de sombra. La carga bloqueante incluye solo las animaciones base y las hojas ambientales se deduplican por su fuente `CopyOf`, se preparan en segundo plano y activan la coreografía al completarse.
 - Al mantener una dirección, los pasos consecutivos de 16 px se encadenan en el mismo frame lógico; no insertar una pose `Idle` entre tiles transitables.
@@ -113,7 +116,7 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
 - Se publican como URLs ocultas del mismo sitio (`/tools/<nombre>/`), siguiendo el patrón del randomizador. No tienen navegación desde Poke-Voice, dominio propio ni despliegue separado.
 - Deben reutilizar los catálogos y contratos locales del juego; no mantener copias paralelas ni depender de PokeAPI durante la ejecución para decidir resultados.
 - No deben añadir navegación ni peso al bundle inicial de Poke-Voice salvo que exista una necesidad explícita dentro del juego.
-- El configurador PokeDiscover es la herramienta principal de autoría salvo para pintar tiles. Abre una carpeta de aventura, detecta o crea su `.adventure.json`, registra todos los `.tmj` y permite editar tanto los sectores ya declarados como los recién descubiertos.
+- El configurador PokeDiscover es la herramienta principal de autoría de mapas salvo para pintar tiles. Abre una carpeta de aventura, detecta o crea su `.adventure.json`, registra todos los `.tmj` y permite editar tanto los sectores ya declarados como los recién descubiertos.
 - El configurador abre la raíz de `pokemon voice` y descubre las aventuras bajo
   `public/assets/adventure/maps`. Misiones, medios y personajes son catálogos
   globales; cambiar de aventura con cambios pendientes siempre exige confirmar.
@@ -122,16 +125,40 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
   `public/assets/adventure/narratives`, se descubren mediante su manifiesto y
   conservan IDs estables aunque se reutilicen desde varios mapas. El contenido
   TypeScript y las secuencias inline V1 son sólo fallbacks de transición.
+- La sideweb `/tools/story-editor/` es la autora exclusiva de misiones. Abre la
+  raíz del proyecto, conserva cada misión en el `<mapa>.missions.json` de su
+  mapa propietario y guarda de forma transaccional documentos, sidecars,
+  manifiesto y `public/assets/adventure/story/outline.v1.json`. Mapas muestra
+  misiones y outcomes en solo lectura y enlaza a Historia.
 - La sideweb `/tools/visual-novel-editor/` es la autora exclusiva de
-  conversaciones visuales. El configurador de mapas y misiones únicamente las
-  referencia y combina con expediciones, requisitos y terminales mediante un
-  flujo de bloques tipados.
+  conversaciones visuales. Muestra sus misiones consumidoras y enlaza a
+  Historia; nunca modifica el flujo de una misión.
+- `AdventureMissionDocumentV2` y `MissionFlowV2` son el formato de autoría. Los
+  cargadores normalizan V1 en memoria y el primer guardado migrado crea una
+  copia contigua `.missions.v1.backup.json` que nunca se reemplaza si no
+  coincide con el origen.
 - Una conversación avanza por cues de diálogo. El estado de escenario persiste
   entre cues y sólo cambia mediante acciones declarativas de fondo, actor, pose,
   movimiento o audio. No se admiten scripts ni keyframes arbitrarios.
 - Una misión tiene un mapa propietario, pero sus bloques de expedición pueden
   abrir otros mapas. Los eventos jugables se comunican con el flujo mediante
   resultados estables; nunca importan ni conocen la conversación siguiente.
+- El orden de actos y capítulos es exclusivamente editorial. El desbloqueo se
+  deriva de `availability`; enlazar dos misiones crea un requisito
+  `completedMission` y no una segunda relación paralela.
+- `missionProgressById` es la fuente de verdad de misiones activas concurrentes.
+  Cada registro conserva nodo, checkpoint narrativo, estado local, efectos
+  ejecutados y último tramo jugable. `activeMissionIds` es solo una proyección
+  de compatibilidad y una expedición activa guarda únicamente la misión cuyo
+  mapa está reproduciendo.
+- Un enlace directo entre expediciones viaja inmediatamente. Un nodo `travel`
+  conserva el checkpoint al elegir «Más tarde» y el tablón vuelve a ofrecer el
+  destino; aceptar cambia el mapa sin permitir que el mapa conozca el bloque
+  siguiente.
+- Los efectos de flujo tienen `effectId`, son atómicos e idempotentes y todas
+  las concesiones pasan por el ledger. Los terminales de fracaso aplican su
+  política de rollback y permiten reintentar el último tramo, reiniciar o
+  abandonar sin modificar checkpoints de otras misiones.
 - El runtime descubre mapas mediante
   `public/assets/adventure/maps/manifest.v1.json`. Toda expedición cruzada
   conserva la sesión de misión, actualiza su mapa activo y puede resolver un
@@ -140,7 +167,7 @@ Los logros y modos de juego deben mantenerse coherentes con la progresion de des
   registran en el checkpoint antes de poder repetirse. Los tokens editoriales
   usan `item:<id>`, `counter:<id>` y `flag:<id>` además del perfil y compañero.
 - Las sidewebs permanecen ocultas desde Poke-Voice, pero comparten un conmutador
-  interno entre configurador, editor de novela visual y randomizador. Abandonar
+  interno entre Mapas, Historia, Novela visual y Randomizador. Abandonar
   un editor con cambios pendientes reutiliza la confirmación de guardado.
 - `Terrain` y `Locations` son object layers funcionales propiedad del
   configurador. `Ground` continúa siendo puramente visual. Nunca se deduce agua,

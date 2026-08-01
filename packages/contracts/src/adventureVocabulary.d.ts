@@ -78,6 +78,7 @@ export const TILED_RUNTIME_OBJECT_CLASSES: readonly [
   'TerrainArea',
   'LocationPoint',
   'LocationArea',
+  'RoamArea',
 ];
 export const MEANINGFUL_EXPEDITION_INTERACTION_KINDS: readonly [
   'npcConversation',

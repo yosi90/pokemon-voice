@@ -29,6 +29,12 @@ export interface RequirementEvaluationContext {
   companionForm?: PokemonFormV1;
   /** Capacidades ya resueltas para el loadout completo; prevalecen sobre el fallback del compañero. */
   expeditionCapabilities?: ReadonlyArray<{ id: string; strength?: number }>;
+  /** Compañeros cuya elegibilidad ya fue resuelta contra el catálogo curado. */
+  unlockedCompanions?: ReadonlyArray<{
+    speciesId: number;
+    formId?: string;
+    appearanceId?: string;
+  }>;
 }
 
 export interface RequirementEvaluationResult {
@@ -139,6 +145,17 @@ function evaluateAtom(atom: RequirementAtomV1, context: RequirementEvaluationCon
       return includesInMapProgress(context, 'unlockedSecretIds', atom.secretId);
     case 'storyEvent':
       return pokeDiscover.worldFlags[atom.eventId] === true;
+    case 'completedMission':
+      return Object.values(pokeDiscover.mapProgress)
+        .some(progress => progress.completedMissionIds.includes(atom.missionId));
+    case 'companionUnlocked': {
+      const resolved = context.unlockedCompanions ?? pokeDiscover.companionQualifications;
+      return resolved.some(candidate => (
+        candidate.speciesId === atom.speciesId
+        && (!atom.formId || candidate.formId === atom.formId)
+        && (!atom.appearanceId || candidate.appearanceId === atom.appearanceId)
+      ));
+    }
   }
 }
 

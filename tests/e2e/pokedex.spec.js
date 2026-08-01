@@ -463,7 +463,7 @@ test('carga el Bosque de Tegueste con personajes, Pokémon, movimiento y colisio
   await expect(runtime).toHaveAttribute('data-animation', 'playing');
   await expect(runtime).toHaveAttribute('data-map-id', 'map:tegueste:camphor-forest');
   await expect(runtime).toHaveAttribute('data-sector-id', 'sector:tegueste-forest:02-04');
-  await expect(runtime).toHaveAttribute('data-actor-id', 'actor:rattata:left');
+  await expect(runtime).toHaveAttribute('data-actor-id', 'placement:pokemon:rattata:default:01');
   await expect(runtime).toHaveAttribute('data-actor-grounding', 'pmd-shadow');
   await expect(runtime).toHaveAttribute('data-solid-actor-count', '7');
   await expect(runtime).toHaveAttribute('data-player-asset-id', 'character:trainer:achaman');
@@ -662,9 +662,9 @@ test('el compañero sigue la cuadrícula, conversa e intercambia casilla con mov
 
   const frameChangesBeforeWalking = Number(await runtime.getAttribute('data-companion-frame-changes'));
   const yBeforeWalking = Number(await runtime.getAttribute('data-player-y'));
-  await page.keyboard.down('ArrowDown');
+  await page.keyboard.down('ArrowUp');
   try {
-    await expect.poll(async () => Number(await runtime.getAttribute('data-player-y'))).toBeGreaterThan(yBeforeWalking);
+    await expect.poll(async () => Number(await runtime.getAttribute('data-player-y'))).toBeLessThan(yBeforeWalking);
     await expect.poll(async () => runtime.getAttribute('data-companion-animation')).toBe('Walk');
     await expect.poll(async () => Number(await runtime.getAttribute('data-companion-frame-changes')))
       .toBeGreaterThan(frameChangesBeforeWalking);
@@ -673,10 +673,10 @@ test('el compañero sigue la cuadrícula, conversa e intercambia casilla con mov
     await page.keyboard.down('ArrowRight');
     await expect.poll(async () => Number(await runtime.getAttribute('data-player-x'))).toBeGreaterThan(xBeforeOverride);
     await page.keyboard.up('ArrowRight');
-    await expect.poll(async () => runtime.getAttribute('data-facing')).toBe('down');
+    await expect.poll(async () => runtime.getAttribute('data-facing')).toBe('up');
   } finally {
     await page.keyboard.up('ArrowRight');
-    await page.keyboard.up('ArrowDown');
+    await page.keyboard.up('ArrowUp');
   }
   await expect.poll(async () => runtime.getAttribute('data-companion-animation')).toBe('Idle');
 });
@@ -1046,6 +1046,55 @@ test('movimiento reducido conserva overlays y poses ambientales estáticas', asy
   await expect(runtime).toHaveAttribute('data-ambient-sequence-count', '0');
   await expect(runtime).toHaveAttribute('data-occluded-actor-count', '2');
   await expect(runtime).toHaveAttribute('data-ambient-cycle', '0');
+});
+
+test('prioriza Pedir paso sin ocultar Hablar y anuncia la reacción del NPC', async ({ page }) => {
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('pokevoice-save-v1'));
+    save.pokeDiscover.trainerProfile = { schemaVersion: 1, avatarId: 'achaman', displayName: 'Achaman' };
+    localStorage.setItem('pokevoice-save-v1', JSON.stringify(save));
+  });
+  await page.reload();
+  const voiceModal = page.locator('#voice-support-modal');
+  if (await voiceModal.isVisible()) await voiceModal.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Profesor Alcanfor' }).click();
+  await page.getByRole('button', { name: 'Probar escenario' }).click();
+
+  const preview = page.getByRole('dialog', { name: '¡Ayuda al profesor Alcanfor!' });
+  const runtime = preview.getByTestId('technical-map-runtime');
+  await expect(runtime).toHaveAttribute('data-runtime', 'ready', { timeout: 30_000 });
+  await runtime.evaluate(element => {
+    element.dispatchEvent(new CustomEvent('pokevoice:map-yield-available', {
+      detail: { actorId: 'character:professor-alcanfor', prompt: 'Pedir paso' },
+    }));
+    element.dispatchEvent(new CustomEvent('pokevoice:map-interaction-available', {
+      detail: {
+        interaction: {
+          schemaVersion: 1,
+          interactionId: 'interaction:tegueste:talk-professor-camphor',
+          sectorId: 'sector:tegueste-forest:02-04',
+          target: { kind: 'placement', placementId: 'character:professor-alcanfor' },
+          prompt: 'Hablar con Alcanfor',
+          dialogueId: 'dialogue:tegueste:professor-warning',
+          meaningfulKind: 'npcConversation',
+          repeatPolicy: 'repeatable',
+        },
+      },
+    }));
+  });
+
+  await preview.getByRole('button', { name: 'Acciones' }).click();
+  const actions = preview.getByRole('dialog', { name: 'Acciones disponibles' });
+  await expect(actions.getByRole('button')).toHaveText([
+    'Pedir paso',
+    'Hablar con Alcanfor',
+    'Cancelar',
+  ]);
+  await actions.getByRole('button', { name: 'Pedir paso' }).click();
+  await runtime.evaluate(element => element.dispatchEvent(new CustomEvent('pokevoice:map-yield-reaction', {
+    detail: { dialogueId: 'dialogue:tegueste:professor-warning' },
+  })));
+  await expect(preview.getByRole('status')).toContainText('Esos Rattata llevan un rato siguiendo mi mochila');
 });
 
 test('habla con Alcanfor mediante la interacción contextual y bloquea el mapa durante el diálogo', async ({ page }) => {

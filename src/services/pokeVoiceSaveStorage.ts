@@ -90,6 +90,23 @@ function normalizeActiveExpedition(session: PokeVoiceSaveV1['activeExpeditionSes
   };
 }
 
+function normalizeMissionProgress(save: PokeVoiceSaveV1) {
+  const stored = isRecord(save.pokeDiscover.missionProgressById)
+    ? save.pokeDiscover.missionProgressById
+    : {};
+  const progress = { ...stored };
+  const legacy = save.activeExpeditionSession?.missionRuntime;
+  if (legacy?.missionId && !progress[legacy.missionId]) {
+    const now = new Date().toISOString();
+    progress[legacy.missionId] = {
+      ...legacy,
+      startedAt: now,
+      updatedAt: now,
+    };
+  }
+  return progress;
+}
+
 export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
   const value = parseJson(raw);
   if (!isRecord(value)
@@ -108,6 +125,7 @@ export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
   }
   const save = value as unknown as PokeVoiceSaveV1;
   const trainerProfile = normalizeTrainerProfile(save.pokeDiscover.trainerProfile);
+  const missionProgressById = normalizeMissionProgress(save);
   const { trainerProfile: _storedTrainerProfile, ...pokeDiscoverWithoutTrainerProfile } = save.pokeDiscover;
   return {
     ...save,
@@ -130,6 +148,12 @@ export function parsePokeVoiceSave(raw: string | null): PokeVoiceSaveV1 | null {
         ? save.pokeDiscover.discoveredAppearances
         : {},
       inventory: normalizeInventory(save.pokeDiscover.inventory),
+      missionProgressById,
+      activeMissionIds: Object.keys(missionProgressById).length
+        ? Object.keys(missionProgressById)
+        : Array.isArray(save.pokeDiscover.activeMissionIds)
+          ? [...new Set(save.pokeDiscover.activeMissionIds)]
+          : [],
     },
     activeExpeditionSession: normalizeActiveExpedition(save.activeExpeditionSession),
   };

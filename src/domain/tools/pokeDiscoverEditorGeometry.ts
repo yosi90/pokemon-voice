@@ -125,6 +125,37 @@ export function addPokeDiscoverCollisionPolygon(
   });
 }
 
+export function addPokeDiscoverRoamAreaRectangle(
+  tilemap: PokeDiscoverEditableTiledMap,
+  sectorId: string,
+  start: PokeDiscoverGeometryPoint,
+  end: PokeDiscoverGeometryPoint,
+) {
+  const geometry = normalizedRectangle(start, end);
+  if (geometry.width < tilemap.tilewidth || geometry.height < tilemap.tileheight) {
+    throw new Error('El área de roaming debe cubrir al menos un tile completo.');
+  }
+  const name = nextOrdinalObjectName(`roam-area:${sectorId.replace(/^sector:/u, '').replaceAll(':', '-')}`, objectNames(tilemap));
+  return addPokeDiscoverTiledObject(tilemap, 'Roaming', {
+    name,
+    class: 'RoamArea',
+    ...geometry,
+  });
+}
+
+export function addPokeDiscoverRoamAreaPolygon(
+  tilemap: PokeDiscoverEditableTiledMap,
+  sectorId: string,
+  points: PokeDiscoverGeometryPoint[],
+) {
+  const name = nextOrdinalObjectName(`roam-area:${sectorId.replace(/^sector:/u, '').replaceAll(':', '-')}`, objectNames(tilemap));
+  return addPokeDiscoverTiledObject(tilemap, 'Roaming', {
+    name,
+    class: 'RoamArea',
+    ...polygonGeometry(points),
+  });
+}
+
 export function movePokeDiscoverWorldMap(
   world: PokeDiscoverWorldFile,
   fileName: string,
@@ -333,6 +364,9 @@ export function findPokeDiscoverGeometryReferences(
         }
       }
     }
+  }
+  for (const placement of [...adventure.actorPlacements, ...adventure.characterPlacements]) {
+    if (placement.roaming?.areaId === objectName) references.push(`Roaming ${placement.placementId}`);
   }
   for (const sequence of adventure.mapSequences ?? []) {
     for (const beat of sequence.beats) {

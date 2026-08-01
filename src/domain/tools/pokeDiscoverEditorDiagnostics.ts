@@ -7,6 +7,9 @@ import { POKEDISCOVER_MISSION_CATALOG } from '../../data/adventure/missionCatalo
 import { POKE_DISCOVER_FIELD_TOOLS, POKE_DISCOVER_SHOP_CONTENT } from '../../data/adventure/pokeDiscoverShop.js';
 import type { LoadedAdventureMapBundle } from '../maps/loadAdventureBundle.js';
 import { validateTiledAdventureBundle } from '../maps/tiledAdventureValidator.js';
+import { createAdventureTerrainRuntime, terrainCellAtGroundPoint } from '../maps/adventureTerrainRuntime.js';
+import { readTiledCollisionShape, rectangleOverlapsCollision } from '../maps/tiledCollisionGeometry.js';
+import { rasterizeRoamArea, readRoamArea, roamCellGroundPoint, roamCellKey } from '../maps/adventureRoaming.js';
 import { COMPANION_GAMEPLAY_SPECIES } from '../companions/companionGameplayCatalog.js';
 import { analyzePokeDiscoverEditorEconomy } from './pokeDiscoverEditorEconomyAnalysis.js';
 import { listAdventureRequirementTargets } from './pokeDiscoverEditorRequirements.js';
@@ -205,7 +208,12 @@ export function auditPokeDiscoverEditorLogic(adventure: AdventureMapV3): PokeDis
     const mission = POKEDISCOVER_MISSION_CATALOG.find(candidate => candidate.missionId === missionId);
     if (!mission) { diagnostics.push(diagnostic('brokenReference', 'error', missionId, 'La misión no existe en el catálogo local.')); continue; }
     if (mission.mapId !== adventure.mapId) diagnostics.push(diagnostic('brokenReference', 'error', missionId, `La misión apunta a ${mission.mapId} en lugar de ${adventure.mapId}.`));
-    for (const variantId of mission.mapVariantIds) if (!variants.has(variantId)) diagnostics.push(diagnostic('brokenReference', 'error', missionId, `La misión referencia la variante inexistente ${variantId}.`));
+    const missionVariantIds = mission.schemaVersion === 1
+      ? mission.mapVariantIds
+      : (mission.flow?.nodes ?? []).flatMap(node => (
+        node.kind === 'expedition' && node.mapId === adventure.mapId ? node.mapVariantIds : []
+      ));
+    for (const variantId of missionVariantIds) if (!variants.has(variantId)) diagnostics.push(diagnostic('brokenReference', 'error', missionId, `La misión referencia la variante inexistente ${variantId}.`));
     for (const objective of mission.objectives) {
       const reason = expressionImpossibleReason(objective.requirement);
       if (reason) diagnostics.push(diagnostic('inaccessibleObjective', 'error', objective.objectiveId, `Objetivo inaccesible: ${reason}.`));
@@ -229,6 +237,61 @@ export function auditPokeDiscoverEditorProject(bundle: LoadedAdventureMapBundle)
     missionDocument: bundle.missionDocument,
   }) as string[];
   const diagnostics = [...auditPokeDiscoverEditorLogic(bundle.adventure)];
+  for (const room of bundle.sectors) {
+    const areas = new Map((room.tilemap.layers.find(layer => layer.name === 'Roaming')?.objects as Array<Record<string, unknown>> | undefined ?? [])
+      .map(readRoamArea).filter((area): area is NonNullable<typeof area> => Boolean(area))
+      .map(area => [area.areaId, area]));
+    const collisionShapes = (room.tilemap.layers.find(layer => layer.name === 'Collision')?.objects as Array<Record<string, unknown>> | undefined ?? [])
+      .map(readTiledCollisionShape).filter((shape): shape is NonNullable<typeof shape> => Boolean(shape));
+    const terrain = createAdventureTerrainRuntime(room.tilemap);
+    const placements = [...bundle.adventure.actorPlacements, ...bundle.adventure.characterPlacements]
+      .filter(placement => placement.sectorId === room.sector.sectorId && placement.roaming);
+    const cellsByArea = new Map<string, number>();
+    for (const placement of placements) {
+      const area = areas.get(placement.roaming!.areaId);
+      if (!area) continue;
+      const allowed = placement.terrainRules?.allowedSurfaceTypes ?? ['ground'];
+      const cells = rasterizeRoamArea(area, {
+        width: room.tilemap.width,
+        height: room.tilemap.height,
+        canOccupy: cell => {
+          const point = roamCellGroundPoint(cell);
+          const footprint = { x: point.x - 8, y: point.y - 16, width: 16, height: 16 };
+          const surface = terrainCellAtGroundPoint(terrain, point.x, point.y)?.surfaceType ?? 'void';
+          return allowed.includes(surface) && !collisionShapes.some(shape => rectangleOverlapsCollision(footprint, shape));
+        },
+      });
+      cellsByArea.set(area.areaId, Math.max(cellsByArea.get(area.areaId) ?? 0, cells.length));
+      if (cells.length < 2) diagnostics.push(diagnostic('inaccessibleObjective', 'error', placement.placementId, `El área ${area.areaId} no deja una ruta ni una casilla de emergencia.`));
+      const cellKeys = new Set(cells.map(roamCellKey));
+      if (cells.length) {
+        const reached = new Set<string>();
+        const queue = [cells[0]];
+        for (let cursor = 0; cursor < queue.length; cursor += 1) {
+          const cell = queue[cursor];
+          const key = roamCellKey(cell);
+          if (reached.has(key)) continue;
+          reached.add(key);
+          for (const next of [{ x: cell.x - 1, y: cell.y }, { x: cell.x + 1, y: cell.y }, { x: cell.x, y: cell.y - 1 }, { x: cell.x, y: cell.y + 1 }]) {
+            if (cellKeys.has(roamCellKey(next)) && !reached.has(roamCellKey(next))) queue.push(next);
+          }
+        }
+        if (reached.size !== cells.length) diagnostics.push(diagnostic('invalidData', 'warning', area.areaId, 'El área de roaming está dividida en regiones inconexas.'));
+      }
+      if (placement.roaming!.speedPixelsPerSecond >= 80) {
+        const actor = bundle.adventure.actorPlacements.find(candidate => candidate.placementId === placement.placementId);
+        const character = bundle.adventure.characterPlacements.find(candidate => candidate.placementId === placement.placementId);
+        const hasRun = actor
+          ? bundle.pmdManifest.assets.find(asset => asset.assetId === actor.assetId)?.animations.some(animation => animation.name === 'Run')
+          : Boolean(bundle.characterManifest.assets.find(asset => asset.assetId === character?.assetId)?.runFrames?.length);
+        if (!hasRun) diagnostics.push(diagnostic('invalidData', 'warning', placement.placementId, 'La velocidad es de carrera, pero el asset usará Walk acelerado porque no declara Run.'));
+      }
+    }
+    for (const [areaId, cells] of cellsByArea) {
+      const actors = placements.filter(placement => placement.roaming?.areaId === areaId).length;
+      if (actors && cells / actors < 6) diagnostics.push(diagnostic('invalidData', 'warning', areaId, `Alta densidad: ${actors} actores comparten ${cells} celdas navegables.`));
+    }
+  }
   for (const message of validationErrors) {
     if (/duplicad[oa]s?/i.test(message)) continue;
     const sourceId = message.split(': ').at(0) ?? bundle.adventure.mapId;

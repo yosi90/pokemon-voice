@@ -1,6 +1,6 @@
 import type {
   AdventureMediaManifestV1,
-  AdventureMissionDocumentV1,
+  AdventureMissionDocument,
   NarrativeConversationManifestV1,
   NarrativeConversationV1,
   PmdAnimationManifestV1,
@@ -20,7 +20,7 @@ export interface VisualNovelWorkspace {
   fileNameByConversationId: Record<string, string>;
   mediaManifest: AdventureMediaManifestV1;
   pmdManifest: PmdAnimationManifestV1;
-  missionDocuments: AdventureMissionDocumentV1[];
+  missionDocuments: AdventureMissionDocument[];
   baselineByFileName: Record<string, string>;
   handlesByFileName: Record<string, PokeDiscoverWritableFileHandle>;
 }
@@ -59,14 +59,14 @@ async function readJsonAt<T>(
 async function collectMissionDocuments(
   directory: PokeDiscoverDirectoryHandle,
 ) {
-  const documents: AdventureMissionDocumentV1[] = [];
+  const documents: AdventureMissionDocument[] = [];
   for await (const entry of directory.values()) {
     if (entry.kind === 'directory') {
       documents.push(...await collectMissionDocuments(entry));
     } else if (entry.name.endsWith('.missions.json')) {
       try {
         const file = entry as PokeDiscoverWritableFileHandle;
-        documents.push(JSON.parse(await (await file.getFile()).text()) as AdventureMissionDocumentV1);
+        documents.push(JSON.parse(await (await file.getFile()).text()) as AdventureMissionDocument);
       } catch {
         // El cargador principal mostrará el diagnóstico específico del documento.
       }
@@ -255,7 +255,8 @@ export function findConversationDependencies(
   conversationId: string,
 ) {
   return workspace.missionDocuments.flatMap(document => document.missions.flatMap(mission => {
-    const legacy = Object.values(mission.narratives ?? {}).includes(conversationId);
+    const legacy = mission.schemaVersion === 1
+      && Object.values(mission.narratives ?? {}).includes(conversationId);
     const flow = mission.flow?.nodes.some(node => (
       node.kind === 'conversation' && node.conversationId === conversationId
     ));

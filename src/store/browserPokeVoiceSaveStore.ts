@@ -81,9 +81,12 @@ import {
 } from '../domain/expeditions/mapEventTriggers.js';
 import { applyHazardConsequenceToSave } from '../domain/expeditions/hazardConsequences.js';
 import {
-  advanceMissionFlow,
-  resolveMissionFlowNode,
-} from '../domain/expeditions/missionFlow.js';
+  advanceActiveMissionFlow,
+  getActiveMissionFlowState,
+  resolveActiveMissionFailure,
+  settleMissionFlow,
+} from '../domain/expeditions/missionFlowRuntime.js';
+import { normalizeMissionDefinition } from '../domain/expeditions/missionV2.js';
 import { getPokeDiscoverMission } from '../data/adventure/missionCatalog.js';
 import {
   createCompanionCatalogSpecies,
@@ -148,58 +151,95 @@ export function getBrowserPokeVoiceSave() {
   return readCurrentSave();
 }
 
-export function getBrowserMissionFlowState() {
-  const save = readCurrentSave();
-  const session = save.activeExpeditionSession;
-  const mission = session?.missionId ? getPokeDiscoverMission(session.missionId) : undefined;
-  if (!session || !mission?.flow) return undefined;
-  const nodeId = session.missionRuntime?.flowNodeId ?? mission.flow.initialNodeId;
-  const node = resolveMissionFlowNode(mission.flow, nodeId);
-  if (!node) throw new Error(`Checkpoint de misión inexistente: ${nodeId}.`);
-  return { save, mission, node };
-}
-
-export function advanceBrowserMissionFlow(outcomeId?: string) {
-  const state = getBrowserMissionFlowState();
-  if (!state) return undefined;
-  const { save: current, mission, node: currentNode } = state;
-  const session = current.activeExpeditionSession!;
-  const currentNodeId = currentNode.nodeId;
-  const flow = mission.flow!;
-  const nextNodeId = currentNode.kind === 'condition'
-    ? advanceMissionFlow(flow, currentNodeId, {
-      evaluateRequirement: requirement => {
-        if ('kind' in requirement && requirement.kind === 'missionFlag') {
-          const actual = session.missionRuntime?.flags[requirement.flagId];
-          return actual === (requirement.expected ?? true);
-        }
-        return false;
+function ensureBrowserMissionProgress(current: PokeVoiceSaveV1, missionId: string) {
+  const mission = getPokeDiscoverMission(missionId);
+  if (!mission) return current;
+  const normalized = normalizeMissionDefinition(mission);
+  const nodeId = normalized.flow?.initialNodeId ?? `${missionId}:start`;
+  const existing = current.pokeDiscover.missionProgressById?.[missionId];
+  if (existing) {
+    const hasValidFlowNode = !normalized.flow || normalized.flow.nodes
+      .some(node => node.nodeId === (existing.flowNodeId ?? normalized.flow!.initialNodeId));
+    if (hasValidFlowNode || mission.schemaVersion !== 1 || !normalized.flow) return current;
+    const repaired: PokeVoiceSaveV1 = {
+      ...current,
+      pokeDiscover: {
+        ...current.pokeDiscover,
+        missionProgressById: {
+          ...current.pokeDiscover.missionProgressById,
+          [missionId]: {
+            ...existing,
+            flowNodeId: normalized.flow.initialNodeId,
+            updatedAt: new Date().toISOString(),
+          },
+        },
       },
-    })
-    : advanceMissionFlow(flow, currentNodeId, { outcomeId });
-  const nextNode = resolveMissionFlowNode(flow, nextNodeId);
-  if (!nextNode) throw new Error(`Destino de misión inexistente: ${nextNodeId}.`);
-  const missionRuntime = session.missionRuntime ?? {
-    schemaVersion: 1 as const,
-    missionId: mission.missionId,
-    checkpointId: flow.initialNodeId,
-    flags: {},
-    counters: {},
-    resolvedActorIds: [],
-  };
-  const next = {
+    };
+    persist(repaired);
+    return repaired;
+  }
+  if (!current.pokeDiscover.activeMissionIds.includes(missionId)) return current;
+  const now = new Date().toISOString();
+  const legacyRuntime = current.activeExpeditionSession?.missionId === missionId
+    ? current.activeExpeditionSession.missionRuntime
+    : undefined;
+  const next: PokeVoiceSaveV1 = {
     ...current,
-    activeExpeditionSession: {
-      ...session,
-      missionRuntime: {
-        ...missionRuntime,
-        checkpointId: nextNodeId,
-        flowNodeId: nextNodeId,
+    pokeDiscover: {
+      ...current.pokeDiscover,
+      missionProgressById: {
+        ...(current.pokeDiscover.missionProgressById ?? {}),
+        [missionId]: {
+          schemaVersion: 1 as const,
+          missionId,
+          checkpointId: legacyRuntime?.checkpointId ?? nodeId,
+          flowNodeId: legacyRuntime?.flowNodeId ?? nodeId,
+          flags: { ...(legacyRuntime?.flags ?? {}) },
+          counters: { ...(legacyRuntime?.counters ?? {}) },
+          resolvedActorIds: [...(legacyRuntime?.resolvedActorIds ?? [])],
+          executedFlowEffectIds: [...(legacyRuntime?.executedFlowEffectIds ?? [])],
+          ...(legacyRuntime?.conversationCheckpoint
+            ? { conversationCheckpoint: legacyRuntime.conversationCheckpoint }
+            : {}),
+          startedAt: now,
+          updatedAt: now,
+        },
       },
     },
   };
   persist(next);
-  return { save: next, mission, node: nextNode };
+  return next;
+}
+
+export function getBrowserMissionFlowState(missionId?: string) {
+  let current = readCurrentSave();
+  const resolvedMissionId = missionId
+    ?? current.activeExpeditionSession?.missionId
+    ?? Object.keys(current.pokeDiscover.missionProgressById ?? {})[0];
+  if (!resolvedMissionId) return undefined;
+  const mission = getPokeDiscoverMission(resolvedMissionId);
+  if (!mission) return undefined;
+  current = ensureBrowserMissionProgress(current, resolvedMissionId);
+  const state = getActiveMissionFlowState(current, mission);
+  return state ? { save: current, mission: state.mission, node: state.node } : undefined;
+}
+
+export function advanceBrowserMissionFlow(outcomeId?: string, missionId?: string) {
+  const state = getBrowserMissionFlowState(missionId);
+  if (!state) return undefined;
+  const result = state.node.kind === 'condition' || state.node.kind === 'effect'
+    ? settleMissionFlow(state.save, state.mission)
+    : advanceActiveMissionFlow(state.save, state.mission, outcomeId);
+  const reconciled = persistWithPokeDiscoverAchievements(result.save);
+  return { save: reconciled.save, mission: result.mission, node: result.node };
+}
+
+export function resolveBrowserMissionFailure(missionId?: string) {
+  const state = getBrowserMissionFlowState(missionId);
+  if (!state) return undefined;
+  const next = resolveActiveMissionFailure(state.save, state.mission);
+  persist(next);
+  return next;
 }
 
 export function enterBrowserMissionFlowExpedition(mapId: string) {
@@ -231,33 +271,25 @@ export function checkpointBrowserMissionConversation(checkpoint: {
     if (!session) return current;
     const mission = session.missionId ? getPokeDiscoverMission(session.missionId) : undefined;
     if (!mission) return current;
-    const missionRuntime = session.missionRuntime ?? {
-      schemaVersion: 1 as const,
-      missionId: mission.missionId,
-      checkpointId: mission.flow?.initialNodeId ?? `${mission.missionId}:start`,
-      flowNodeId: mission.flow?.initialNodeId,
-      flags: {},
-      counters: {},
-      resolvedActorIds: [],
-    };
+    const withProgress = ensureBrowserMissionProgress(current, mission.missionId);
+    const missionProgress = withProgress.pokeDiscover.missionProgressById[mission.missionId];
   const readCueIds = [...new Set([
     ...(current.pokeDiscover.narrativeProgress.readCueIds ?? []),
     ...checkpoint.historyCueIds,
     checkpoint.cueId,
   ])];
   const next: PokeVoiceSaveV1 = {
-    ...current,
+    ...withProgress,
     pokeDiscover: {
-      ...current.pokeDiscover,
+      ...withProgress.pokeDiscover,
       narrativeProgress: {
-        ...current.pokeDiscover.narrativeProgress,
+        ...withProgress.pokeDiscover.narrativeProgress,
         readCueIds,
       },
-    },
-    activeExpeditionSession: {
-        ...session,
-        missionRuntime: {
-          ...missionRuntime,
+      missionProgressById: {
+        ...withProgress.pokeDiscover.missionProgressById,
+        [mission.missionId]: {
+          ...missionProgress,
         conversationCheckpoint: {
           schemaVersion: 1,
           conversationId: checkpoint.conversationId,
@@ -266,6 +298,8 @@ export function checkpointBrowserMissionConversation(checkpoint: {
             executedEffectIds: checkpoint.executedEffectIds,
             variables: checkpoint.variables,
           selectedChoices: checkpoint.selectedChoices,
+        },
+          updatedAt: new Date().toISOString(),
         },
       },
     },
@@ -761,7 +795,7 @@ export function completeBrowserAdventureMission(request: CompleteMissionRequest)
 }
 
 export function startBrowserAdventureMission(
-  mission: import('../../packages/contracts/src/index.js').MissionDefinitionV1,
+  mission: import('../../packages/contracts/src/index.js').MissionDefinition,
   context: MissionEvaluationContext = {},
 ) {
   const current = readCurrentSave();
@@ -771,7 +805,7 @@ export function startBrowserAdventureMission(
 }
 
 export function completeBrowserMissionDefinition(
-  mission: import('../../packages/contracts/src/index.js').MissionDefinitionV1,
+  mission: import('../../packages/contracts/src/index.js').MissionDefinition,
   completedAt: string,
   context: MissionEvaluationContext = {},
 ) {

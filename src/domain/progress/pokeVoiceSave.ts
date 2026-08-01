@@ -190,6 +190,7 @@ export function createPokeDiscoverStateV1({
     companionQualifications: [],
     modeProgress: {},
     rewardLedger: {},
+    missionProgressById: {},
     activeMissionIds: [],
     cosmeticPreferences: {},
   };

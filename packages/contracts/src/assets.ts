@@ -54,6 +54,9 @@ export interface CharacterSpriteAssetV1 extends VersionedContractV1 {
   idleFrame: number;
   walkFrames: number[];
   frameDurationMs: number;
+  /** Frames opcionales para velocidades de carrera; se reutiliza walkFrames cuando faltan. */
+  runFrames?: number[];
+  runFrameDurationMs?: number;
   /** Escala visual curada; no altera el tamaño lógico de una celda. */
   renderScale?: number;
   source: string;

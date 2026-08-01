@@ -1,6 +1,6 @@
 import type {
   AdventureMapDocument,
-  AdventureMissionDocumentV1,
+  AdventureMissionDocument,
   AdventureMediaManifestV1,
   AdventureMapV3,
   CharacterSpriteAssetV1,
@@ -46,7 +46,7 @@ export interface LoadedAdventureMapBundle {
   pmdManifest: PmdAnimationManifestV1;
   characterManifest: CharacterSpriteManifestV1;
   mediaManifest?: AdventureMediaManifestV1;
-  missionDocument?: AdventureMissionDocumentV1;
+  missionDocument?: AdventureMissionDocument;
 }
 
 function assetUrl(path: string, baseUrl: string) {
@@ -157,7 +157,7 @@ export async function loadAdventureMapBundle({
   const missionPath = adventurePath.replace(/\.adventure\.json$/iu, '.missions.json');
   const missionDocument = missionPath === adventurePath
     ? undefined
-    : await fetchJson<AdventureMissionDocumentV1>(assetUrl(missionPath, baseUrl)).catch(() => undefined);
+    : await fetchJson<AdventureMissionDocument>(assetUrl(missionPath, baseUrl)).catch(() => undefined);
   return loadAdventureMapBundleFromData({ adventure, baseUrl, missionDocument });
 }
 
@@ -174,7 +174,7 @@ export async function loadAdventureMapBundleFromData({
   adventure: AdventureMapDocument;
   baseUrl: string;
   tiledMapsByAssetId?: ReadonlyMap<string, LoadedTiledMap>;
-  missionDocument?: AdventureMissionDocumentV1;
+  missionDocument?: AdventureMissionDocument;
 }): Promise<LoadedAdventureMapBundle> {
   const normalizedAdventure = normalizeAdventureMapV3(adventure);
   const [pmdManifest, characterManifest, mediaManifest] = await Promise.all([

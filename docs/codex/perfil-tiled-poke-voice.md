@@ -28,6 +28,7 @@ Capas opcionales con semántica de runtime:
 
 - `Occlusion`: object layer con rectángulos o polígonos `ActorOccluder`. Cada objeto necesita un nombre estable y la propiedad `occlusionGroup`; puede declarar `includePlacementIds` y `excludePlacementIds` como IDs separados por comas.
 - `Paths`: object layer con polilíneas `AmbientPath` nombradas mediante IDs estables. Las rutas `grid` deben ser ortogonales y ajustar todos sus puntos a una rejilla de 16 px relativa al primer punto; las rutas `continuous` antiguas pueden usar cualquier geometría.
+- `Roaming`: object layer con rectángulos o polígonos `RoamArea`. Las áreas pueden compartirse y solaparse; cada colocación enlaza su área por nombre estable desde el sidecar.
 - `Triggers`: object layer con rectángulos o polígonos `TriggerZone`. Cada zona debe pertenecer a un único `mapEventTrigger`.
 - `Comments`: object layer editorial con rectángulos o polígonos `EditorComment`. Puede ocultarse y no se carga en el runtime.
 
@@ -52,6 +53,7 @@ Clases admitidas en capas opcionales:
 
 - `ActorOccluder`: área que recorta únicamente los sprites asociados al mismo grupo. Sirve para agua, tejados, cuevas o cualquier intersección parcial y no sustituye a `Collision`.
 - `AmbientPath`: polilínea recorrida por una coreografía ambiental. Su geometría pertenece a Tiled; su velocidad, dirección, animación y orden pertenecen al sidecar.
+- `RoamArea`: área navegable usada para movimiento ambiental libre. Su ID usa `roam-area:<sector>:NN`; el runtime descarta las celdas incompatibles con colisiones y terreno.
 - `TriggerZone`: área usada por un evento de entrada, acción contextual o proximidad. No es un ancla.
 - `EditorComment`: anotación libre con propiedad `text`; puede conservar ID, nombre y clase de un objeto retirado como metadatos editoriales.
 
@@ -97,6 +99,7 @@ El archivo `<mapa>.adventure.json` contiene `AdventureMapV3` y:
 - Incluye en `requiredAssetIds` todos los sprites usados por actores.
 - Declara `occlusionGroupIds` en las colocaciones que deban aceptar máscaras parciales.
 - Declara `ambientSequences` como beats ordenados. Dentro de un beat cada actor admite una sola acción y todos esperan a que terminen las demás antes de avanzar.
+- Una colocación puede declarar `roaming` con área, distancia, velocidad y esperas. `roaming` y `ambientSequences` son conductas ambientales base incompatibles para el mismo actor; las secuencias de mapa pueden suspender y devolver el control al roaming.
 - Declara `mapEventTriggers` y `mapSequences` para eventos espaciales. Las políticas `oncePerSectorVisit`, `oncePerVisit`, `repeatable` y `persistent` determinan dónde se conserva su finalización; `resultingActorStates` reconstruye posición, animación, dirección y visibilidad.
 - Las activaciones de mapa admiten zona, proximidad, acción contextual,
   intervalo, cruce de ruta, contacto con actor y entrada en superficie. Los
@@ -126,7 +129,7 @@ Un cambio de coordenadas en Tiled no obliga a editar el sidecar mientras el nomb
    lugares reutilizables de `Locations`.
 5. Declarar el reparto del sector en el configurador.
 6. Crear construcciones funcionales mediante el wizard; no crear ni nombrar anclas manualmente.
-7. Crear `ActorOccluder`, `AmbientPath` y destinos únicamente desde la colocación o acción sidecar que los utilizará.
+7. Crear `ActorOccluder`, `AmbientPath`, `RoamArea` y destinos únicamente desde la colocación o acción sidecar que los utilizará.
 8. Registrar sectores, actores, transiciones y secuencias en el sidecar.
 9. Ejecutar `npm run assets:pmd:manifest` después de añadir sprites PMD.
 10. Ejecutar `npm run maps:validate` antes de probar el mapa en el juego.

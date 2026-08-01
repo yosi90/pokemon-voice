@@ -15,6 +15,7 @@ const ATOM_LABELS: Record<RequirementAtomV1['kind'], string> = {
   achievement: 'Logro', modeCompleted: 'Modo completado', worldFlag: 'Flag global', fieldCapability: 'Capacidad de campo', companionSpecies: 'Especie compañera', companionForm: 'Forma compañera',
   companionType: 'Tipo del compañero', companionSize: 'Tamaño del compañero', companionEvolutionStage: 'Etapa evolutiva', companionTag: 'Etiqueta del compañero', knownNpc: 'NPC conocido', conversation: 'Conversación',
   counter: 'Contador', missionCounter: 'Contador de misión', missionFlag: 'Flag de misión', inventoryItem: 'Objeto de inventario', unlockedSecret: 'Secreto concreto', storyEvent: 'Evento narrativo',
+  completedMission: 'Misión completada', companionUnlocked: 'Compañero desbloqueado',
 };
 
 function numberField(label: string, value: number, onChange: (value: number) => void) {

@@ -73,6 +73,7 @@ export const TILED_RUNTIME_OBJECT_CLASSES = Object.freeze([
   'TerrainArea',
   'LocationPoint',
   'LocationArea',
+  'RoamArea',
 ]);
 export const MEANINGFUL_EXPEDITION_INTERACTION_KINDS = Object.freeze([
   'npcConversation',

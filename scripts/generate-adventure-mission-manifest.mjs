@@ -43,6 +43,8 @@ const flowTargets = node => {
   }
   if (node.kind === 'expedition') return Object.values(node.outcomes ?? {});
   if (node.kind === 'condition') return [node.whenTrueNodeId, node.whenFalseNodeId];
+  if (node.kind === 'effect') return [node.nextNodeId];
+  if (node.kind === 'travel') return [node.expeditionNodeId];
   return [];
 };
 
@@ -69,6 +71,11 @@ const validateFlow = (mission, flow) => {
       if (!nodeIds.has(target)) throw new Error(`${node.nodeId}: destino inexistente ${target}.`);
     }
   }
+  for (const node of flow.nodes) {
+    if (node.kind === 'travel' && byId.get(node.expeditionNodeId)?.kind !== 'expedition') {
+      throw new Error(`${mission.missionId}: ${node.nodeId} debe conducir a una expedición.`);
+    }
+  }
   const visiting = new Set();
   const visited = new Set();
   const visit = nodeId => {
@@ -86,7 +93,7 @@ const validateFlow = (mission, flow) => {
 
 for (const filePath of missionFiles) {
   const document = readJson(filePath);
-  if (document.schemaVersion !== 1 || typeof document.mapId !== 'string'
+  if (![1, 2].includes(document.schemaVersion) || typeof document.mapId !== 'string'
     || !Array.isArray(document.missions) || !Array.isArray(document.narrativeSequences)) {
     throw new Error(`${path.relative(root, filePath)} no cumple AdventureMissionDocumentV1.`);
   }
@@ -106,31 +113,38 @@ for (const filePath of missionFiles) {
     }
   }
   for (const mission of document.missions) {
-    if (mission.schemaVersion !== 1 || typeof mission.missionId !== 'string'
+    if (![1, 2].includes(mission.schemaVersion) || typeof mission.missionId !== 'string'
       || mission.mapId !== document.mapId || !mission.title || !mission.loadingText
       || !Array.isArray(mission.objectives) || !Array.isArray(mission.rewards)) {
       throw new Error(`${path.relative(root, filePath)} contiene una misión inválida.`);
     }
-    for (const sequenceId of Object.values(mission.narratives ?? {})) {
+    for (const sequenceId of Object.values(mission.schemaVersion === 1 ? mission.narratives ?? {} : {})) {
       if (sequenceId && !narrativeIds.has(sequenceId) && !globalNarrativeIds.has(sequenceId)) {
         throw new Error(`${mission.missionId}: la narrativa ${sequenceId} no existe.`);
       }
     }
+    if (mission.schemaVersion === 2 && !['draft', 'published', 'archived'].includes(mission.publicationStatus)) {
+      throw new Error(`${mission.missionId}: estado editorial inválido.`);
+    }
     if (mission.flow) validateFlow(mission, mission.flow);
+    if (mission.schemaVersion === 2 && mission.publicationStatus === 'draft') continue;
     if (usedIds.has(mission.missionId)) throw new Error(`Misión duplicada: ${mission.missionId}.`);
     usedIds.add(mission.missionId);
     entries.push({
-      schemaVersion: 1,
+      schemaVersion: 2,
       missionId: mission.missionId,
       mapId: mission.mapId,
       documentPath: path.relative(publicRoot, filePath).replaceAll(path.sep, '/'),
+      publicationStatus: mission.schemaVersion === 2 ? mission.publicationStatus : 'published',
     });
   }
   const adventurePath = filePath.replace(/\.missions\.json$/iu, '.adventure.json');
   if (fs.existsSync(adventurePath)) {
     const adventure = readJson(adventurePath);
     const declared = new Set(adventure.missionIds ?? []);
-    const documented = new Set(document.missions.map(mission => mission.missionId));
+    const documented = new Set(document.missions
+      .filter(mission => mission.schemaVersion !== 2 || mission.publicationStatus !== 'draft')
+      .map(mission => mission.missionId));
     const mismatch = [...declared].some(id => !documented.has(id))
       || [...documented].some(id => !declared.has(id));
     if (mismatch) {
@@ -141,5 +155,5 @@ for (const filePath of missionFiles) {
 
 entries.sort((left, right) => left.missionId.localeCompare(right.missionId));
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-writeJson(outputPath, { schemaVersion: 1, missions: entries });
+writeJson(outputPath, { schemaVersion: 2, missions: entries });
 console.log(`Manifiesto de misiones: ${entries.length} entradas.`);

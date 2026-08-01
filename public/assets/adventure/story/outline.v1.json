@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "storyId": "story:pokediscover",
+  "title": "Historia de PokeDiscover",
+  "acts": [
+    {
+      "schemaVersion": 1,
+      "actId": "story:pokediscover:act:01",
+      "title": "Acto 1",
+      "summary": "El comienzo de las expediciones del profesor Alcanfor.",
+      "chapters": [
+        {
+          "schemaVersion": 1,
+          "chapterId": "story:pokediscover:chapter:01",
+          "title": "Una llamada urgente",
+          "missionIds": [
+            "mission:tegueste:help-professor-camphor"
+          ]
+        }
+      ]
+    }
+  ],
+  "missionPositions": {},
+  "flowNodePositions": {}
+}

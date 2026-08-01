@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   assignPokeDiscoverMissionEntry,
+  addPokeDiscoverRoamAreaPolygon,
+  addPokeDiscoverRoamAreaRectangle,
   connectPokeDiscoverRoomsBidirectionally,
   findPokeDiscoverGeometryReferences,
   resolvePokeDiscoverEntryPoint,
@@ -274,6 +276,29 @@ describe('modelo de autoría del configurador', () => {
     expect(added.object.id).toBe(40);
     expect(added.tilemap.nextobjectid).toBe(41);
     expect(added.object.customObjectField).toBe(true);
+  });
+
+  it('crea áreas de roaming rectangulares y poligonales con IDs estables', () => {
+    const prepared = preparePokeDiscoverTiledMap(tiledMap()).tilemap;
+    const rectangle = addPokeDiscoverRoamAreaRectangle(
+      prepared,
+      'sector:plaza:principal',
+      { x: 16, y: 16 },
+      { x: 80, y: 64 },
+    );
+    expect(rectangle.object).toMatchObject({
+      name: 'roam-area:plaza-principal:01',
+      class: 'RoamArea',
+      width: 64,
+      height: 48,
+    });
+    const polygon = addPokeDiscoverRoamAreaPolygon(
+      rectangle.tilemap,
+      'sector:plaza:principal',
+      [{ x: 96, y: 16 }, { x: 144, y: 16 }, { x: 144, y: 64 }],
+    );
+    expect(polygon.object.name).toBe('roam-area:plaza-principal:02');
+    expect(polygon.tilemap.layers.find(layer => layer.name === 'Roaming')?.objects).toHaveLength(2);
   });
 
   it('registra todos los TMJ sin migrar el ID histórico de 02-05', () => {

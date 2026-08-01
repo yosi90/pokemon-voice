@@ -1317,6 +1317,13 @@ body {
   stroke-width: 3;
 }
 
+.editor-geometry-object.is-roaming {
+  fill: rgb(77 208 174 / 18%);
+  stroke: #4dd0ae;
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
+}
+
 .editor-geometry-object.is-occlusion {
   fill: rgba(164, 78, 191, .2);
   stroke: #c46ee0;

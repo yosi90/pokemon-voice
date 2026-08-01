@@ -41,12 +41,16 @@ import {
 import {
   beginBrowserExpedition,
   beginBrowserCamphorPrologue,
+  advanceBrowserMissionFlow,
   confirmBrowserCamphorCompanion,
   deleteAllBrowserPokeVoiceData,
   endBrowserExpeditionWithReport,
   getBrowserPokeVoiceSave,
+  getBrowserMissionFlowState,
+  enterBrowserMissionFlowExpedition,
   prepareBrowserCamphorPrologue,
   resolveBrowserExpressionTrigger,
+  startBrowserAdventureMission,
 } from './store/browserPokeVoiceSaveStore.js';
 import { browserDiscoveryStore } from './store/browserDiscoveryStore.ts';
 import { LOCAL_POKEMON_CATALOG } from './services/pokemonCatalog.ts';
@@ -57,6 +61,7 @@ import { toSectorId } from './domain/expeditions/adventureMapV3.ts';
 import { getPokeDiscoverRewardPackage } from './data/adventure/rewardBalance.ts';
 import {
   getKnownPokeDiscoverMissionIds,
+  getPokeDiscoverMission,
   loadPokeDiscoverMissionCatalog,
 } from './data/adventure/missionCatalog.ts';
 import {
@@ -345,9 +350,10 @@ export default function App() {
     setAdventureRoute(replaceWithPokedexRoute());
   }, []);
 
-  const openTeguesteForest = useCallback(() => {
+  const openMissionDestination = useCallback((missionId) => {
     let save = getBrowserPokeVoiceSave();
-    if (save.pendingMissionLaunch?.missionId === CAMPHOR_PROLOGUE_MISSION.missionId
+    if ((!missionId || missionId === CAMPHOR_PROLOGUE_MISSION.missionId)
+      && save.pendingMissionLaunch?.missionId === CAMPHOR_PROLOGUE_MISSION.missionId
       && save.pendingMissionLaunch.checkpoint === 'ready') {
       try {
         save = beginBrowserCamphorPrologue();
@@ -355,6 +361,64 @@ export default function App() {
         game.showToast(error instanceof Error ? error.message : 'No se pudo comenzar el encargo.', 'bad');
         return;
       }
+    }
+    const mission = missionId ? getPokeDiscoverMission(missionId) : undefined;
+    if (mission && mission.missionId !== CAMPHOR_PROLOGUE_MISSION.missionId) {
+      const started = startBrowserAdventureMission(mission);
+      if (started.status === 'locked') {
+        game.showToast('Todavía no cumples los requisitos de esta misión.', 'bad');
+        return;
+      }
+      save = started.save;
+      let flowState = getBrowserMissionFlowState(mission.missionId);
+      while (flowState?.node.kind === 'condition' || flowState?.node.kind === 'effect') {
+        const advanced = advanceBrowserMissionFlow(undefined, mission.missionId);
+        flowState = advanced?.node ? advanced : undefined;
+      }
+      if (flowState?.node.kind === 'travel') {
+        const advanced = advanceBrowserMissionFlow('accept', mission.missionId);
+        flowState = advanced?.node ? advanced : undefined;
+      }
+      if (flowState?.node.kind === 'terminal') {
+        game.showToast(
+          flowState.node.result === 'success' ? 'Esta misión está lista para cerrarse.' : 'La misión necesita un nuevo intento.',
+          flowState.node.result === 'success' ? 'ok' : 'bad',
+        );
+        navigateAdventure(buildMissionHash(mission.missionId));
+        return;
+      }
+      const destinationMapId = flowState?.node.kind === 'expedition'
+        ? flowState.node.mapId
+        : mission.mapId;
+      const activeSession = save.activeExpeditionSession;
+      if (activeSession && activeSession.missionId !== mission.missionId) {
+        game.showToast('Abandona primero la expedición actual; la otra misión seguirá guardada.', 'bad');
+        return;
+      }
+      try {
+        if (!activeSession) {
+          beginBrowserExpedition({
+            mapId: destinationMapId,
+            missionId: mission.missionId,
+            enteredAt: new Date().toISOString(),
+          });
+        } else if (activeSession.mapId !== destinationMapId) {
+          enterBrowserMissionFlowExpedition(destinationMapId);
+        }
+      } catch (error) {
+        game.showToast(error instanceof Error ? error.message : 'No se pudo preparar la expedición.', 'bad');
+        return;
+      }
+      const entry = getAdventureMapEntry(destinationMapId);
+      const sectorId = flowState?.node.kind === 'expedition'
+        ? flowState.node.entrySectorId ?? entry?.sectors[0]?.sectorId
+        : entry?.sectors[0]?.sectorId;
+      if (!entry || !sectorId) {
+        game.showToast('El mapa de esta misión no tiene una entrada jugable.', 'bad');
+        return;
+      }
+      navigateAdventure(buildExpeditionHash(destinationMapId, sectorId));
+      return;
     }
     const progress = save.pokeDiscover.mapProgress[TEGUESTE_FOREST_PREVIEW_MAP_ID];
     if (progress?.freeExpeditionUnlocked && !save.activeExpeditionSession) {
@@ -409,7 +473,7 @@ export default function App() {
       'bad',
     );
     navigateAdventure(buildPokeDiscoverHash());
-  }, [game, navigateAdventure, speech.stopListening]);
+  }, [game.showToast, navigateAdventure, speech.stopListening]);
 
   const openPokemonDetails = pokemon => {
     if (game.guessed.has(pokemon.id)) professor.requestFromDetail(game.globalScore);
@@ -621,7 +685,7 @@ export default function App() {
         companionSelectionLocked={companionSelectionLocked}
         onConfirmCompanion={confirmUrgentCompanion}
         onOpenMission={missionId => navigateAdventure(buildMissionHash(missionId))}
-        onOpenMapPreview={openTeguesteForest}
+        onOpenMapPreview={openMissionDestination}
         onClose={closeAdventureRoute}
       />
       <MapConceptPreview

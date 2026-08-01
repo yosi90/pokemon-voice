@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { MissionDefinitionV1, MissionStatus, RewardDefinitionV1 } from '../../packages/contracts/src/index.js';
+import type { MissionDefinition, MissionStatus, RequirementExpressionV1, RewardDefinitionV1 } from '../../packages/contracts/src/index.js';
 import type { PokemonCatalogRecord } from '../domain/catalog/pokemonCatalogModel.js';
 import { getCompanionCandidates } from '../domain/companions/companionCandidates.js';
 import { getCompanionArtworkUrl } from '../domain/companions/companionGameplayCatalog.js';
@@ -32,6 +32,18 @@ function describeMissionReward(reward: RewardDefinitionV1) {
   return reward.kind === 'permission' ? 'Nuevo permiso de campo' : 'Nuevo cosmético';
 }
 
+function describeRequirement(expression: RequirementExpressionV1): string {
+  if ('all' in expression) return expression.all.map(describeRequirement).join(' y ');
+  if ('any' in expression) return expression.any.map(describeRequirement).join(' o ');
+  if (expression.kind === 'completedMission') return `completar la misión ${expression.missionId}`;
+  if (expression.kind === 'trainerLevel') return `alcanzar el nivel ${expression.minimum}`;
+  if (expression.kind === 'registeredSpecies') return `registrar al Pokémon #${expression.speciesId}`;
+  if (expression.kind === 'sightedSpecies') return `avistar al Pokémon #${expression.speciesId}`;
+  if (expression.kind === 'companionUnlocked') return `desbloquear al compañero #${expression.speciesId}`;
+  if (expression.kind === 'inventoryItem') return `conseguir ${expression.itemId}`;
+  return `cumplir ${expression.kind}`;
+}
+
 function MissionBoard({
   catalog,
   missions,
@@ -42,12 +54,12 @@ function MissionBoard({
   onOpenMapPreview,
 }: {
   catalog: readonly PokemonCatalogRecord[];
-  missions: readonly MissionDefinitionV1[];
+  missions: readonly MissionDefinition[];
   save: ReturnType<typeof getBrowserPokeVoiceSave>;
   selectedMissionId?: string;
   onSelectMission: (missionId: string) => void;
   onChooseCompanion: () => void;
-  onOpenMapPreview: () => void;
+  onOpenMapPreview: (missionId?: string) => void;
 }) {
   const selectedMission = missions.find(mission => mission.missionId === selectedMissionId) ?? missions[0];
   const selectedStatus = selectedMission ? getMissionStatus(save, selectedMission) : undefined;
@@ -56,6 +68,9 @@ function MissionBoard({
   const hasEligibleCompanion = candidates.some(candidate => candidate.eligibility.status === 'eligible');
   const needsCompanion = hasEligibleCompanion && !selectedCompanion;
   const canEnter = selectedStatus !== 'locked' && !needsCompanion;
+  const lockedPresentation = selectedStatus === 'locked' && selectedMission?.schemaVersion === 2
+    ? selectedMission.lockedPresentation
+    : undefined;
 
   return (
     <div className="professor-mission-board">
@@ -91,18 +106,27 @@ function MissionBoard({
               {MISSION_STATUS_LABELS[selectedStatus]}
             </span>
           </header>
-          <p className="professor-mission-briefing__summary">{selectedMission.briefing}</p>
+          <p className="professor-mission-briefing__summary">
+            {lockedPresentation?.kind === 'hinted' ? lockedPresentation.loreHint : selectedMission.briefing}
+          </p>
 
-          <section className="professor-mission-briefing__section" aria-labelledby="mission-objectives-title">
+          {lockedPresentation?.kind === 'public' && selectedMission.availability ? (
+            <section className="professor-mission-briefing__section" aria-label="Requisitos de desbloqueo">
+              <h5>Para desbloquear</h5>
+              <p>{describeRequirement(selectedMission.availability)}</p>
+            </section>
+          ) : null}
+
+          {!lockedPresentation || lockedPresentation.kind === 'public' ? <section className="professor-mission-briefing__section" aria-labelledby="mission-objectives-title">
             <h5 id="mission-objectives-title">Objetivos</h5>
             <ul>
               {selectedMission.objectives.map(objective => (
                 <li key={objective.objectiveId}>{objective.description}{objective.optional ? ' (opcional)' : ''}</li>
               ))}
             </ul>
-          </section>
+          </section> : null}
 
-          <section className="professor-mission-briefing__section" aria-labelledby="mission-rewards-title">
+          {!lockedPresentation ? <section className="professor-mission-briefing__section" aria-labelledby="mission-rewards-title">
             <h5 id="mission-rewards-title">Recompensas</h5>
             <ul className="professor-mission-rewards">
               {selectedMission.rewards.map((reward, index) => (
@@ -113,7 +137,7 @@ function MissionBoard({
               ))}
               {selectedMission.unlocksFreeExpedition ? <li><span aria-hidden="true">🗺</span>Expedición libre en este mapa</li> : null}
             </ul>
-          </section>
+          </section> : null}
 
           <section className="professor-mission-loadout" aria-label="Compañero preparado">
             <div className="professor-mission-loadout__copy">
@@ -136,7 +160,7 @@ function MissionBoard({
 
           <footer className="professor-mission-briefing__actions">
             {needsCompanion ? <p role="status">Necesitas preparar un compañero para este encargo.</p> : null}
-            <button type="button" disabled={!canEnter} onClick={onOpenMapPreview}>
+            <button type="button" disabled={!canEnter} onClick={() => onOpenMapPreview(selectedMission.missionId)}>
               {selectedStatus === 'active' ? 'Continuar encargo' : selectedStatus === 'completed' ? 'Volver al mapa' : 'Comenzar encargo'}
             </button>
           </footer>
@@ -155,7 +179,7 @@ function PokeDiscoverHome({
   catalog: readonly PokemonCatalogRecord[];
   missionIds: readonly string[];
   save: ReturnType<typeof getBrowserPokeVoiceSave>;
-  onOpenMapPreview: () => void;
+  onOpenMapPreview: (missionId?: string) => void;
 }) {
   const { pokeDiscover } = save;
   const candidates = getCompanionCandidates(catalog, save);
@@ -220,7 +244,7 @@ function PokeDiscoverHome({
           ) : (
             <><h4>Preparando el primer encargo</h4><p>Alcanfor está organizando el material para tu primera expedición.</p></>
           )}
-          <button className="pokediscover-map-preview-button" type="button" onClick={onOpenMapPreview}>
+          <button className="pokediscover-map-preview-button" type="button" onClick={() => onOpenMapPreview()}>
             <span aria-hidden="true">🗺</span>
             Probar escenario
           </button>
@@ -250,7 +274,7 @@ export function ProfessorMissionModal({
   companionSelectionLocked?: boolean;
   onConfirmCompanion?: () => void;
   onOpenMission?: (missionId: string) => void;
-  onOpenMapPreview?: () => void;
+  onOpenMapPreview?: (missionId?: string) => void;
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -272,7 +296,7 @@ export function ProfessorMissionModal({
   }, [companionSelectionLocked, initialSection, onClose, open, selectedMissionId]);
   const missions = missionIds
     .map(getPokeDiscoverMission)
-    .filter((mission): mission is MissionDefinitionV1 => Boolean(mission));
+    .filter((mission): mission is MissionDefinition => Boolean(mission));
   const selectedCompanion = getCompanionCandidates(catalog, save).find(candidate => candidate.selected);
   if (!open) return null;
   return (

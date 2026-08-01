@@ -110,7 +110,6 @@ import {
 import { MapEventFromCommentEditor } from './MapEventFromCommentEditor.js';
 import { MovementAndEventsEditor } from './MovementAndEventsEditor.js';
 import { NarrativeConfigurationEditor } from './NarrativeConfigurationEditor.js';
-import { MissionNarrativeEditor } from './MissionNarrativeEditor.js';
 import { TerrainAndLocationsEditor } from './TerrainAndLocationsEditor.js';
 import { MediaImportEditor } from './MediaImportEditor.js';
 import { UnifiedEventEditor } from './UnifiedEventEditor.js';
@@ -118,7 +117,7 @@ import { OrphanPokemonAnchorRepairEditor } from './OrphanPokemonAnchorRepairEdit
 import { ProgressSimulationEditor } from './ProgressSimulationEditor.js';
 import { ProjectDiagnosticsPanel } from './ProjectDiagnosticsPanel.js';
 import { RequirementEditor } from './RequirementEditor.js';
-import { ToolNavigation } from '../shared/ToolNavigation.js';
+import { resolvePokeDiscoverToolUrl, ToolNavigation } from '../shared/ToolNavigation.js';
 import { ResearchCoverageMatrix } from './ResearchCoverageMatrix.js';
 import { TiledReferenceExplorer } from './TiledReferenceExplorer.js';
 import { SidecarContentPropertiesEditor } from './SidecarContentPropertiesEditor.js';
@@ -149,7 +148,6 @@ type UtilityId =
   | 'entries'
   | 'rules'
   | 'narrative'
-  | 'missions'
   | 'terrain'
   | 'events'
   | 'media'
@@ -167,7 +165,6 @@ const UTILITY_TITLES: Record<UtilityId, string> = {
   entries: 'Entradas del jugador',
   rules: 'Reglas',
   narrative: 'Investigación y narrativa',
-  missions: 'Misiones y diálogos',
   terrain: 'Terreno y lugares',
   events: 'Eventos y peligros',
   media: 'Importar recursos',
@@ -186,7 +183,6 @@ const INITIAL_WINDOWS: Record<UtilityId, boolean> = {
   entries: false,
   rules: false,
   narrative: false,
-  missions: false,
   terrain: false,
   events: false,
   media: false,
@@ -702,7 +698,10 @@ export function PokeDiscoverEditor() {
       setMessage('Descubriendo aventuras, sectores y misiones…');
       const root = await discoverPokeDiscoverProjectRoot(directoryHandle);
       setProjectRoot(root);
+      const requestedMapId = new URL(window.location.href).searchParams.get('map');
       const preferred = root.projects.find(project => (
+        project.mapId === requestedMapId
+      )) ?? root.projects.find(project => (
         project.mapId === workspace?.history.present.adventure.mapId
       )) ?? root.projects[0];
       await beginOpen(
@@ -748,6 +747,20 @@ export function PokeDiscoverEditor() {
       const files = useDirectory
         ? await readPokeDiscoverDirectory(useDirectory)
         : recent.files.map(file => ({ file }));
+      const adventureCount = files.filter(source => (
+        source.file.name.toLocaleLowerCase().endsWith('.adventure.json')
+      )).length;
+      if (adventureCount > 1) {
+        const root = useDirectory
+          ? await discoverPokeDiscoverProjectRoot(useDirectory)
+          : await discoverPokeDiscoverProjectFiles(files);
+        setProjectRoot(root);
+        const requestedMapId = new URL(window.location.href).searchParams.get('map');
+        const preferred = root.projects.find(project => project.mapId === requestedMapId)
+          ?? root.projects[0];
+        await beginOpen(preferred.files, preferred.directoryHandle, preferred.projectName);
+        return;
+      }
       await beginOpen(files, useDirectory || undefined, recent.projectName);
       if (!useDirectory && recent.directoryHandle) {
         setRecentFolder(await rememberPokeDiscoverRecentFolder({
@@ -1739,7 +1752,11 @@ export function PokeDiscoverEditor() {
               <MenuAction disabled={!workspace || !selectedRegistration} onClick={() => openUtility('terrain')}>Terreno y lugares</MenuAction>
               <MenuAction disabled={!workspace || !selectedRegistration} onClick={() => openUtility('events')}>Eventos y peligros</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('scenes')}>Escenas</MenuAction>
-              <MenuAction disabled={!workspace} onClick={() => openUtility('missions')}>Misiones y diálogos</MenuAction>
+              <MenuAction disabled={!workspace} onClick={() => {
+                const url = resolvePokeDiscoverToolUrl('story');
+                if ((dirtyFiles.length || organizationDirty) && !window.confirm('Hay cambios del mapa sin guardar. ¿Descartarlos y abrir Historia?')) return;
+                window.location.assign(url);
+              }}>Abrir gestor de historia</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('narrative')}>Investigación</MenuAction>
               <MenuAction disabled={!workspace} onClick={() => openUtility('rules')}>Reglas</MenuAction>
             </DesktopMenu>
@@ -1898,7 +1915,12 @@ export function PokeDiscoverEditor() {
                   <button
                     key={mission.missionId}
                     type="button"
-                    onClick={() => openUtility('missions')}
+                    onClick={() => {
+                      const url = new URL(resolvePokeDiscoverToolUrl('story'));
+                      url.searchParams.set('mission', mission.missionId);
+                      if ((dirtyFiles.length || organizationDirty) && !window.confirm('Hay cambios del mapa sin guardar. ¿Descartarlos y abrir Historia?')) return;
+                      window.location.assign(url.href);
+                    }}
                   >
                     <span className="is-ready" aria-hidden="true" />
                     <strong>{mission.title}</strong>
@@ -2244,23 +2266,6 @@ export function PokeDiscoverEditor() {
                 room={selectedWindowRoom}
                 tilemap={selectedTilemap}
                 onAdventureChange={adventure => updateAdventure(adventure, 'Actualizar evento o peligro')}
-              />
-            ) : null}
-            {id === 'missions' ? (
-              <MissionNarrativeEditor
-                document={snapshot.missionDocument ?? {
-                  schemaVersion: 1,
-                  mapId: snapshot.adventure.mapId,
-                  missions: [],
-                  narrativeSequences: [],
-                }}
-                characterManifest={bundle.characterManifest}
-                availableMaps={projectRoot?.projects.map(project => ({
-                  mapId: project.mapId,
-                  title: project.title,
-                  sectors: project.sectors,
-                })) ?? []}
-                onChange={updateMissionDocument}
               />
             ) : null}
             {id === 'media' ? (

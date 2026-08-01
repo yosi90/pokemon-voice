@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "missions": [
     {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "missionId": "mission:tegueste:help-professor-camphor",
       "mapId": "map:tegueste:camphor-forest",
-      "documentPath": "assets/adventure/maps/tegueste-forest/tegueste-forest.missions.json"
+      "documentPath": "assets/adventure/maps/tegueste-forest/tegueste-forest.missions.json",
+      "publicationStatus": "published"
     }
   ]
 }

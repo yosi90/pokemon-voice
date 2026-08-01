@@ -54,7 +54,7 @@ export interface PokeDiscoverAuthoringRecipe {
   label: string;
   description: string;
   fields: readonly string[];
-  tiledClass: TiledAnchorClass | 'AmbientPath' | 'ActorOccluder' | 'Collision' | 'EditorComment' | 'TriggerZone';
+  tiledClass: TiledAnchorClass | 'AmbientPath' | 'RoamArea' | 'ActorOccluder' | 'Collision' | 'EditorComment' | 'TriggerZone';
   inspector: PokeDiscoverAuthoringInspector;
   prerequisite: string;
   creationMode: 'wizard' | 'connection-command' | 'geometry-command' | 'referenced-command';

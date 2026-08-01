@@ -24,6 +24,7 @@ export { TILED_ANCHOR_CLASSES };
 const anchorClassSet = new Set(TILED_ANCHOR_CLASSES);
 const optionalObjectLayers = Object.freeze({
   Paths: 'AmbientPath',
+  Roaming: 'RoamArea',
   Occlusion: 'ActorOccluder',
   Triggers: 'TriggerZone',
   Comments: 'EditorComment',
@@ -66,6 +67,36 @@ function validMilliseconds(value) {
 
 function validPlacementScale(value) {
   return value === undefined || (Number.isFinite(value) && value >= .1 && value <= 5);
+}
+
+function validRoamingBehavior(value) {
+  return value && value.schemaVersion === 1
+    && typeof value.areaId === 'string' && value.areaId.trim()
+    && Number.isInteger(value.distanceTiles?.min) && Number.isInteger(value.distanceTiles?.max)
+    && value.distanceTiles.min >= 1 && value.distanceTiles.max >= value.distanceTiles.min
+    && Number.isFinite(value.speedPixelsPerSecond)
+    && value.speedPixelsPerSecond >= 16 && value.speedPixelsPerSecond <= 160
+    && validMilliseconds(value.waitAfterArrivalMs)
+    && validMilliseconds(value.initialDelayMs);
+}
+
+function pointInsideArea(point, object) {
+  if (!Array.isArray(object.polygon)) {
+    return point.x >= object.x && point.x <= object.x + object.width
+      && point.y >= object.y && point.y <= object.y + object.height;
+  }
+  const polygon = object.polygon.map(candidate => ({
+    x: object.x + candidate.x,
+    y: object.y + candidate.y,
+  }));
+  let inside = false;
+  for (let current = 0, previous = polygon.length - 1; current < polygon.length; previous = current++) {
+    const a = polygon[current];
+    const b = polygon[previous];
+    if ((a.y > point.y) !== (b.y > point.y)
+      && point.x < ((b.x - a.x) * (point.y - a.y)) / ((b.y - a.y) || Number.EPSILON) + a.x) inside = !inside;
+  }
+  return inside;
 }
 
 function validAreaGeometry(object) {
@@ -180,6 +211,7 @@ function validateTiledRoom(assetId, tiled) {
   const terrainCoverage = new Set();
   const terrainAreas = new Map();
   const locations = new Map();
+  const roamAreas = new Map();
   for (const object of objects) {
     const klass = objectClass(object);
     if (klass === 'EditorComment' && object.layerName !== 'Comments') {
@@ -287,6 +319,14 @@ function validateTiledRoom(assetId, tiled) {
           errors.push(`${assetId}: ${object.name} necesita una polilínea con al menos dos puntos`);
         } else paths.set(object.name, object);
       }
+      if (object.layerName === 'Roaming') {
+        if (!/^roam-area:[a-z0-9-]+:\d{2,}$/.test(object.name)) {
+          errors.push(`${assetId}: ${object.name} no respeta el ID roam-area:<sector>:NN`);
+        }
+        if (!validAreaGeometry(object)) {
+          errors.push(`${assetId}: ${object.name} necesita rectángulo o polígono de roaming`);
+        } else roamAreas.set(object.name, object);
+      }
       if (object.layerName === 'Occlusion') {
         if (!validAreaGeometry(object)) {
           errors.push(`${assetId}: ${object.name} necesita rectángulo o polígono de oclusión`);
@@ -331,7 +371,7 @@ function validateTiledRoom(assetId, tiled) {
   if (layersByName.has('Terrain') && terrainCoverage.size !== tiled.width * tiled.height) {
     errors.push(`${assetId}: Terrain no cubre todo el sector`);
   }
-  return { errors, anchors, paths, triggerZones, occluders, locations, terrainAreas };
+  return { errors, anchors, paths, roamAreas, triggerZones, occluders, locations, terrainAreas };
 }
 
 /**
@@ -363,6 +403,7 @@ export function validateTiledAdventureBundle({
   }
   const roomAnchors = new Map();
   const roomPaths = new Map();
+  const roomRoamAreas = new Map();
   const roomTriggerZones = new Map();
   const roomOccluders = new Map();
   const roomLocations = new Map();
@@ -381,6 +422,7 @@ export function validateTiledAdventureBundle({
     errors.push(...validation.errors);
     roomAnchors.set(room.sectorId, validation.anchors);
     roomPaths.set(room.sectorId, validation.paths);
+    roomRoamAreas.set(room.sectorId, validation.roamAreas);
     roomTriggerZones.set(room.sectorId, validation.triggerZones);
     roomOccluders.set(room.sectorId, validation.occluders);
     roomLocations.set(room.sectorId, validation.locations);
@@ -444,6 +486,28 @@ export function validateTiledAdventureBundle({
     }
   }
   const placements = new Set();
+  const roamingPlacementIds = new Set();
+  const validateRoaming = (placement, anchor) => {
+    if (!placement.roaming) return;
+    roamingPlacementIds.add(placement.placementId);
+    if (!validRoamingBehavior(placement.roaming)) {
+      errors.push(`${placement.placementId}: configuración de roaming inválida`);
+      return;
+    }
+    const area = roomRoamAreas.get(placement.sectorId)?.get(placement.roaming.areaId);
+    if (!area) {
+      errors.push(`${placement.placementId}: área de roaming inexistente ${placement.roaming.areaId}`);
+      return;
+    }
+    if (anchor) {
+      const point = { x: anchor.x + (anchor.width ?? 0) / 2, y: anchor.y + (anchor.height ?? 0) };
+      if (!pointInsideArea(point, area)) errors.push(`${placement.placementId}: el ancla inicial queda fuera de ${placement.roaming.areaId}`);
+    }
+    if (placement.roaming.yieldDialogueId && !narrativeSequenceIds.has(placement.roaming.yieldDialogueId)
+      && !(adventure.dialogues ?? []).some(dialogue => dialogue.dialogueId === placement.roaming.yieldDialogueId)) {
+      errors.push(`${placement.placementId}: diálogo de paso inexistente ${placement.roaming.yieldDialogueId}`);
+    }
+  };
   for (const placement of adventure.actorPlacements ?? []) {
     if (placements.has(placement.placementId)) errors.push(`${placement.placementId}: colocación duplicada`);
     placements.add(placement.placementId);
@@ -473,6 +537,7 @@ export function validateTiledAdventureBundle({
     else if (!['ActorAnchor', 'EncounterAnchor'].includes(anchor.class)) {
       errors.push(`${placement.placementId}: ${placement.anchorId} no es ActorAnchor ni EncounterAnchor`);
     }
+    validateRoaming(placement, anchor);
     if (!(adventure.requiredAssetIds ?? []).includes(placement.assetId)) {
       errors.push(`${placement.placementId}: asset ausente en requiredAssetIds`);
     }
@@ -513,6 +578,8 @@ export function validateTiledAdventureBundle({
     } else if (!placement.controllable && anchor.class !== 'ActorAnchor') {
       errors.push(`${placement.placementId}: ${placement.anchorId} no es ActorAnchor`);
     }
+    if (placement.controllable && placement.roaming) errors.push(`${placement.placementId}: el protagonista no puede usar roaming`);
+    else validateRoaming(placement, anchor);
     if (!(adventure.requiredAssetIds ?? []).includes(placement.assetId)) {
       errors.push(`${placement.placementId}: asset ausente en requiredAssetIds`);
     }
@@ -780,6 +847,9 @@ export function validateTiledAdventureBundle({
         if (!placement || placement.sectorId !== sequence.sectorId) {
           errors.push(`${beat.beatId}: placement inexistente ${action.placementId}`);
           continue;
+        }
+        if (roamingPlacementIds.has(action.placementId)) {
+          errors.push(`${action.placementId}: roaming y ambientSequence son conductas base incompatibles`);
         }
         if (action.kind === 'playAnimation' || ((action.kind === 'movePath' || action.kind === 'moveByTiles') && action.animation)) {
           const actor = (adventure.actorPlacements ?? []).find(candidate => candidate.placementId === action.placementId);

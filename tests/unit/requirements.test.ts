@@ -48,6 +48,55 @@ const pikachuSpecies: PokemonSpeciesV1 = {
 };
 
 describe('evaluador declarativo de requisitos', () => {
+  it('resuelve misiones completadas y compañeros realmente desbloqueados', () => {
+    const base = createSave();
+    const save = {
+      ...base,
+      pokeDiscover: {
+        ...base.pokeDiscover,
+        mapProgress: {
+          'map:owner': {
+            schemaVersion: 1 as const,
+            mapId: 'map:owner',
+            unlockedVariantIds: [],
+            activeVariantIds: [],
+            eligibleEncounterVisits: {},
+            completedMissionIds: ['mission:done'],
+            unlockedSecretIds: [],
+            knownNpcIds: [],
+            conversationIds: [],
+            collectibleIds: [],
+            knownHintIds: [],
+            unlockedRouteIds: [],
+            freeExpeditionUnlocked: false,
+          },
+        },
+      },
+    };
+    expect(evaluateRequirement(
+      { kind: 'completedMission', missionId: 'mission:done' },
+      { save },
+    ).met).toBe(true);
+    expect(evaluateRequirement(
+      { kind: 'companionUnlocked', speciesId: 25 },
+      {
+        save,
+        species: [pikachuSpecies],
+        companionForm: pikachuForm,
+        unlockedCompanions: [{ speciesId: 25, formId: pikachuForm.formId }],
+      },
+    ).met).toBe(true);
+    expect(evaluateRequirement(
+      { kind: 'companionUnlocked', speciesId: 4 },
+      {
+        save,
+        species: [pikachuSpecies],
+        companionForm: pikachuForm,
+        unlockedCompanions: [{ speciesId: 25, formId: pikachuForm.formId }],
+      },
+    ).met).toBe(false);
+  });
+
   it('resuelve all/any y devuelve únicamente la alternativa any más cercana', () => {
     const save = createSave();
     const result = evaluateRequirement({ all: [

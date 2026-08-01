@@ -5,6 +5,7 @@ import type {
   StableId,
   Vector2V1,
   VersionedContractV1,
+  VersionedContractV2,
 } from './common.js';
 import type { RewardDefinitionV1 } from './economy.js';
 import type { RequirementExpressionV1 } from './requirements.js';
@@ -120,6 +121,22 @@ export interface MillisecondRangeV1 {
   max: number;
 }
 
+export interface TileRangeV1 {
+  min: number;
+  max: number;
+}
+
+/** Conducta ambiental libre. La geometría de `areaId` vive en la capa Tiled `Roaming`. */
+export interface AdventureRoamBehaviorV1 extends VersionedContractV1 {
+  areaId: StableId;
+  distanceTiles: TileRangeV1;
+  speedPixelsPerSecond: number;
+  waitAfterArrivalMs: MillisecondRangeV1;
+  initialDelayMs?: MillisecondRangeV1;
+  /** Diálogo opcional y no significativo mostrado al pedir paso. */
+  yieldDialogueId?: StableId;
+}
+
 export interface AdventureTileLayerV1 {
   layerId: StableId;
   kind: TileLayerKind;
@@ -208,6 +225,7 @@ export interface AdventureActorPlacementV1 extends VersionedContractV1 {
   /** Multiplicador visual relativo al renderScale curado del asset. 1 equivale al 100 %. */
   renderScaleMultiplier?: number;
   terrainRules?: AdventureTerrainRulesV1;
+  roaming?: AdventureRoamBehaviorV1;
 }
 
 export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
@@ -225,6 +243,7 @@ export interface AdventureCharacterPlacementV1 extends VersionedContractV1 {
   /** Multiplicador visual relativo al renderScale curado del asset. 1 equivale al 100 %. */
   renderScaleMultiplier?: number;
   terrainRules?: AdventureTerrainRulesV1;
+  roaming?: AdventureRoamBehaviorV1;
 }
 
 export interface AmbientPlayAnimationActionV1 {
@@ -565,10 +584,154 @@ export interface MissionFlowV1 extends VersionedContractV1 {
   nodes: MissionFlowNodeV1[];
 }
 
+export type MissionPublicationStatus = 'draft' | 'published' | 'archived';
+export type MissionCategory = 'main' | 'side';
+export type MissionLockedPresentationV2 =
+  | { kind: 'hidden' }
+  | { kind: 'hinted'; loreHint: string }
+  | { kind: 'public' };
+
+export type MissionFlowEffectV2 =
+  | { effectId: StableId; kind: 'setMissionFlag'; flagId: StableId; value: JsonValue }
+  | { effectId: StableId; kind: 'incrementMissionCounter'; counterId: StableId; amount: number }
+  | { effectId: StableId; kind: 'setWorldFlag'; flagId: StableId; value: JsonValue }
+  | { effectId: StableId; kind: 'incrementGlobalCounter'; counterId: StableId; amount: number }
+  | { effectId: StableId; kind: 'grantRewards'; rewards: RewardDefinitionV1[] };
+
+export type MissionFailureActionV2 =
+  | 'retryLastExpedition'
+  | 'restartMission'
+  | 'abandonMission';
+
+export type MissionFlowNodeV2 =
+  | {
+    kind: 'conversation';
+    nodeId: StableId;
+    conversationId: StableId;
+    outcomes: Record<StableId, StableId>;
+    defaultNextNodeId?: StableId;
+  }
+  | {
+    kind: 'expedition';
+    nodeId: StableId;
+    mapId: StableId;
+    entrySectorId?: StableId;
+    entryLocationId?: StableId;
+    mapVariantIds: StableId[];
+    outcomes: Record<StableId, StableId>;
+  }
+  | {
+    kind: 'condition';
+    nodeId: StableId;
+    requirement: RequirementExpressionV1;
+    whenTrueNodeId: StableId;
+    whenFalseNodeId: StableId;
+  }
+  | {
+    kind: 'effect';
+    nodeId: StableId;
+    effects: MissionFlowEffectV2[];
+    nextNodeId: StableId;
+  }
+  | {
+    kind: 'travel';
+    nodeId: StableId;
+    expeditionNodeId: StableId;
+    prompt: string;
+    acceptLabel: string;
+    postponeLabel: string;
+  }
+  | {
+    kind: 'terminal';
+    nodeId: StableId;
+    result: 'success' | 'failure';
+    failureAction?: MissionFailureActionV2;
+    rollbackPolicy?: HazardRollbackPolicy;
+  };
+
+export interface MissionFlowV2 extends VersionedContractV2 {
+  initialNodeId: StableId;
+  nodes: MissionFlowNodeV2[];
+}
+
+export interface MissionDefinitionV2 extends VersionedContractV2 {
+  missionId: StableId;
+  /** Mapa propietario del archivo, no limita los mapas usados por el flujo. */
+  mapId: StableId;
+  title: string;
+  loadingText: string;
+  briefing: string;
+  category: MissionCategory;
+  publicationStatus: MissionPublicationStatus;
+  lockedPresentation: MissionLockedPresentationV2;
+  availability?: RequirementExpressionV1;
+  objectives: MissionObjectiveV1[];
+  rewards: RewardDefinitionV1[];
+  unlocksFreeExpedition: boolean;
+  grantsFirstMissionAchievement?: true;
+  playerAppearanceId?: StableId;
+  abandonment: {
+    allowed: boolean;
+    blockedText?: string;
+  };
+  flow?: MissionFlowV2;
+}
+
+export interface AdventureMissionDocumentV2 extends VersionedContractV2 {
+  mapId: StableId;
+  missions: MissionDefinitionV2[];
+  /** Solo se conserva para round-trip de contenido todavía no migrado. */
+  narrativeSequences: NarrativeSequenceV1[];
+  conversationIds?: StableId[];
+}
+
+export type AdventureMissionDocument = AdventureMissionDocumentV1 | AdventureMissionDocumentV2;
+export type MissionDefinition = MissionDefinitionV1 | MissionDefinitionV2;
+export type MissionFlow = MissionFlowV1 | MissionFlowV2;
+export type MissionFlowNode = MissionFlowNodeV1 | MissionFlowNodeV2;
+
+export interface StoryFlowNodeLayoutV1 {
+  x: number;
+  y: number;
+}
+
+export interface StoryChapterV1 extends VersionedContractV1 {
+  chapterId: StableId;
+  title: string;
+  summary?: string;
+  missionIds: StableId[];
+}
+
+export interface StoryActV1 extends VersionedContractV1 {
+  actId: StableId;
+  title: string;
+  summary?: string;
+  chapters: StoryChapterV1[];
+}
+
+export interface StoryOutlineV1 extends VersionedContractV1 {
+  storyId: StableId;
+  title: string;
+  acts: StoryActV1[];
+  missionPositions: Record<StableId, StoryFlowNodeLayoutV1>;
+  flowNodePositions: Record<StableId, Record<StableId, StoryFlowNodeLayoutV1>>;
+}
+
 export interface AdventureMissionManifestEntryV1 extends VersionedContractV1 {
   missionId: StableId;
   mapId: StableId;
   documentPath: string;
+}
+
+export interface AdventureMissionManifestEntryV2 extends VersionedContractV2 {
+  missionId: StableId;
+  mapId: StableId;
+  documentPath: string;
+  publicationStatus: Exclude<MissionPublicationStatus, 'draft'>;
+}
+
+export interface AdventureMissionManifestV2 extends VersionedContractV2 {
+  missions: AdventureMissionManifestEntryV2[];
 }
 
 export interface AdventureMissionManifestV1 extends VersionedContractV1 {

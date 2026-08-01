@@ -6,6 +6,7 @@ export type PokeDiscoverObjectLayerName =
   | 'Anchors'
   | 'Triggers'
   | 'Paths'
+  | 'Roaming'
   | 'Occlusion'
   | 'Comments'
   | 'Terrain'
@@ -192,6 +193,7 @@ function canonicalLayerInsertionIndex(
     'Anchors',
     'Triggers',
     'Paths',
+    'Roaming',
     'Terrain',
     'Locations',
     'Occlusion',

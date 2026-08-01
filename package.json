@@ -21,14 +21,16 @@
     "assets:pmd:manifest": "node scripts/generate-pmd-manifest.mjs",
     "maps:manifest": "node scripts/generate-adventure-map-manifest.mjs",
     "missions:manifest": "node scripts/generate-adventure-mission-manifest.mjs",
+    "story:validate": "npm run missions:manifest && node scripts/validate-story.mjs",
     "narratives:manifest": "node scripts/generate-narrative-manifest.mjs",
     "narratives:media": "node scripts/register-existing-narrative-media.mjs",
     "narratives:seed": "node scripts/seed-professor-conversations.mjs",
     "media:validate": "node scripts/validate-adventure-media-manifest.mjs",
-    "maps:validate": "npm run assets:pmd:manifest && npm run catalog:validate && npm run maps:manifest && npm run narratives:manifest && npm run missions:manifest && npm run media:validate && node scripts/validate-adventure-maps.mjs"
+    "maps:validate": "npm run assets:pmd:manifest && npm run catalog:validate && npm run maps:manifest && npm run narratives:manifest && npm run story:validate && npm run media:validate && node scripts/validate-adventure-maps.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
+    "@xyflow/react": "^12.11.2",
     "phaser": "^4.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

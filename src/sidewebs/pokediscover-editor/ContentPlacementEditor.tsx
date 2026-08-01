@@ -26,6 +26,7 @@ const KIND_LABELS: Record<PokeDiscoverEditorContentKind, string> = {
 
 export function PlacementPropertiesEditor({
   bundle,
+  room,
   placementId,
   onAdventureChange,
   onClose,
@@ -50,6 +51,7 @@ export function PlacementPropertiesEditor({
       initiallyHidden?: true;
       renderScaleMultiplier?: number;
       animation?: string;
+      roaming?: typeof placement.roaming;
     },
   ) => {
     const { animation: _animation, ...characterUpdate } = update;
@@ -67,6 +69,10 @@ export function PlacementPropertiesEditor({
   };
 
   const scalePercent = getPokeDiscoverEntityScalePercent(bundle, placement);
+  const roamAreas = (room.tilemap.layers.find(layer => layer.name === 'Roaming')?.objects as Array<Record<string, unknown>> | undefined ?? [])
+    .filter(object => String(object.class || object.type) === 'RoamArea')
+    .map(object => String(object.name));
+  const roaming = placement.roaming;
   return <section className={`editor-placement-properties${compact ? ' is-compact' : ''}`} aria-label="Propiedades de la entidad">
     <header>
       <div><span>{actor ? 'Pokémon' : 'Personaje'}</span><strong>Entidad seleccionada</strong></div>
@@ -114,6 +120,31 @@ export function PlacementPropertiesEditor({
       checked={placement.initiallyHidden !== true}
       onChange={event => updatePlacement({ initiallyHidden: event.target.checked ? undefined : true })}
     /><span>Visible al entrar</span></label>
+    <fieldset>
+      <legend>Movimiento libre</legend>
+      <label className="editor-content__visibility"><input
+        type="checkbox"
+        checked={Boolean(roaming)}
+        disabled={!roaming && !roamAreas.length}
+        onChange={event => updatePlacement({ roaming: event.target.checked ? {
+          schemaVersion: 1,
+          areaId: roamAreas[0],
+          distanceTiles: { min: 2, max: 8 },
+          speedPixelsPerSecond: 40,
+          waitAfterArrivalMs: { min: 1_000, max: 4_000 },
+          initialDelayMs: { min: 0, max: 1_500 },
+        } : undefined })}
+      /><span>Vagar por un área</span></label>
+      {!roamAreas.length ? <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('pokediscover:select-map-tool', { detail: { tool: 'roam-rectangle' } }))}>Dibujar primera área</button> : null}
+      {roaming ? <>
+        <label><span>Área</span><select value={roaming.areaId} onChange={event => updatePlacement({ roaming: { ...roaming, areaId: event.target.value } })}>{roamAreas.map(areaId => <option key={areaId}>{areaId}</option>)}</select></label>
+        <label><span>Distancia mínima</span><input type="number" min="1" max={roaming.distanceTiles.max} value={roaming.distanceTiles.min} onChange={event => updatePlacement({ roaming: { ...roaming, distanceTiles: { ...roaming.distanceTiles, min: Number(event.target.value) } } })} /></label>
+        <label><span>Distancia máxima</span><input type="number" min={roaming.distanceTiles.min} value={roaming.distanceTiles.max} onChange={event => updatePlacement({ roaming: { ...roaming, distanceTiles: { ...roaming.distanceTiles, max: Number(event.target.value) } } })} /></label>
+        <label><span>Velocidad · {roaming.speedPixelsPerSecond >= 80 ? 'Carrera' : 'Caminar'}</span><input type="range" min="16" max="160" step="8" value={roaming.speedPixelsPerSecond} onChange={event => updatePlacement({ roaming: { ...roaming, speedPixelsPerSecond: Number(event.target.value) } })} /></label>
+        <label><span>Espera mínima (ms)</span><input type="number" min="0" step="100" value={roaming.waitAfterArrivalMs.min} onChange={event => updatePlacement({ roaming: { ...roaming, waitAfterArrivalMs: { ...roaming.waitAfterArrivalMs, min: Number(event.target.value) } } })} /></label>
+        <label><span>Espera máxima (ms)</span><input type="number" min={roaming.waitAfterArrivalMs.min} step="100" value={roaming.waitAfterArrivalMs.max} onChange={event => updatePlacement({ roaming: { ...roaming, waitAfterArrivalMs: { ...roaming.waitAfterArrivalMs, max: Number(event.target.value) } } })} /></label>
+      </> : null}
+    </fieldset>
   </section>;
 }
 

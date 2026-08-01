@@ -11,6 +11,10 @@ export interface VersionedContractV1 {
   schemaVersion: 1;
 }
 
+export interface VersionedContractV2 {
+  schemaVersion: 2;
+}
+
 export interface Vector2V1 {
   x: number;
   y: number;

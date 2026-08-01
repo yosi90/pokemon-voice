@@ -135,7 +135,7 @@ test.describe('Editor de novela visual', () => {
     await page.getByRole('button', { name: 'Abrir raíz…' }).click();
     await expect(page.getByLabel('Título')).toHaveValue('Prólogo editable');
     await expect(page.getByRole('navigation', { name: 'Herramientas PokeDiscover' }))
-      .toContainText('Mapas y misiones');
+      .toContainText('MapasHistoriaNovela visualRandomizador');
     await page.getByLabel('Título').fill('Cambio pendiente');
     await page.getByRole('link', { name: 'Randomizador' }).click();
     const pendingDialog = page.getByRole('dialog', { name: 'Cambios pendientes' });

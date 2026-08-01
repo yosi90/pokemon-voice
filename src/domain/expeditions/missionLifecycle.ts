@@ -1,5 +1,5 @@
 import type {
-  MissionDefinitionV1,
+  MissionDefinition,
   MissionStatus,
   PokemonFormV1,
   PokemonSpeciesV1,
@@ -8,6 +8,7 @@ import type {
 import { claimPokeDiscoverRewards } from '../progress/rewardLedger.js';
 import { evaluateRequirement } from '../requirements/evaluateRequirement.js';
 import { completeAdventureMission } from './adventureMapProgress.js';
+import { normalizeMissionDefinition } from './missionV2.js';
 
 export interface MissionEvaluationContext {
   companionForm?: PokemonFormV1;
@@ -35,12 +36,14 @@ function evaluationContext(save: PokeVoiceSaveV1, context: MissionEvaluationCont
 
 export function getMissionStatus(
   save: PokeVoiceSaveV1,
-  mission: MissionDefinitionV1,
+  mission: MissionDefinition,
   context: MissionEvaluationContext = {},
 ): MissionStatus {
   const progress = save.pokeDiscover.mapProgress[mission.mapId];
   if (progress?.completedMissionIds.includes(mission.missionId)) return 'completed';
-  if (save.pokeDiscover.activeMissionIds.includes(mission.missionId)) return 'active';
+  if (save.pokeDiscover.missionProgressById?.[mission.missionId]
+    || save.pokeDiscover.activeMissionIds.includes(mission.missionId)) return 'active';
+  if (mission.schemaVersion === 2 && mission.publicationStatus !== 'published') return 'locked';
   if (!mission.availability) return 'available';
   return evaluateRequirement(mission.availability, evaluationContext(save, context)).met
     ? 'available'
@@ -49,11 +52,14 @@ export function getMissionStatus(
 
 export function startAdventureMission(
   save: PokeVoiceSaveV1,
-  mission: MissionDefinitionV1,
+  mission: MissionDefinition,
   context: MissionEvaluationContext = {},
+  startedAt = new Date().toISOString(),
 ) {
   const status = getMissionStatus(save, mission, context);
   if (status !== 'available') return { status, save };
+  const normalized = normalizeMissionDefinition(mission);
+  const flowNodeId = normalized.flow?.initialNodeId ?? `${mission.missionId}:start`;
   return {
     status: 'active' as const,
     save: {
@@ -61,6 +67,21 @@ export function startAdventureMission(
       pokeDiscover: {
         ...save.pokeDiscover,
         activeMissionIds: [...save.pokeDiscover.activeMissionIds, mission.missionId],
+        missionProgressById: {
+          ...(save.pokeDiscover.missionProgressById ?? {}),
+          [mission.missionId]: {
+            schemaVersion: 1 as const,
+            missionId: mission.missionId,
+            checkpointId: flowNodeId,
+            flowNodeId,
+            flags: {},
+            counters: {},
+            resolvedActorIds: [],
+            executedFlowEffectIds: [],
+            startedAt: new Date(startedAt).toISOString(),
+            updatedAt: new Date(startedAt).toISOString(),
+          },
+        },
       },
     },
   };
@@ -68,7 +89,7 @@ export function startAdventureMission(
 
 export function evaluateMissionReadiness(
   save: PokeVoiceSaveV1,
-  mission: MissionDefinitionV1,
+  mission: MissionDefinition,
   context: MissionEvaluationContext = {},
 ): MissionReadiness {
   const completedObjectiveIds: string[] = [];
@@ -93,7 +114,7 @@ export function evaluateMissionReadiness(
 
 export function completeMissionDefinition(
   save: PokeVoiceSaveV1,
-  mission: MissionDefinitionV1,
+  mission: MissionDefinition,
   completedAt: string,
   context: MissionEvaluationContext = {},
 ) {
@@ -135,7 +156,11 @@ export function completeMissionDefinition(
     unlocksFreeExpedition: mission.unlocksFreeExpedition,
     grantsFirstMissionAchievement: mission.grantsFirstMissionAchievement,
   });
-  let nextSave = { ...save, pokeDiscover: completion.state };
+  const { [mission.missionId]: _completedProgress, ...missionProgressById } = completion.state.missionProgressById ?? {};
+  let nextSave = {
+    ...save,
+    pokeDiscover: { ...completion.state, missionProgressById },
+  };
   let rewardStatus: 'claimed' | 'alreadyClaimed' | 'notApplicable' = 'notApplicable';
   if (mission.rewards.length) {
     const reward = claimPokeDiscoverRewards(nextSave.pokeDiscover, {

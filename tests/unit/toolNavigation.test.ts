@@ -5,9 +5,9 @@ import {
 } from '../../src/sidewebs/shared/ToolNavigation.js';
 
 describe('navegación común de herramientas', () => {
-  it('mantiene un registro único de las tres sidewebs', () => {
+  it('mantiene un registro único de las cuatro sidewebs', () => {
     expect(POKEDISCOVER_TOOLS.map(tool => tool.id))
-      .toEqual(['editor', 'visualNovel', 'randomizer']);
+      .toEqual(['editor', 'story', 'visualNovel', 'randomizer']);
   });
 
   it('resuelve rutas hermanas bajo cualquier subdirectorio de despliegue', () => {

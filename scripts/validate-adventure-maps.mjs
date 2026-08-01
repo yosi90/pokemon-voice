@@ -83,10 +83,14 @@ for (const asset of characterManifest.assets ?? []) {
       errors.push(`${asset.assetId}: fila inválida para ${direction}`);
     }
   }
-  for (const frame of [asset.idleFrame, ...(asset.walkFrames ?? [])]) {
+  for (const frame of [asset.idleFrame, ...(asset.walkFrames ?? []), ...(asset.runFrames ?? [])]) {
     if (!Number.isInteger(frame) || frame < 0 || frame >= Number(asset.columns)) {
       errors.push(`${asset.assetId}: frame ${frame} fuera de la hoja`);
     }
+  }
+  if (asset.runFrameDurationMs !== undefined
+    && (!Number.isFinite(asset.runFrameDurationMs) || asset.runFrameDurationMs <= 0)) {
+    errors.push(`${asset.assetId}: runFrameDurationMs debe ser positivo`);
   }
   if (asset.renderScale !== undefined
     && (!Number.isFinite(asset.renderScale) || asset.renderScale < 0.25 || asset.renderScale > 2)) {

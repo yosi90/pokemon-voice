@@ -25,7 +25,7 @@ import {
 } from '../../domain/tools/pokeDiscoverEditorRecentFolder.js';
 import type { PokeDiscoverDirectoryHandle } from '../../domain/tools/pokeDiscoverEditorWorkspace.js';
 import { nextStableEditorId } from '../../domain/tools/pokeDiscoverEditorBeats.js';
-import { ToolNavigation } from '../shared/ToolNavigation.js';
+import { resolvePokeDiscoverToolUrl, ToolNavigation } from '../shared/ToolNavigation.js';
 
 interface History {
   past: NarrativeConversationV1[][];
@@ -175,10 +175,13 @@ export function VisualNovelEditor() {
         if (permission === 'denied') throw new Error('No se concedió permiso de escritura.');
       }
       const loaded = await loadVisualNovelWorkspace(root);
+      const requestedId = new URL(window.location.href).searchParams.get('conversation');
+      const requested = loaded.conversations.find(item => item.conversationId === requestedId)
+        ?? loaded.conversations[0];
       setWorkspace(loaded);
       setHistory({ past: [], present: clone(loaded.conversations), future: [] });
-      setConversationId(loaded.conversations[0]?.conversationId ?? '');
-      setCueId(loaded.conversations[0]?.initialCueId ?? '');
+      setConversationId(requested?.conversationId ?? '');
+      setCueId(requested?.initialCueId ?? '');
       setConflicts([]);
       setMessage(`${loaded.conversations.length} conversaciones cargadas.`);
       if (remember) {
@@ -614,7 +617,7 @@ export function VisualNovelEditor() {
         {conversation ? <footer>
           <button type="button" onClick={duplicateConversation}>Duplicar</button>
           <button type="button" disabled={Boolean(dependencies.length)} onClick={removeConversation}>Eliminar</button>
-          {dependencies.length ? <small>Usada por {dependencies.map(item => item.title).join(', ')}</small> : null}
+          {dependencies.length ? <small>Usada por {dependencies.map((item, index) => <span key={item.missionId}>{index ? ', ' : ''}<a href={`${resolvePokeDiscoverToolUrl('story')}?mission=${encodeURIComponent(item.missionId)}`}>{item.title}</a></span>)}</small> : null}
         </footer> : null}
       </aside>
 

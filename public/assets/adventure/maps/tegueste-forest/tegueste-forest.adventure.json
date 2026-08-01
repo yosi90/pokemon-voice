@@ -248,7 +248,9 @@
       "anchorId": "placement:pokemon:pineco:default:02",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,
@@ -257,7 +259,9 @@
       "anchorId": "placement:pokemon:pineco:default:03",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,
@@ -266,7 +270,9 @@
       "anchorId": "placement:pokemon:pineco:default:04",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,
@@ -275,7 +281,9 @@
       "anchorId": "placement:pokemon:pineco:default:05",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,
@@ -284,7 +292,9 @@
       "anchorId": "placement:pokemon:pineco:default:06",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,
@@ -293,7 +303,9 @@
       "anchorId": "placement:pokemon:pineco:default:07",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,
@@ -302,7 +314,9 @@
       "anchorId": "placement:pokemon:pineco:default:08",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,
@@ -311,7 +325,9 @@
       "anchorId": "placement:pokemon:pineco:default:09",
       "assetId": "pmd:0204-pineco:default",
       "animation": "Idle",
-      "direction": "down"
+      "direction": "down",
+      "collision": "pass-through",
+      "initiallyHidden": true
     },
     {
       "schemaVersion": 1,

@@ -17,6 +17,7 @@ import type {
   CompanionWaterTraversalV1,
   AdventureTerrainRulesV1,
   HazardConsequenceV1,
+  AdventureRoamBehaviorV1,
 } from '../../../packages/contracts/src/index.js';
 import {
   facingTowardTarget,
@@ -57,6 +58,24 @@ import {
   sweptPointHitsBounds,
   type PausableIntervalState,
 } from './adventureHazardPhysics.js';
+import {
+  ROAM_PLAYER_CORRIDOR_MS,
+  ROAM_RUN_THRESHOLD_PPS,
+  ROAM_YIELD_PROMPT_MS,
+  RoamReservationTable,
+  chooseRoamDestination,
+  findNearestFreeRoamCell,
+  findRoamChokePoints,
+  findRoamPath,
+  rasterizeRoamArea,
+  readRoamArea,
+  resolveRoamLocomotion,
+  roamCellGroundPoint,
+  roamCellKey,
+  worldPointToRoamCell,
+  type RoamCell,
+  type RoamNavigationGrid,
+} from './adventureRoaming.js';
 
 type PhaserModule = typeof import('phaser');
 type Facing = 'up' | 'down' | 'left' | 'right';
@@ -89,6 +108,11 @@ export const MAP_HAZARD_CONSEQUENCE_EVENT = 'pokevoice:map-hazard-consequence';
 export const MAP_HAZARD_PREVIEW_EVENT = 'pokevoice:map-hazard-preview';
 export const MAP_NARRATIVE_REQUEST_EVENT = 'pokevoice:map-narrative-request';
 export const MAP_MISSION_OUTCOME_EVENT = 'pokevoice:map-mission-outcome';
+export const MAP_YIELD_AVAILABLE_EVENT = 'pokevoice:map-yield-available';
+export const MAP_YIELD_REQUEST_EVENT = 'pokevoice:map-yield-request';
+export const MAP_YIELD_REACTION_EVENT = 'pokevoice:map-yield-reaction';
+export const MAP_CONTEXT_MENU_REQUESTED_EVENT = 'pokevoice:map-context-menu-requested';
+export const MAP_CONTEXT_MENU_CONTROL_EVENT = 'pokevoice:map-context-menu-control';
 export const EXPEDITION_MOVEMENT_INPUTS = Object.freeze(['keyboard'] as const);
 
 export interface MapCompanionRuntimeContext {
@@ -128,8 +152,22 @@ interface ActiveActorState {
   baseAnimation?: string;
   renderScaleMultiplier: number;
   terrainRules?: AdventureTerrainRulesV1;
+  roaming?: AdventureRoamBehaviorV1;
   asset?: LoadedAdventureSectorBundle['actorAssets'] extends Map<string, infer Asset> ? Asset : never;
   characterAsset?: LoadedAdventureSectorBundle['characterAssets'] extends Map<string, infer Asset> ? Asset : never;
+}
+
+interface ActiveRoamState {
+  actor: ActiveActorState;
+  behavior: AdventureRoamBehaviorV1;
+  areaCells: RoamCell[];
+  recentDestinations: RoamCell[];
+  path: RoamCell[];
+  pathIndex: number;
+  phase: 'idle' | 'planning' | 'moving' | 'yielding' | 'recovering' | 'suspended';
+  waitRemainingMs: number;
+  blockedMs: number;
+  hiddenForSafety?: boolean;
 }
 
 interface AmbientActionState {
@@ -268,7 +306,7 @@ export function createTechnicalPhaserGame({
     `technical-actor:${assetId}:${copyOf ?? animation}`
   );
   const characterSheetKey = (assetId: string) => `technical-character:${assetId}`;
-  const characterAnimationKey = (assetId: string, facing: Facing) => `technical-character-animation:${assetId}:${facing}`;
+  const characterAnimationKey = (assetId: string, facing: Facing, locomotion: 'walk' | 'run' = 'walk') => `technical-character-animation:${assetId}:${facing}:${locomotion}`;
   const effectSheetKey = (assetId: string) => `technical-effect:${assetId}`;
   const effectAnimationKey = (assetId: string, animationName: string) => `technical-effect-animation:${assetId}:${animationName}`;
   const audioKey = (assetId: string) => `technical-audio:${assetId}`;
@@ -344,9 +382,15 @@ export function createTechnicalPhaserGame({
           .filter(candidate => candidate.sectorId === roomBundle.sector.sectorId)) {
           const asset = roomBundle.actorAssets.get(placement.assetId);
           if (!asset) throw new Error(`Actor sin manifiesto: ${placement.placementId}.`);
-          for (const animationName of [placement.animation]) {
+          for (const animationName of new Set([
+            placement.animation,
+            ...(placement.roaming ? ['Idle', 'Walk', 'Run'] : []),
+          ])) {
             const animation = asset.animations.find(candidate => candidate.name === animationName);
-            if (!animation) throw new Error(`Animación sin manifiesto: ${placement.placementId}/${animationName}.`);
+            if (!animation) {
+              if (animationName === placement.animation) throw new Error(`Animación sin manifiesto: ${placement.placementId}/${animationName}.`);
+              continue;
+            }
             const key = actorSheetKey(asset.assetId, animation.name, animation.copyOf);
             if (loadedActorSheets.has(key)) continue;
             loadedActorSheets.add(key);
@@ -512,6 +556,13 @@ export function createTechnicalPhaserGame({
       let ambientSuppressed = false;
       let ambientAnimationsPaused = false;
       let ambientAccumulatorMs = 0;
+      let roamStates = new Map<string, ActiveRoamState>();
+      let roamGrid: RoamNavigationGrid | undefined;
+      let roamProtectedDestinationKeys = new Set<string>();
+      let roamReservations = new RoamReservationTable();
+      let availableYieldActorId: string | undefined;
+      let yieldAvailableUntil = 0;
+      let contextMenuActive = false;
       let solidActorCount = 0;
       let occludedActorCount = 0;
       let filterOccludedActorCount = 0;
@@ -564,6 +615,13 @@ export function createTechnicalPhaserGame({
         filterOccludedActorCount = 0;
         ambientAnimationsPaused = false;
         ambientAccumulatorMs = 0;
+        roamStates = new Map();
+        roamGrid = undefined;
+        roamProtectedDestinationKeys = new Set();
+        roamReservations = new RoamReservationTable();
+        availableYieldActorId = undefined;
+        yieldAvailableUntil = 0;
+        contextMenuActive = false;
         availableInteraction = undefined;
         activeInteraction = undefined;
         availableExpression = undefined;
@@ -626,14 +684,18 @@ export function createTechnicalPhaserGame({
       const ensureCharacterAnimation = (
         asset: NonNullable<typeof playerCharacterAsset>,
         facing: Facing,
+        locomotion: 'walk' | 'run' = 'walk',
       ) => {
-        const key = characterAnimationKey(asset.assetId, facing);
+        const usesRun = locomotion === 'run' && Boolean(asset.runFrames?.length);
+        const key = characterAnimationKey(asset.assetId, facing, usesRun ? 'run' : 'walk');
+        const frames = usesRun ? asset.runFrames! : asset.walkFrames;
+        const duration = usesRun ? (asset.runFrameDurationMs ?? asset.frameDurationMs) : asset.frameDurationMs;
         if (!this.anims.exists(key)) this.anims.create({
           key,
-          frames: asset.walkFrames.map(column => ({
+          frames: frames.map(column => ({
             key: characterSheetKey(asset.assetId),
             frame: asset.directionRows[facing] * asset.columns + column,
-            duration: asset.frameDurationMs,
+            duration,
           })),
           repeat: -1,
         });
@@ -1093,6 +1155,7 @@ export function createTechnicalPhaserGame({
             currentAnimation: placement.animation,
             renderScaleMultiplier: placement.renderScaleMultiplier ?? 1,
             terrainRules: placement.terrainRules,
+            roaming: placement.roaming,
             asset,
           };
           activeActorsByPlacement.set(placement.placementId, actorState);
@@ -1146,6 +1209,7 @@ export function createTechnicalPhaserGame({
             baseDirection: direction,
             renderScaleMultiplier: placement.renderScaleMultiplier ?? 1,
             terrainRules: placement.terrainRules,
+            roaming: placement.roaming,
             characterAsset: asset,
           };
           activeActorsByPlacement.set(placement.placementId, actorState);
@@ -1276,6 +1340,7 @@ export function createTechnicalPhaserGame({
         transitionCooldownUntil = this.time.now + 350;
         chainedStepCount = 0;
         parent.dataset.chainedStepCount = '0';
+        activateRoomRoaming(nextRoom);
         queueRoomAmbientAssets(nextRoom, placements);
         parent.dispatchEvent(new CustomEvent(MAP_SECTOR_ENTERED_EVENT, {
           detail: { sectorId },
@@ -1587,6 +1652,299 @@ export function createTechnicalPhaserGame({
           ? 'suppressed'
           : ambientSequenceStates.length ? 'running' : 'none';
         syncAmbientActorTelemetry();
+      };
+
+      const actorRoamGrid = (actor: ActiveActorState): RoamNavigationGrid | undefined => {
+        if (!roamGrid) return undefined;
+        return {
+          ...roamGrid,
+          canOccupy: cell => {
+            if (!roamGrid!.canOccupy(cell)) return false;
+            const point = roamCellGroundPoint(cell);
+            const surface = terrainCellAtGroundPoint(currentTerrain, point.x, point.y)?.surfaceType ?? 'void';
+            return (actor.terrainRules?.allowedSurfaceTypes ?? ['ground']).includes(surface);
+          },
+        };
+      };
+
+      const setRoamActorIdle = (actor: ActiveActorState) => {
+        if (actor.asset) startActorAnimation(actor, actor.asset.animations.some(animation => animation.name === 'Idle') ? 'Idle' : (actor.baseAnimation ?? 'Walk'), actor.direction, -1);
+        else setActorFacing(actor, actor.direction);
+      };
+
+      const setRoamActorMoving = (actor: ActiveActorState, speed: number, direction: Facing) => {
+        const locomotion = speed >= ROAM_RUN_THRESHOLD_PPS ? 'run' : 'walk';
+        if (actor.characterAsset) {
+          const resolved = resolveRoamLocomotion(speed, Boolean(actor.characterAsset.runFrames?.length));
+          actor.direction = direction;
+          actor.currentAnimation = resolved.animation;
+          actor.sprite.play(ensureCharacterAnimation(actor.characterAsset, direction, locomotion), true);
+          actor.sprite.anims.timeScale = resolved.timeScale;
+          return;
+        }
+        if (actor.asset) {
+          const resolved = resolveRoamLocomotion(speed, actor.asset.animations.some(animation => animation.name === 'Run'));
+          const preferred = resolved.animation;
+          if (actor.currentAnimation !== preferred || actor.direction !== direction || !actor.sprite.anims.isPlaying) {
+            startActorAnimation(actor, preferred, direction, -1);
+          }
+          actor.sprite.anims.timeScale = resolved.timeScale;
+        }
+      };
+
+      const activateRoomRoaming = (room: LoadedAdventureSectorBundle) => {
+        roamStates = new Map();
+        roamReservations = new RoamReservationTable();
+        if (reducedMotion) {
+          parent.dataset.roamingState = 'reduced-motion';
+          parent.dataset.roamingActorCount = '0';
+          return;
+        }
+        roamGrid = {
+          width: room.tilemap.width,
+          height: room.tilemap.height,
+          canOccupy: cell => {
+            if (cell.x < 0 || cell.y < 0 || cell.x >= room.tilemap.width || cell.y >= room.tilemap.height) return false;
+            const point = roamCellGroundPoint(cell);
+            return !staticCollisionBounds.some(collision => rectangleOverlapsCollision(actorFootprint(point.x, point.y), collision));
+          },
+        };
+        roamProtectedDestinationKeys = findRoamChokePoints(roamGrid);
+        for (const anchor of layerObjects(room, 'Anchors')) {
+          if (anchor.class !== 'PlayerSpawn' && anchor.class !== 'TransitionAnchor') continue;
+          const bounds = tiledObjectBounds(anchor, String(anchor.name ?? anchor.class));
+          for (let y = 0; y < roamGrid.height; y += 1) for (let x = 0; x < roamGrid.width; x += 1) {
+            const cell = { x, y };
+            const point = roamCellGroundPoint(cell);
+            const coversPoint = bounds.width === 0 && bounds.height === 0
+              ? roamCellKey(worldPointToRoamCell({ x: bounds.x, y: bounds.y })) === roamCellKey(cell)
+              : point.x >= bounds.x && point.x <= bounds.x + bounds.width
+                && point.y >= bounds.y && point.y <= bounds.y + bounds.height;
+            if (coversPoint) roamProtectedDestinationKeys.add(roamCellKey(cell));
+          }
+        }
+        const areas = new Map(layerObjects(room, 'Roaming')
+          .map(readRoamArea).filter((area): area is NonNullable<typeof area> => Boolean(area))
+          .map(area => [area.areaId, area]));
+        for (const actor of activeActorsByPlacement.values()) {
+          if (!actor.roaming || !actor.sprite.visible) continue;
+          const area = areas.get(actor.roaming.areaId);
+          const grid = actorRoamGrid(actor);
+          if (!area || !grid) continue;
+          const areaCells = rasterizeRoamArea(area, grid)
+            .filter(cell => !roamProtectedDestinationKeys.has(roamCellKey(cell)));
+          if (!areaCells.length) continue;
+          const state: ActiveRoamState = {
+            actor,
+            behavior: actor.roaming,
+            areaCells,
+            recentDestinations: [],
+            path: [],
+            pathIndex: 0,
+            phase: 'idle',
+            waitRemainingMs: sampleMilliseconds(actor.roaming.initialDelayMs),
+            blockedMs: 0,
+          };
+          roamStates.set(actor.placementId, state);
+          roamReservations.set({
+            actorId: actor.placementId,
+            current: worldPointToRoamCell(actor.sprite),
+            waitingSince: this.time.now,
+          });
+          setRoamActorIdle(actor);
+        }
+        parent.dataset.roamingActorCount = String(roamStates.size);
+        parent.dataset.roamingState = roamStates.size ? 'running' : 'none';
+      };
+
+      const completeRoamJourney = (state: ActiveRoamState) => {
+        const destination = state.path.at(-1);
+        if (destination) state.recentDestinations = [destination, ...state.recentDestinations].slice(0, 2);
+        state.path = [];
+        state.pathIndex = 0;
+        state.phase = 'idle';
+        state.blockedMs = 0;
+        state.waitRemainingMs = sampleMilliseconds(state.behavior.waitAfterArrivalMs);
+        setRoamActorIdle(state.actor);
+      };
+
+      const updateRoamState = (state: ActiveRoamState, deltaMs: number) => {
+        const actor = state.actor;
+        if (!actor.sprite.visible || state.hiddenForSafety) return;
+        const grid = actorRoamGrid(actor);
+        if (!grid) return;
+        if (state.phase === 'idle') {
+          state.waitRemainingMs = Math.max(0, state.waitRemainingMs - deltaMs);
+          if (state.waitRemainingMs > 0) return;
+          state.phase = 'planning';
+        }
+        if (state.phase === 'planning' || state.phase === 'recovering') {
+          const current = worldPointToRoamCell(actor.sprite);
+          const destination = chooseRoamDestination({
+            current,
+            candidates: state.areaCells,
+            behavior: state.behavior,
+            recent: state.recentDestinations,
+          });
+          if (!destination) {
+            completeRoamJourney(state);
+            return;
+          }
+          const blocked = roamReservations.blockedCells(actor.placementId, this.time.now);
+          blocked.add(roamCellKey(worldPointToRoamCell(player)));
+          const path = findRoamPath({ grid, from: current, to: destination, blocked, seed: `${actor.placementId}:${state.recentDestinations.length}` });
+          if (path.length < 2) {
+            state.waitRemainingMs = 500;
+            state.phase = 'idle';
+            return;
+          }
+          state.path = path;
+          state.pathIndex = 1;
+          state.phase = 'moving';
+        }
+        if (state.phase !== 'moving' && state.phase !== 'yielding') return;
+        const nextCell = state.path[state.pathIndex];
+        if (!nextCell) {
+          completeRoamJourney(state);
+          return;
+        }
+        const currentCell = worldPointToRoamCell(actor.sprite);
+        if (Math.abs(currentCell.x - nextCell.x) + Math.abs(currentCell.y - nextCell.y) > 1) {
+          state.phase = 'recovering';
+          state.path = [];
+          state.pathIndex = 0;
+          return;
+        }
+        const target = roamCellGroundPoint(nextCell);
+        roamReservations.set({ actorId: actor.placementId, current: currentCell, next: nextCell, waitingSince: this.time.now - state.blockedMs });
+        if (!roamReservations.canAdvance(actor.placementId, currentCell, nextCell, this.time.now)
+          || !canAmbientActorOccupy(actor, target.x, target.y, new Map())) {
+          state.blockedMs += deltaMs;
+          if (state.blockedMs >= 500) state.phase = 'planning';
+          setRoamActorIdle(actor);
+          return;
+        }
+        state.blockedMs = 0;
+        const dx = target.x - actor.sprite.x;
+        const dy = target.y - actor.sprite.y;
+        const distance = Math.hypot(dx, dy);
+        const travel = state.behavior.speedPixelsPerSecond * deltaMs / 1_000;
+        const direction = facingForDelta(dx, dy, actor.direction);
+        setRoamActorMoving(actor, state.behavior.speedPixelsPerSecond, direction);
+        if (distance <= travel + .001) {
+          actor.sprite.setPosition(target.x, target.y).setDepth(target.y);
+          state.pathIndex += 1;
+          if (state.pathIndex >= state.path.length) completeRoamJourney(state);
+        } else actor.sprite.setPosition(actor.sprite.x + dx / distance * travel, actor.sprite.y + dy / distance * travel).setDepth(actor.sprite.y + dy / distance * travel);
+        updateActorCropOcclusion(actor);
+      };
+
+      const publishYieldAvailability = (actorId?: string) => {
+        if (availableYieldActorId === actorId) return;
+        availableYieldActorId = actorId;
+        if (actorId) {
+          parent.dataset.yieldActorId = actorId;
+          parent.dataset.yieldPrompt = 'Pedir paso';
+        } else {
+          delete parent.dataset.yieldActorId;
+          delete parent.dataset.yieldPrompt;
+        }
+        parent.dispatchEvent(new CustomEvent(MAP_YIELD_AVAILABLE_EVENT, { detail: actorId ? { actorId, prompt: 'Pedir paso' } : undefined }));
+      };
+
+      const requestRoamActorYield = (actorId: string) => {
+        const state = roamStates.get(actorId);
+        const grid = state ? actorRoamGrid(state.actor) : undefined;
+        if (!state || !grid) return false;
+        const playerCell = worldPointToRoamCell(player);
+        const first = worldPointToRoamCell(gridStep(player, playerFacing));
+        const second = worldPointToRoamCell(gridStep(player, playerFacing, 2));
+        roamReservations.reserveCorridor([playerCell, first, second], this.time.now + ROAM_PLAYER_CORRIDOR_MS);
+        const current = worldPointToRoamCell(state.actor.sprite);
+        parent.dispatchEvent(new CustomEvent(MAP_YIELD_REACTION_EVENT, {
+          detail: { actorId, dialogueId: state.behavior.yieldDialogueId },
+        }));
+        const blocked = roamReservations.blockedCells(actorId, this.time.now);
+        blocked.add(roamCellKey(current));
+        const target = findNearestFreeRoamCell({ origin: current, grid, preferred: state.areaCells, blocked });
+        if (!target) {
+          state.hiddenForSafety = true;
+          state.actor.sprite.setVisible(false);
+          roamReservations.delete(actorId);
+          parent.dataset.roamingSafety = `hidden:${actorId}`;
+          return true;
+        }
+        const path = findRoamPath({ grid, from: current, to: target, blocked, seed: `yield:${actorId}` });
+        if (path.length >= 2) {
+          state.path = path;
+          state.pathIndex = 1;
+          state.phase = 'yielding';
+        } else {
+          const point = roamCellGroundPoint(target);
+          state.actor.sprite.setAlpha(0).setPosition(point.x, point.y).setDepth(point.y);
+          this.tweens.add({ targets: state.actor.sprite, alpha: 1, duration: 120 });
+          state.phase = state.areaCells.some(cell => roamCellKey(cell) === roamCellKey(target)) ? 'idle' : 'recovering';
+          state.waitRemainingMs = 500;
+          parent.dataset.roamingSafety = `relocated:${actorId}`;
+        }
+        return true;
+      };
+
+      const requestYield = (event: Event) => {
+        const actorId = (event as CustomEvent<{ actorId?: string }>).detail?.actorId ?? availableYieldActorId;
+        if (actorId && requestRoamActorYield(actorId)) publishYieldAvailability();
+      };
+      const controlContextMenu = (event: Event) => {
+        contextMenuActive = Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open);
+        if (contextMenuActive) setPlayerIdle();
+      };
+
+      const updateRoaming = (deltaMs: number) => {
+        if (reducedMotion || document.hidden || ambientSuppressed || contextMenuActive || activeInteraction || activeExpression
+          || companionConversationActive || activeCompanionSequence || activeMapEvent || transitioning) {
+          parent.dataset.roamingState = roamStates.size ? 'suspended' : 'none';
+          return;
+        }
+        const intendedFacing = activeGridDirection(pressedDirections)?.facing ?? iceFacing;
+        if (intendedFacing) {
+          roamReservations.reserveCorridor([
+            worldPointToRoamCell(player),
+            worldPointToRoamCell(gridStep(player, intendedFacing)),
+            worldPointToRoamCell(gridStep(player, intendedFacing, 2)),
+          ], this.time.now + 250);
+        }
+        if (availableYieldActorId && this.time.now >= yieldAvailableUntil) publishYieldAvailability();
+        for (const state of roamStates.values()) {
+          if (state.hiddenForSafety) {
+            const grid = actorRoamGrid(state.actor);
+            if (grid) {
+              const blocked = roamReservations.blockedCells(state.actor.placementId, this.time.now);
+              blocked.add(roamCellKey(worldPointToRoamCell(player)));
+              const cell = findNearestFreeRoamCell({
+                origin: worldPointToRoamCell(state.actor.sprite),
+                grid,
+                preferred: state.areaCells,
+                blocked,
+              });
+              if (cell) {
+                const point = roamCellGroundPoint(cell);
+                state.actor.sprite.setPosition(point.x, point.y).setDepth(point.y).setVisible(true).setAlpha(0);
+                this.tweens.add({ targets: state.actor.sprite, alpha: 1, duration: 120 });
+                state.hiddenForSafety = false;
+                state.phase = 'recovering';
+                delete parent.dataset.roamingSafety;
+              }
+            }
+          }
+          updateRoamState(state, deltaMs);
+        }
+        parent.dataset.roamingState = roamStates.size ? 'running' : 'none';
+        parent.dataset.roamingActors = JSON.stringify([...roamStates.values()].map(state => ({
+          placementId: state.actor.placementId,
+          phase: state.phase,
+          x: Math.round(state.actor.sprite.x),
+          y: Math.round(state.actor.sprite.y),
+        })));
       };
 
       const queueRoomAmbientAssets = (
@@ -2806,11 +3164,18 @@ export function createTechnicalPhaserGame({
 
       const requestContextActionFromKeyboard = () => {
         const mapEvent = refreshAvailableMapContextEvent();
+        const contextual = refreshAvailableInteraction();
+        if (availableYieldActorId) {
+          const hasOtherAction = Boolean(mapEvent || contextual || isFacingCompanion());
+          if (hasOtherAction) {
+            parent.dispatchEvent(new CustomEvent(MAP_CONTEXT_MENU_REQUESTED_EVENT));
+          } else requestYield(new CustomEvent(MAP_YIELD_REQUEST_EVENT));
+          return;
+        }
         if (mapEvent) {
           void runMapEvent(mapEvent);
           return;
         }
-        const contextual = refreshAvailableInteraction();
         if (!contextual) {
           if (isFacingCompanion()) beginCompanionConversation();
           return;
@@ -2914,6 +3279,8 @@ export function createTechnicalPhaserGame({
       parent.addEventListener(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, requestCompanionSequence);
       parent.addEventListener(MAP_EVENT_REQUEST_EVENT, requestMapEvent);
       parent.addEventListener(MAP_HAZARD_PREVIEW_EVENT, requestHazardPreview);
+      parent.addEventListener(MAP_YIELD_REQUEST_EVENT, requestYield);
+      parent.addEventListener(MAP_CONTEXT_MENU_CONTROL_EVENT, controlContextMenu);
       this.input.keyboard?.on('keydown-E', requestContextActionFromKeyboard);
       this.input.keyboard?.on('keydown-SPACE', requestContextActionFromKeyboard);
       document.addEventListener('visibilitychange', syncVisibilityState);
@@ -2929,6 +3296,8 @@ export function createTechnicalPhaserGame({
         parent.removeEventListener(MAP_COMPANION_SEQUENCE_REQUEST_EVENT, requestCompanionSequence);
         parent.removeEventListener(MAP_EVENT_REQUEST_EVENT, requestMapEvent);
         parent.removeEventListener(MAP_HAZARD_PREVIEW_EVENT, requestHazardPreview);
+        parent.removeEventListener(MAP_YIELD_REQUEST_EVENT, requestYield);
+        parent.removeEventListener(MAP_CONTEXT_MENU_CONTROL_EVENT, controlContextMenu);
         this.input.keyboard?.off('keydown-E', requestContextActionFromKeyboard);
         this.input.keyboard?.off('keydown-SPACE', requestContextActionFromKeyboard);
         this.input.keyboard?.off('keydown', directionKeyDown);
@@ -2947,6 +3316,7 @@ export function createTechnicalPhaserGame({
         if (!playerBody || transitioning) return;
         evaluateAutomaticMapEvents(delta);
         evaluateAutomaticCompanionBehaviors();
+        updateRoaming(Math.min(delta, 100));
         if (!document.hidden && !ambientSuppressed && !activeInteraction && !activeExpression && !companionConversationActive && !reducedMotion) {
           ambientAccumulatorMs = Math.min(100, ambientAccumulatorMs + delta);
           if (ambientAccumulatorMs >= 1000 / 30) {
@@ -2959,7 +3329,7 @@ export function createTechnicalPhaserGame({
 
         refreshAvailableInteraction();
         refreshAvailableMapContextEvent();
-        if (activeInteraction || activeExpression || companionConversationActive || activeCompanionSequence) {
+        if (contextMenuActive || activeInteraction || activeExpression || companionConversationActive || activeCompanionSequence) {
           setPlayerIdle();
           parent.dataset.step = 'idle';
           return;
@@ -3041,6 +3411,14 @@ export function createTechnicalPhaserGame({
           });
           if (!canOccupyGroundPoint(destination.x, destination.y) || !terrainAccess.allowed) {
             playerBody.setVelocity(0, 0);
+            const blockingRoamer = [...roamStates.values()].find(state => state.actor.sprite.visible
+              && state.actor.collision === 'solid'
+              && overlap(actorFootprint(destination.x, destination.y), actorFootprint(state.actor.sprite.x, state.actor.sprite.y)));
+            if (blockingRoamer) {
+              yieldAvailableUntil = this.time.now + ROAM_YIELD_PROMPT_MS;
+              publishYieldAvailability(blockingRoamer.actor.placementId);
+              requestRoamActorYield(blockingRoamer.actor.placementId);
+            }
             parent.dataset.lastBlockedStep = terrainAccess.allowed
               ? 'preflight'
               : terrainAccess.reason;

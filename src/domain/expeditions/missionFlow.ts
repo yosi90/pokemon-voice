@@ -1,20 +1,24 @@
 import type {
   MissionDefinitionV1,
+  MissionFlowNode,
   MissionFlowNodeV1,
+  MissionFlow,
   MissionFlowV1,
   RequirementExpressionV1,
 } from '../../../packages/contracts/src/index.js';
 
-function nodeTargets(node: MissionFlowNodeV1) {
+export function missionFlowNodeTargets(node: MissionFlowNode) {
   if (node.kind === 'conversation') {
     return [...Object.values(node.outcomes), ...(node.defaultNextNodeId ? [node.defaultNextNodeId] : [])];
   }
   if (node.kind === 'expedition') return Object.values(node.outcomes);
   if (node.kind === 'condition') return [node.whenTrueNodeId, node.whenFalseNodeId];
+  if (node.kind === 'effect') return [node.nextNodeId];
+  if (node.kind === 'travel') return [node.expeditionNodeId];
   return [];
 }
 
-export function validateMissionFlow(flow: MissionFlowV1) {
+export function validateMissionFlow(flow: MissionFlow) {
   const errors: string[] = [];
   const ids = new Set<string>();
   for (const node of flow.nodes) {
@@ -23,8 +27,23 @@ export function validateMissionFlow(flow: MissionFlowV1) {
   }
   if (!ids.has(flow.initialNodeId)) errors.push(`El nodo inicial ${flow.initialNodeId} no existe.`);
   for (const node of flow.nodes) {
-    for (const target of nodeTargets(node)) {
+    for (const target of missionFlowNodeTargets(node)) {
       if (!ids.has(target)) errors.push(`${node.nodeId}: destino inexistente ${target}.`);
+    }
+    if (node.kind === 'travel') {
+      const target = flow.nodes.find(candidate => candidate.nodeId === node.expeditionNodeId);
+      if (target && target.kind !== 'expedition') {
+        errors.push(`${node.nodeId}: el viaje debe conducir a una expedición.`);
+      }
+    }
+    if (node.kind === 'effect') {
+      const effectIds = new Set<string>();
+      for (const effect of node.effects) {
+        if (!effect.effectId || effectIds.has(effect.effectId)) {
+          errors.push(`${node.nodeId}: effectId duplicado o vacío ${effect.effectId}.`);
+        }
+        effectIds.add(effect.effectId);
+      }
     }
   }
 
@@ -37,7 +56,7 @@ export function validateMissionFlow(flow: MissionFlowV1) {
     visiting.add(nodeId);
     const node = byId.get(nodeId);
     const cycle = node && node.kind !== 'terminal'
-      ? nodeTargets(node).some(visit)
+      ? missionFlowNodeTargets(node).some(visit)
       : false;
     visiting.delete(nodeId);
     visited.add(nodeId);
@@ -46,18 +65,35 @@ export function validateMissionFlow(flow: MissionFlowV1) {
   if (ids.has(flow.initialNodeId) && visit(flow.initialNodeId)) {
     errors.push('El flujo contiene un ciclo automático.');
   }
+  if (ids.has(flow.initialNodeId)) {
+    const reachable = new Set<string>();
+    const markReachable = (nodeId: string) => {
+      if (reachable.has(nodeId)) return;
+      reachable.add(nodeId);
+      const node = byId.get(nodeId);
+      if (node) missionFlowNodeTargets(node).forEach(markReachable);
+    };
+    markReachable(flow.initialNodeId);
+    for (const node of flow.nodes) {
+      if (!reachable.has(node.nodeId)) errors.push(`${node.nodeId}: nodo inalcanzable.`);
+    }
+    const hasReachableSuccess = flow.nodes.some(node => (
+      reachable.has(node.nodeId) && node.kind === 'terminal' && node.result === 'success'
+    ));
+    if (!hasReachableSuccess) errors.push('El flujo no contiene una ruta alcanzable de éxito.');
+  }
   return errors;
 }
 
 export function resolveMissionFlowNode(
-  flow: MissionFlowV1,
+  flow: MissionFlow,
   nodeId: string,
 ) {
   return flow.nodes.find(node => node.nodeId === nodeId);
 }
 
 export function advanceMissionFlow(
-  flow: MissionFlowV1,
+  flow: MissionFlow,
   nodeId: string,
   request: {
     outcomeId?: string;
@@ -72,6 +108,13 @@ export function advanceMissionFlow(
     return request.evaluateRequirement(node.requirement)
       ? node.whenTrueNodeId
       : node.whenFalseNodeId;
+  }
+  if (node.kind === 'effect') return node.nextNodeId;
+  if (node.kind === 'travel') {
+    if (request.outcomeId !== 'accept') {
+      throw new Error(`${node.nodeId}: el viaje sigue aplazado.`);
+    }
+    return node.expeditionNodeId;
   }
   if (!request.outcomeId && node.kind === 'conversation' && node.defaultNextNodeId) {
     return node.defaultNextNodeId;

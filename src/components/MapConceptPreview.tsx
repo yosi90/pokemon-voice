@@ -27,6 +27,11 @@ import {
   MAP_SPECIES_IDENTIFIED_EVENT,
   MAP_SEQUENCE_CUE_EVENT,
   MAP_VISIBLE_SPECIES_CHANGED_EVENT,
+  MAP_YIELD_AVAILABLE_EVENT,
+  MAP_YIELD_REACTION_EVENT,
+  MAP_YIELD_REQUEST_EVENT,
+  MAP_CONTEXT_MENU_REQUESTED_EVENT,
+  MAP_CONTEXT_MENU_CONTROL_EVENT,
   type MapInteractionPresentation,
   type MapCompanionPresentation,
 } from '../domain/maps/createTechnicalPhaserGame.js';
@@ -35,6 +40,7 @@ import {
   beginBrowserCamphorPrologue,
   applyBrowserHazardConsequence,
   advanceBrowserMissionFlow,
+  resolveBrowserMissionFailure,
   checkpointBrowserMissionConversation,
   chooseBrowserCamphorStarter,
   completeBrowserCamphorPrologueScene,
@@ -58,6 +64,7 @@ import type {
   MapEventTriggerV3,
   NarrativeSequenceV1,
   NarrativeConversationV1,
+  MissionFlowNodeV2,
 } from '../../packages/contracts/src/index.js';
 import {
   stopContinuedNarrativeAudio,
@@ -140,6 +147,15 @@ export function MapConceptPreview({
   const [availableInteraction, setAvailableInteraction] = useState<ExpeditionInteractionV3>();
   const [availableExpression, setAvailableExpression] = useState<ExpeditionExpressionTriggerV3>();
   const [availableMapEvent, setAvailableMapEvent] = useState<MapEventTriggerV3>();
+  const [availableYield, setAvailableYield] = useState<{ actorId: string; prompt: string }>();
+  const [yieldReaction, setYieldReaction] = useState<{ speakerName?: string; text: string }>();
+  const yieldReactionTimerRef = useRef<number | undefined>(undefined);
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  useEffect(() => {
+    hostRef.current?.dispatchEvent(new CustomEvent(MAP_CONTEXT_MENU_CONTROL_EVENT, {
+      detail: { open: contextMenuOpen },
+    }));
+  }, [contextMenuOpen]);
   const [activeExpression, setActiveExpression] = useState<ExpeditionExpressionTriggerV3>();
   const [acousticStatus, setAcousticStatus] = useState<'idle' | 'requesting' | 'listening' | 'error'>('idle');
   const [acousticProgress, setAcousticProgress] = useState(0);
@@ -159,30 +175,43 @@ export function MapConceptPreview({
     pageId: string;
   }>();
   const [flowConversation, setFlowConversation] = useState<NarrativeConversationV1>();
+  const [flowTravel, setFlowTravel] = useState<Extract<MissionFlowNodeV2, { kind: 'travel' }>>();
   const [hazardConversation, setHazardConversation] = useState<NarrativeConversationV1>();
   const hazardConversationIdRef = useRef<string | undefined>(undefined);
-  const flowCheckpoint = flowConversation
-    ? getBrowserPokeVoiceSave().activeExpeditionSession?.missionRuntime?.conversationCheckpoint
+  const flowMissionId = getBrowserPokeVoiceSave().activeExpeditionSession?.missionId;
+  const flowCheckpoint = flowConversation && flowMissionId
+    ? getBrowserPokeVoiceSave().pokeDiscover.missionProgressById?.[flowMissionId]?.conversationCheckpoint
     : undefined;
   const matchingFlowCheckpoint = flowCheckpoint?.conversationId === flowConversation?.conversationId
     ? flowCheckpoint
     : undefined;
 
   const advanceFlow = useCallback(async (outcomeId?: string) => {
+    const activeMissionId = getBrowserPokeVoiceSave().activeExpeditionSession?.missionId;
+    if (!activeMissionId || getPokeDiscoverMission(activeMissionId)?.schemaVersion !== 2) return;
     let result = advanceBrowserMissionFlow(outcomeId);
-    while (result?.node.kind === 'condition') {
+    while (result?.node?.kind === 'condition' || result?.node?.kind === 'effect') {
       result = advanceBrowserMissionFlow();
     }
-    if (!result) return;
+    if (!result?.node) return;
     if (result.node.kind === 'conversation') {
+      setFlowTravel(undefined);
       const conversation = await getNarrativeConversation(result.node.conversationId);
       if (conversation) setFlowConversation(conversation);
       return;
     }
     setFlowConversation(undefined);
+    if (result.node.kind === 'travel') {
+      setFlowTravel(result.node);
+      return;
+    }
+    setFlowTravel(undefined);
     if (result.node.kind === 'terminal') {
       stopContinuedNarrativeAudio();
-      if (result.node.result === 'failure') onMissionFailed();
+      if (result.node.result === 'failure') {
+        resolveBrowserMissionFailure(result.mission.missionId);
+        onMissionFailed();
+      }
       else completeBrowserMissionDefinition(result.mission, new Date().toISOString());
       return;
     }
@@ -308,11 +337,12 @@ export function MapConceptPreview({
       if (companionPresentation) finishCompanionConversation();
       else if (interactionPresentation) finishDialogue(false);
       else if (activeExpression) finishExpression(false);
+      else if (contextMenuOpen) setContextMenuOpen(false);
       else onClose();
     };
     document.addEventListener('keydown', closeOnEscape);
     return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [activeExpression, companionPresentation, finishCompanionConversation, finishDialogue, finishExpression, interactionPresentation, onClose, open]);
+  }, [activeExpression, companionPresentation, contextMenuOpen, finishCompanionConversation, finishDialogue, finishExpression, interactionPresentation, onClose, open]);
 
   useEffect(() => {
     if (!open || !interactionPresentation) return undefined;
@@ -336,6 +366,24 @@ export function MapConceptPreview({
     const interactionAvailable = (event: Event) => {
       const detail = (event as CustomEvent<{ interaction?: ExpeditionInteractionV3 }>).detail;
       setAvailableInteraction(detail?.interaction);
+    };
+    const yieldAvailable = (event: Event) => {
+      const detail = (event as CustomEvent<{ actorId?: string; prompt?: string }>).detail;
+      setAvailableYield(detail?.actorId ? { actorId: detail.actorId, prompt: detail.prompt ?? 'Pedir paso' } : undefined);
+      if (!detail?.actorId) setContextMenuOpen(false);
+    };
+    const contextMenuRequested = () => setContextMenuOpen(true);
+    const yieldReactionStarted = (event: Event) => {
+      const dialogueId = (event as CustomEvent<{ dialogueId?: string }>).detail?.dialogueId;
+      const dialogue = dialogueId
+        ? bundleRef.current?.adventure.dialogues?.find(candidate => candidate.dialogueId === dialogueId)
+        : undefined;
+      const page = dialogue?.pages.find(candidate => candidate.pageId === dialogue.initialPageId);
+      setYieldReaction(page
+        ? { speakerName: page.speakerName, text: page.text }
+        : { text: 'Se aparta para dejarte pasar.' });
+      if (yieldReactionTimerRef.current !== undefined) window.clearTimeout(yieldReactionTimerRef.current);
+      yieldReactionTimerRef.current = window.setTimeout(() => setYieldReaction(undefined), 1_800);
     };
     const interactionStarted = (event: Event) => {
       const detail = (event as CustomEvent<MapInteractionPresentation>).detail;
@@ -457,9 +505,12 @@ export function MapConceptPreview({
       }>).detail?.consequence;
       if (!consequence) return;
       const activeMissionId = getBrowserPokeVoiceSave().activeExpeditionSession?.missionId;
-      const missionFailureSequenceId = activeMissionId
+      const activeMission = activeMissionId
         ? bundleRef.current?.missionDocument?.missions
-          .find(mission => mission.missionId === activeMissionId)?.narratives?.failureSequenceId
+          .find(mission => mission.missionId === activeMissionId)
+        : undefined;
+      const missionFailureSequenceId = activeMission?.schemaVersion === 1
+        ? activeMission.narratives?.failureSequenceId
         : undefined;
       const failureSequenceId = consequence.failureNarrativeSequenceId ?? missionFailureSequenceId;
       const result = applyBrowserHazardConsequence(consequence);
@@ -513,6 +564,9 @@ export function MapConceptPreview({
     host.addEventListener(MAP_HAZARD_CONSEQUENCE_EVENT, hazardConsequence);
     host.addEventListener(MAP_NARRATIVE_REQUEST_EVENT, narrativeRequested);
     host.addEventListener(MAP_MISSION_OUTCOME_EVENT, missionOutcome);
+    host.addEventListener(MAP_YIELD_AVAILABLE_EVENT, yieldAvailable);
+    host.addEventListener(MAP_YIELD_REACTION_EVENT, yieldReactionStarted);
+    host.addEventListener(MAP_CONTEXT_MENU_REQUESTED_EVENT, contextMenuRequested);
     setStatus('loading');
     host.dataset.runtime = 'loading';
     host.focus({ preventScroll: true });
@@ -527,15 +581,22 @@ export function MapConceptPreview({
       if (cancelled) return;
       const save = getBrowserPokeVoiceSave();
       bundleRef.current = bundle;
-      let initialFlowState = getBrowserMissionFlowState();
-      while (initialFlowState?.node.kind === 'condition') {
-        initialFlowState = advanceBrowserMissionFlow();
+      const activeFlowMission = save.activeExpeditionSession?.missionId
+        ? getPokeDiscoverMission(save.activeExpeditionSession.missionId)
+        : undefined;
+      let initialFlowState = activeFlowMission?.schemaVersion === 2
+        ? getBrowserMissionFlowState(activeFlowMission.missionId)
+        : undefined;
+      while (initialFlowState?.node.kind === 'condition' || initialFlowState?.node.kind === 'effect') {
+        const advanced = advanceBrowserMissionFlow();
+        initialFlowState = advanced?.node ? { ...advanced, node: advanced.node } : undefined;
       }
       if (initialFlowState?.node.kind === 'conversation') {
         void getNarrativeConversation(initialFlowState.node.conversationId).then(conversation => {
           if (!cancelled && conversation) setFlowConversation(conversation);
         });
       }
+      if (initialFlowState?.node.kind === 'travel') setFlowTravel(initialFlowState.node);
       const flowEntryLocationId = initialFlowState?.node.kind === 'expedition'
         ? initialFlowState.node.entryLocationId
         : undefined;
@@ -708,11 +769,18 @@ export function MapConceptPreview({
       host.removeEventListener(MAP_HAZARD_CONSEQUENCE_EVENT, hazardConsequence);
       host.removeEventListener(MAP_NARRATIVE_REQUEST_EVENT, narrativeRequested);
       host.removeEventListener(MAP_MISSION_OUTCOME_EVENT, missionOutcome);
+      host.removeEventListener(MAP_YIELD_AVAILABLE_EVENT, yieldAvailable);
+      host.removeEventListener(MAP_YIELD_REACTION_EVENT, yieldReactionStarted);
+      host.removeEventListener(MAP_CONTEXT_MENU_REQUESTED_EVENT, contextMenuRequested);
       host.replaceChildren();
       onVisibleSpeciesIdsChange([]);
       setAvailableInteraction(undefined);
       setAvailableExpression(undefined);
       setAvailableMapEvent(undefined);
+      setAvailableYield(undefined);
+      setYieldReaction(undefined);
+      if (yieldReactionTimerRef.current !== undefined) window.clearTimeout(yieldReactionTimerRef.current);
+      setContextMenuOpen(false);
       setActiveExpression(undefined);
       setInteractionPresentation(undefined);
       setDialoguePageId(undefined);
@@ -782,6 +850,12 @@ export function MapConceptPreview({
                 {status === 'error' ? 'No se pudo cargar el Bosque de Tegueste.' : loadingText}
               </div>
             )}
+            {yieldReaction && status === 'ready' && (
+              <div className="map-concept-preview__yield-reaction" role="status" aria-live="polite">
+                {yieldReaction.speakerName ? <strong>{yieldReaction.speakerName}</strong> : null}
+                <span>{yieldReaction.text}</span>
+              </div>
+            )}
             {hazardFailure && hazardFailurePage ? (
               <section className="map-concept-preview__dialogue" role="dialog" aria-label="La expedición ha fracasado">
                 <strong>{hazardFailurePage.speakerName}</strong>
@@ -837,6 +911,16 @@ export function MapConceptPreview({
                 />
               </div>
             ) : null}
+            {flowTravel ? (
+              <section className="map-concept-preview__story-choice" role="dialog" aria-modal="true" aria-label="Viaje de misión">
+                <strong>Nuevo destino</strong>
+                <p>{flowTravel.prompt}</p>
+                <div>
+                  <button type="button" onClick={() => void advanceFlow('accept')}>{flowTravel.acceptLabel}</button>
+                  <button type="button" onClick={() => setFlowTravel(undefined)}>{flowTravel.postponeLabel}</button>
+                </div>
+              </section>
+            ) : null}
             {hazardConversation && bundleRef.current?.mediaManifest ? (
               <div className="map-concept-preview__visual-novel">
                 <VisualNovelPlayer
@@ -878,7 +962,43 @@ export function MapConceptPreview({
                 <button type="button" onClick={() => setStoryCueId(undefined)}>Explorar el bosque</button>
               </section>
             )}
-            {availableMapEvent?.activation.kind === 'contextAction' && !interactionPresentation && (
+            {contextMenuOpen && availableYield && !interactionPresentation && (
+              <section className="map-concept-preview__context-menu" role="dialog" aria-label="Acciones disponibles">
+                <strong>¿Qué quieres hacer?</strong>
+                <button type="button" autoFocus onClick={() => {
+                  hostRef.current?.dispatchEvent(new CustomEvent(MAP_YIELD_REQUEST_EVENT, { detail: { actorId: availableYield.actorId } }));
+                  setContextMenuOpen(false);
+                }}>{availableYield.prompt}</button>
+                {availableMapEvent?.activation.kind === 'contextAction' ? <button type="button" onClick={() => {
+                  hostRef.current?.dispatchEvent(new CustomEvent(MAP_EVENT_REQUEST_EVENT, { detail: { triggerId: availableMapEvent.triggerId } }));
+                  setContextMenuOpen(false);
+                }}>{availableMapEvent.activation.prompt}</button> : null}
+                {availableInteraction ? <button type="button" onClick={() => {
+                  hostRef.current?.dispatchEvent(new CustomEvent(MAP_INTERACTION_REQUEST_EVENT, { detail: { interactionId: availableInteraction.interactionId } }));
+                  setContextMenuOpen(false);
+                }}>{availableInteraction.prompt}</button> : null}
+                {availableExpression ? <button type="button" onClick={() => {
+                  hostRef.current?.dispatchEvent(new CustomEvent(MAP_EXPRESSION_REQUEST_EVENT, { detail: { triggerId: availableExpression.triggerId } }));
+                  setContextMenuOpen(false);
+                }}>{availableExpression.prompt}</button> : null}
+                {companionAvailable ? <button type="button" onClick={() => {
+                  hostRef.current?.dispatchEvent(new CustomEvent(MAP_COMPANION_REQUEST_EVENT));
+                  setContextMenuOpen(false);
+                }}>Hablar con tu compañero</button> : null}
+                <button type="button" onClick={() => setContextMenuOpen(false)}>Cancelar</button>
+              </section>
+            )}
+            {availableYield && !contextMenuOpen && !interactionPresentation && !availableMapEvent && !availableInteraction && !availableExpression && !companionAvailable && (
+              <button className="map-concept-preview__interaction-prompt" type="button" onClick={() => hostRef.current?.dispatchEvent(new CustomEvent(MAP_YIELD_REQUEST_EVENT, { detail: { actorId: availableYield.actorId } }))}>
+                <kbd>E</kbd>{availableYield.prompt}
+              </button>
+            )}
+            {availableYield && !contextMenuOpen && !interactionPresentation && (availableMapEvent || availableInteraction || availableExpression || companionAvailable) && (
+              <button className="map-concept-preview__interaction-prompt" type="button" onClick={() => setContextMenuOpen(true)}>
+                <kbd>E</kbd>Acciones
+              </button>
+            )}
+            {!availableYield && availableMapEvent?.activation.kind === 'contextAction' && !interactionPresentation && (
               <button
                 className="map-concept-preview__interaction-prompt"
                 type="button"
@@ -890,7 +1010,7 @@ export function MapConceptPreview({
                 {availableMapEvent.activation.prompt}
               </button>
             )}
-            {availableInteraction && !availableMapEvent && !interactionPresentation && (
+            {!availableYield && availableInteraction && !availableMapEvent && !interactionPresentation && (
               <button
                 className="map-concept-preview__interaction-prompt"
                 type="button"
@@ -902,7 +1022,7 @@ export function MapConceptPreview({
                 {availableInteraction.prompt}
               </button>
             )}
-            {availableExpression && !availableMapEvent && !availableInteraction && !interactionPresentation && !activeExpression && (
+            {!availableYield && availableExpression && !availableMapEvent && !availableInteraction && !interactionPresentation && !activeExpression && (
               <button
                 className="map-concept-preview__interaction-prompt map-concept-preview__interaction-prompt--expression"
                 type="button"
@@ -914,7 +1034,7 @@ export function MapConceptPreview({
                 {availableExpression.prompt}
               </button>
             )}
-            {companionAvailable && !availableMapEvent && !availableInteraction && !availableExpression && !interactionPresentation && !activeExpression && !companionPresentation && (
+            {!availableYield && companionAvailable && !availableMapEvent && !availableInteraction && !availableExpression && !interactionPresentation && !activeExpression && !companionPresentation && (
               <button
                 className="map-concept-preview__interaction-prompt map-concept-preview__interaction-prompt--companion"
                 type="button"

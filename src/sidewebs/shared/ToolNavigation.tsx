@@ -1,14 +1,15 @@
 import type { MouseEvent } from 'react';
 import './tool-navigation.css';
 
-export type PokeDiscoverToolId = 'editor' | 'visualNovel' | 'randomizer';
+export type PokeDiscoverToolId = 'editor' | 'story' | 'visualNovel' | 'randomizer';
 
 export const POKEDISCOVER_TOOLS: ReadonlyArray<{
   id: PokeDiscoverToolId;
   label: string;
   directory: string;
 }> = Object.freeze([
-  { id: 'editor', label: 'Mapas y misiones', directory: 'pokediscover-editor' },
+  { id: 'editor', label: 'Mapas', directory: 'pokediscover-editor' },
+  { id: 'story', label: 'Historia', directory: 'story-editor' },
   { id: 'visualNovel', label: 'Novela visual', directory: 'visual-novel-editor' },
   { id: 'randomizer', label: 'Randomizador', directory: 'pokediscover-randomizer' },
 ]);

@@ -88,6 +88,39 @@ function teguesteBundle() {
 }
 
 describe('validador cruzado Tiled + aventura + PMD', () => {
+  it('acepta roaming compartido y rechaza referencias o rangos inválidos', () => {
+    const candidate = bundle() as any;
+    const tmj = candidate.tiledMaps['tiled-map:technical:clearing'];
+    tmj.layers.push({
+      id: 998,
+      name: 'Roaming',
+      type: 'objectgroup',
+      objects: [{
+        id: 998,
+        name: 'roam-area:technical-clearing:01',
+        class: 'RoamArea',
+        x: 0,
+        y: 0,
+        width: tmj.width * 16,
+        height: tmj.height * 16,
+      }],
+    });
+    candidate.adventure.actorPlacements[0].roaming = {
+      schemaVersion: 1,
+      areaId: 'roam-area:technical-clearing:01',
+      distanceTiles: { min: 2, max: 8 },
+      speedPixelsPerSecond: 40,
+      waitAfterArrivalMs: { min: 1_000, max: 4_000 },
+    };
+    expect(validateTiledAdventureBundle(candidate)).toEqual([]);
+
+    candidate.adventure.actorPlacements[0].roaming.speedPixelsPerSecond = 200;
+    candidate.adventure.actorPlacements[0].roaming.areaId = 'roam-area:missing:01';
+    expect(validateTiledAdventureBundle(candidate)).toEqual(expect.arrayContaining([
+      'actor-placement:technical:rattata: configuración de roaming inválida',
+    ]));
+  });
+
   it('acepta la primera habitación definitiva del Bosque de Tegueste', () => {
     const candidate = teguesteBundle();
     expect(validateTiledAdventureBundle(candidate)).toEqual([]);

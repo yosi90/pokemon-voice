@@ -155,6 +155,9 @@ export interface PokeDiscoverStateV1 extends VersionedContractV1 {
   companionQualifications: CompanionAccessRecordV1[];
   modeProgress: Record<StableId, ModeProgressV1>;
   rewardLedger: Record<StableId, RewardLedgerEntryV1>;
+  /** Fuente de verdad para cada misión activa y su checkpoint independiente. */
+  missionProgressById: Record<StableId, MissionProgressV1>;
+  /** @deprecated Proyección compatible derivada de missionProgressById. */
   activeMissionIds: StableId[];
   cosmeticPreferences: Record<StableId, StableId>;
 }
@@ -203,6 +206,12 @@ export interface MissionRuntimeStateV1 extends VersionedContractV1 {
   flowNodeId?: StableId;
   conversationCheckpoint?: import('./narrative.js').ActiveNarrativeConversationV1;
   executedFlowEffectIds?: StableId[];
+}
+
+export interface MissionProgressV1 extends MissionRuntimeStateV1 {
+  startedAt: ISODateString;
+  updatedAt: ISODateString;
+  lastExpeditionNodeId?: StableId;
 }
 
 export type PendingMissionLaunchCheckpoint =

@@ -93,5 +93,7 @@ export function createRequirementAtom(kind: RequirementAtomV1['kind']): Requirem
     case 'inventoryItem': return { kind, itemId: 'item:id' };
     case 'unlockedSecret': return { kind, secretId: 'secret:id' };
     case 'storyEvent': return { kind, eventId: 'event:id' };
+    case 'completedMission': return { kind, missionId: 'mission:id' };
+    case 'companionUnlocked': return { kind, speciesId: 1 };
   }
 }

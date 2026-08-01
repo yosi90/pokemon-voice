@@ -1,4 +1,4 @@
-import type { PokemonFormId, PokemonSpeciesId, StableId } from './common.js';
+import type { PokemonAppearanceId, PokemonFormId, PokemonSpeciesId, StableId } from './common.js';
 import type { EvolutionStage, FieldCapabilityId, PokemonSizeClass, PokemonTypeId } from './catalog.js';
 import type { ResearchFieldKey, ResearchStatus } from './research.js';
 
@@ -31,7 +31,14 @@ export type RequirementAtomV1 =
   | { kind: 'missionFlag'; flagId: StableId; expected?: boolean | string | number }
   | { kind: 'inventoryItem'; itemId: StableId }
   | { kind: 'unlockedSecret'; secretId: StableId }
-  | { kind: 'storyEvent'; eventId: StableId };
+  | { kind: 'storyEvent'; eventId: StableId }
+  | { kind: 'completedMission'; missionId: StableId }
+  | {
+    kind: 'companionUnlocked';
+    speciesId: PokemonSpeciesId;
+    formId?: PokemonFormId;
+    appearanceId?: PokemonAppearanceId;
+  };
 
 export type RequirementExpressionV1 =
   | RequirementAtomV1
